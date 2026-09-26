@@ -11,7 +11,7 @@ import { t } from './i18n'
 import { childEnv } from './child-env'
 import { platformCapabilities } from './platform'
 
-/** The codes the calendar helper (resources/native/asist-calendar.swift) fails with, and the message of each. */
+/** The codes the calendar helper (resources/native/macos/asist-calendar.swift) fails with, and the message of each. */
 const HELPER_ERRORS = {
   needsFullAccess: 'calendar.errors.needsFullAccess',
   noReadCalendars: 'calendar.errors.noReadCalendars',
@@ -50,7 +50,7 @@ export function runCalendarNative(
     return Promise.reject(new Error(errorText('calendar.errors.macOnly')))
   const executable = app.isPackaged
     ? path.join(process.resourcesPath, 'asist-calendar')
-    : path.join(app.getAppPath(), 'resources/native/asist-calendar')
+    : path.join(app.getAppPath(), 'resources', 'native', 'macos', 'asist-calendar')
   return new Promise((resolve, reject) => {
     const child = execFile(
       executable,

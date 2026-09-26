@@ -12,7 +12,7 @@ import { pythonEnv } from './child-env'
 import { downloadPinnedFile } from './onnx-runtime'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
-import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
+import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
 /**
  * The lifecycle of the MaAI turn-taking worker, vap_worker.py.
@@ -166,7 +166,7 @@ function runtimeDir(): string {
 
 function pythonPath(): string {
   const configured = process.env.ASIST_VAP_PYTHON?.trim()
-  return configured || path.join(runtimeDir(), 'bin', 'python')
+  return configured || venvPython(runtimeDir())
 }
 
 function modelsDir(): string {

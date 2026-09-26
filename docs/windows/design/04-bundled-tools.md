@@ -55,7 +55,7 @@
 - **`/dev/null`。**
   - Git for Windows は、`/dev/null` を開くときに `nul` に読み替えます(`compat/mingw.c:956,1050,1079,1173`)。
   - そのため、いまの `GIT_CONFIG_GLOBAL=/dev/null` は Windows でも動きます。
-  - それでも、意図を読みやすくするために `os.devNull` にします。
+  - `os.devNull`(Windows では `\\.\nul`)にはしません。Git for Windows が特別に扱うのは `/dev/null` と `nul` だけで、`\\.\nul` は予約名 NUL として開くのを拒み、設定を読むところで止まります。
 
 ### 設計
 

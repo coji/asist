@@ -1,7 +1,9 @@
 node_modules/
 out/
-# The compiled helper that scripts/build-native-mic.sh generates.
-resources/native/asist-mic
+# The native helpers that scripts/prepare-resources.mjs builds.
+resources/native/macos/asist-mic
+resources/native/macos/asist-calendar
+resources/native/windows/asist-agent-launcher.exe
 dist/
 coverage/
 # The pictures npm run demo:fit takes of what did not fit, on CI.
@@ -16,9 +18,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-resources/native/asist-calendar
-# The uv and git that scripts/fetch-uv.sh and scripts/build-git.sh put in the app.
+# The uv and git that scripts/prepare-resources.mjs puts in the app.
 resources/uv/
 resources/git/
 # The permission texts that scripts/macos/permission-texts.mjs generates.

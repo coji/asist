@@ -4,13 +4,37 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ appPath: process.cwd() }))
+const mocks = vi.hoisted(() => ({ appPath: process.cwd(), os: null as 'macos' | 'windows' | null }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => mocks.appPath, getPath: () => '/unused', on: vi.fn() } }))
+// The uv of the machine the tests run on, unless a test asks for what ASIST does on Windows.
+vi.mock('../src/main/services/platform', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/main/services/platform')>()
+  const { MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => ({ macos: MACOS, windows: WINDOWS })[mocks.os ?? actual.platformCapabilities().os] }
+})
 
-import { runUv, uvEnv } from '../src/main/services/uv'
+import { runUv, uvEnv, uvPath, venvPython } from '../src/main/services/uv'
 
 afterEach(() => {
   mocks.appPath = process.cwd()
+  mocks.os = null
+})
+
+describe('where uv and the Python of an environment are', () => {
+  it('runs uv.exe on Windows and uv on macOS', () => {
+    mocks.os = 'windows'
+    expect(uvPath()).toBe(path.join(mocks.appPath, 'resources', 'uv', 'uv.exe'))
+    mocks.os = 'macos'
+    expect(uvPath()).toBe(path.join(mocks.appPath, 'resources', 'uv', 'uv'))
+  })
+
+  it('finds the Python of an environment in Scripts on Windows and in bin on macOS, where uv venv puts it', () => {
+    const dir = path.join(os.tmpdir(), 'runtime')
+    mocks.os = 'windows'
+    expect(venvPython(dir)).toBe(path.join(dir, 'Scripts', 'python.exe'))
+    mocks.os = 'macos'
+    expect(venvPython(dir)).toBe(path.join(dir, 'bin', 'python'))
+  })
 })
 
 describe('the environment uv runs with', () => {
@@ -23,8 +47,8 @@ describe('the environment uv runs with', () => {
     expect(env.UV_PYTHON_PREFERENCE).toBeUndefined()
     expect(env.UV_PYTHON_DOWNLOADS).toBeUndefined()
     expect(env.UV_NO_CONFIG).toBe('1')
-    expect(env.UV_PYTHON_INSTALL_DIR).toBe('/data/python')
-    expect(env.UV_CACHE_DIR).toBe('/data/uv-cache')
+    expect(env.UV_PYTHON_INSTALL_DIR).toBe(path.join('/data', 'python'))
+    expect(env.UV_CACHE_DIR).toBe(path.join('/data', 'uv-cache'))
     expect(env.PATH).toBe('/usr/bin')
   })
 

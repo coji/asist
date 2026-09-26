@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({ directory: '', createEnvironment: vi.fn(), ins
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('electron', () => ({ app: { getPath: () => mocks.directory, getVersion: () => '0.0.0' } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ uiLocale: 'en-US' }) }))
-vi.mock('../src/main/services/uv', () => ({
+vi.mock('../src/main/services/uv', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/main/services/uv')>()),
   createEnvironment: mocks.createEnvironment,
   installRequirements: mocks.installRequirements,
   recordEnvironment: mocks.recordEnvironment,

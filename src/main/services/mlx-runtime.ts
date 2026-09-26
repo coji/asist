@@ -11,7 +11,7 @@ import { errorMessage, t } from './i18n'
 import { pythonEnv } from './child-env'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
-import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
+import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
 /**
  * The Python environment with mlx-audio that the MLX speech recognition and the Qwen3-TTS speech
@@ -45,7 +45,7 @@ function runtimeDir(): string {
 
 function pythonPath(): string {
   const configured = process.env.ASIST_MLX_PYTHON?.trim()
-  return configured || path.join(runtimeDir(), 'bin', 'python')
+  return configured || venvPython(runtimeDir())
 }
 
 function repositoryCache(model: PinnedModel): string {

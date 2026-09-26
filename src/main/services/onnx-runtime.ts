@@ -9,7 +9,7 @@ import { replaceFileAtomic } from './atomic-json'
 import { t } from './i18n'
 import { platformCapabilities } from './platform'
 import { userAgent } from './user-agent'
-import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
+import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
 /**
  * The Python environment shared by the ONNX sidecars, the memory embedding worker and the aizuchi
@@ -40,7 +40,7 @@ export function runtimeDir(): string {
 
 export function pythonPath(): string {
   const configured = process.env.ASIST_EMBEDDING_PYTHON?.trim()
-  return configured || path.join(runtimeDir(), 'bin', 'python')
+  return configured || venvPython(runtimeDir())
 }
 
 export function supportedPlatform(): boolean {

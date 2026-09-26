@@ -3,9 +3,22 @@ import fs from 'node:fs'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
+const mocks = vi.hoisted(() => ({ windows: false }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd() } }))
+// The git of the machine the tests run on, unless a test asks for what ASIST does on Windows.
+vi.mock('../src/main/services/platform', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/main/services/platform')>()
+  const { WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : actual.platformCapabilities()) }
+})
+// The null device as Node names it on Windows, which Git for Windows refuses to open as a configuration file.
+vi.mock('node:os', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:os')>()
+  const devNull = '\\\\.\\nul'
+  return { ...actual, default: { ...actual, devNull }, devNull }
+})
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ conversationLocale: 'ja-JP' }) }))
 
 import * as git from '../src/main/services/git'
@@ -27,18 +40,49 @@ beforeEach(() => {
   run(repo, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'a'])
 })
 
-describe('the environment git runs with', () => {
+describe('the git ASIST runs', () => {
   const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
+  afterEach(() => {
+    mocks.windows = false
+  })
 
-  it('drops the GIT_ variables written in any case on Windows, where the case of a name does not matter', () => {
+  it('is the git.exe of MinGit on Windows, not the wrapper in its cmd folder', () => {
+    mocks.windows = true
+    expect(git.gitPath()).toBe(path.join(process.cwd(), 'resources', 'git', 'mingw64', 'bin', 'git.exe'))
+  })
+
+  it('drops the GIT_ variables and MSYSTEM written in any case on Windows, where the case of a name does not matter', () => {
+    mocks.windows = true
     Object.defineProperty(process, 'platform', { ...platform, value: 'win32' })
     try {
-      const env = git.gitEnv({ Path: 'C:\\Windows', Git_Dir: 'C:\\elsewhere\\.git', git_work_tree: 'C:\\elsewhere' })
-      expect(Object.keys(env).filter((name) => name.toUpperCase().startsWith('GIT_')).sort()).toEqual(['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM'])
+      const env = git.gitEnv({ Path: 'C:\\Windows', Git_Dir: 'C:\\elsewhere\\.git', git_work_tree: 'C:\\elsewhere', Msystem: 'MINGW64' })
+      expect(Object.keys(env).filter((name) => name.toUpperCase().startsWith('GIT_')).sort()).toEqual([
+        'GIT_ATTR_NOSYSTEM',
+        'GIT_CONFIG_COUNT',
+        'GIT_CONFIG_GLOBAL',
+        'GIT_CONFIG_KEY_0',
+        'GIT_CONFIG_NOSYSTEM',
+        'GIT_CONFIG_VALUE_0'
+      ])
+      expect(Object.keys(env).filter((name) => name.toUpperCase() === 'MSYSTEM')).toEqual([])
+      expect(env.GIT_ATTR_NOSYSTEM).toBe('1')
       expect(env.Path).toBe('C:\\Windows')
     } finally {
       Object.defineProperty(process, 'platform', platform)
     }
+  })
+
+  it('reads core.longpaths from the environment on Windows, and no system or user configuration', () => {
+    const executable = git.gitPath()
+    mocks.windows = true
+    const env = git.gitEnv({ ...process.env, GIT_CONFIG_GLOBAL: path.join(repo, 'a.txt') })
+    expect(env.GIT_CONFIG_GLOBAL).toBe('/dev/null')
+    const scopes = execFileSync(executable, ['config', '--list', '--show-scope'], { cwd: repo, env, encoding: 'utf8' })
+      .trim()
+      .split('\n')
+      .map((line) => line.split('\t'))
+    expect(scopes).toContainEqual(['command', 'core.longpaths=true'])
+    expect(scopes.filter(([scope]) => scope === 'system' || scope === 'global')).toEqual([])
   })
 })
 

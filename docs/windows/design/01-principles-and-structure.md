@@ -86,7 +86,7 @@ asist/
 │   │       ├── asr-transcriptions.ts        改名。mlx-asr-transcriptions.ts(中身はもともと MLX に依らない)
 │   │       ├── atomic-json.ts               変更。8か所の置き換えの書き込みをここに集める
 │   │       ├── uv.ts                        変更。uv.exe と venv の Python の場所を返す関数を持つ
-│   │       └── git.ts                       変更。git.exe の場所、os.devNull、core.longpaths
+│   │       └── git.ts                       変更。git.exe の場所、MSYSTEM、core.longpaths
 │   ├── shared/
 │   │   ├── platform.ts                      新規。PlatformCapabilities の型と、値から機能を決める純粋な関数
 │   │   ├── file-path.ts                     新規。POSIX と Windows の両方のパスを扱う関数(renderer と shared 用)

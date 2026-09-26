@@ -87,7 +87,7 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 |---|---|---|---|---|---|
 | M2-1 | `scripts/prepare-resources.mjs` と `scripts/resources/*` を作り、4つの `.sh` を置き換える。`package.json` の `predev`、`prebuild`、`pretest` をこれに替える。Swift のソースを `resources/native/macos/` に移す | `scripts/*`、`package.json`、`resources/native/*`、`.gitignore` | Mac で `npm run build` と `npm test` がいまと同じに動く。対応していない OS で止まる | Mac | E |
 | M2-2 | `git-windows.mjs`(MinGit の取得、ハッシュの確認、展開、使わない部分の削除)と、`uv.mjs` の Windows の表を作る | `scripts/resources/*` | Mac の上で、Windows 向けの取得と展開を試せる(`--platform win32` のような確認用の引数を用意する) | Mac | E |
-| M2-3 | `gitPath()`、`uvPath()`、`venvPython()` を OS ごとにし、`gitEnv()` に Windows の設定(`MSYSTEM` を消す、`GIT_ATTR_NOSYSTEM`、`core.longpaths`)を足す。`/dev/null` を `os.devNull` にする | `git.ts`、`uv.ts`、`mlx-runtime.ts`、`vap.ts`、`onnx-runtime.ts`、テスト | `uv-env.test.ts` が `path.join` の期待値で通る | Mac | E |
+| M2-3 | `gitPath()`、`uvPath()`、`venvPython()` を OS ごとにし、`gitEnv()` に Windows の設定(`MSYSTEM` を消す、`GIT_ATTR_NOSYSTEM`、`core.longpaths`)を足す。`GIT_CONFIG_GLOBAL` は両方の OS で `/dev/null` のままにする | `git.ts`、`uv.ts`、`mlx-runtime.ts`、`vap.ts`、`onnx-runtime.ts`、テスト | `uv-env.test.ts` が `path.join` の期待値で通る | Mac | E |
 | M2-4 | ADR 0007 に Windows の理由と制約を書き足す | `docs/adr/0007-*.md` | | Mac | E |
 | M2-5 | `native-windows.mjs` と `resources/native/windows/asist-agent-launcher.c` の最初の形を作る(`--version` と、Job Object を作って子を起動し、終わるのを待つだけ) | `scripts/resources/native-windows.mjs`、`resources/native/windows/*` | CI の windows-latest でビルドでき、`--version` が動く | Mac と CI | E |
 | M2-6 | Python の worker に `PYTHONUTF8=1` を渡す。`vap_worker.py` の `os.nice` を分ける | `onnx-worker.ts`、`vap.ts`、`mlx-runtime.ts`、`resources/vap_worker.py` | | Mac | F |

@@ -2,6 +2,8 @@
 
 この Mac で動かすモデルの Python 環境は、アプリに同梱した uv が作る。Python は uv が取得したものだけを使い、バージョンを固定して、Python の本体と uv のキャッシュは userData の下に置く。利用者の uv の設定と `UV_` の環境変数は読まない。利用者の手元の Python や uv に任せると、どの Python で環境ができるかが利用者ごとに変わり、その Python を消すと音声認識が動かなくなる。記憶の履歴と編集ジョブの worktree には、同梱した git を使い、システムと利用者の git の設定を読まない。`/usr/bin/git` は Command Line Tools が無い Mac ではインストールを促すだけで失敗し、記憶は起動のたびに git を使う。利用者の設定を読むと、`commit.gpgsign` や git-lfs のフィルタで記憶のコミットが失敗する。
 
+Windows にはシステムの git が無いので、同じく同梱する。Windows で git をソースからビルドするには MSYS2 の環境が要り、Git for Windows がそのビルドをアプリに入れるための形(MinGit)で配っているので、それを同梱する。uv も Windows で同じく同梱する。
+
 ## 見送った案
 
 - **聞き取りの選択肢に whisper.cpp を残す。** Homebrew で入れた `whisper-server` と、手で置いたモデルが要る。同じ Whisper large-v3-turbo は MLX 版で動き、アプリは Apple Silicon だけを対象にしている。
@@ -12,3 +14,5 @@
 - 編集ジョブの worktree を作るときも利用者の git の設定を読まないので、git-lfs で管理しているファイルは、ポインタのまま worktree に出る。
 - 利用者が自分で使っている uv とは、Python もパッケージのキャッシュも共有しない。
 - git は GPL-2.0 なので、配布するアプリにはライセンスの本文を入れ、「このアプリについて」から元のソースへのリンクを出す。
+- MinGit には、git のほかに MSYS2 の実行時ライブラリと sh が入っている。Windows で配布するときのソースの提供は、Git for Windows の同じタグと、MSYS2 のパッケージのソースも対象になる。
+- macOS と Windows で、git のバージョンが少しずれることがある。

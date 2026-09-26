@@ -4,6 +4,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
 import { childEnv, removeVariables } from './child-env'
+import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 
 /**
@@ -21,7 +22,12 @@ import { resourcePath } from './resource-path'
 export const PYTHON_VERSION = '3.12.14'
 
 export function uvPath(): string {
-  return resourcePath(path.join('uv', 'uv'))
+  return resourcePath(path.join('uv', platformCapabilities().os === 'windows' ? 'uv.exe' : 'uv'))
+}
+
+/** The Python of the environment in dir, where uv venv puts it on this OS. */
+export function venvPython(dir: string): string {
+  return platformCapabilities().os === 'windows' ? path.join(dir, 'Scripts', 'python.exe') : path.join(dir, 'bin', 'python')
 }
 
 /** The environment uv runs with: the child environment without the user's UV_ variables, and ASIST's own directories. */

@@ -66,7 +66,7 @@ main の ruleset がマージの条件にしているのは `result` だけで�
 
 CodeQL(`.github/workflows/codeql.yml`)は、main への push のたびと毎週 1 回、アプリに入る部分の JavaScript/TypeScript、Python、Actions を解析します。プルリクエストでは動きません。開発のときだけ使う `scripts/`、`tests/`、`website/`、`promotions/`、`skills/` は、解析の対象から外しています(`.github/codeql/codeql-config.yml`)。
 
-コンパイルした git と取得した uv は、`scripts/build-git.sh` と `scripts/fetch-uv.sh` の内容をキーにしてキャッシュします。`npm audit --omit=dev` は、main への push のたびと、毎週火曜の朝 6 時(日本時間)に別のジョブで動きます。依存関係の脆弱性は、コードを変えなくても後から公開されるからです。署名付きのビルドと公証は、まだ CI に入れていません。
+同梱する git と uv は、それを用意する `scripts/resources/` の git と uv のモジュールの内容をキーにしてキャッシュします。`VERSION` のファイルにはそのモジュールのハッシュを記録していて、準備のスクリプトは中身が合えば、キャッシュから戻したものをそのまま使います。`npm audit --omit=dev` は、main への push のたびと、毎週火曜の朝 6 時(日本時間)に別のジョブで動きます。依存関係の脆弱性は、コードを変えなくても後から公開されるからです。署名付きのビルドと公証は、まだ CI に入れていません。
 
 ## 画面をブラウザで確かめる
 

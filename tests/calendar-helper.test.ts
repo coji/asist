@@ -40,7 +40,7 @@ describe.runIf(process.platform === 'darwin')('the answer of the calendar helper
   })
 
   it('has a message for every code the helper can fail with', async () => {
-    const source = readFileSync(path.join(__dirname, '../resources/native/asist-calendar.swift'), 'utf8')
+    const source = readFileSync(path.join(__dirname, '../resources/native/macos/asist-calendar.swift'), 'utf8')
     const codes = [...new Set([...source.matchAll(/fail\("(\w+)"\)|\?\? "(\w+)"/g)].map((match) => match[1] ?? match[2]))]
     expect(codes.length).toBeGreaterThan(5)
     for (const code of codes) expect(await failure({ ok: false, error: code })).not.toBe(errorText('calendar.errors.helperBadResponse'))

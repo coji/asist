@@ -20,7 +20,7 @@ import Foundation
 // Arguments: how many changes of the configuration within how many seconds mean that it keeps changing,
 // the limit the parent also applies to changes of the device.
 //
-// Build it with scripts/build-native-mic.sh, which runs swiftc.
+// scripts/resources/native-macos.mjs builds it with swiftc.
 
 func log(_ message: String) {
   FileHandle.standardError.write(Data(("asist-mic: " + message + "\n").utf8))

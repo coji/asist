@@ -69,7 +69,7 @@ let quitHookRegistered = false
 function binaryPath(): string {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'asist-mic')
-    : path.join(app.getAppPath(), 'resources', 'native', 'asist-mic')
+    : path.join(app.getAppPath(), 'resources', 'native', 'macos', 'asist-mic')
 }
 
 export function available(): boolean {

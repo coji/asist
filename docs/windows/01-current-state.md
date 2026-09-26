@@ -23,7 +23,7 @@
 | `src/main/services/settings.ts:57,60` | `~/Desktop` などを自分で組み立てる | OneDrive にデスクトップを移したマシンで違うフォルダを見る |
 | 置き換えの書き込み8か所(`atomic-json.ts:39,52`、`encrypted-secrets.ts:92-94`、`settings.ts:106-108`、`store.ts:22`、`timers.ts:87-89`、`mail-drafts.ts:86-87`、`notes.ts:93-95`、`onnx-runtime.ts:137`) | 一時ファイルからリネームで置き換える | ウイルス対策や検索のインデックスが対象を開いていると、EPERM や EBUSY でときどき失敗する |
 | `src/main/services/child-env.ts:13-16`、`git.ts:30-34` | 環境変数の名前を大文字小文字を区別して消す | `Anthropic_Api_Key` のような書き方のキーがすり抜ける |
-| `src/main/services/git.ts:33` | `GIT_CONFIG_GLOBAL=/dev/null` | `os.devNull` にすれば確実になる |
+| `src/main/services/git.ts:33` | `GIT_CONFIG_GLOBAL=/dev/null` | Git for Windows も `/dev/null` を NUL として読むので、そのままでよい(`os.devNull` の `\\.\nul` は拒まれる) |
 | `src/main/services/uv.ts:23-25`、`mlx-runtime.ts:47`、`vap.ts:168`、`onnx-runtime.ts:41` | `uv/uv`、venv の `bin/python` | Windows では `uv.exe`、`Scripts\python.exe` |
 | `resources/vap_worker.py:215` | `os.nice(5)` を呼び、`OSError` だけを捕まえる | Windows には `os.nice` が無く、`AttributeError` で worker が起動前に落ちる |
 | Python の worker 全部 | 標準入出力の文字コードを決めていない | Windows ではパイプが cp932 になり、日本語を読み違える(`PYTHONUTF8=1` が要る) |

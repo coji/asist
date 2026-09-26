@@ -86,13 +86,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # git is compiled from source and uv is fetched, both pinned in these scripts, so the scripts are the key.
+      # git and uv are pinned in these modules, and their VERSION stamps record the modules' content, so the
+      # modules are the key.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             resources/git
             resources/uv
-          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-git.sh', 'scripts/fetch-uv.sh') }}
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:mac:unsigned
       - name: Run the git and uv inside the app
