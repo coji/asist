@@ -1,0 +1,20 @@
+# Every text file is checked out with LF on every OS. Git for Windows converts to CRLF by default, and then
+# the shell scripts fail on "set -eu\r", scripts/i18n.mjs splits lines with a "\r" left at their ends, and the
+# tests that read the sources see other text than on macOS.
+* text=auto eol=lf
+
+# Files git must never convert, even when their first bytes look like text.
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.onnx binary
+*.pdf binary
+*.zip binary
+*.docx binary
+*.xlsx binary
+*.pptx binary

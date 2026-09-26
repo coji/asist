@@ -1,6 +1,6 @@
 # Windows のマシンの準備
 
-Windows で開発のセッションを始める前に、ここまでを済ませておきます。M0-2 で、このうち長く使う手順を `docs/development.md` に移します。
+Windows で開発のセッションを始める前に、ここまでを済ませておきます。clone の手順は `docs/development.md` にあります。
 
 ## 入れるもの
 
@@ -8,7 +8,7 @@ Windows で開発のセッションを始める前に、ここまでを済ませ
 |---|---|---|
 | Windows 11(x64) | | 「設定」→「システム」→「開発者向け」で**開発者モード**を有効にする。git がシンボリックリンクを作れるようになる |
 | NVIDIA のドライバー | ローカルの音声認識(CUDA 13.0 の torch) | 580 以上。GPU は RTX 20 以降(compute capability 7.5 以上)。`nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv` で確かめる |
-| Git for Windows | リポジトリの操作と、Claude Code の Bash のツール | インストーラーの「改行の扱い」は「Checkout as-is, commit as-is」にする(リポジトリの `.gitattributes` で LF に揃えるため)。シンボリックリンクを有効にする |
+| Git for Windows | リポジトリの操作と、Claude Code の Bash のツール | シンボリックリンクを有効にする。改行はリポジトリの `.gitattributes` で LF にそろうので、インストーラーの改行の設定はどれでもよい |
 | Node.js 22 | CI と同じ(`.github/actions/setup-app` は `node-version: 22`) | npm も一緒に入る |
 | Visual Studio 2022 以降の Build Tools | `asist-agent-launcher.c` を `cl.exe` でビルドする | 「C++ によるデスクトップ開発」を入れる |
 | GitHub CLI(`gh`) | PR と CI | `gh auth login` |
@@ -21,19 +21,7 @@ Python は入れません。アプリに同梱した uv が、決まったバー
 
 ## clone
 
-```powershell
-git config --global core.symlinks true
-git config --global core.longpaths true
-git clone git@github.com:nyosegawa/asist.git
-```
-
-clone したあと、`.claude\skills` と `.agents\skills` がフォルダへのリンクになっていることを確かめます(`dir .claude` で `<SYMLINKD>` と出る)。
-
-リンクではなくテキストファイルになっていたら、Claude Code と Codex はスキルを1つも読めません。その場合は、次の手順で作り直します。
-
-1. 開発者モードを有効にします。
-2. `git config core.symlinks true` を実行します。
-3. `git checkout -- .claude/skills .agents/skills` を実行します。
+[docs/development.md](../development.md) の「Windows で clone する」の手順に従います。開発者モードと `core.symlinks=true` が無いと、`.claude/skills` と `.agents/skills` がテキストファイルになり、スキルを1つも読めません。
 
 ## Claude Code の個人の設定
 

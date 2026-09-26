@@ -10,6 +10,23 @@ npm run build
 
 `npm test` は、最初に同梱用の git をコンパイルし、テストが使う Electron を取得します。
 
+## Windows で clone する
+
+Windows 対応はまだ途中です。計画と進み具合は [docs/windows](windows/) と issue #48 にあります。Windows で作業するときは、clone の前に、次のことを済ませます。
+
+- 「設定」→「システム」→「開発者向け」で、開発者モードを有効にします。
+- Git for Windows で、シンボリックリンクと長いパスを有効にします。
+
+```powershell
+git config --global core.symlinks true
+git config --global core.longpaths true
+git clone git@github.com:nyosegawa/asist.git
+```
+
+`.claude/skills` と `.agents/skills` は `skills/` へのシンボリックリンクです。開発者モードと `core.symlinks=true` のどちらかが欠けると、2つとも `../skills` と書かれたテキストファイルになり、Claude Code と Codex はスキルを1つも読めません。`dir .claude` で `<SYMLINKD>` と出れば、リンクになっています。テキストファイルになっていたら、開発者モードを有効にして `git config core.symlinks true` を実行し、`git checkout -- .claude/skills .agents/skills` で作り直します。
+
+改行は、リポジトリの `.gitattributes` で、どの OS でも LF にそろえます。Git for Windows の改行の設定(`core.autocrlf`)を変える必要はありません。
+
 ## ソースから起動する
 
 Node.js、npm、Xcode Command Line Tools が要ります。マイクとカレンダーのネイティブのヘルパーと git をコンパイルし、uv を取得して、アプリに同梱します。

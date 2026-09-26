@@ -16,7 +16,7 @@ in SKILL.md still applies; this adds what running many of them in parallel needs
 ## Prepare each worktree yourself
 
 ```bash
-sh skills/worktree-delegation/scripts/prepare-worktree.sh <name> <branch>
+node skills/worktree-delegation/scripts/prepare-worktree.mjs <name> <branch>
 ```
 
 It adds `.claude/worktrees/<name>` on a new branch from origin/main and clones `node_modules`,
@@ -51,7 +51,7 @@ to read first.
 3. Check that its tests fail without the fix:
 
    ```bash
-   sh skills/worktree-delegation/scripts/tests-on-base.sh <branch>
+   node skills/worktree-delegation/scripts/tests-on-base.mjs <branch>
    ```
 
    Every item should have at least one failing test. A test file that cannot load on the base counts,

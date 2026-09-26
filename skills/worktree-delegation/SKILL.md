@@ -21,11 +21,12 @@ two sets of changes from colliding, and to make sure what reaches your branch is
 - **A worktree you prepare** is the default:
 
   ```bash
-  sh skills/worktree-delegation/scripts/prepare-worktree.sh <name> <branch> [base]
+  node skills/worktree-delegation/scripts/prepare-worktree.mjs <name> <branch> [base]
   ```
 
-  It adds `.claude/worktrees/<name>` on a new branch from the base (origin/main unless given) and clones
-  `node_modules`, `resources/git` and `resources/uv` into it, which Git leaves out and the checks need:
+  It adds `.claude/worktrees/<name>` on a new branch from the base (origin/main unless given) and copies
+  `node_modules`, `resources/git` and `resources/uv` into it (a clone on macOS, a full copy elsewhere),
+  which Git leaves out and the checks need:
   without `resources/git` about seventy tests fail. Start the subagent without `isolation` and give it
   the printed path. The Agent tool's own `isolation: "worktree"` has none of these files, and a subagent
   that copies `resources/git` itself is refused by the guard, so leave that only for a task that runs no
@@ -66,7 +67,7 @@ permissions refused, and one that did so lost its shell for the rest of its task
 2. Read its report, then read the diff yourself: `git diff <your branch>...<branch> --stat` and the parts that
    matter. Check that the diff is what the report says. Do not pass a report on to the user unread.
    For a fix, check that its tests fail without it:
-   `sh skills/worktree-delegation/scripts/tests-on-base.sh <branch>` runs the tests the branch added or
+   `node skills/worktree-delegation/scripts/tests-on-base.mjs <branch>` runs the tests the branch added or
    changed against the source of its base, in a temporary worktree it removes afterwards.
 3. On the branch of your pull request, never on main: if its files overlap with your uncommitted
    changes, commit yours first, then `git merge --no-edit <branch>`. Resolve any conflict by hand. The

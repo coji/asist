@@ -5,7 +5,7 @@ description: How to check how an ASIST screen looks and fix a broken layout, and
 
 # Visual debugging
 
-Judge by numbers and 2x images, so that the same commands produce the same artifacts whichever Agent does the work. A mock is not static HTML: it feeds fixed data into the app's own components. The tools are CDP scripts that run on nothing but Node 22 and the Mac's Chrome, and they live in `scripts/cdp/`. Claude Code's browser pane is an optional tool for iterating faster; the images and numbers that go into the report come from the scripts.
+Judge by numbers and 2x images, so that the same commands produce the same artifacts whichever Agent does the work. A mock is not static HTML: it feeds fixed data into the app's own components. The tools are CDP scripts that run on nothing but Node 22 and the installed Chrome (found in its usual place on macOS and Windows, or named by `CHROME_BIN`), and they live in `scripts/cdp/`. Claude Code's browser pane is an optional tool for iterating faster; the images and numbers that go into the report come from the scripts.
 
 ## How the demo is put together
 

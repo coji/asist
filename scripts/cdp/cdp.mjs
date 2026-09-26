@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { mkdtemp } from 'node:fs/promises'
 import os from 'node:os'
@@ -10,8 +10,22 @@ import path from 'node:path'
  * beyond Node 22's fetch and WebSocket.
  */
 
-export const CHROME =
-  process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+/** Where Chrome is installed on this OS, unless CHROME_BIN names another one. */
+function chromePath() {
+  if (process.env.CHROME_BIN) return process.env.CHROME_BIN
+  const candidates =
+    process.platform === 'darwin'
+      ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+      : process.platform === 'win32'
+        ? [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA]
+            .filter(Boolean)
+            .map((dir) => path.join(dir, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+        : []
+  const found = candidates.find((candidate) => existsSync(candidate))
+  if (!found) throw new Error('Chrome が見つかりません。CHROME_BIN に実行ファイルの場所を書いてください')
+  return found
+}
+
 /**
  * The paths of the demo. They resolve against the demo a run starts for itself, or, when a run attaches to
  * a Chrome that is already open, against the page that Chrome shows.
@@ -41,7 +55,7 @@ export function windowSize(value) {
 /** Starts headless Chrome with a CDP port and returns that port. Port 0 picks a free one. */
 export async function launchChrome({ port = 0, url = 'about:blank' } = {}) {
   const profile = await mkdtemp(path.join(os.tmpdir(), 'asist-chrome-'))
-  const child = spawn(CHROME, [
+  const child = spawn(chromePath(), [
     '--headless=new',
     '--disable-gpu',
     '--hide-scrollbars',

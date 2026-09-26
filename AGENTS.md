@@ -100,8 +100,10 @@ so, the record goes into the same commit (`adr` skill).
   from source, building or manual validation changes. `README.md` and `README.ja.md` only summarize and
   link; change them when what they summarize changes.
 
-Skills live in `skills/`; `.claude/skills` and `.agents/skills` are symlinks to it. Whenever a task
-matches one of these, use that skill; each holds steps these rules do not repeat.
+Skills live in `skills/`; `.claude/skills` and `.agents/skills` are symlinks to it. On Windows, a
+checkout without Developer Mode and `core.symlinks=true` turns both links into plain files and no skill
+loads; `docs/development.md` says how to clone there. Whenever a task matches one of these, use that
+skill; each holds steps these rules do not repeat.
 
 - `visual-debugging`: checking or fixing how a screen looks, taking screenshots, measuring layout,
   or adding an `npm run demo:<scene>` command. Judge by its numbers and 2x images, not by a scaled
