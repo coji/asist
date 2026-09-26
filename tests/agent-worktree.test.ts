@@ -1,11 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import { shellPath, testGitEnv } from './helpers/git'
+import { longTempFolder } from './helpers/temp'
 
 const ja = createTranslator('ja-JP')
 
@@ -61,7 +61,7 @@ beforeEach(() => {
     handlers.onExit = (code: number | null) => { onExit(code); resolve() }
     return { completion, stop: vi.fn() }
   })
-  mocks.root = fs.realpathSync(fs.mkdtempSync(path.join(tmpdir(), 'asist-worktree-test-')))
+  mocks.root = longTempFolder('asist-worktree-test-')
   repo = path.join(mocks.root, 'repo')
   fs.mkdirSync(repo)
   git(repo, 'init', '-q', '-b', 'main')

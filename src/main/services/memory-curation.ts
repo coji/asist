@@ -1,5 +1,4 @@
 import { isJobExecuting } from '@shared/job-status'
-import fs from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 import { errMessage } from '@shared/api-errors'
@@ -150,7 +149,9 @@ const MEMORY_FILE_MODES = new Set(['100644', '100755', '000000'])
 function assertInsideMemory(job: AgentJob): ReviewedMerge {
   const worktree = job.worktree
   if (!worktree?.commit) throw new Error(errorText('memory.errors.commitMissing'))
-  if (fs.realpathSync(worktree.repo) !== fs.realpathSync(store.memoryDir())) {
+  // Both sides in the form toplevel gives a repository: fs.realpathSync keeps a Windows short name such as
+  // RUNNER~1 in the memory folder, while git names the repository with its long name.
+  if (git.resolvedAsFarAsExists(worktree.repo) !== git.resolvedAsFarAsExists(store.memoryDir())) {
     throw new Error(errorText('memory.errors.outsideMemory', { files: worktree.repo }))
   }
   const base = mergeBase(worktree, worktree.commit)

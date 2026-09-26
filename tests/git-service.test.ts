@@ -1,11 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
-import { mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
 import { shellPath, testGitEnv } from './helpers/git'
+import { longTempFolder } from './helpers/temp'
 const mocks = vi.hoisted(() => ({ windows: false }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd() } }))
 // The git of the machine the tests run on, unless a test asks for what ASIST does on Windows.
@@ -31,7 +30,7 @@ const run = (cwd: string, args: string[]): string =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: testGitEnv() }).trim()
 
 beforeEach(() => {
-  root = mkdtempSync(path.join(tmpdir(), 'asist-git-'))
+  root = longTempFolder('asist-git-')
   repo = path.join(root, 'repo')
   fs.mkdirSync(repo)
   run(repo, ['init', '-q', '-b', 'main'])
