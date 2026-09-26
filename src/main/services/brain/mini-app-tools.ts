@@ -3,12 +3,12 @@ import { marker } from '@shared/conversation-markers'
 import {
   CALENDAR_VIEWS,
   MAIL_BOXES,
-  MINI_APPS,
   SETTINGS_PAGES,
   TASK_VIEWS,
   localDate,
   placeMiniApp,
   sameMiniAppView,
+  type MiniApp,
   type MiniAppTarget,
   type MiniAppView
 } from '@shared/mini-apps'
@@ -25,7 +25,7 @@ import type { ToolContext } from './tools'
 type Def = ToolDefinition<ToolContext>
 
 /** The fields of open_app that each mini app takes; any other field is a mistake the model is told about. */
-const TARGET_FIELDS: Record<(typeof MINI_APPS)[number], readonly string[]> = {
+const TARGET_FIELDS: Record<MiniApp, readonly string[]> = {
   notes: ['noteId'],
   tasks: ['view', 'taskId'],
   mail: ['box', 'messageId', 'draftId'],
@@ -35,13 +35,13 @@ const TARGET_FIELDS: Record<(typeof MINI_APPS)[number], readonly string[]> = {
   settings: ['page']
 }
 
-const VIEWS: Partial<Record<(typeof MINI_APPS)[number], readonly string[]>> = { tasks: TASK_VIEWS, calendar: CALENDAR_VIEWS }
+const VIEWS: Partial<Record<MiniApp, readonly string[]>> = { tasks: TASK_VIEWS, calendar: CALENDAR_VIEWS }
 
-/** Turns the input of open_app into a target, or throws a ToolError that says what to fix. */
-export function parseTarget(input: Record<string, unknown>): MiniAppTarget {
+/** Turns the input of open_app into a target among the mini apps this machine has, or throws a ToolError that says what to fix. */
+export function parseTarget(input: Record<string, unknown>, apps: readonly MiniApp[]): MiniAppTarget {
   const app = input.app
-  if (typeof app !== 'string' || !(MINI_APPS as readonly string[]).includes(app)) throw new ToolError(TEXTS.unknownApp)
-  const miniApp = app as (typeof MINI_APPS)[number]
+  if (typeof app !== 'string' || !(apps as readonly string[]).includes(app)) throw new ToolError(TEXTS.unknownApp(apps))
+  const miniApp = app as MiniApp
   const allowed = TARGET_FIELDS[miniApp]
   const target: Record<string, string> = {}
   for (const [field, value] of Object.entries(input)) {
@@ -115,45 +115,74 @@ export function openAppNote(locale: ConversationLocale, view: MiniAppView | null
   return `${marker(locale, 'openApp')} ${describeOpenApp(view, promptLanguage(locale))}`
 }
 
-export function miniAppTools(language: PromptLanguage): Def[] {
+/** What each mini app is, with the tools that read it, as the description of open_app lists them. */
+const APP_SUMMARY: Record<MiniApp, PromptText> = {
+  notes: { ja: 'notes=メモ(read_note / search_notes)', en: 'notes = notes (read_note / search_notes)' },
+  tasks: { ja: 'tasks=タスク(list_tasks)', en: 'tasks = tasks (list_tasks)' },
+  mail: { ja: 'mail=メール(list_mail / read_mail)', en: 'mail = mail (list_mail / read_mail)' },
+  calendar: { ja: 'calendar=カレンダー(show_calendar / change_calendar)', en: 'calendar = calendar (show_calendar / change_calendar)' },
+  jobs: { ja: 'jobs=Agent のジョブ(get_agent_job)', en: 'jobs = the agent jobs (get_agent_job)' },
+  memory: { ja: 'memory=記憶(recall)', en: 'memory = the memory (recall)' },
+  settings: { ja: 'settings=設定', en: 'settings = the settings' }
+}
+
+/** The tools for the mini apps this machine has; a mini app it lacks is neither named nor accepted. */
+export function miniAppTools(language: PromptLanguage, apps: readonly MiniApp[]): Def[] {
   const text = (field: PromptText): string => bilingual(field)
+  const has = (app: MiniApp): boolean => apps.includes(app)
+  const calendar = has('calendar')
+  const summary: PromptText = {
+    ja: `${apps.map((app) => APP_SUMMARY[app].ja).join('、')}。`,
+    en: `${apps.map((app) => APP_SUMMARY[app].en).join(', ')}.`
+  }
   return [
     {
       name: 'open_app',
       description: {
         ja: [
           'ASIST のミニアプリを画面に開く。ミニアプリは Dock から開く画面で、一度に一つだけ開く。開いている間、会話は右に出る。',
-          'notes=メモ(read_note / search_notes)、tasks=タスク(list_tasks)、mail=メール(list_mail / read_mail)、calendar=カレンダー(show_calendar / change_calendar)、jobs=Agent のジョブ(get_agent_job)、memory=記憶(recall)、settings=設定。',
+          summary.ja,
           '場所を指す欄は、そのミニアプリのものだけを使う。id は各ツールの結果か、発話に付いた「開いているミニアプリ」の注から取り、推測しない。省いた欄は、そのミニアプリがふだん見せるものになる。',
           '結果は { opened }。開いたことを一言で伝える。保存していない下書きのあるミニアプリは、離れる前に本人に確かめる。本人が下書きを残すと opened は null になり、kept に画面が今見せているものが入る。そのときは開かなかったことを伝え、頼まれない限り開き直さない。'
         ].join('\n'),
         en: [
           "Opens one of ASIST's mini apps on screen. The mini apps are the screens opened from the Dock, one at a time; while one is open, the conversation moves to the right.",
-          'notes = notes (read_note / search_notes), tasks = tasks (list_tasks), mail = mail (list_mail / read_mail), calendar = calendar (show_calendar / change_calendar), jobs = the agent jobs (get_agent_job), memory = the memory (recall), settings = the settings.',
+          summary.en,
           'Use only the fields that belong to the mini app you open. Take ids from the results of those tools or from the open-app note on the utterance, and never guess one. A field left out shows what the mini app shows by itself.',
           'The result is { opened }. Say in a few words that it is open. A mini app holding a draft that is not saved asks the user before it is left; when they keep the draft, opened is null and kept says what the screen still shows. Then say that it did not open, and do not try again unless asked.'
         ].join('\n')
       },
-      usage: {
-        ja: '「メモ開いて」「カレンダーで来週を見せて」「このメールを開いて」「設定の API キーのところ」のように、ミニアプリを開いてと言われたとき。会話の横でちらっと見せるだけなら show_ のカード',
-        en: 'When the user asks to open a mini app: their notes, next week in the calendar, this mail, the API key part of the settings. To show something briefly beside the conversation, use a show_ card instead.'
-      },
+      usage: calendar
+        ? {
+            ja: '「メモ開いて」「カレンダーで来週を見せて」「このメールを開いて」「設定の API キーのところ」のように、ミニアプリを開いてと言われたとき。会話の横でちらっと見せるだけなら show_ のカード',
+            en: 'When the user asks to open a mini app: their notes, next week in the calendar, this mail, the API key part of the settings. To show something briefly beside the conversation, use a show_ card instead.'
+          }
+        : {
+            ja: '「メモ開いて」「タスクを一覧で見せて」「このメールを開いて」「設定の API キーのところ」のように、ミニアプリを開いてと言われたとき。会話の横でちらっと見せるだけなら show_ のカード',
+            en: 'When the user asks to open a mini app: their notes, the tasks as a list, this mail, the API key part of the settings. To show something briefly beside the conversation, use a show_ card instead.'
+          },
       inputSchema: {
         type: 'object',
         properties: {
-          app: { type: 'string', enum: [...MINI_APPS] },
+          app: { type: 'string', enum: [...apps] },
           noteId: { type: 'string', description: text({ ja: 'notes: 開くメモの id', en: 'notes: the id of the note to open' }) },
           taskId: { type: 'string', description: text({ ja: 'tasks: 選ぶタスクの id', en: 'tasks: the id of the task to select' }) },
-          view: {
-            type: 'string',
-            enum: [...new Set([...TASK_VIEWS, ...CALENDAR_VIEWS])],
-            description: text({ ja: 'tasks: board か list。calendar: month、week、list', en: 'tasks: board or list. calendar: month, week or list.' })
-          },
+          view: calendar
+            ? {
+                type: 'string',
+                enum: [...new Set([...TASK_VIEWS, ...CALENDAR_VIEWS])],
+                description: text({ ja: 'tasks: board か list。calendar: month、week、list', en: 'tasks: board or list. calendar: month, week or list.' })
+              }
+            : { type: 'string', enum: [...TASK_VIEWS], description: text({ ja: 'tasks: board か list', en: 'tasks: board or list.' }) },
           box: { type: 'string', enum: [...MAIL_BOXES], description: text({ ja: 'mail: 開く箱', en: 'mail: the box to open' }) },
           messageId: { type: 'string', description: text({ ja: 'mail: 読むメールの id', en: 'mail: the id of the message to read' }) },
           draftId: { type: 'string', description: text({ ja: 'mail: 開く下書きの id', en: 'mail: the id of the draft to open' }) },
-          date: { type: 'string', description: text({ ja: 'calendar: 合わせる日(YYYY-MM-DD)', en: 'calendar: the day to go to (YYYY-MM-DD)' }) },
-          eventId: { type: 'string', description: text({ ja: 'calendar: 詳細を開く予定の id', en: 'calendar: the id of the event whose details to open' }) },
+          ...(calendar
+            ? {
+                date: { type: 'string', description: text({ ja: 'calendar: 合わせる日(YYYY-MM-DD)', en: 'calendar: the day to go to (YYYY-MM-DD)' }) },
+                eventId: { type: 'string', description: text({ ja: 'calendar: 詳細を開く予定の id', en: 'calendar: the id of the event whose details to open' }) }
+              }
+            : {}),
           jobId: { type: 'string', description: text({ ja: 'jobs: 表示するジョブの id', en: 'jobs: the id of the job to show' }) },
           file: { type: 'string', description: text({ ja: 'memory: 記憶のフォルダからの相対パス', en: 'memory: the path relative to the memory folder' }) },
           page: { type: 'string', enum: [...SETTINGS_PAGES], description: text({ ja: 'settings: 開くページ', en: 'settings: the page to open' }) }
@@ -165,7 +194,7 @@ export function miniAppTools(language: PromptLanguage): Def[] {
       timeoutMs: ANSWER_TIMEOUT_MS,
       maxResultChars: 500,
       run: async (input, ctx, signal) => {
-        const target = parseTarget(input)
+        const target = parseTarget(input, apps)
         const expected = placeMiniApp(openMiniApp(), target)
         const shown = await request(ctx, target, signal)
         return sameMiniAppView(shown, expected) ? { opened: target.app } : { opened: null, kept: keptText(shown, language) }
@@ -239,10 +268,10 @@ const STATE = {
 
 /** What the tools say to the model when an input is wrong, in both prompt languages. */
 const TEXTS = {
-  unknownApp: {
-    ja: `app は ${MINI_APPS.join('、')} のどれか。`,
-    en: `app is one of ${MINI_APPS.join(', ')}.`
-  },
+  unknownApp: (apps: readonly MiniApp[]): PromptText => ({
+    ja: `app は ${apps.join('、')} のどれか。`,
+    en: `app is one of ${apps.join(', ')}.`
+  }),
   fieldNotForApp: (field: string, app: string, allowed: readonly string[]): PromptText => ({
     ja: `${field} は ${app} では使えない。${app} で使える欄: ${allowed.join('、') || 'なし'}。`,
     en: `${field} does not apply to ${app}. The fields ${app} takes: ${allowed.join(', ') || 'none'}.`

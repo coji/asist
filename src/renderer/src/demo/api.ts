@@ -56,6 +56,8 @@ import { translate, uiLocale } from '@/i18n'
 import { demoPanelProps, respondTo } from './sayings'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { mergeSettings } from '@shared/settings'
+import { recommendQwenTts } from '@shared/tts-models'
+import { demoCapabilities, demoOs } from './platform'
 
 /**
  * Demo mode: the mock used where window.api (preload) does not exist, that is, in a plain browser. Only
@@ -81,6 +83,11 @@ const demoLocale = UI_LOCALES.find((locale) => locale === requestedLocale) ?? 'j
 
 /** `?theme=pop` opens the demo in that theme. index.tsx refuses a name that is not a theme. */
 const requestedTheme = new URLSearchParams(location.search).get('theme')
+
+const capabilities = demoCapabilities(demoOs(location.search))
+
+/** `?hotkey=failed` turns the global hotkey on and has the OS refuse it, as when another application holds the keys. */
+const hotkeyRefused = new URLSearchParams(location.search).get('hotkey') === 'failed'
 
 const settings: AppSettings = {
   onboardingVersion: 1,
@@ -121,7 +128,7 @@ const settings: AppSettings = {
   vapEnabled: false,
   memoryEmbeddingEnabled: false,
   asrModel: 'auto',
-  globalHotkey: false,
+  globalHotkey: hotkeyRefused,
   dockOrder: [...DEFAULT_DOCK_ORDER],
   listeningAizuchi: false
 }
@@ -546,17 +553,26 @@ export const mockApi: RendererApi = {
   onHotkeyMic: () => () => {},
   getSetupStatus: async () => ({
     services: await mockApi.getStatus(),
-    asr: {
-      selectedModel: 'auto',
-      resolvedModel: 'qwen3-asr-1.7b-mlx',
-      recommendedModel: 'qwen3-asr-1.7b-mlx',
-      label: 'Qwen3-ASR 1.7B 8-bit MLX',
-      totalMemoryGb: 32,
+    asr:
+      capabilities.speechRuntime.kind === null
+        ? null
+        : {
+            selectedModel: 'auto',
+            resolvedModel: 'qwen3-asr-1.7b-mlx',
+            recommendedModel: 'qwen3-asr-1.7b-mlx',
+            label: 'Qwen3-ASR 1.7B 8-bit MLX',
+            totalMemoryGb: capabilities.speechRuntime.memoryGb,
+            runtimeInstalled: false,
+            modelInstalled: false,
+            ready: false
+          },
+    qwenTts: {
+      label: 'Qwen3-TTS 0.6B 8-bit MLX',
+      recommended: recommendQwenTts(capabilities.speechRuntime),
       runtimeInstalled: false,
       modelInstalled: false,
       ready: false
-    },
-    qwenTts: { label: 'Qwen3-TTS 0.6B 8-bit MLX', recommended: true, runtimeInstalled: false, modelInstalled: false, ready: false }
+    }
   }),
   completeSetup: async (request) => {
     Object.assign(settings, {
@@ -701,6 +717,8 @@ export const mockApi: RendererApi = {
     window.open(url, '_blank')
   },
   appVersion: async () => '1.0.0',
+  getPlatformCapabilities: async () => capabilities,
+  hotkeyStatus: async () => (!settings.globalHotkey ? 'off' : hotkeyRefused ? 'failed' : 'registered'),
   licensesOpen: async () => {},
   apiUsage: async () => demoUsageDays()
 }

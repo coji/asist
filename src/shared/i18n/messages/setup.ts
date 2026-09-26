@@ -641,6 +641,19 @@ export const setup = defineMessages({
         'pt-BR': '{engine} não está conectado. Instale e clique em Verificar, ou escolha a voz do macOS.',
         'es-419': '{engine} no está conectado. Instálalo y presiona «Verificar», o elige la voz de macOS.',
         'es-ES': 'No hay conexión con {engine}. Instálalo y pulsa “Verificar”, o elige la voz de macOS.'
+      },
+      choose: {
+        'ja-JP': '読み上げのエンジンを1つ選んでください。',
+        'en-US': 'Choose one engine to read replies aloud.',
+        'fr-FR': 'Choisissez un moteur pour lire les réponses à voix haute.',
+        'de-DE': 'Wählen Sie eine Engine, die die Antworten vorliest.',
+        'hi-IN': 'जवाब पढ़कर सुनाने के लिए एक इंजन चुनें।',
+        'id-ID': 'Pilih satu mesin untuk membacakan balasan.',
+        'it-IT': 'Scegli un motore per leggere le risposte ad alta voce.',
+        'ko-KR': '답변을 읽어 줄 엔진을 하나 고르세요.',
+        'pt-BR': 'Escolha um mecanismo para ler as respostas em voz alta.',
+        'es-419': 'Elige un motor para leer las respuestas en voz alta.',
+        'es-ES': 'Elige un motor para leer las respuestas en voz alta.'
       }
     },
     mic: {

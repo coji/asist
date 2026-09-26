@@ -637,17 +637,17 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Atajo de teclado global'
     },
     hotkeyHint: {
-      'ja-JP': '⌥Space で、ほかのアプリを使っているときも ASIST を呼び出します。マイクがオフならオンにします。',
-      'en-US': '⌥Space brings up ASIST from any app. Turns the microphone on if it is off.',
-      'fr-FR': "⌥Space appelle ASIST depuis n'importe quelle app. Active le microphone s'il est désactivé.",
-      'de-DE': '⌥Space holt ASIST aus jeder App hervor. Ist das Mikrofon aus, schaltet es sich ein.',
-      'hi-IN': '⌥Space किसी भी ऐप से ASIST को सामने लाता है। माइक्रोफ़ोन बंद हो तो उसे चालू कर देता है।',
-      'id-ID': '⌥Space memanggil ASIST dari aplikasi mana pun. Mikrofon dinyalakan kalau sedang mati.',
-      'it-IT': '⌥Space richiama ASIST da qualsiasi app. Se il microfono è disattivato, lo attiva.',
-      'ko-KR': '⌥Space로 다른 앱을 쓰는 중에도 ASIST를 불러옵니다. 마이크가 꺼져 있으면 켭니다.',
-      'pt-BR': '⌥Space abre o ASIST a partir de qualquer app. Ativa o microfone se ele estiver desativado.',
-      'es-419': '⌥Space trae ASIST al frente desde cualquier app. Si el micrófono está desactivado, lo activa.',
-      'es-ES': '⌥Space abre ASIST desde cualquier app. Si el micrófono está desactivado, lo activa.'
+      'ja-JP': '{hotkey} で、ほかのアプリを使っているときも ASIST を呼び出します。マイクがオフならオンにします。',
+      'en-US': '{hotkey} brings up ASIST from any app. Turns the microphone on if it is off.',
+      'fr-FR': "{hotkey} appelle ASIST depuis n'importe quelle app. Active le microphone s'il est désactivé.",
+      'de-DE': '{hotkey} holt ASIST aus jeder App hervor. Ist das Mikrofon aus, schaltet es sich ein.',
+      'hi-IN': '{hotkey} किसी भी ऐप से ASIST को सामने लाता है। माइक्रोफ़ोन बंद हो तो उसे चालू कर देता है।',
+      'id-ID': '{hotkey} memanggil ASIST dari aplikasi mana pun. Mikrofon dinyalakan kalau sedang mati.',
+      'it-IT': '{hotkey} richiama ASIST da qualsiasi app. Se il microfono è disattivato, lo attiva.',
+      'ko-KR': '{hotkey}로 다른 앱을 쓰는 중에도 ASIST를 불러옵니다. 마이크가 꺼져 있으면 켭니다.',
+      'pt-BR': '{hotkey} abre o ASIST a partir de qualquer app. Ativa o microfone se ele estiver desativado.',
+      'es-419': '{hotkey} trae ASIST al frente desde cualquier app. Si el micrófono está desactivado, lo activa.',
+      'es-ES': '{hotkey} abre ASIST desde cualquier app. Si el micrófono está desactivado, lo activa.'
     },
     advanced: {
       'ja-JP': '詳細設定',
@@ -817,6 +817,19 @@ export const settingsVoice = defineMessages({
       'pt-BR': 'Prepare o ambiente Python e os modelos do MaAI na página Modelos para poder usar.',
       'es-419': 'Prepara el entorno de Python y los modelos de MaAI en la página Modelos para usarlo.',
       'es-ES': 'Prepara el entorno de Python y los modelos de MaAI en la página “Modelos” para poder usarlo.'
+    },
+    hotkeyFailed: {
+      'ja-JP': '{hotkey} を登録できませんでした。ほかのアプリが同じキーを使っていると登録できません。',
+      'en-US': "Couldn't register {hotkey}. It can't be registered while another app uses the same keys.",
+      'fr-FR': "Impossible d'enregistrer {hotkey}. Le raccourci ne peut pas être enregistré si une autre app utilise les mêmes touches.",
+      'de-DE': '{hotkey} ließ sich nicht registrieren. Solange eine andere App dieselben Tasten nutzt, ist das nicht möglich.',
+      'hi-IN': '{hotkey} रजिस्टर नहीं हो सका। कोई दूसरा ऐप यही कुंजियाँ इस्तेमाल कर रहा हो तो यह रजिस्टर नहीं होता।',
+      'id-ID': 'Tidak bisa mendaftarkan {hotkey}. Pintasan ini tidak bisa didaftarkan selama aplikasi lain memakai tombol yang sama.',
+      'it-IT': "Impossibile registrare {hotkey}. Non si può registrare finché un'altra app usa gli stessi tasti.",
+      'ko-KR': '{hotkey}를 등록하지 못했습니다. 다른 앱이 같은 키를 쓰고 있으면 등록할 수 없습니다.',
+      'pt-BR': 'Não foi possível registrar {hotkey}. O atalho não pode ser registrado enquanto outro app usa as mesmas teclas.',
+      'es-419': 'No se pudo registrar {hotkey}. No se puede registrar mientras otra app usa las mismas teclas.',
+      'es-ES': 'No se ha podido registrar {hotkey}. No se puede registrar mientras otra app usa las mismas teclas.'
     }
   }
 })

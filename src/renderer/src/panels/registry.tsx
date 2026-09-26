@@ -15,6 +15,8 @@ import { jobsCard } from './builtin/jobs'
 import { mapCard } from './builtin/map'
 import { filesCard } from './builtin/files'
 import type { CardDefinition } from './shell/card'
+import { panelAvailable } from '@shared/panel-catalog'
+import { platformCapabilities } from '@/platform'
 
 const CARDS: Record<string, CardDefinition> = {
   weather: weatherCard,
@@ -35,4 +37,6 @@ const CARDS: Record<string, CardDefinition> = {
   files: filesCard
 }
 
-export const cardDefinition = (type: string): CardDefinition | undefined => CARDS[type]
+/** The card that draws a type, or undefined for a type this machine cannot show, such as the calendar without one. */
+export const cardDefinition = (type: string): CardDefinition | undefined =>
+  panelAvailable(type, platformCapabilities()) ? CARDS[type] : undefined

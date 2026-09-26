@@ -43,8 +43,8 @@ export function isAsrModel(value: unknown): value is AsrModel {
   return typeof value === 'string' && (ASR_MODELS as readonly string[]).includes(value)
 }
 
-export function recommendAsrModel(totalMemoryBytes: number): AsrHardwareRecommendation {
-  const totalMemoryGb = Math.max(1, Math.round(totalMemoryBytes / 1024 ** 3))
+/** The model for a machine whose speech runtime has this much memory, in GB as the capabilities give it. */
+export function recommendAsrModel(totalMemoryGb: number): AsrHardwareRecommendation {
   return {
     totalMemoryGb,
     recommendedModel: totalMemoryGb >= QWEN_MIN_RECOMMENDED_MEMORY_GB ? 'qwen3-asr-1.7b-mlx' : 'whisper-large-v3-turbo-mlx'

@@ -6,6 +6,7 @@ import { Writable } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ directory: '', createEnvironment: vi.fn(), installRequirements: vi.fn(), recordEnvironment: vi.fn() }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('electron', () => ({ app: { getPath: () => mocks.directory, getVersion: () => '0.0.0' } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ uiLocale: 'en-US' }) }))
 vi.mock('../src/main/services/uv', () => ({
@@ -17,16 +18,10 @@ vi.mock('../src/main/services/uv', () => ({
 
 import { downloadPinnedFile, ensureRuntime } from '../src/main/services/onnx-runtime'
 
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 beforeEach(() => {
   mocks.directory = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-onnx-runtime-'))
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
 })
 afterEach(() => {
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   vi.resetAllMocks()

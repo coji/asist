@@ -8,6 +8,7 @@ import { executeClientTool, toolRegistry } from '../src/main/services/brain/tool
 import { createNoteService } from '../src/main/services/notes'
 
 const mocks = vi.hoisted(() => ({ service: undefined as unknown }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ conversationLocale: 'ja-JP' }) }))
 vi.mock('../src/main/services/memory', () => ({}))
 vi.mock('../src/main/services/agent', () => ({}))

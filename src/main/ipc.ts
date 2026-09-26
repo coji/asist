@@ -1,9 +1,8 @@
-import os from 'node:os'
 import { shouldPushJobCard } from '@shared/job-cards'
 import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess } from './services/calendar'
 import { events as mailEvents, getMailService, openMailGuide } from './services/mail'
 import { confirmEvents, pendingConfirms, resolveConfirm } from './services/confirm'
-import { app, dialog, ipcMain, shell, systemPreferences, type BrowserWindow } from 'electron'
+import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
@@ -60,7 +59,9 @@ import { curateNow, curatedThrough, lastFailure, pendingJob } from './services/m
 import * as timers from './services/timers'
 import { events as noteEvents, getNoteService } from './services/user-notes'
 import { events as taskEvents, getTaskService } from './services/user-tasks'
-import { notifyFromRenderer, refreshHotkey, refreshTrayMenu } from './os-integration'
+import { hotkeyStatus, notifyFromRenderer, refreshHotkey, refreshTrayMenu } from './os-integration'
+import { microphonePermission } from './services/microphone-permission'
+import { platformCapabilities } from './services/platform'
 import { completeSetup } from './services/setup-completion'
 import { allowedPath } from './services/file-preview'
 import { errorText } from '@shared/i18n/error-text'
@@ -117,6 +118,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   const send = (channel: string, payload: unknown): void => {
     if (!window.isDestroyed()) window.webContents.send(channel, payload)
   }
+  const microphone = microphonePermission(platformCapabilities().os)
 
   brain.events.on('event', (event) => send(IpcChannel.TurnEvent, event))
   agent.events.on('event', (event) => {
@@ -177,7 +179,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       asr: asrStatus,
       qwenTts: {
         label: QWEN_TTS_MODEL.label,
-        recommended: recommendQwenTts(os.totalmem(), process.platform, process.arch),
+        recommended: recommendQwenTts(platformCapabilities().speechRuntime),
         ...qwenInstalled,
         ready: qwenTts.available()
       }
@@ -201,8 +203,10 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     const result = await dialog.showOpenDialog(window, options)
     return result.canceled ? null : (result.filePaths[0] ?? null)
   })
-  handle(IpcChannel.MicOpenPrivacy, () => shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'))
+  handle(IpcChannel.MicOpenPrivacy, () => shell.openExternal(microphone.settingsUrl))
   handle(IpcChannel.AppVersion, () => app.getVersion())
+  handle(IpcChannel.GetPlatformCapabilities, () => platformCapabilities())
+  handle(IpcChannel.HotkeyStatus, () => hotkeyStatus())
   handle(IpcChannel.LicensesOpen, async () => {
     // npm run build writes the file into build/, and electron-builder copies it into the app's Resources.
     const file = app.isPackaged ? path.join(process.resourcesPath, 'THIRD_PARTY_NOTICES.txt') : path.join(app.getAppPath(), 'build', 'THIRD_PARTY_NOTICES.txt')
@@ -222,12 +226,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     return computeStatus()
   })
 
-  handle(IpcChannel.RequestMicPermission, async (): Promise<boolean> => {
-    if (process.platform !== 'darwin') return true
-    const status = systemPreferences.getMediaAccessStatus('microphone')
-    if (status === 'granted') return true
-    return systemPreferences.askForMediaAccess('microphone')
-  })
+  handle(IpcChannel.RequestMicPermission, () => microphone.request())
 
   handle(IpcChannel.MicNativeStart, () =>
     nativeMic.start(

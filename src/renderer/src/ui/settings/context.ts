@@ -2,6 +2,7 @@ import type { AizuchiClassifierStatus, AppSettings, AppStatus, EmbeddingStatus, 
 import type { Translate } from '@shared/i18n'
 import type { SettingsPage } from '@shared/mini-apps'
 import type { SettingsPatch } from '@shared/settings'
+import type { PlatformCapabilities } from '@shared/platform'
 
 export type { SettingsPage }
 
@@ -63,3 +64,17 @@ export function ttsEngineLabel(t: Translate, engine: TtsEngine): string {
 export const isExternalTts = (engine: TtsEngine): engine is 'voicevox' | 'aivisspeech' => engine === 'voicevox' || engine === 'aivisspeech'
 /** Whether the engine can be unavailable: a separate application, or a model this app downloads. The macOS speech synthesis and the engine that reads nothing need no preparation. */
 export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts(engine) || engine === 'qwen3tts'
+
+/**
+ * Whether speech recognition is ready, which the models card shows and the page list counts: the local
+ * model where the machine has a runtime for one, Whisper in the browser where it has not. Null while the
+ * state of the local model is still being read.
+ */
+export function speechRecognitionReady(
+  settings: AppSettings,
+  setup: SetupStatus | null,
+  speechRuntime: PlatformCapabilities['speechRuntime']
+): boolean | null {
+  if (speechRuntime.kind === null) return settings.localAsrEnabled
+  return setup ? setup.asr?.ready === true : null
+}

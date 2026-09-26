@@ -9,16 +9,17 @@ import {
   Tray,
   type BrowserWindow
 } from 'electron'
-import { IpcChannel } from '@shared/ipc'
+import { IpcChannel, type HotkeyStatus } from '@shared/ipc'
 import * as agent from './services/agent'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './services/i18n'
+import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
 
 /**
- * How the app lives in the OS: a resident tray item, the global hotkey ⌥Space, Notification Center
- * notifications and a window that only hides when it is closed, so that the user never has to open the app
- * to reach it. Quitting waits until the agents have stopped.
+ * How the app lives in the OS: a resident tray item, the global hotkey, the OS's notifications and a
+ * window that only hides when it is closed, so that the user never has to open the app to reach it.
+ * Quitting waits until the agents have stopped.
  */
 
 /** An 18x18 template icon of the orb. Only black and alpha, which is what the macOS menu bar expects. */
@@ -26,6 +27,7 @@ const TRAY_ICON_B64 =
   'iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABBElEQVR4nK2UOwrCQBCGv8RHGZEgnkFvYC14Au31DloJNrbexrvYaKMnsAr4QCXwT1jWdUF0YNhk5p9/57G7EJYEqGuN2aJS8/4zaQzzJqnWHNgAe+Ai3cuWe9iPJBPgDOyAFTCSrmQ7CxMks1THwBOYR7KeCzP2y0ykbaAAFg6g6RA01GyEKRRj8ZWzrP/gBFnaPWDgESJsGVNxpPo4AUuxWyZr4KpStrLXhFkqpu72qhzvDRg6O/eBh0iMbOb4h4rJoiMEWtr5Btxl60bwH0tLVM5TegQ6wgdLCzXbiJrAVFPqOL5gs2PjT73so+O3oJ8P5F+vCJ7jp0tr8pdnxOTrh+0Fb5w/wpVCPGcAAAAASUVORK5CYII='
 
 let tray: Tray | null = null
+let hotkey: HotkeyStatus = 'off'
 let buildTrayMenu: () => void = () => {}
 
 const notify = (title: string, body: string): boolean => {
@@ -91,10 +93,12 @@ export function setupOsIntegration(window: BrowserWindow): void {
   buildTrayMenu()
   tray.on('click', showWindow)
 
+  const accelerator = platformCapabilities().hotkey
   const registerHotkey = (): void => {
-    globalShortcut.unregister('Alt+Space')
+    globalShortcut.unregister(accelerator)
+    hotkey = 'off'
     if (!getSettings().globalHotkey) return
-    const ok = globalShortcut.register('Alt+Space', () => {
+    const ok = globalShortcut.register(accelerator, () => {
       if (window.isVisible() && window.isFocused()) {
         window.hide()
       } else {
@@ -103,7 +107,8 @@ export function setupOsIntegration(window: BrowserWindow): void {
         window.webContents.send(IpcChannel.HotkeyMic, undefined)
       }
     })
-    if (!ok) console.warn('global hotkey Alt+Space registration failed')
+    hotkey = ok ? 'registered' : 'failed'
+    if (!ok) console.warn(`global hotkey ${accelerator} registration failed`)
   }
   registerHotkey()
   hotkeyRefresher = registerHotkey
@@ -123,15 +128,18 @@ export function setupOsIntegration(window: BrowserWindow): void {
 
 let hotkeyRefresher: (() => void) | null = null
 
-/** Re-registers the hotkey after a settings change. A call before setup does nothing. */
 /** Words the tray menu again, after the interface language changed. */
 export function refreshTrayMenu(): void {
   buildTrayMenu()
 }
 
+/** Re-registers the hotkey after a settings change. A call before setup does nothing. */
 export function refreshHotkey(): void {
   hotkeyRefresher?.()
 }
+
+/** Whether the hotkey is off in the settings, registered, or refused because another application holds it. */
+export const hotkeyStatus = (): HotkeyStatus => hotkey
 
 /** A notification raised by the renderer, for instance when a timer runs out. */
 export function notifyFromRenderer(title: string, body: string): void {

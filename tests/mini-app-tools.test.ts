@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TurnEvent } from '@shared/ipc'
-import { MINI_APPS, openMiniAppSchema, placeMiniApp, type MiniAppView } from '@shared/mini-apps'
+import { MINI_APPS, TASK_VIEWS, openMiniAppSchema, placeMiniApp, type MiniAppView } from '@shared/mini-apps'
 import { ToolError } from '@shared/tool-registry'
 import { describeOpenApp, miniAppTools, openAppNote, parseTarget } from '../src/main/services/brain/mini-app-tools'
 import { openMiniApp, reportOpenMiniApp } from '../src/main/services/mini-app-view'
@@ -11,7 +11,7 @@ import { openMiniApp, reportOpenMiniApp } from '../src/main/services/mini-app-vi
  */
 async function run(name: string, input: Record<string, unknown> = {}, keep = false): Promise<{ result: unknown; events: TurnEvent[] }> {
   const events: TurnEvent[] = []
-  const tool = miniAppTools('en').find((def) => def.name === name)!
+  const tool = miniAppTools('en', MINI_APPS).find((def) => def.name === name)!
   const emit = (event: TurnEvent): void => {
     events.push(event)
     if (event.type !== 'app') return
@@ -49,25 +49,36 @@ describe('open_app', () => {
   })
 
   it('opens every mini app with no field at all', () => {
-    for (const app of MINI_APPS) expect(parseTarget({ app })).toEqual({ app })
+    for (const app of MINI_APPS) expect(parseTarget({ app }, MINI_APPS)).toEqual({ app })
   })
 
   it('refuses a field of another mini app, a value outside its list, a malformed date and a message with a draft', () => {
-    expect(() => parseTarget({ app: 'notes', taskId: 'task-1' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'tasks', view: 'week' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'mail', box: 'spam' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'settings', page: 'secrets' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'calendar', date: 'next monday' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'mail', messageId: 'm', draftId: 'd' })).toThrow(ToolError)
-    expect(() => parseTarget({ app: 'browser' })).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'notes', taskId: 'task-1' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'tasks', view: 'week' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'mail', box: 'spam' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'settings', page: 'secrets' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'calendar', date: 'next monday' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'mail', messageId: 'm', draftId: 'd' }, MINI_APPS)).toThrow(ToolError)
+    expect(() => parseTarget({ app: 'browser' }, MINI_APPS)).toThrow(ToolError)
   })
 
   it('refuses a day that does not exist, so the renderer never has to report a view it cannot parse', () => {
     for (const date of ['2026-02-30', '2026-13-01', '2026-00-10']) {
-      expect(() => parseTarget({ app: 'calendar', date }), date).toThrow(ToolError)
+      expect(() => parseTarget({ app: 'calendar', date }, MINI_APPS), date).toThrow(ToolError)
     }
-    const leapDay = parseTarget({ app: 'calendar', date: '2028-02-29' })
+    const leapDay = parseTarget({ app: 'calendar', date: '2028-02-29' }, MINI_APPS)
     expect(openMiniAppSchema.safeParse(placeMiniApp(null, leapDay)).success).toBe(true)
+  })
+
+  it('neither names nor opens a mini app the machine lacks', () => {
+    const withoutCalendar = MINI_APPS.filter((app) => app !== 'calendar')
+    const openApp = miniAppTools('en', withoutCalendar).find((def) => def.name === 'open_app')!
+    const properties = (openApp.inputSchema as { properties: Record<string, { enum?: string[] }> }).properties
+    expect(properties.app.enum).toEqual(withoutCalendar)
+    expect(properties.view.enum).toEqual([...TASK_VIEWS])
+    expect(Object.keys(properties)).not.toContain('eventId')
+    expect(JSON.stringify(openApp.description)).not.toContain('calendar')
+    expect(() => parseTarget({ app: 'calendar' }, withoutCalendar)).toThrow(ToolError)
   })
 
   it('sends nothing to the renderer when the input is refused', async () => {

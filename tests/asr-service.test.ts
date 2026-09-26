@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { errorText } from '@shared/i18n/error-text'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
 
 const mocks = vi.hoisted(() => ({
   settings: { asrModel: 'qwen3-asr-1.7b-mlx', uiLocale: 'ja-JP' },
@@ -10,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   mlxPrepare: vi.fn()
 }))
 
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('electron', () => ({ app: { getPath: vi.fn(), on: vi.fn() } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 vi.mock('../src/main/services/mlx-asr', () => ({
@@ -60,6 +63,27 @@ describe('ASR service routing', () => {
     const result = await asr.prepareModel('no-such-model' as never, vi.fn())
 
     expect(result.ok).toBe(false)
+    expect(mocks.mlxPrepare).not.toHaveBeenCalled()
+  })
+})
+
+describe('a machine without a runtime for the local speech recognition', () => {
+  beforeEach(() => setCapabilities(WINDOWS))
+  afterEach(() => setCapabilities(MACOS))
+
+  it('reports no model and never starts a worker', async () => {
+    const asr = await import('../src/main/services/asr')
+    await expect(asr.installationStatus()).resolves.toBeNull()
+    await expect(asr.ensureServer()).resolves.toBe(false)
+    await expect(asr.available()).resolves.toBe(false)
+    expect(mocks.mlxEnsure).not.toHaveBeenCalled()
+  })
+
+  it('refuses a transcription and a preparation with the reason', async () => {
+    const asr = await import('../src/main/services/asr')
+    await expect(asr.transcribe(new Float32Array([0.1]))).rejects.toThrow(errorText('speechRecognition.unavailable.unsupportedOs'))
+    expect((await asr.prepareModel('auto', vi.fn())).ok).toBe(false)
+    expect(mocks.mlxTranscribe).not.toHaveBeenCalled()
     expect(mocks.mlxPrepare).not.toHaveBeenCalled()
   })
 })

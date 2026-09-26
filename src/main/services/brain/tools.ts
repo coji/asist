@@ -1,6 +1,7 @@
 import { resolveWeatherCard, WeatherIssueError } from '../weather'
 import { weatherCardKeyOf, type WeatherData, type WeatherIssue } from '@shared/weather'
-import { PANEL_CATALOG, type PanelCatalogEntry } from '@shared/panel-catalog'
+import { PANEL_CATALOG, panelAvailable, type PanelCatalogEntry } from '@shared/panel-catalog'
+import { MINI_APPS, miniAppAvailable } from '@shared/mini-apps'
 import type { AgentJob, PanelEvent, TurnEvent } from '@shared/ipc'
 import type { SearchSource, ToolSpec } from '@shared/conversation'
 import {
@@ -28,6 +29,7 @@ import { conversationLocale } from '../conversation-locale'
 import { t } from '../i18n'
 import * as agentRunner from '../agent'
 import { completePanelProps, fetchPanel } from '../panel-fetchers'
+import { platformCapabilities } from '../platform'
 import * as timers from '../timers'
 import { calendarTools } from './calendar-tools'
 import { taskTools } from './task-tools'
@@ -253,17 +255,18 @@ export function toolRegistry(locale: ConversationLocale = conversationLocale()):
   const cached = registryCache.get(locale)
   if (cached) return cached
   const language = promptLanguage(locale)
+  const capabilities = platformCapabilities()
   const registry = createToolRegistry<ToolContext>([
-    ...PANEL_CATALOG.filter((e) => e.tool).map((entry) => panelTool(entry, language)),
+    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, language)),
     agentTool(locale),
     ...taskTools(language),
     ...noteTools(language),
-    ...calendarTools(locale),
+    ...(capabilities.calendar ? calendarTools(locale) : []),
     ...mailTools(language),
     ...jobTools(locale),
     ...projectTools(language),
     ...memoryTools(language),
-    ...miniAppTools(language)
+    ...miniAppTools(language, MINI_APPS.filter((app) => miniAppAvailable(app, capabilities)))
   ])
   registryCache.set(locale, registry)
   return registry

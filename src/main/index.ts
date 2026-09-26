@@ -24,6 +24,7 @@ import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
 import { handleFileScheme, registerFileScheme } from './file-protocol'
 import { errorMessage, t } from './services/i18n'
+import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
 import { createTranslator } from '@shared/i18n'
 import { initMail } from './services/mail'
@@ -134,6 +135,8 @@ if (!hasSingleInstanceLock) {
       if (icon.isEmpty()) throw new Error('cannot load build/icon.png')
       app.dock?.setIcon(icon)
     }
+    // An OS or CPU the app is not built for stops the launch before any service starts.
+    platformCapabilities()
     // Reading the settings first keeps a broken file from starting any service; the original file is kept
     // and the place to fix is shown.
     getSettings()

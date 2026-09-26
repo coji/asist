@@ -2,6 +2,7 @@ import type { Root } from 'react-dom/client'
 import { defaultRegion } from '@shared/conversation-locale'
 import type { UiLocale } from '@shared/i18n'
 import { translate } from '@/i18n'
+import { loadPlatformCapabilities } from '@/platform'
 import { useSettingsStore } from '@/state/stores'
 import { applyTheme, DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
 import { mockApi, scriptSayings } from './api'
@@ -17,6 +18,9 @@ import { DEMO_VIEWS } from './views'
  */
 export async function bootDemo(root: Root): Promise<boolean> {
   window.api = mockApi
+  // The shell, the card samples and the dictionary page are drawn here without the app, and read the
+  // capabilities all the same.
+  await loadPlatformCapabilities()
   const route = resolveDemoRoute(location.pathname)
   const screen = route.kind === 'screen' && route.name in SCREENS ? DEMO_VIEWS[route.name as ScreenName] : undefined
   // The capture scripts change the interface language of a page that is already open, which spares them from

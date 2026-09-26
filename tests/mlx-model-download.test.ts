@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SetupProgress } from '@shared/ipc'
 
 const mocks = vi.hoisted(() => ({ userData: '' }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('electron', () => ({
   app: { isPackaged: false, getAppPath: () => process.cwd(), getPath: () => mocks.userData, on: vi.fn() }
 }))

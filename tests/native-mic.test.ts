@@ -3,6 +3,7 @@ import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('node:fs', () => ({ default: { existsSync: () => true } }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/unused', on: vi.fn() } }))
@@ -14,9 +15,7 @@ function fakeChild() {
   })
 }
 let children: ReturnType<typeof fakeChild>[] = []
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
 beforeEach(() => {
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
   vi.resetModules()
   vi.useFakeTimers()
   children = []
@@ -31,7 +30,6 @@ afterEach(async () => {
   native.stop()
   vi.clearAllTimers()
   vi.useRealTimers()
-  Object.defineProperty(process, 'platform', platform)
   for (const child of children) {
     child.stdout.destroy(); child.stderr.destroy(); child.stdin.destroy()
   }

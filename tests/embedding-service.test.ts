@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMBEDDING_MODEL, vectorToBytes } from '@shared/memory-embedding'
 
 const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn()
@@ -21,16 +22,12 @@ function fakeChild() {
   child.stdin.on('data', (data) => input.push(JSON.parse(String(data))))
   return child
 }
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 let child: ReturnType<typeof fakeChild>
 let embedding: typeof import('../src/main/services/embedding')
 
 beforeEach(async () => {
   vi.resetModules()
   vi.useFakeTimers()
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
   vi.stubEnv('ASIST_EMBEDDING_PYTHON', '/unused/python')
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
   child = fakeChild()
@@ -43,8 +40,6 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   child.stdin.destroy()
   child.stdout.destroy()
   child.stderr.destroy()

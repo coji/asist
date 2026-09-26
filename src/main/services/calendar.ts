@@ -9,6 +9,7 @@ import { CalendarService } from './calendar-service'
 import { requestConfirm } from './confirm'
 import { t } from './i18n'
 import { childEnv } from './child-env'
+import { platformCapabilities } from './platform'
 
 /** The codes the calendar helper (resources/native/asist-calendar.swift) fails with, and the message of each. */
 const HELPER_ERRORS = {
@@ -45,7 +46,7 @@ export function runCalendarNative(
   input: Record<string, unknown>,
   signal?: AbortSignal
 ): Promise<unknown> {
-  if (process.platform !== 'darwin')
+  if (!platformCapabilities().calendar)
     return Promise.reject(new Error(errorText('calendar.errors.macOnly')))
   const executable = app.isPackaged
     ? path.join(process.resourcesPath, 'asist-calendar')

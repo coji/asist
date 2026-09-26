@@ -19,6 +19,8 @@ import { summarizeNote } from '@shared/notes'
 import { tableAmounts } from '@/panels/builtin/fx'
 import { diffLabel, offsetMinutes, phaseOf, zoned } from '@/panels/builtin/clock'
 import { remainingText } from '@/panels/builtin/timer'
+import { cardDefinition } from '@/panels/registry'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
 import { elapsedLabel } from '@/panels/builtin/agent-job'
 import { relativeDayLabel, relativeTime } from '@/panels/primitives/format'
 import { DEMO_CALENDAR_CARD } from '@/demo/fixtures/calendar'
@@ -37,6 +39,7 @@ import { DEMO_CLOCKS } from '@/demo/fixtures/time'
 
 const t = createTranslator('ja-JP')
 const sendTypedMessage = vi.fn()
+vi.mock('@/platform', () => import('./helpers/platform'))
 vi.mock('@/conversation', () => ({ sendTypedMessage: (text: string) => sendTypedMessage(text) }))
 vi.mock('motion/react', async () => {
   const { createElement, Fragment, forwardRef } = await import('react')
@@ -903,5 +906,16 @@ describe('mail card', () => {
     expect(mailList).toHaveBeenCalledWith({ view: 'inbox', query: '', unreadOnly: false, limit: 200 })
     expect(card.querySelectorAll('.mc-item')).toHaveLength(2)
     expect(card.querySelector('.card-hero p')?.textContent).toBe(t('mailCards.list.unreadCount', { count: 1 }))
+  })
+})
+
+describe('the cards a machine can draw', () => {
+  afterEach(() => setCapabilities(MACOS))
+
+  it('draws the calendar card only on a machine that has a calendar, and every other card on both', () => {
+    expect(cardDefinition('calendar')).toBeDefined()
+    setCapabilities(WINDOWS)
+    expect(cardDefinition('calendar')).toBeUndefined()
+    expect(cardDefinition('weather')).toBeDefined()
   })
 })

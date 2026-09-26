@@ -22,6 +22,9 @@ Do not read or use `frontend-skill` in this product.
 - `src/renderer/` owns the React UI, voice capture, panels and client-side state.
 - `src/shared/` holds cross-process contracts and pure, testable logic. `src/shared/ipc.ts` is the
   canonical main/preload/renderer API contract.
+- What the OS and the machine can run is decided once in main (`src/main/services/platform.ts`) and
+  passed on as capabilities; the renderer and the model's tools read those and never check the OS
+  themselves.
 
 Keep process boundaries explicit: renderer code does not reach Node or Electron APIs for an
 operation that belongs behind preload or the main process.

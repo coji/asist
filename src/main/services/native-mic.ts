@@ -6,6 +6,7 @@ import { app } from 'electron'
 import { Float32StreamReader } from '@shared/pcm-stream'
 import type { NativeMicStartResult } from '@shared/ipc'
 import { childEnv } from './child-env'
+import { platformCapabilities } from './platform'
 
 /**
  * The lifecycle of the asist-mic helper, which captures the microphone through macOS voice processing.
@@ -72,7 +73,7 @@ function binaryPath(): string {
 }
 
 export function available(): boolean {
-  return process.platform === 'darwin' && fs.existsSync(binaryPath())
+  return platformCapabilities().nativeMic && fs.existsSync(binaryPath())
 }
 
 function registerQuitHook(): void {

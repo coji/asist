@@ -10,6 +10,7 @@ import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './i18n'
 import { childEnv } from './child-env'
 import { downloadPinnedFile } from './onnx-runtime'
+import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
 
@@ -181,7 +182,7 @@ function missingModels(): ModelFile[] {
 }
 
 export function runtimeInstalled(): boolean {
-  if (process.platform !== 'darwin' || process.arch !== 'arm64') return false
+  if (!platformCapabilities().cpuSidecars) return false
   if (!fs.existsSync(pythonPath())) return false
   if (process.env.ASIST_VAP_PYTHON?.trim()) return true
   return environmentCurrent(runtimeDir(), STAMP)
@@ -414,7 +415,7 @@ export function prepare(
 async function prepareOnce(
   onProgress: (progress: SetupProgress) => void
 ): Promise<{ ok: boolean; message: string }> {
-  if (process.platform !== 'darwin' || process.arch !== 'arm64') {
+  if (!platformCapabilities().cpuSidecars) {
     return { ok: false, message: t('settingsModels.preparation.unsupported', { feature: t('settingsModels.features.turnTaking') }) }
   }
   const controller = new AbortController()

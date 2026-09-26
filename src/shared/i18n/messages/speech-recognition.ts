@@ -290,5 +290,20 @@ export const speechRecognition = defineMessages({
       'es-419': 'Whisper en el navegador no pudo transcribir. Vuelve a prepararlo en la página Voz de Configuración.',
       'es-ES': 'Whisper en el navegador no ha podido transcribir. Vuelve a prepararlo en la página “Voz” de Ajustes.'
     }
+  },
+  unavailable: {
+    unsupportedOs: {
+      'ja-JP': 'MLX 音声認識は、この OS では動きません。',
+      'en-US': 'MLX speech recognition does not run on this OS.',
+      'fr-FR': "La reconnaissance vocale MLX ne fonctionne pas sur ce système d'exploitation.",
+      'de-DE': 'Die MLX-Spracherkennung läuft unter diesem Betriebssystem nicht.',
+      'hi-IN': 'MLX स्पीच रिकग्निशन इस ऑपरेटिंग सिस्टम पर नहीं चलता।',
+      'id-ID': 'Pengenalan suara MLX tidak berjalan di sistem operasi ini.',
+      'it-IT': 'Il riconoscimento vocale MLX non funziona su questo sistema operativo.',
+      'ko-KR': 'MLX 음성 인식은 이 OS에서 실행되지 않습니다.',
+      'pt-BR': 'O reconhecimento de fala MLX não funciona neste sistema operacional.',
+      'es-419': 'El reconocimiento de voz con MLX no funciona en este sistema operativo.',
+      'es-ES': 'El reconocimiento de voz MLX no funciona en este sistema operativo.'
+    }
   }
 })

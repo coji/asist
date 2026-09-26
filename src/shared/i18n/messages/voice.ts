@@ -191,6 +191,19 @@ export const voice = defineMessages({
       'pt-BR': 'Este Mac não pode usar a voz do macOS. Escolha outro motor de leitura na página Voz dos ajustes.',
       'es-419': 'Esta Mac no puede usar la voz de macOS. Elige otro motor de lectura en voz alta en la página Voz de Configuración.',
       'es-ES': 'Este Mac no puede usar la voz de macOS. Elige otro motor de lectura en la página “Voz” de Ajustes.'
+    },
+    cannotRunHere: {
+      'ja-JP': '{engine} は、この OS では動きません。',
+      'en-US': "{engine} doesn't run on this OS.",
+      'fr-FR': "{engine} ne fonctionne pas sur ce système d'exploitation.",
+      'de-DE': '{engine} läuft unter diesem Betriebssystem nicht.',
+      'hi-IN': '{engine} इस ऑपरेटिंग सिस्टम पर नहीं चलता।',
+      'id-ID': '{engine} tidak berjalan di sistem operasi ini.',
+      'it-IT': '{engine} non funziona su questo sistema operativo.',
+      'ko-KR': '이 OS에서는 {engine} 엔진이 실행되지 않습니다.',
+      'pt-BR': '{engine} não funciona neste sistema operacional.',
+      'es-419': '{engine} no funciona en este sistema operativo.',
+      'es-ES': '{engine} no funciona en este sistema operativo.'
     }
   },
   live: {

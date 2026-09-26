@@ -110,6 +110,7 @@ const mocks = vi.hoisted(() => ({
   workClip: async (): Promise<unknown> => null
 }))
 
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/store', () => ({
   dataPath: (...parts: string[]) => path.join(mocks.userData, ...parts)
 }))

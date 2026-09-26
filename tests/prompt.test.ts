@@ -3,12 +3,12 @@ import { journalHeading, marker } from '@shared/conversation-markers'
 import { FIXED, embeddingTextOf } from '@shared/memory-page'
 import { baseSystem, buildLiveSystemInstruction, buildSystemLayers, stampUserMessage } from '../src/main/services/brain/prompt'
 
-const BASE_SYSTEM = baseSystem('ja-JP', 'self')
-const DELEGATED_SYSTEM = baseSystem('ja-JP', 'delegated')
+const BASE_SYSTEM = baseSystem('ja-JP', 'self', true)
+const DELEGATED_SYSTEM = baseSystem('ja-JP', 'delegated', true)
 
 describe('buildSystemLayers', () => {
   it('builds the base layer alone for the smallest input', () => {
-    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '', memoryBlock: null, historySummary: '' })
+    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '', memoryBlock: null, historySummary: '', calendar: true })
     expect(blocks).toHaveLength(1)
     expect(blocks[0].text).toBe(BASE_SYSTEM)
   })
@@ -18,14 +18,15 @@ describe('buildSystemLayers', () => {
       locale: 'ja-JP',
       persona: '執事風',
       memoryBlock: '# 記憶\n- x',
-      historySummary: '要約'
+      historySummary: '要約',
+      calendar: true
     })
     // The prompt cache up to a layer is readable only while the layers before it stay identical, so the more volatile a layer is, the later it goes.
     expect(layers.map((layer) => layer.name)).toEqual(['base', 'memory', 'summary'])
   })
 
   it('appends the persona to the same cached block as the base prompt', () => {
-    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: ' 執事風 ', memoryBlock: null, historySummary: '' })
+    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: ' 執事風 ', memoryBlock: null, historySummary: '', calendar: true })
     expect(blocks).toHaveLength(1)
     expect(blocks[0].text).toContain('# キャラクター設定\n執事風')
   })
@@ -35,7 +36,8 @@ describe('buildSystemLayers', () => {
       locale: 'ja-JP',
       persona: '',
       memoryBlock: 'MEMORY',
-      historySummary: 'SUMMARY'
+      historySummary: 'SUMMARY',
+      calendar: true
     })
     expect(blocks).toHaveLength(3)
     expect(blocks[1].text).toBe('MEMORY')
@@ -43,13 +45,13 @@ describe('buildSystemLayers', () => {
   })
 
   it('carries no current-time block in the system prompt, because the stamp on the user message holds the time', () => {
-    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '', memoryBlock: 'M', historySummary: 'S' })
+    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '', memoryBlock: 'M', historySummary: 'S', calendar: true })
     for (const block of blocks.slice(1)) expect(block.text).not.toContain('現在日時')
   })
 
   it('keeps the tool instructions out of the base prompt and puts the guide generated from the registry at the end of the unchanging layer', () => {
     const guide = '# ツールの使い分け\n- run_agent_task: 作業'
-    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '執事風', toolGuide: guide, memoryBlock: 'M', historySummary: '' })
+    const blocks = buildSystemLayers({ locale: 'ja-JP', persona: '執事風', toolGuide: guide, memoryBlock: 'M', historySummary: '', calendar: true })
     expect(blocks[0].text.endsWith(guide)).toBe(true)
     expect(blocks[0].text.indexOf('# キャラクター設定')).toBeLessThan(blocks[0].text.indexOf('# ツールの使い分け'))
     expect(blocks[1].text).toBe('M')
@@ -77,7 +79,7 @@ describe('the base prompt with and without a separate voice', () => {
   })
 
   it('keeps the speaking style of self for live and drops the bridge section alone', () => {
-    const live = baseSystem('ja-JP', 'live')
+    const live = baseSystem('ja-JP', 'live', true)
     expect(live).not.toContain('# つなぎ文')
     expect(live).not.toContain('# 声の担当との分担')
     expect(live).toContain('応答のアーク')
@@ -91,7 +93,8 @@ describe('the base prompt with and without a separate voice', () => {
       memoryBlock: 'MEMORY-BLOCK',
       historySummary: 'S',
       jobContext: 'JOB-STATUS',
-      startedAt: new Date(2026, 8, 16, 9, 5)
+      startedAt: new Date(2026, 8, 16, 9, 5),
+      calendar: true
     })
     expect(text).toContain('# 音声での会話(Live)')
     expect(text).toContain('[2026/9/16(水) 09:05]')
@@ -105,6 +108,16 @@ describe('the base prompt with and without a separate voice', () => {
     expect(text.indexOf('MEMORY-BLOCK')).toBeGreaterThan(text.indexOf('PERSONA-TEXT'))
     // A Live session reads its instruction once when it opens, so the job status as of then goes there.
     expect(text.indexOf('JOB-STATUS')).toBeGreaterThan(text.indexOf('MEMORY-BLOCK'))
+  })
+})
+
+describe('the daily briefing on a machine without a calendar', () => {
+  it('draws on no calendar and never tells the user to connect one, in either prompt language', () => {
+    for (const locale of ['ja-JP', 'en-US'] as const) {
+      const prompt = baseSystem(locale, 'self', false)
+      expect(prompt).not.toMatch(/calendar|カレンダー/)
+      expect(baseSystem(locale, 'self', true)).toMatch(/calendar|カレンダー/)
+    }
   })
 })
 
@@ -122,7 +135,7 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
       ['ko-KR', 'Korean']
     ] as const) {
       for (const layer of ['self', 'delegated', 'live'] as const) {
-        const prompt = baseSystem(locale, layer)
+        const prompt = baseSystem(locale, layer, true)
         expect(prompt).toContain(`The user speaks ${language}`)
         expect(prompt).not.toMatch(JAPANESE)
       }
@@ -132,7 +145,8 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
         memoryBlock: null,
         historySummary: '',
         jobContext: null,
-        startedAt: new Date(2026, 8, 16, 9, 5)
+        startedAt: new Date(2026, 8, 16, 9, 5),
+        calendar: true
       })
       expect(live).toContain(`The user speaks ${language}. Listen and answer in ${language}`)
       expect(live).not.toMatch(JAPANESE)
@@ -144,23 +158,23 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
     // The only thing the Japanese limits add when the assistant speaks for itself is the line asking it
     // to carry on from the backchannel that has just played. Without backchannels there is nothing to
     // carry on from, so the two read the same.
-    expect(limits(baseSystem('ja-JP', 'self'))).not.toBe(limits(baseSystem('ja-JP', 'delegated')))
-    expect(limits(baseSystem('en-US', 'self'))).toBe(limits(baseSystem('en-US', 'delegated')))
+    expect(limits(baseSystem('ja-JP', 'self', true))).not.toBe(limits(baseSystem('ja-JP', 'delegated', true)))
+    expect(limits(baseSystem('en-US', 'self', true))).toBe(limits(baseSystem('en-US', 'delegated', true)))
     // The bridge sentence is not a backchannel: it says what a slow call is about to do, and it stays.
-    expect(baseSystem('en-US', 'self')).toContain('# The bridge sentence')
+    expect(baseSystem('en-US', 'self', true)).toContain('# The bridge sentence')
   })
 
   it('explains the markers it is shown with the same text the app puts in front of them', () => {
-    const prompt = baseSystem('en-US', 'self')
+    const prompt = baseSystem('en-US', 'self', true)
     expect(prompt).toContain(`"${marker('en-US', 'typedInputNote')}"`)
     expect(prompt).toContain(`"${marker('en-US', 'systemNotice')}"`)
     expect(prompt).toContain(`"${marker('en-US', 'memory')}"`)
     expect(prompt).toContain(`"${marker('en-US', 'jobStatus')}"`)
-    expect(baseSystem('ja-JP', 'self')).toContain(`「${marker('ja-JP', 'jobStatus')}」`)
+    expect(baseSystem('ja-JP', 'self', true)).toContain(`「${marker('ja-JP', 'jobStatus')}」`)
     expect(prompt).toContain(`"${journalHeading('en-US', '2026-09-07')}"`)
     // The heading is named for the model out of the same table the curation writes it from.
     expect(prompt).toContain(`"## ${FIXED.impression.en}"`)
-    expect(baseSystem('ja-JP', 'self')).toContain(`「## ${FIXED.impression.ja}」`)
+    expect(baseSystem('ja-JP', 'self', true)).toContain(`「## ${FIXED.impression.ja}」`)
     // The stamp in the prompt is the one stampUserMessage writes, so the example cannot go stale.
     expect(prompt).toContain(`"${stampUserMessage('en-US', '', new Date(2025, 6, 29, 14, 32)).trim()}"`)
   })

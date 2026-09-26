@@ -52,6 +52,7 @@ const mocks = vi.hoisted(() => ({
   jobs: new Map<string, AgentJob>()
 }))
 
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/store', () => ({
   dataPath: (...parts: string[]) => path.join(mocks.userData, ...parts)
 }))

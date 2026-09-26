@@ -9,6 +9,7 @@ import type { SetupProgress } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './i18n'
 import { childEnv } from './child-env'
+import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
 
@@ -35,7 +36,7 @@ const RUNTIME_LOCK_VERSION = 1
 const STAMP = { version: MLX_AUDIO_VERSION, lockVersion: RUNTIME_LOCK_VERSION }
 
 export function supported(): boolean {
-  return process.platform === 'darwin' && process.arch === 'arm64'
+  return platformCapabilities().speechRuntime.kind === 'mlx'
 }
 
 function runtimeDir(): string {

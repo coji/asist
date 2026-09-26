@@ -8,8 +8,10 @@ import { SetupWizard } from '../src/renderer/src/ui/SetupWizard'
 import { useSettingsStore, useStatusStore } from '../src/renderer/src/state/stores'
 import { voiceController } from '../src/renderer/src/voice/VoiceController'
 import { liveVoice } from '../src/renderer/src/voice/LiveVoice'
+import { MACOS, WINDOWS, platformCapabilities, setCapabilities } from './helpers/platform'
 
 // The voice modules build an AudioContext at import time, so they are replaced for a test that only renders the UI.
+vi.mock('@/platform', () => import('./helpers/platform'))
 vi.mock('@/voice/VoiceController', () => ({
   voiceController: { prepareLocalAsr: vi.fn(async () => 'ok'), cancelLocalAsrPreparation: vi.fn(), enable: vi.fn() }
 }))
@@ -29,7 +31,11 @@ let progressListener: (progress: SetupProgress) => void = () => {}
 const setupStatus = (): SetupStatus =>
   ({
     services: status,
-    asr: { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b-mlx', recommendedModel: 'qwen3-asr-1.7b-mlx', label: 'Qwen3-ASR', recommendationReason: '', totalMemoryGb: 32, runtimeInstalled: false, modelInstalled: false, ready: false },
+    // As in main, a machine without a runtime for the local speech recognition reports none.
+    asr:
+      platformCapabilities().speechRuntime.kind === null
+        ? null
+        : { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b-mlx', recommendedModel: 'qwen3-asr-1.7b-mlx', label: 'Qwen3-ASR', recommendationReason: '', totalMemoryGb: 32, runtimeInstalled: false, modelInstalled: false, ready: false },
     // This Mac has too little memory for the local speech model, so the setup does not offer it.
     qwenTts: { label: 'Qwen3-TTS', recommended: qwenTtsRecommended, runtimeInstalled: false, modelInstalled: false, ready: false }
   }) as SetupStatus
@@ -337,5 +343,39 @@ describe('first-run setup', () => {
     expect(api.completeSetup).toHaveBeenCalledWith(expect.objectContaining({ voiceMode: 'server', micAutoStart: true }))
     expect(liveVoice.enable).toHaveBeenCalledOnce()
     expect(voiceController.enable).not.toHaveBeenCalled()
+  })
+})
+
+describe('first-run setup on a machine without the local models, the Python workers or a calendar', () => {
+  beforeEach(() => setCapabilities(WINDOWS))
+  afterEach(() => setCapabilities(MACOS))
+
+  it('gives the reason in place of the local speech recognition, offers no Qwen3-TTS, skips the extras and names no calendar', async () => {
+    // Qwen3-TTS left in the settings is still not offered on a machine that cannot run it.
+    settings = { ...settings, ttsEngine: 'qwen3tts' } as AppSettings
+    await render()
+    expect(stepStates()).not.toHaveProperty(ja('setup.steps.extras.label'))
+    await toModel(ja)
+    await verifyKey(ja)
+    await press(ja('setup.next'))
+    await press(ja('setup.speaking.voice.title'))
+    await press(ja('setup.next'))
+    expect(optionTitles()).toEqual([ja('setup.listening.local.title')])
+    expect(container.querySelector('.su-body')?.textContent).toContain(ja('speechRecognition.unavailable.unsupportedOs'))
+
+    await press(ja('setup.listening.local.title'))
+    await press(ja('setup.listening.prepareModel'))
+    await press(ja('setup.next'))
+    expect(optionTitles()).toEqual([ja('setup.tts.engines.system.title'), ja('setup.tts.engines.voicevox.title'), ja('setup.tts.engines.aivisspeech.title')])
+    // The saved engine is none of the choices, so the step asks for one rather than for a preparation.
+    expect(container.querySelector('.su-next')?.textContent).toBe(ja('setup.guide.tts.choose'))
+    expect(container.textContent).not.toContain(ja('setup.tts.prepareModel'))
+
+    await press(ja('setup.tts.engines.system.title'))
+    await press(ja('setup.next'))
+    await press(ja('setup.mic.check'))
+    await press(ja('setup.next'))
+    expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.summary.title'))
+    expect(container.querySelector('.su-summary.is-quiet')?.textContent).not.toContain(ja('setup.summary.calendar'))
   })
 })

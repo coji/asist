@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
     draftUpdate: vi.fn()
   }
 }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/mail', () => ({ getMailService: () => mocks.service }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ agentMode: 'readonly', conversationLocale: 'ja-JP' }) }))
 vi.mock('../src/main/services/memory', () => ({}))

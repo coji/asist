@@ -8,6 +8,7 @@ import type { SetupProgress, SetupStatus, TtsEngine } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
+import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
 import { Advanced, Btn, Chip, Progress, type ChipTone } from '../settings/primitives'
 import type { ExtraModel } from './extras'
 import { useSystemVoice } from './system-voice'
@@ -173,6 +174,7 @@ const ASR_MODELS: Array<{ id: AsrModel; label: string }> = [
 ]
 
 export function ListeningStep({
+  speechRuntime,
   choice,
   onChoice,
   setup,
@@ -188,6 +190,8 @@ export function ListeningStep({
   onPrepareLocal,
   onCancelLocal
 }: {
+  /** Where this machine has no runtime for the model, its reason stands in place of that choice. */
+  speechRuntime: PlatformCapabilities['speechRuntime']
   choice: ListeningChoice | null
   onChoice: (choice: ListeningChoice) => void
   setup: SetupStatus | null
@@ -204,6 +208,7 @@ export function ListeningStep({
   onCancelLocal: () => void
 }): React.JSX.Element {
   const t = useT()
+  const asr = setup?.asr ?? null
   const serverReady = setup?.services.asr === true
   const serverChip = serverReady
     ? { tone: 'ok' as const, label: t('common.ready') }
@@ -217,59 +222,63 @@ export function ListeningStep({
       : { tone: 'warn' as const, label: t('common.notReady') }
   return (
     <div className="su-stack">
-      <Option
-        active={choice === 'server'}
-        title={t('setup.listening.recommended', { model: setup?.asr.label ?? t('setup.listening.unknownModel') })}
-        detail={setup ? asrRecommendationReason(t, setup.asr) : t('setup.listening.unknownReason')}
-        chip={serverChip}
-        onClick={() => onChoice('server')}
-      >
-        {!serverReady &&
-          (downloadBusy ? (
-            <div className="su-inline">
-              <div className="su-grow">
-                <Progress percent={download?.pct ?? 0} label={download ? progressLabel(download) : undefined} />
+      {speechRuntime.kind === null ? (
+        <p className="su-hint">{t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])}</p>
+      ) : (
+        <Option
+          active={choice === 'server'}
+          title={t('setup.listening.recommended', { model: asr?.label ?? t('setup.listening.unknownModel') })}
+          detail={asr ? asrRecommendationReason(t, asr) : t('setup.listening.unknownReason')}
+          chip={serverChip}
+          onClick={() => onChoice('server')}
+        >
+          {!serverReady &&
+            (downloadBusy ? (
+              <div className="su-inline">
+                <div className="su-grow">
+                  <Progress percent={download?.pct ?? 0} label={download ? progressLabel(download) : undefined} />
+                </div>
+                <Btn tone="quiet" onClick={onCancelServer}>
+                  {t('common.stop')}
+                </Btn>
               </div>
-              <Btn tone="quiet" onClick={onCancelServer}>
-                {t('common.stop')}
-              </Btn>
+            ) : (
+              <div className="su-inline">
+                <Btn tone="primary" onClick={onPrepareServer}>
+                  {asr?.runtimeInstalled && asr.modelInstalled ? t('setup.listening.startModel') : t('setup.listening.prepareModel')}
+                </Btn>
+                <span className="su-hint">{t('setup.listening.downloadNote')}</span>
+              </div>
+            ))}
+          {downloadMessage && <p className="su-hint">{downloadMessage}</p>}
+          <Advanced title={t('setup.listening.details.title')} note={t('setup.listening.details.note')}>
+            <div className="su-details">
+              <select className="st-select" value={asrModel} disabled={downloadBusy} onChange={(event) => onAsrModel(event.target.value as AsrModel)}>
+                <option value="auto">{t('setup.listening.automaticModel')}</option>
+                {ASR_MODELS.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+              <dl>
+                <div>
+                  <dt>{t('setup.listening.details.memory')}</dt>
+                  <dd>{asr?.totalMemoryGb ?? '—'} GB</dd>
+                </div>
+                <div>
+                  <dt>{t('setup.listening.details.runtime')}</dt>
+                  <dd>{asr?.runtimeInstalled ? t('setup.listening.details.runtimeInstalled') : t('setup.listening.details.runtimeMissing')}</dd>
+                </div>
+                <div>
+                  <dt>{t('setup.listening.details.modelFiles')}</dt>
+                  <dd>{asr?.modelInstalled ? t('setup.listening.details.modelDownloaded') : t('setup.listening.details.modelMissing')}</dd>
+                </div>
+              </dl>
             </div>
-          ) : (
-            <div className="su-inline">
-              <Btn tone="primary" onClick={onPrepareServer}>
-                {setup?.asr.runtimeInstalled && setup?.asr.modelInstalled ? t('setup.listening.startModel') : t('setup.listening.prepareModel')}
-              </Btn>
-              <span className="su-hint">{t('setup.listening.downloadNote')}</span>
-            </div>
-          ))}
-        {downloadMessage && <p className="su-hint">{downloadMessage}</p>}
-        <Advanced title={t('setup.listening.details.title')} note={t('setup.listening.details.note')}>
-          <div className="su-details">
-            <select className="st-select" value={asrModel} disabled={downloadBusy} onChange={(event) => onAsrModel(event.target.value as AsrModel)}>
-              <option value="auto">{t('setup.listening.automaticModel')}</option>
-              {ASR_MODELS.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.label}
-                </option>
-              ))}
-            </select>
-            <dl>
-              <div>
-                <dt>{t('setup.listening.details.memory')}</dt>
-                <dd>{setup?.asr.totalMemoryGb ?? '—'} GB</dd>
-              </div>
-              <div>
-                <dt>{t('setup.listening.details.runtime')}</dt>
-                <dd>{setup?.asr.runtimeInstalled ? t('setup.listening.details.runtimeInstalled') : t('setup.listening.details.runtimeMissing')}</dd>
-              </div>
-              <div>
-                <dt>{t('setup.listening.details.modelFiles')}</dt>
-                <dd>{setup?.asr.modelInstalled ? t('setup.listening.details.modelDownloaded') : t('setup.listening.details.modelMissing')}</dd>
-              </div>
-            </dl>
-          </div>
-        </Advanced>
-      </Option>
+          </Advanced>
+        </Option>
+      )}
       <Option
         active={choice === 'local'}
         title={t('setup.listening.local.title')}
@@ -337,6 +346,7 @@ export function TtsStep({
   ttsChecking: boolean
   /** The latest progress of the Qwen3-TTS preparation while it runs. */
   ttsDownload: SetupProgress | null
+  /** Offered where the machine has the memory for it, or already chosen on a machine that runs it. */
   qwenTtsOffered: boolean
   onRecheckTts: () => void
   onPrepareTts: () => void
@@ -348,7 +358,7 @@ export function TtsStep({
   return (
     <div className="su-stack">
       <section className="su-group" aria-label={t('setup.tts.groupLabel')}>
-        {TTS_ENGINES.filter((engine) => ttsEngineSpeaks(locale, engine.id) && (engine.id !== 'qwen3tts' || qwenTtsOffered || ttsEngine === 'qwen3tts')).map((engine) => {
+        {TTS_ENGINES.filter((engine) => ttsEngineSpeaks(locale, engine.id) && (engine.id !== 'qwen3tts' || qwenTtsOffered)).map((engine) => {
           const active = ttsEngine === engine.id
           const ready = active && ttsReady
           const title = t(`setup.tts.engines.${engine.id}.title`)

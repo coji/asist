@@ -10,9 +10,16 @@ const mocks = vi.hoisted(() => ({
   appListeners: new Map<string, Listener[]>(),
   quit: vi.fn(),
   showErrorBox: vi.fn(),
-  shutdown: vi.fn<() => Promise<void>>()
+  shutdown: vi.fn<() => Promise<void>>(),
+  register: vi.fn((_accelerator: string, _callback: () => void) => true),
+  settings: { globalHotkey: false },
+  windows: false
 }))
 
+vi.mock('../src/main/services/platform', async () => {
+  const { MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : MACOS) }
+})
 vi.mock('electron', () => {
   class Notification {
     static isSupported = (): boolean => true
@@ -32,7 +39,7 @@ vi.mock('electron', () => {
       quit: mocks.quit
     },
     dialog: { showErrorBox: mocks.showErrorBox },
-    globalShortcut: { unregister: vi.fn(), register: vi.fn(() => true), unregisterAll: vi.fn() },
+    globalShortcut: { unregister: vi.fn(), register: mocks.register, unregisterAll: vi.fn() },
     Menu: { buildFromTemplate: vi.fn(() => ({})) },
     nativeImage: { createFromDataURL: () => ({ setTemplateImage: vi.fn() }) },
     Notification,
@@ -45,9 +52,9 @@ vi.mock('../src/main/services/agent', async () => {
   return { events: mocks.agentEvents, shutdown: mocks.shutdown }
 })
 vi.mock('../src/main/services/i18n', () => ({ t: (key: string) => key, errorMessage: (error: unknown) => (error as Error).message }))
-vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ globalHotkey: false }) }))
+vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 
-import { setupOsIntegration } from '../src/main/os-integration'
+import { hotkeyStatus, refreshHotkey, setupOsIntegration } from '../src/main/os-integration'
 
 /** A hidden window that keeps its listeners, so that a test can close it the way the user does. */
 function hiddenWindow() {
@@ -85,6 +92,9 @@ beforeEach(() => {
   mocks.quit.mockReset()
   mocks.showErrorBox.mockReset()
   mocks.shutdown.mockReset()
+  mocks.register.mockReset().mockReturnValue(true)
+  mocks.settings.globalHotkey = false
+  mocks.windows = false
 })
 
 describe('the OS notification when a job ends while the window is hidden', () => {
@@ -128,5 +138,26 @@ describe('quitting while agents run', () => {
     expect(mocks.shutdown).toHaveBeenCalledTimes(2)
     expect(quit()).toBe(true)
     expect(window.close()).toBe(true)
+  })
+})
+
+describe('the global hotkey', () => {
+  it('registers the accelerator of the OS it runs on', () => {
+    mocks.settings.globalHotkey = true
+    setupOsIntegration(hiddenWindow() as never)
+    mocks.windows = true
+    setupOsIntegration(hiddenWindow() as never)
+    expect(mocks.register.mock.calls.map(([accelerator]) => accelerator)).toEqual(['Alt+Space', 'Ctrl+Alt+Space'])
+    expect(hotkeyStatus()).toBe('registered')
+  })
+
+  it('reports a registration the OS refuses, and nothing once the setting turns the hotkey off', () => {
+    mocks.settings.globalHotkey = true
+    mocks.register.mockReturnValue(false)
+    setupOsIntegration(hiddenWindow() as never)
+    expect(hotkeyStatus()).toBe('failed')
+    mocks.settings.globalHotkey = false
+    refreshHotkey()
+    expect(hotkeyStatus()).toBe('off')
   })
 })

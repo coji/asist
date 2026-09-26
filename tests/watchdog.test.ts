@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   settings: { aizuchi: true, vapEnabled: true, conversationLocale: 'ja-JP', voiceEngine: 'cascade', uiLocale: 'en-US' },
   startEmbedding: vi.fn(async () => false)
 }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn()
@@ -30,8 +31,6 @@ function fakeChild(script: string) {
   return child
 }
 type Child = ReturnType<typeof fakeChild>
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 let children: Child[] = []
 const classifierChildren = (): Child[] => children.filter((child) => child.script.endsWith('aizuchi_worker.py'))
 const vapChildren = (): Child[] => children.filter((child) => child.script.endsWith('vap_worker.py'))
@@ -43,8 +42,6 @@ let vap: typeof import('../src/main/services/vap')
 beforeEach(async () => {
   vi.resetModules()
   vi.useFakeTimers()
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
   vi.stubEnv('ASIST_EMBEDDING_PYTHON', '/unused/python')
   vi.stubEnv('ASIST_VAP_PYTHON', '/unused/python')
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
@@ -71,8 +68,6 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   for (const child of children) {
     child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy()
   }

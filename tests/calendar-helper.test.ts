@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { errorText } from '../src/shared/i18n/error-text'
 
 const mocks = vi.hoisted(() => ({ userData: '', stdout: '' }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('electron', () => ({
   app: { getPath: () => mocks.userData, getPreferredSystemLanguages: () => ['en-US'], isPackaged: false, getAppPath: () => '/nonexistent' },
   BrowserWindow: { getAllWindows: () => [] }

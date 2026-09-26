@@ -11,13 +11,14 @@ import { MailSettings } from '../MailSettings'
 import { Btn, Chip, Group, Page, type ChipTone } from '../primitives'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
+import { platformCapabilities } from '@/platform'
 
 /** The integrations page: the macOS calendar, mail, and the API key of each provider. */
 export function IntegrationsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const t = useT()
   return (
     <Page title={t('settingsIntegrations.title')} lead={t('settingsIntegrations.lead')}>
-      <CalendarSettings settings={ctx.settings} />
+      {platformCapabilities().calendar && <CalendarSettings settings={ctx.settings} />}
       <MailSettings ctx={ctx} />
       <ApiKeys ctx={ctx} />
     </Page>

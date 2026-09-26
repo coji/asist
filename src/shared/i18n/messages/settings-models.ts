@@ -315,6 +315,19 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Escolher um motor',
       'es-419': 'Elegir un motor',
       'es-ES': 'Elegir un motor'
+    },
+    cannotRun: {
+      'ja-JP': '使えません',
+      'en-US': 'Unavailable',
+      'fr-FR': 'Indisponible',
+      'de-DE': 'Nicht verfügbar',
+      'hi-IN': 'उपलब्ध नहीं',
+      'id-ID': 'Tidak tersedia',
+      'it-IT': 'Non disponibile',
+      'ko-KR': '사용할 수 없음',
+      'pt-BR': 'Indisponível',
+      'es-419': 'No disponible',
+      'es-ES': 'No disponible'
     }
   },
   agent: {

@@ -22,6 +22,7 @@ const t = createTranslator('ja-JP')
  * of escaping the card.
  */
 
+vi.mock('@/platform', () => import('./helpers/platform'))
 vi.mock('@/conversation', () => ({ sendTypedMessage: vi.fn() }))
 vi.mock('motion/react', async () => {
   const { createElement, Fragment, forwardRef } = await import('react')

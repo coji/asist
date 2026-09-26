@@ -4,7 +4,7 @@ import path from 'node:path'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AppSettings, AppStatus, EmbeddingStatus, MemoryOverview, SetupProgress } from '@shared/ipc'
+import type { AppSettings, AppStatus, EmbeddingStatus, HotkeyStatus, MemoryOverview, SetupProgress } from '@shared/ipc'
 import { defaultPersona } from '@shared/persona'
 import { CONVERSATION_LOCALES } from '@shared/conversation-locale'
 import { createTranslator } from '@shared/i18n'
@@ -15,8 +15,10 @@ import { localDate, type UsageDay } from '@shared/api-usage'
 import { SettingsDialog } from '../src/renderer/src/ui/SettingsDialog'
 import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
 
 // The voice modules build an AudioContext at import time, so they are replaced for a test that only renders the UI.
+vi.mock('@/platform', () => import('./helpers/platform'))
 vi.mock('@/voice/VoiceController', () => ({
   voiceController: { prepareLocalAsr: vi.fn(async () => {}), cancelLocalAsrPreparation: vi.fn() }
 }))
@@ -105,6 +107,7 @@ const api = {
   calendarStatus: vi.fn(async () => ({ authorization: 'notDetermined', calendars: [] })),
   memoryOverview: vi.fn(async (): Promise<MemoryOverview> => ({ dir: '', units: 0, pages: 0, curatedThrough: null, pendingJobId: null, lastFailure: null, unavailableReason: null })),
   listSpeakers: vi.fn(async () => []),
+  hotkeyStatus: vi.fn(async (): Promise<HotkeyStatus> => 'registered'),
   embeddingPrepare: vi.fn(async () => ({ ok: true, message: '' })),
   onSetupProgress: vi.fn((_callback: (p: SetupProgress) => void) => () => {}),
   openExternal: vi.fn(async () => {}),
@@ -750,5 +753,105 @@ describe('settings dialog with the conversation held in another language', () =>
       t('settings.summary.modelsNotPrepared', { count: 2 })
     )
     expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system'))
+  })
+})
+
+describe('settings dialog on a machine without the local models, the Python workers, the native microphone or a calendar', () => {
+  const macSetup = api.getSetupStatus.getMockImplementation()!
+  const rowLabels = (view: HTMLElement): Array<string | null> => [...view.querySelectorAll('.st-row-label')].map((el) => el.textContent)
+  const hint = (view: HTMLElement, label: string): string | null | undefined =>
+    [...view.querySelectorAll('.st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === label)?.querySelector('.st-row-hint')?.textContent
+
+  beforeEach(() => {
+    setCapabilities(WINDOWS)
+    // As in main, a machine without a runtime for the local speech recognition reports none.
+    api.getSetupStatus.mockImplementation(async () => ({ ...(await macSetup()), asr: null }) as never)
+  })
+  afterEach(() => {
+    setCapabilities(MACOS)
+    api.getSetupStatus.mockImplementation(macSetup)
+  })
+
+  it('gives the reason in place of the recognition model and leaves out echo cancellation, noise suppression, MaAI and Qwen3-TTS on the voice page', async () => {
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const engines = [...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)
+    expect(engines).not.toContain('qwen3tts')
+    expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t('speechRecognition.unavailable.unsupportedOs'))
+    expect(view.querySelector(`[aria-label="${t('settingsVoice.recognition.modelLabel')}"]`)).toBeNull()
+    const labels = rowLabels(view)
+    expect(labels).not.toContain(t('settingsVoice.mic.echoCancellation'))
+    expect(labels).not.toContain(t('settingsVoice.mic.noiseSuppression'))
+    expect(labels).not.toContain(t('settingsVoice.mic.turnTaking'))
+    expect(hint(view, t('settingsVoice.mic.hotkey'))).toBe(t('settingsVoice.mic.hotkeyHint', { hotkey: 'Ctrl+Alt+Space' }))
+  })
+
+  it('prepares nothing the machine cannot run, and counts only what it can', async () => {
+    const view = await render()
+    // Of what this machine runs, the Agent CLI and speech recognition, here Whisper in the browser, are missing.
+    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 2 }))
+    await act(async () => nav(view, 'models').click())
+    const cards = [...view.querySelectorAll('.st-prep-card')]
+    expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([t('settingsModels.asr.title'), t('settingsModels.speech.title'), t('settingsModels.agent.title')])
+    expect(cards.map((card) => card.getAttribute('data-state'))).toEqual(['missing', 'ready', 'missing'])
+    expect(cards[0].querySelector('p')?.textContent).toBe(t('speechRecognition.unavailable.unsupportedOs'))
+    expect(cards[0].textContent).not.toContain(t('settingsModels.asr.chooseModel'))
+  })
+
+  it('counts speech recognition as prepared once Whisper in the browser is, as its card shows', async () => {
+    useSettingsStore.setState({ settings: { ...settings, localAsrEnabled: true } })
+    const view = await render()
+    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 1 }))
+    await act(async () => nav(view, 'models').click())
+    expect(view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)?.getAttribute('data-state')).toBe('ready')
+  })
+
+  it('shows Qwen3-TTS left in the settings as an engine this machine cannot run, never as something to prepare', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts' } })
+    const view = await render()
+    const reason = t('voice.speech.cannotRunHere', { engine: 'Qwen3-TTS' })
+    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 2 }))
+    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(reason)
+    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.getAttribute('data-tone')).toBe('warn')
+
+    await act(async () => nav(view, 'models').click())
+    const card = view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.speech.title')}"]`)!
+    expect(card.querySelector('p')?.textContent).toBe(reason)
+    expect([...card.querySelectorAll('button')].map((button) => button.textContent)).not.toContain(t('settingsModels.prepare'))
+
+    await act(async () => nav(view, 'voice').click())
+    expect(hint(view, t('settingsVoice.speech.engine'))).toBe(reason)
+    expect([...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)).not.toContain('qwen3tts')
+  })
+
+  it('offers no aizuchi to open a turn without its classifier, keeps the ones while the user speaks, and names the curation for the memory', async () => {
+    useSettingsStore.setState({ settings: { ...settings, aizuchi: true } })
+    const view = await render()
+    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system'))
+    expect(nav(view, 'memory').querySelector('.st-nav-sub')?.textContent).toBe(t('settingsMemory.curation.title'))
+    await act(async () => nav(view, 'voice').click())
+    const labels = rowLabels(view)
+    expect(labels).not.toContain(t('settingsVoice.response.aizuchi'))
+    expect(labels).not.toContain(t('settingsVoice.response.aizuchiRate'))
+    expect(labels).toContain(t('settingsVoice.response.listeningAizuchi'))
+  })
+
+  it('leaves the calendar out of the integrations and of their summary', async () => {
+    const view = await render()
+    expect(nav(view, 'integrations').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.integrationsKeys', { keys: 2, total: 4 }))
+    await act(async () => nav(view, 'integrations').click())
+    expect(view.querySelector(`[aria-label="${t('settingsCalendar.title')}"]`)).toBeNull()
+    expect(api.calendarStatus).not.toHaveBeenCalled()
+  })
+})
+
+describe('the global hotkey on the voice page', () => {
+  it('says so when the OS refuses the keys, in the way this OS writes them', async () => {
+    api.hotkeyStatus.mockResolvedValueOnce('failed')
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    await act(async () => {})
+    const row = [...view.querySelectorAll('.st-row')].find((el) => el.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.hotkey'))
+    expect(row?.querySelector('.st-row-hint')?.textContent).toBe(t('settingsVoice.mic.hotkeyFailed', { hotkey: '⌥Space' }))
   })
 })

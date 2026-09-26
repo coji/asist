@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { qwenTtsLanguage } from '@shared/tts-models'
 
 const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn() } }))
 
@@ -23,8 +24,6 @@ function fakeChild() {
 }
 type Child = ReturnType<typeof fakeChild>
 let children: Child[] = []
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 let qwen: typeof import('../src/main/services/qwen-tts')
 
 const say = (child: Child, message: Record<string, unknown>): void => { child.stdout.write(`ASIST_JSON:${JSON.stringify(message)}\n`) }
@@ -38,8 +37,6 @@ function voiced(seconds = 0.48): string {
 const REQUEST = { text: 'こんにちは。', voice: 'ono_anna', language: 'japanese' } as const
 
 beforeEach(async () => {
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
   vi.resetModules()
   vi.stubEnv('ASIST_MLX_PYTHON', '/unused/python')
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
@@ -57,8 +54,6 @@ afterEach(() => {
   qwen.stop()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   for (const child of children) {
     child.stdout.destroy(); child.stderr.destroy(); child.stdin.destroy()
   }

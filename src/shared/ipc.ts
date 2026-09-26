@@ -5,6 +5,7 @@ import type { CalendarChange, CalendarChangeResult, CalendarEvent, CalendarListR
 import type { ConfirmEvent, ConfirmRequest } from './confirm'
 import type { MiniAppTarget, MiniAppView } from './mini-apps'
 import type { NoteSummary } from './notes'
+import type { PlatformCapabilities } from './platform'
 import type {
   MailAccount,
   MailAccountInput,
@@ -669,6 +670,7 @@ export interface AppStatus {
 /** What first-time setup shows about installation progress, as opposed to plain liveness. */
 export interface SetupStatus {
   services: AppStatus
+  /** The local speech recognition, or null on a machine that has no runtime for it. */
   asr: {
     selectedModel: AsrModel
     resolvedModel: ResolvedAsrModel
@@ -678,7 +680,7 @@ export interface SetupStatus {
     runtimeInstalled: boolean
     modelInstalled: boolean
     ready: boolean
-  }
+  } | null
   /** The local Qwen3-TTS model. `recommended` is whether this Mac has the memory to run it beside the speech recognition. */
   qwenTts: {
     label: string
@@ -696,6 +698,9 @@ export interface SetupProgress {
   totalMb: number
   message?: string
 }
+
+/** The global hotkey: off in the settings, registered with the OS, or refused because another application holds it. */
+export type HotkeyStatus = 'off' | 'registered' | 'failed'
 
 export type SetupVoiceMode = 'server' | 'local' | 'text'
 
@@ -803,6 +808,8 @@ export const IpcChannel = {
   TtsVerify: 'tts-verify',
   MicOpenPrivacy: 'mic-open-privacy',
   AppVersion: 'app-version',
+  GetPlatformCapabilities: 'get-platform-capabilities',
+  HotkeyStatus: 'hotkey-status',
   LicensesOpen: 'licenses-open',
   ApiUsage: 'api-usage',
   LogsOpenFolder: 'logs-open-folder',
@@ -1083,6 +1090,10 @@ export interface RendererApi {
   revealPath(path: string): Promise<void>
   /** The version of the packaged application, which only the main process knows. */
   appVersion(): Promise<string>
+  /** What this OS and machine can run, decided once by the main process and the same for the whole run. */
+  getPlatformCapabilities(): Promise<PlatformCapabilities>
+  /** Whether the global hotkey is off in the settings, registered, or refused by the OS. */
+  hotkeyStatus(): Promise<HotkeyStatus>
   /** Opens THIRD_PARTY_NOTICES.txt, the licenses of ASIST and of everything it bundles, in the default text editor. */
   licensesOpen(): Promise<void>
   /** The paid API use summed per local day, oldest first. */

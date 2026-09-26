@@ -5,9 +5,10 @@ import fs from 'node:fs'
 import type { AppSettings, PhonemeEvent, SpeakerOption, TtsEngine } from '@shared/ipc'
 import { withTimeoutSignal } from '@shared/abort'
 import { CONVERSATION_LANGUAGE_NAMES, type ConversationLocale } from '@shared/conversation-locale'
-import { qwenTtsLanguage } from '@shared/tts-models'
+import { qwenTtsLanguage, ttsEngineRuns } from '@shared/tts-models'
 import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from './conversation-locale'
+import { platformCapabilities } from './platform'
 import { t } from './i18n'
 import { getSettings } from './settings'
 import * as qwenTts from './qwen-tts'
@@ -174,6 +175,9 @@ export async function resolveVoice(settings: AppSettings = getSettings()): Promi
   const locale = conversationLocale()
   if (engine === 'none') throw new Error(errorText('voice.speech.noSpeech'))
   if (engine === 'system') return { engine: 'system' }
+  if (!ttsEngineRuns(engine, platformCapabilities().speechRuntime)) {
+    throw new Error(errorText('voice.speech.cannotRunHere', { engine: engineLabel(engine) }))
+  }
   if (engine === 'qwen3tts') {
     const language = qwenTtsLanguage(locale)
     if (!language) throw cannotSpeak(engine, locale)

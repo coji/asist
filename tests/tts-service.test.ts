@@ -5,10 +5,15 @@ import type { ConversationLocale } from '@shared/conversation-locale'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  windows: false,
   spawn: vi.fn(),
   settings: { ttsEngine: 'voicevox' as TtsEngine, voicevoxSpeaker: 3, aivisSpeaker: null as number | null, conversationLocale: 'ja-JP' as ConversationLocale }
 }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
+vi.mock('../src/main/services/platform', async () => {
+  const { MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : MACOS) }
+})
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({ ...mocks.settings }),
   saveSettings: (patch: Partial<AppSettings>) => { mocks.settings = { ...mocks.settings, ...patch } }
@@ -26,6 +31,7 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 beforeEach(() => {
   vi.resetModules()
   mocks.settings = { ttsEngine: 'voicevox', voicevoxSpeaker: 3, aivisSpeaker: null, conversationLocale: 'ja-JP' }
+  mocks.windows = false
   mocks.spawn.mockReset().mockImplementation(() => {
     const child = Object.assign(new EventEmitter(), { unref: vi.fn() })
     children.push(child)
@@ -164,6 +170,13 @@ describe('an engine that cannot speak the conversation language', () => {
     await expect(tts.resolveVoice()).rejects.toThrow('Qwen3-TTS')
     mocks.settings.conversationLocale = 'pt-BR'
     await expect(tts.resolveVoice()).resolves.toMatchObject({ engine: 'qwen3tts', language: 'portuguese' })
+  })
+
+  it('refuses Qwen3-TTS left in the settings on a machine that cannot run it, with that reason', async () => {
+    mocks.settings.ttsEngine = 'qwen3tts'
+    mocks.windows = true
+    const tts = await import('../src/main/services/tts')
+    await expect(tts.resolveVoice()).rejects.toThrow('[asist:voice.speech.cannotRunHere {"engine":"Qwen3-TTS"}]')
   })
 
   it('keeps the Japanese engines for a Japanese conversation', async () => {

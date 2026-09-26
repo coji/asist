@@ -1,7 +1,9 @@
 import { UI_LOCALES, UI_LOCALE_NAMES, type UiLocale } from '@shared/i18n'
+import type { OsFamily } from '@shared/platform'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
 import { CATALOG, findEntry, type CatalogEntry } from '../catalog'
+import { DEFAULT_DEMO_OS, DEMO_OSES, demoOs } from '../platform'
 import { previewPath, resolveDemoRoute, I18N_PATH } from '../routes'
 import WINDOW_SIZES from '../window-sizes.json'
 import './shell.css'
@@ -31,6 +33,8 @@ interface Selection {
   /** The interface language the sample is drawn in. */
   locale: UiLocale
   theme: ThemeName
+  /** The OS whose capabilities the sample is drawn with. */
+  os: OsFamily
 }
 
 /** Reads the selection from the current URL. An unknown path or size throws rather than quietly showing another sample. */
@@ -45,15 +49,16 @@ function readSelection(): Selection {
   const theme = params.get('theme') ?? DEFAULT_THEME
   if (!isThemeName(theme)) throw new Error(`テーマは ${THEMES.join(' / ')} で指定します: ${theme}`)
   if (size !== 'fit' && !SIZE_NAMES.includes(size as SizeName)) throw new Error(`ウィンドウの大きさは ${SIZE_NAMES.join(' / ')} で指定します: ${size}`)
-  return { entry, size: entry.sized ? (size as Size) : 'fit', locale: lang as UiLocale, theme }
+  return { entry, size: entry.sized ? (size as Size) : 'fit', locale: lang as UiLocale, theme, os: demoOs(location.search) }
 }
 
 /** The query of a selection. The defaults are left out, so the URL of the usual view stays a plain path. */
-function queryOf({ size, locale, theme }: Selection): string {
+function queryOf({ size, locale, theme, os }: Selection): string {
   const params = new URLSearchParams()
   if (size !== 'fit') params.set('size', size)
   if (locale !== SOURCE_LOCALE) params.set('lang', locale)
   if (theme !== DEFAULT_THEME) params.set('theme', theme)
+  if (os !== DEFAULT_DEMO_OS) params.set('os', os)
   return params.size > 0 ? `?${params}` : ''
 }
 
@@ -144,6 +149,13 @@ export function Shell(): React.JSX.Element {
             {THEMES.map((theme) => (
               <option key={theme} value={theme}>
                 {theme}
+              </option>
+            ))}
+          </select>
+          <select className="demo-locale" aria-label="OS" value={selection.os} onChange={(event) => select({ ...selection, os: event.target.value as OsFamily })}>
+            {DEMO_OSES.map((os) => (
+              <option key={os} value={os}>
+                {os}
               </option>
             ))}
           </select>

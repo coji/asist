@@ -7,6 +7,7 @@ import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
 import { replaceFileAtomic } from './atomic-json'
 import { t } from './i18n'
+import { platformCapabilities } from './platform'
 import { userAgent } from './user-agent'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
 
@@ -43,7 +44,7 @@ export function pythonPath(): string {
 }
 
 export function supportedPlatform(): boolean {
-  return process.platform === 'darwin' && process.arch === 'arm64'
+  return platformCapabilities().cpuSidecars
 }
 
 export function runtimeInstalled(): boolean {

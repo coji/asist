@@ -421,6 +421,19 @@ export const settings = defineMessages({
       'pt-BR': 'Modelos e dados',
       'es-419': 'Modelos y datos',
       'es-ES': 'Modelos y datos'
+    },
+    integrationsKeys: {
+      'ja-JP': 'API キー {keys}/{total}',
+      'en-US': 'API keys {keys}/{total}',
+      'fr-FR': 'Clés API {keys}/{total}',
+      'de-DE': 'API-Schlüssel {keys}/{total}',
+      'hi-IN': 'API कुंजी {keys}/{total}',
+      'id-ID': 'Kunci API {keys}/{total}',
+      'it-IT': 'Chiavi API {keys}/{total}',
+      'ko-KR': 'API 키 {keys}/{total}',
+      'pt-BR': 'Chaves de API {keys}/{total}',
+      'es-419': 'Claves de API {keys}/{total}',
+      'es-ES': 'Claves de API {keys}/{total}'
     }
   },
   errors: {

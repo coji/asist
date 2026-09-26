@@ -1,26 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { mlxAsrLanguage, recommendAsrModel, resolveAsrModel, whisperLanguageName, QWEN_MIN_RECOMMENDED_MEMORY_GB } from '../src/shared/asr-models'
 
-const gib = (value: number): number => value * 1024 ** 3
-
 describe('ASR model recommendation', () => {
   it('recommends Whisper MLX on 8GB, where free memory matters more', () => {
-    expect(recommendAsrModel(gib(8))).toEqual({
+    expect(recommendAsrModel(8)).toEqual({
       totalMemoryGb: 8,
       recommendedModel: 'whisper-large-v3-turbo-mlx'
     })
   })
 
   it(`recommends Qwen3-ASR with ${QWEN_MIN_RECOMMENDED_MEMORY_GB}GB or more`, () => {
-    expect(recommendAsrModel(gib(16)).recommendedModel).toBe('qwen3-asr-1.7b-mlx')
-    expect(recommendAsrModel(gib(32))).toEqual({
+    expect(recommendAsrModel(16).recommendedModel).toBe('qwen3-asr-1.7b-mlx')
+    expect(recommendAsrModel(32)).toEqual({
       totalMemoryGb: 32,
       recommendedModel: 'qwen3-asr-1.7b-mlx'
     })
   })
 
   it('resolves only auto to the recommendation and keeps an explicit choice', () => {
-    const recommendation = recommendAsrModel(gib(32))
+    const recommendation = recommendAsrModel(32)
     expect(resolveAsrModel('auto', recommendation)).toBe('qwen3-asr-1.7b-mlx')
     expect(resolveAsrModel('whisper-large-v3-turbo-mlx', recommendation)).toBe(
       'whisper-large-v3-turbo-mlx'

@@ -57,7 +57,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return {
       ...setup,
       services: await api.getStatus(),
-      asr: { ...setup.asr, runtimeInstalled: state.asrReady, modelInstalled: state.asrReady, ready: state.asrReady }
+      asr: setup.asr && { ...setup.asr, runtimeInstalled: state.asrReady, modelInstalled: state.asrReady, ready: state.asrReady }
     }
   }
   api.saveApiKey = async (provider) => {
@@ -77,7 +77,9 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     }
     state.asrReady = true
     progressListeners.forEach((listener) => listener({ status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
-    return { ok: true, message: translate('settingsModels.preparation.done', { model: (await base.getSetupStatus()).asr.label }) }
+    const asr = (await base.getSetupStatus()).asr
+    if (!asr) throw new Error('この OS のデモではサーバーの音声認識を準備できません')
+    return { ok: true, message: translate('settingsModels.preparation.done', { model: asr.label }) }
   }
   api.prepareTtsModel = async () => {
     const totalMb = 1974

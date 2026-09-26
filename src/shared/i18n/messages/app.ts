@@ -220,6 +220,19 @@ export const app = defineMessages({
       'pt-BR': 'Solicitação recusada de uma página que não é o ASIST: {url}',
       'es-419': 'Se rechazó una solicitud de una página que no es ASIST: {url}',
       'es-ES': 'Se ha rechazado una solicitud de una página que no es ASIST: {url}'
+    },
+    unsupportedPlatform: {
+      'ja-JP': '{platform} の {arch} では ASIST は動きません。',
+      'en-US': 'ASIST does not run on {platform} on {arch}.',
+      'fr-FR': 'ASIST ne fonctionne pas sous {platform} sur {arch}.',
+      'de-DE': 'ASIST läuft nicht unter {platform} auf {arch}.',
+      'hi-IN': 'ASIST {arch} पर {platform} में नहीं चलता।',
+      'id-ID': 'ASIST tidak berjalan di {platform} pada {arch}.',
+      'it-IT': 'ASIST non funziona su {platform} con {arch}.',
+      'ko-KR': 'ASIST는 {arch}의 {platform}에서 실행되지 않습니다.',
+      'pt-BR': 'O ASIST não funciona no {platform} em {arch}.',
+      'es-419': 'ASIST no funciona en {platform} con {arch}.',
+      'es-ES': 'ASIST no funciona en {platform} con {arch}.'
     }
   },
   status: {

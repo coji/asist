@@ -8,6 +8,8 @@ import { useViewStore } from '@/state/view'
 import type { AppSettings } from '@shared/ipc'
 import { dayKeyOf } from '@shared/tasks'
 import { createTranslator } from '@shared/i18n'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
+vi.mock('@/platform', () => import('./helpers/platform'))
 
 const t = createTranslator('ja-JP')
 
@@ -121,6 +123,27 @@ it('follows the stored dockOrder and keeps ASIST pinned to the left end', async 
     expect([...container.querySelectorAll('button[data-item]')].map((el) => el.getAttribute('data-item'))).toEqual(['settings', 'calendar', 'memory', 'mail', 'notes', 'tasks', 'jobs'])
   } finally {
     useSettingsStore.setState({ settings: null })
+    await act(async () => root.unmount())
+    container.remove()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('has no calendar on a machine without one, and keeps its place in the saved order', async () => {
+  vi.stubGlobal('React', React)
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  setCapabilities(WINDOWS)
+  try {
+    useViewStore.getState().closeApp()
+    useTaskStore.setState({ tasks: [], loaded: true, error: '' })
+    useSettingsStore.setState({ settings: { dockOrder: ['settings', 'calendar', 'memory', 'mail', 'notes', 'tasks', 'jobs'] } as AppSettings })
+    await act(async () => root.render(React.createElement(NavigationDock)))
+    expect([...container.querySelectorAll('button[data-item]')].map((el) => el.getAttribute('data-item'))).toEqual(['settings', 'memory', 'mail', 'notes', 'tasks', 'jobs'])
+  } finally {
+    setCapabilities(MACOS)
     await act(async () => root.unmount())
     container.remove()
     vi.unstubAllGlobals()

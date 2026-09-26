@@ -3,6 +3,7 @@ import { LLM_PROVIDER_INFO, defaultModelsFor, modelLabel, sameModel, type LlmPro
 import { keyReadable, type SetupProgress, type SetupStatus } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { errorText } from '@shared/i18n/error-text'
+import { qwenTtsRuns, ttsEngineRuns } from '@shared/tts-models'
 import { defaultRegion, ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { useSettingsStore, useStatusStore } from '@/state/stores'
@@ -17,6 +18,7 @@ import { SafetyStep } from './setup/safety'
 import { ExtrasStep, ListeningStep, MicStep, ModelStep, SpeakingStep, SummaryStep, TtsStep, type ListeningChoice, type MicState, type SpeakingMode } from './setup/steps'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
+import { platformCapabilities } from '@/platform'
 import type { MessageKey } from '@shared/i18n'
 
 /**
@@ -66,6 +68,9 @@ export function SetupWizard(): React.JSX.Element | null {
   stepRef.current = step
   const locale = settings?.conversationLocale ?? 'ja-JP'
   const extras = useExtraModels(step === 'extras', mode, locale)
+  const capabilities = platformCapabilities()
+  // The extra preparations are all Python workers, so a machine that cannot run them has no such step.
+  const steps = STEPS.filter((id) => id !== 'extras' || capabilities.cpuSidecars)
 
   const refresh = async (): Promise<SetupStatus | null> => {
     const generation = ++refreshGeneration.current
@@ -139,12 +144,12 @@ export function SetupWizard(): React.JSX.Element | null {
     extras: extras.settled,
     summary: true
   }
-  const index = STEPS.indexOf(step)
-  const move = (direction: 1 | -1): void => {
+  const index = steps.indexOf(step)
+  const move = (direction: 1 | -1, from = index): void => {
     setError('')
-    for (let i = index + direction; i >= 0 && i < STEPS.length; i += direction) {
-      if (needed(STEPS[i])) {
-        setStep(STEPS[i])
+    for (let i = from + direction; i >= 0 && i < steps.length; i += direction) {
+      if (needed(steps[i])) {
+        setStep(steps[i])
         return
       }
     }
@@ -325,6 +330,8 @@ export function SetupWizard(): React.JSX.Element | null {
     }
     if (step === 'tts') {
       if (ttsReady) return t('setup.guide.tts.ready')
+      // A saved engine this machine cannot run is offered by no choice on the screen, so it is chosen again.
+      if (!ttsEngineRuns(settings.ttsEngine, capabilities.speechRuntime)) return t('setup.guide.tts.choose')
       if (settings.ttsEngine === 'qwen3tts') return ttsChecking ? ttsDownload?.message || t('common.preparing') : t('setup.guide.tts.prepareOrSystem')
       return ttsChecking ? t('setup.guide.tts.verifying') : t('setup.guide.tts.notConnected', { engine: services?.ttsLabel ?? t('setup.steps.tts.title') })
     }
@@ -347,7 +354,7 @@ export function SetupWizard(): React.JSX.Element | null {
         <header className="su-head">
           <div className="su-kicker">{t('setup.kicker')}</div>
           <ol className="su-steps">
-            {STEPS.map((id, i) => (
+            {steps.map((id, i) => (
               <li key={id} data-state={!needed(id) ? 'skipped' : id === step ? 'current' : i < index ? 'done' : 'todo'}>
                 <span>{i + 1}</span>
                 {t(`setup.steps.${id}.label`)}
@@ -390,6 +397,7 @@ export function SetupWizard(): React.JSX.Element | null {
           {step === 'speaking' && <SpeakingStep mode={mode} onMode={setMode} />}
           {step === 'listening' && (
             <ListeningStep
+              speechRuntime={capabilities.speechRuntime}
               choice={listening}
               onChoice={setListening}
               setup={setup}
@@ -424,7 +432,7 @@ export function SetupWizard(): React.JSX.Element | null {
               }}
               ttsChecking={ttsChecking}
               ttsDownload={ttsDownload}
-              qwenTtsOffered={setup?.qwenTts.recommended === true}
+              qwenTtsOffered={qwenTtsRuns(capabilities.speechRuntime) && (setup?.qwenTts.recommended === true || settings.ttsEngine === 'qwen3tts')}
               onRecheckTts={() => void verifyTts()}
               onPrepareTts={() => void prepareTts()}
               onCancelPrepareTts={() => void window.api.cancelTtsPreparation()}
@@ -438,9 +446,8 @@ export function SetupWizard(): React.JSX.Element | null {
               onOpenMicSettings={() => void window.api.micOpenPrivacy()}
               onSwitchToTyping={() => {
                 setMode('type-and-listen')
-                setError('')
                 // The mic screen is no longer needed, so the wizard moves on to the next one that is.
-                setStep('extras')
+                move(1, steps.indexOf('mic'))
               }}
               autoMic={autoMic}
               onAutoMic={setAutoMic}
@@ -455,7 +462,7 @@ export function SetupWizard(): React.JSX.Element | null {
                 { label: t('setup.summary.bridgeModel'), value: modelLabel(settings.bridgeModel) },
                 { label: t('setup.summary.speaking'), value: t(SPEAKING_TITLE[mode]) },
                 ...(mode === 'voice'
-                  ? [{ label: t('setup.summary.listening'), value: listening === 'local' ? t('setup.listening.local.title') : (setup?.asr.label ?? '') }]
+                  ? [{ label: t('setup.summary.listening'), value: listening === 'local' ? t('setup.listening.local.title') : (setup?.asr?.label ?? '') }]
                   : []),
                 { label: t('setup.summary.tts'), value: mode === 'text-only' ? t('setup.summary.ttsUnused') : (services?.ttsLabel ?? '') },
                 ...(mode === 'voice' ? [{ label: t('setup.summary.mic'), value: autoMic ? t('setup.summary.micAtLaunch') : t('setup.summary.micManual') }] : [])
@@ -468,7 +475,9 @@ export function SetupWizard(): React.JSX.Element | null {
                     : t('setup.summary.agentMissing', { engine: services?.agentEngine ?? '' }),
                   where: t('setup.summary.agentWhere')
                 },
-                { label: t('setup.summary.calendar'), value: t('setup.summary.calendarValue'), where: t('setup.summary.integrationsWhere') },
+                ...(capabilities.calendar
+                  ? [{ label: t('setup.summary.calendar'), value: t('setup.summary.calendarValue'), where: t('setup.summary.integrationsWhere') }]
+                  : []),
                 { label: t('setup.summary.mail'), value: t('setup.summary.mailValue'), where: t('setup.summary.integrationsWhere') }
               ]}
             />

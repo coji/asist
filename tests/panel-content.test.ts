@@ -8,6 +8,7 @@ import { usePanelStore } from '@/state/stores'
 import { Dock } from '@/ui/Dock'
 import { FocusOverlay } from '@/ui/FocusOverlay'
 
+vi.mock('@/platform', () => import('./helpers/platform'))
 vi.mock('@/conversation', () => ({ sendTypedMessage: vi.fn() }))
 vi.mock('motion/react', async () => {
   const { createElement, Fragment, forwardRef } = await import('react')

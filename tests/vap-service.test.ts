@@ -4,6 +4,7 @@ import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn()
@@ -18,16 +19,12 @@ function fakeChild() {
   child.kill.mockImplementation(() => { child.killed = true; return true })
   return child
 }
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 let children: ReturnType<typeof fakeChild>[] = []
 let vap: typeof import('../src/main/services/vap')
 
 beforeEach(async () => {
   vi.resetModules()
   vi.useFakeTimers()
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
   vi.stubEnv('ASIST_VAP_PYTHON', '/unused/python')
   // The runtime, the models and the worker script are taken to be installed.
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
@@ -46,8 +43,6 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   for (const child of children) {
     child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy()
   }

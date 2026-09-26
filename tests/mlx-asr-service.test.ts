@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
 
 const mocks = vi.hoisted(() => ({ directory: '', spawn: vi.fn(), systemLanguages: ['ja-JP'] }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => mocks.directory, on: vi.fn(),
@@ -31,13 +32,9 @@ function fakeChild() {
   return child
 }
 let children: ReturnType<typeof fakeChild>[] = []
-const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-const arch = Object.getOwnPropertyDescriptor(process, 'arch')!
 type Mlx = typeof import('../src/main/services/mlx-asr')
 let mlx: Mlx
 beforeEach(async () => {
-  Object.defineProperty(process, 'platform', { ...platform, value: 'darwin' })
-  Object.defineProperty(process, 'arch', { ...arch, value: 'arm64' })
   vi.resetModules()
   vi.useFakeTimers()
   vi.stubEnv('ASIST_MLX_PYTHON', '/unused/python')
@@ -59,8 +56,6 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
-  Object.defineProperty(process, 'platform', platform)
-  Object.defineProperty(process, 'arch', arch)
   for (const child of children) {
     child.stdout.destroy(); child.stderr.destroy(); child.stdin.destroy()
   }

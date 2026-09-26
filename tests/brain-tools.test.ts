@@ -9,6 +9,7 @@ import { errorText, readErrorText } from '@shared/i18n/error-text'
 const ja = createTranslator('ja-JP')
 
 const mocks = vi.hoisted(() => ({
+  windows: false,
   settings: { agentMode: 'readonly' as const, agentEngine: 'claude' as const, region: 'JP', uiLocale: 'ja-JP', conversationLocale: 'ja-JP' as string },
   memory: {
     search: vi.fn(() => [])
@@ -41,6 +42,10 @@ const mocks = vi.hoisted(() => ({
   tasks: { list: vi.fn(async () => []), create: vi.fn(), update: vi.fn(), remove: vi.fn() }
 }))
 
+vi.mock('../src/main/services/platform', async () => {
+  const { MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : MACOS) }
+})
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 vi.mock('../src/main/services/memory', () => mocks.memory)
 vi.mock('../src/main/services/agent', () => mocks.agent)
@@ -73,6 +78,23 @@ describe('brain tools registry', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    mocks.windows = false
+  })
+
+  it('offers the calendar to the model only on a machine that has one, as a card, as a change and as a mini app', async () => {
+    const calendarTools = async (): Promise<{ names: string[]; apps: unknown }> => {
+      const { tools } = await load()
+      const specs = tools()
+      const openApp = specs.find((spec) => spec.name === 'open_app')!
+      return {
+        names: specs.map((spec) => spec.name).filter((name) => name.includes('calendar')),
+        apps: (openApp.inputSchema as { properties: { app: { enum: string[] } } }).properties.app.enum.includes('calendar')
+      }
+    }
+    expect(await calendarTools()).toEqual({ names: ['show_calendar', 'change_calendar'], apps: true })
+    vi.resetModules()
+    mocks.windows = true
+    expect(await calendarTools()).toEqual({ names: [], apps: false })
   })
 
   it('sends the catalog show_ tools and the separately registered ones under unique names, without web search, which the provider owns', async () => {

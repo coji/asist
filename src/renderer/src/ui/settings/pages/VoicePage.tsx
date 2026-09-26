@@ -1,10 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Play } from 'lucide-react'
-import type { TtsEngine } from '@shared/ipc'
+import type { HotkeyStatus, TtsEngine } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { HoloSwitch } from '@/components/ui/switch'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
-import { QWEN_TTS_VOICES, type QwenTtsVoice } from '@shared/tts-models'
+import { QWEN_TTS_VOICES, ttsEngineRuns, type QwenTtsVoice } from '@shared/tts-models'
+import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, hotkeyLabel, openingAizuchiRuns } from '@shared/platform'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { ttsEngineLabel, isExternalTts, ttsNeedsPreparation, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
@@ -12,7 +14,29 @@ import { Advanced, Btn, Chip, Group, Link, Page, Row } from '../primitives'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
+import { platformCapabilities } from '@/platform'
 import { asrRecommendationReason } from '../../asr-recommendation'
+
+/** The global hotkey, labelled as this OS writes it, with the OS's refusal in place of the hint. */
+function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
+  const { settings, set } = ctx
+  const t = useT()
+  const [status, setStatus] = useState<HotkeyStatus | null>(null)
+  // The main process registers the hotkey again before the saved settings come back, so reading the
+  // status after each change of the switch gives the outcome of that registration.
+  useEffect(() => {
+    void window.api.hotkeyStatus().then(setStatus)
+  }, [settings.globalHotkey])
+  const hotkey = hotkeyLabel(platformCapabilities())
+  return (
+    <Row
+      label={t('settingsVoice.mic.hotkey')}
+      hint={status === 'failed' ? t('settingsVoice.mic.hotkeyFailed', { hotkey }) : t('settingsVoice.mic.hotkeyHint', { hotkey })}
+    >
+      <HoloSwitch checked={settings.globalHotkey} onCheckedChange={(v) => set({ globalHotkey: v })} />
+    </Row>
+  )
+}
 
 /** The voice page: speech, recognition, responses and the microphone. Preparing the models and runtimes belongs to the models page. */
 export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
@@ -21,17 +45,23 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const t = useT()
   const engine = settings.ttsEngine
   const features = conversationFeatures(settings.conversationLocale)
-  // The engines the conversation language can be read with. A saved engine that is not among them,
-  // which is what a change of language leaves behind, shows as no selection until one is picked.
+  const capabilities = platformCapabilities()
+  const speechRuntime = capabilities.speechRuntime
+  // The aizuchi that opens a turn, and its frequency, need the classifier; the ones while the user
+  // speaks are clips.
+  const openingAizuchi = openingAizuchiRuns(settings.conversationLocale, capabilities)
+  // The engines this machine runs that can read the conversation language. A saved engine that is not
+  // among them, which a change of language or settings brought from another machine leaves behind,
+  // shows as no selection until one is picked.
   const engines: TtsEngine[] = [
     ...(features.japaneseTts ? (['voicevox', 'aivisspeech'] as const) : []),
-    ...(features.qwenTts ? (['qwen3tts'] as const) : []),
+    ...(features.qwenTts && ttsEngineRuns('qwen3tts', speechRuntime) ? (['qwen3tts'] as const) : []),
     'system',
     'none'
   ]
   const engineUsable = engines.includes(engine)
   const speakers = useSpeakerOptions(engineUsable, engine)
-  const asrReady = setup?.asr.ready === true
+  const asrReady = setup?.asr?.ready === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
   // True when the selected engine cannot be reached or its model is not prepared; the macOS speech
   // synthesis needs no preparation and never counts as missing.
@@ -64,15 +94,18 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           <Row label={t('settingsVoice.mic.autoStart')} hint={t('settingsVoice.live.micAutoStartHint', { engine: LIVE_ENGINE_INFO[live].label })}>
             <HoloSwitch checked={settings.micAutoStart} onCheckedChange={(v) => set({ micAutoStart: v })} />
           </Row>
-          <Row label={t('settingsVoice.mic.hotkey')} hint={t('settingsVoice.mic.hotkeyHint')}>
-            <HoloSwitch checked={settings.globalHotkey} onCheckedChange={(v) => set({ globalHotkey: v })} />
-          </Row>
-          <Row label={t('settingsVoice.mic.echoCancellation')} hint={t('settingsVoice.mic.echoCancellationHint')}>
-            <HoloSwitch checked={settings.nativeMic} onCheckedChange={(v) => set({ nativeMic: v })} />
-          </Row>
-          <Row label={t('settingsVoice.mic.noiseSuppression')} hint={t('settingsVoice.mic.noiseSuppressionHint')}>
-            <HoloSwitch checked={settings.noiseSuppression} onCheckedChange={(v) => set({ noiseSuppression: v })} />
-          </Row>
+          <HotkeyRow ctx={ctx} />
+          {/* DeepFilterNet runs on the frames of the native microphone alone, so both switches go with it. */}
+          {capabilities.nativeMic && (
+            <>
+              <Row label={t('settingsVoice.mic.echoCancellation')} hint={t('settingsVoice.mic.echoCancellationHint')}>
+                <HoloSwitch checked={settings.nativeMic} onCheckedChange={(v) => set({ nativeMic: v })} />
+              </Row>
+              <Row label={t('settingsVoice.mic.noiseSuppression')} hint={t('settingsVoice.mic.noiseSuppressionHint')}>
+                <HoloSwitch checked={settings.noiseSuppression} onCheckedChange={(v) => set({ noiseSuppression: v })} />
+              </Row>
+            </>
+          )}
         </Group>
       </Page>
     )
@@ -84,11 +117,13 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         <Row
           label={t('settingsVoice.speech.engine')}
           hint={
-            !ttsMissing
-              ? undefined
-              : engine === 'qwen3tts'
-                ? t('settingsVoice.speech.qwenNotPrepared')
-                : t('settingsVoice.speech.engineMissing', { engine: ttsEngineLabel(t, engine) })
+            !ttsEngineRuns(engine, speechRuntime)
+              ? t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, engine) })
+              : !ttsMissing
+                ? undefined
+                : engine === 'qwen3tts'
+                  ? t('settingsVoice.speech.qwenNotPrepared')
+                  : t('settingsVoice.speech.engineMissing', { engine: ttsEngineLabel(t, engine) })
           }
         >
           {ttsMissing && (engine === 'qwen3tts' ? <Link onClick={() => go('models')}>{t('common.openModels')}</Link> : <Chip tone="warn">{t('common.notFound')}</Chip>)}
@@ -167,36 +202,42 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
       </Group>
 
       <Group title={t('settingsVoice.recognition.title')} description={t('settingsVoice.recognition.description')}>
-        <Row
-          label={t('settingsVoice.recognition.model')}
-          hint={
-            setup
-              ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, setup.asr) })
-              : t('settingsVoice.recognition.checking')
-          }
-        >
-          <Chip tone={asrReady ? 'ok' : 'warn'}>{asrReady ? t('common.ready') : t('common.notReady')}</Chip>
-          <select
-            className="st-select"
-            aria-label={t('settingsVoice.recognition.modelLabel')}
-            value={settings.asrModel}
-            onChange={(event) => {
-              const asrModel = event.target.value as AsrModel
-              void save({ asrModel })
-                .then(() => refreshSetup())
-                .then(() => refreshStatus())
-                .catch((err: unknown) => toast({ kind: 'error', title: t('settingsVoice.recognition.changeFailed'), body: displayError(err) }))
-            }}
-          >
-            <option value="auto">{t('settingsVoice.recognition.automatic')}</option>
-            <option value="qwen3-asr-1.7b-mlx">Qwen3-ASR 1.7B 8-bit MLX</option>
-            <option value="whisper-large-v3-turbo-mlx">Whisper large-v3-turbo MLX</option>
-          </select>
-        </Row>
-        {!asrReady && (
-          <Row label={t('settingsVoice.recognition.prepare')} hint={t('settingsVoice.recognition.prepareHint')}>
-            <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
-          </Row>
+        {speechRuntime.kind === null ? (
+          <Row label={t('settingsVoice.recognition.model')} hint={t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])} />
+        ) : (
+          <>
+            <Row
+              label={t('settingsVoice.recognition.model')}
+              hint={
+                setup?.asr
+                  ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, setup.asr) })
+                  : t('settingsVoice.recognition.checking')
+              }
+            >
+              <Chip tone={asrReady ? 'ok' : 'warn'}>{asrReady ? t('common.ready') : t('common.notReady')}</Chip>
+              <select
+                className="st-select"
+                aria-label={t('settingsVoice.recognition.modelLabel')}
+                value={settings.asrModel}
+                onChange={(event) => {
+                  const asrModel = event.target.value as AsrModel
+                  void save({ asrModel })
+                    .then(() => refreshSetup())
+                    .then(() => refreshStatus())
+                    .catch((err: unknown) => toast({ kind: 'error', title: t('settingsVoice.recognition.changeFailed'), body: displayError(err) }))
+                }}
+              >
+                <option value="auto">{t('settingsVoice.recognition.automatic')}</option>
+                <option value="qwen3-asr-1.7b-mlx">Qwen3-ASR 1.7B 8-bit MLX</option>
+                <option value="whisper-large-v3-turbo-mlx">Whisper large-v3-turbo MLX</option>
+              </select>
+            </Row>
+            {!asrReady && (
+              <Row label={t('settingsVoice.recognition.prepare')} hint={t('settingsVoice.recognition.prepareHint')}>
+                <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
+              </Row>
+            )}
+          </>
         )}
         <Row
           label={t('settingsVoice.recognition.browserWhisper')}
@@ -218,14 +259,18 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         <Row label={t('settingsVoice.response.bargeIn')} hint={t('settingsVoice.response.bargeInHint')}>
           <HoloSwitch checked={settings.bargeIn} onCheckedChange={(v) => set({ bargeIn: v })} />
         </Row>
+        {openingAizuchi && (
+          <Row label={t('settingsVoice.response.aizuchi')} hint={t('settingsVoice.response.aizuchiHint')}>
+            <HoloSwitch checked={settings.aizuchi} onCheckedChange={(v) => set({ aizuchi: v })} />
+          </Row>
+        )}
         {features.aizuchi && (
+          <Row label={t('settingsVoice.response.listeningAizuchi')} hint={t('settingsVoice.response.listeningAizuchiHint')}>
+            <HoloSwitch checked={settings.listeningAizuchi} onCheckedChange={(v) => set({ listeningAizuchi: v })} />
+          </Row>
+        )}
+        {openingAizuchi && (
           <>
-            <Row label={t('settingsVoice.response.aizuchi')} hint={t('settingsVoice.response.aizuchiHint')}>
-              <HoloSwitch checked={settings.aizuchi} onCheckedChange={(v) => set({ aizuchi: v })} />
-            </Row>
-            <Row label={t('settingsVoice.response.listeningAizuchi')} hint={t('settingsVoice.response.listeningAizuchiHint')}>
-              <HoloSwitch checked={settings.listeningAizuchi} onCheckedChange={(v) => set({ listeningAizuchi: v })} />
-            </Row>
             <Row label={t('settingsVoice.response.aizuchiRate')}>
               <input
                 type="range"
@@ -245,9 +290,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         <Row label={t('settingsVoice.mic.autoStart')}>
           <HoloSwitch checked={settings.micAutoStart} onCheckedChange={(v) => set({ micAutoStart: v })} />
         </Row>
-        <Row label={t('settingsVoice.mic.hotkey')} hint={t('settingsVoice.mic.hotkeyHint')}>
-          <HoloSwitch checked={settings.globalHotkey} onCheckedChange={(v) => set({ globalHotkey: v })} />
-        </Row>
+        <HotkeyRow ctx={ctx} />
         <Advanced title={t('settingsVoice.mic.advanced')} note={t('settingsVoice.mic.advancedNote')}>
           <Row
             label={t('settingsVoice.mic.hangover')}
@@ -276,13 +319,18 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
             />
             <span className="st-value">{settings.partialIntervalMs === 0 ? t('common.off') : `${settings.partialIntervalMs}ms`}</span>
           </Row>
-          <Row label={t('settingsVoice.mic.echoCancellation')} hint={t('settingsVoice.mic.echoCancellationHint')}>
-            <HoloSwitch checked={settings.nativeMic} onCheckedChange={(v) => set({ nativeMic: v })} />
-          </Row>
-          <Row label={t('settingsVoice.mic.noiseSuppression')} hint={t('settingsVoice.mic.noiseSuppressionHint')}>
-            <HoloSwitch checked={settings.noiseSuppression} onCheckedChange={(v) => set({ noiseSuppression: v })} />
-          </Row>
-          {features.maai && (
+          {/* DeepFilterNet runs on the frames of the native microphone alone, so both switches go with it. */}
+          {capabilities.nativeMic && (
+            <>
+              <Row label={t('settingsVoice.mic.echoCancellation')} hint={t('settingsVoice.mic.echoCancellationHint')}>
+                <HoloSwitch checked={settings.nativeMic} onCheckedChange={(v) => set({ nativeMic: v })} />
+              </Row>
+              <Row label={t('settingsVoice.mic.noiseSuppression')} hint={t('settingsVoice.mic.noiseSuppressionHint')}>
+                <HoloSwitch checked={settings.noiseSuppression} onCheckedChange={(v) => set({ noiseSuppression: v })} />
+              </Row>
+            </>
+          )}
+          {capabilities.cpuSidecars && features.maai && (
             <Row
               label={t('settingsVoice.mic.turnTaking')}
               hint={
