@@ -11,9 +11,10 @@ Windows で開発のセッションを始める前に、ここまでを済ませ
 | Git for Windows | リポジトリの操作と、Claude Code の Bash のツール | シンボリックリンクを有効にする。改行はリポジトリの `.gitattributes` で LF にそろうので、インストーラーの改行の設定はどれでもよい |
 | Node.js 22 | CI と同じ(`.github/actions/setup-app` は `node-version: 22`) | npm も一緒に入る |
 | Visual Studio 2022 以降の Build Tools | `asist-agent-launcher.c` を `cl.exe` でビルドする | 「C++ によるデスクトップ開発」を入れる |
-| GitHub CLI(`gh`) | PR と CI | `gh auth login` |
-| Claude Code | 開発のセッション、ASIST のエージェントのジョブの動作確認 | ネイティブのインストーラー(`irm https://claude.ai/install.ps1 \| iex`)。`%USERPROFILE%\.local\bin\claude.exe` に入る |
-| Codex CLI | ASIST のエージェントのジョブの動作確認 | インストーラー(`irm https://chatgpt.com/codex/install.ps1 \| iex`)。npm では入れない(`.cmd` しか作られないため) |
+| GitHub CLI(`gh`) | PR と CI | `gh auth login` で、git の方式に SSH を選び、認証はブラウザで行う。SSH の鍵だけでは gh の API は使えない |
+| Claude Code | 開発のセッション、ASIST のエージェントのジョブの動作確認 | ネイティブのインストーラー(`irm https://claude.ai/install.ps1 \| iex`)。`%USERPROFILE%\.local\bin\claude.exe` に入り、このフォルダを利用者の PATH に足す。npm で入れた claude が残っていると PATH で先に見つかるので、`npm uninstall -g @anthropic-ai/claude-code` で消す。`claude --version` が動くこと、`Get-Command claude -All` にネイティブのものだけが出ることを確かめる |
+| PowerShell 7 | Codex のインストーラーを動かす | `winget install --id Microsoft.PowerShell --exact`。Windows に最初からある PowerShell 5.1 では、Codex のインストーラーが `OSArchitecture` を読めずに止まる(2026-09-27) |
+| Codex CLI | ASIST のエージェントのジョブの動作確認 | PowerShell 7 で公式のインストーラー(`irm https://chatgpt.com/codex/install.ps1 \| iex`)。`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin` に入る。winget の `OpenAI.Codex`(0.157.1)は、リンクから起動されると自分の置き場所の確かめ(`codex-package.json`)に失敗し、`the CLI package does not match this platform or executable` で止まるので使わない。npm では `.cmd` しか作られないので入れない |
 | Google Chrome | `scripts/cdp` の撮影と計測 | |
 | VOICEVOX(任意) | 読み上げの確認 | |
 
