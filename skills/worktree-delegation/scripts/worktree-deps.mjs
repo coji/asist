@@ -13,8 +13,9 @@ export function mainCheckout() {
 
 /**
  * Copies the dependencies of the main checkout into a worktree and returns the ones the main checkout does
- * not have. On macOS cp -c clones on APFS, so each copy takes seconds and no extra space; fs.cpSync would
- * write every byte of node_modules again.
+ * not have. On macOS cp -c clones on APFS, so each copy takes seconds and no extra space. On Windows
+ * robocopy copies with several threads; fs.cpSync is not used there, because Node 22's crashes with an
+ * access violation on a folder whose path holds non-ASCII characters.
  */
 export function copyDependencies(root, dir) {
   const missing = []
@@ -27,9 +28,20 @@ export function copyDependencies(root, dir) {
     }
     if (process.platform === 'darwin') {
       execFileSync('cp', ['-cR', from, to], { stdio: 'inherit' })
+    } else if (process.platform === 'win32') {
+      robocopy(from, to)
     } else {
-      fs.cpSync(from, to, { recursive: true, verbatimSymlinks: true })
+      throw new Error(`worktree の依存を写す方法がこの OS(${process.platform})にはありません`)
     }
   }
   return missing
+}
+
+/** robocopy reports success with exit codes below 8, which execFileSync would take for failures. */
+function robocopy(from, to) {
+  try {
+    execFileSync('robocopy', [from, to, '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS', '/NP'], { stdio: 'inherit', windowsHide: true })
+  } catch (error) {
+    if (typeof error.status !== 'number' || error.status >= 8) throw error
+  }
 }
