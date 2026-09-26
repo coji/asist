@@ -202,8 +202,16 @@ export function resolvedAsFarAsExists(file: string): string {
 export function worktreeRemove(repo: string, dir: string, branch: string): void {
   const target = resolvedAsFarAsExists(dir)
   const listed = listWorktrees(repo).some((worktree) => resolvedAsFarAsExists(worktree.path) === target)
-  // A folder git does not list is not left behind in silence: git refuses to remove it and says why.
-  if (listed || fs.existsSync(dir)) git(repo, ['worktree', 'remove', '--force', dir])
+  if (!listed && fs.existsSync(dir) && fs.readdirSync(dir).length === 0) {
+    // Windows cannot delete a folder that is some process's current folder, such as a terminal opened in
+    // the worktree. git then fails after it has deleted the files and forgotten the worktree, and leaves
+    // the empty folder, which it refuses as not a worktree from then on (Windows 11, 2026-09-27). The
+    // empty folder is removed here, and rmdir says so while the folder is still in use.
+    fs.rmdirSync(dir)
+  } else if (listed || fs.existsSync(dir)) {
+    // A folder git does not list is not left behind in silence: git refuses to remove it and says why.
+    git(repo, ['worktree', 'remove', '--force', dir])
+  }
   git(repo, ['branch', '-D', branch])
 }
 

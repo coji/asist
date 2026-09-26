@@ -451,6 +451,17 @@ describe('git service with an isolated worktree', () => {
     expect(run(repo, ['branch', '--list', 'asist/*'])).toBe('')
   })
 
+  it('finishes a removal that deleted the files and forgot the worktree but could not delete its folder', () => {
+    const wt = path.join(root, 'wt')
+    git.worktreeAdd(repo, wt, 'asist/half')
+    // What a removal leaves on Windows while a process has its current folder in the worktree.
+    for (const entry of fs.readdirSync(wt)) fs.rmSync(path.join(wt, entry), { recursive: true, force: true })
+    run(repo, ['worktree', 'prune'])
+    git.worktreeRemove(repo, wt, 'asist/half')
+    expect(fs.existsSync(wt)).toBe(false)
+    expect(run(repo, ['branch', '--list', 'asist/*'])).toBe('')
+  })
+
   it('refuses to leave a folder that git no longer lists behind in silence', () => {
     const wt = path.join(root, 'wt')
     git.worktreeAdd(repo, wt, 'asist/unlisted')
