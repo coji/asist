@@ -134,5 +134,7 @@ skill; each holds steps these rules do not repeat.
   branch of the pull request.
 - `install-mac-app`: installing, deploying or updating the app on this Mac, or verifying a change
   in the installed app.
+- `install-windows-app`: the same on a Windows machine: building the installer, installing, checking
+  the installed app over CDP, and quitting it.
 - `website`: changing, checking or publishing the website and the documentation at asist-agent.com,
   writing or translating a documentation page, or anything that runs wrangler.

@@ -159,6 +159,8 @@ npm run dist:win:dir   # インストールせずに動かせるアプリを dis
 
 証明書はまだ設定していないので、署名はしません。インストーラーは、管理者の権限を求めずに、使う人ごとに `%LOCALAPPDATA%\Programs\asist` に入れます。Electron の fuse は macOS と同じです。`app.asar` の中身が変わっていれば、`ASIST.exe` は起動してすぐに終了します。`ELECTRON_ENABLE_LOGGING=1` を付けて起動すると、そのときは `Integrity check failed for asar archive` と出ます。
 
+Windows のマシンで、インストールして確かめ、終了するまでの手順は、[Windows のインストールの手順](../skills/install-windows-app/SKILL.md)にあります。
+
 ## 実機での確認
 
 挙動を変えたときは、署名付きのアプリと実際のサービスで、関係する項目を確かめます。配布の前にはひととおり行い、使ったコミット、構成、結果を作業の報告に残します。

@@ -1,6 +1,6 @@
 ---
 name: pull-request
-description: How a change reaches main in ASIST - cutting a branch, committing, opening a pull request from the template, reviewing it, following CI, reporting to the user, and cleaning up after the user squash-merges it. Use when starting a change while on main, when a unit of work is ready (コミットして、pushして、PRにして、プルリク作って、PR出して、レビューして、マージできる状態にして), when CI fails on a pull request, or after a pull request was merged. Do not use for handing work to a subagent (worktree-delegation) or for installing the app on this Mac (install-mac-app).
+description: How a change reaches main in ASIST - cutting a branch, committing, opening a pull request from the template, reviewing it, following CI, reporting to the user, and cleaning up after the user squash-merges it. Use when starting a change while on main, when a unit of work is ready (コミットして、pushして、PRにして、プルリク作って、PR出して、レビューして、マージできる状態にして), when CI fails on a pull request, or after a pull request was merged. Do not use for handing work to a subagent (worktree-delegation) or for installing the app (install-mac-app on a Mac, install-windows-app on Windows).
 ---
 
 # Pull requests
@@ -75,4 +75,4 @@ git branch -D <name>
 
 A squash merge makes the branch's commits unreachable from main, so `git branch -d` refuses; `-D` is
 expected. GitHub deletes the remote branch on merge. To see the change in the installed app, install
-from main (`install-mac-app`).
+from main (`install-mac-app` on a Mac, `install-windows-app` on Windows).

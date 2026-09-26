@@ -1,6 +1,6 @@
 ---
 name: visual-debugging
-description: How to check how an ASIST screen looks and fix a broken layout, and the tools for it. Open the demo (the renderer alone) in headless Chrome to measure the height and position of elements, capture at 2x resolution, and do the same to the installed app over CDP. Covers the demo's shell (the list of samples), the card samples (/cards) and opening a screen directly (/screens). Use when asked to check how a screen, card, or view looks, take screenshots, debug layout (ずれ、はみ出し、見切れ、崩れ、余白、文字の大きさ、重なり), compare before/after, measure element sizes in the renderer, add demo fixtures or a new npm run demo:<scene> command, or mock a card or screen. Works the same from Claude Code and Codex. Do not use for unit tests, main-process behavior, or the signed build itself (install-mac-app).
+description: How to check how an ASIST screen looks and fix a broken layout, and the tools for it. Open the demo (the renderer alone) in headless Chrome to measure the height and position of elements, capture at 2x resolution, and do the same to the installed app over CDP. Covers the demo's shell (the list of samples), the card samples (/cards) and opening a screen directly (/screens). Use when asked to check how a screen, card, or view looks, take screenshots, debug layout (ずれ、はみ出し、見切れ、崩れ、余白、文字の大きさ、重なり), compare before/after, measure element sizes in the renderer, add demo fixtures or a new npm run demo:<scene> command, or mock a card or screen. Works the same from Claude Code and Codex. Do not use for unit tests, main-process behavior, or the installed build itself (install-mac-app, install-windows-app).
 ---
 
 # Visual debugging
@@ -48,7 +48,7 @@ To see a new card or screen in the demo, add data to `fixtures/`; for a card, ad
 | --- | --- |
 | `npm run demo` | Serves the demo on 5174 for a person and the browser pane. The scripts do not need it |
 | `npm run demo:open -- [--url path] [--size l] [--say text]...` | Serves the demo, opens it in headless Chrome and keeps both open while iterating. It prints the Chrome port to give `demo:drive --port` |
-| `npm run demo:drive -- --launch\|--port <port> [--url path] steps...` | Runs the steps in order and measures as it goes. `--launch` serves the demo and opens Chrome for this run alone; `--port` attaches to the Chrome `demo:open` printed, or to `9222`, the app started by install-mac-app with `--launch --cdp` |
+| `npm run demo:drive -- --launch\|--port <port> [--url path] steps...` | Runs the steps in order and measures as it goes. `--launch` serves the demo and opens Chrome for this run alone; `--port` attaches to the Chrome `demo:open` printed, or to `9222`, the app started by install-mac-app or install-windows-app with `--launch --cdp` |
 | `npm run demo:cards -- [output directory] [--say text]...` | A scene. Shows the cards, captures them at l / m / s and checks that they fit |
 | `npm run demo:gallery -- [output directory] [--type kind]... [--theme name]` | A scene. Captures the card list in one tall image, in the theme named |
 | `npm run demo:setup -- [output directory]` | A scene. Walks first-run setup from start to finish and captures each screen, including the branches (a key that fails to authenticate, text only, a denied microphone). The mock advances the state as it is driven (`demo/setup-demo.ts`) |
@@ -82,7 +82,7 @@ npm run demo:drive -- --port <port> --size s --cards --rect ".card-hero" --rect 
 2. Start `npm run demo:open` in the background and note the port it prints.
 3. Edit the CSS or the TSX. Vite's HMR carries the change into the open page, so re-issue `npm run demo:drive -- --port <port> ...` and look at the numbers. Repeat until the numbers are right, then stop `demo:open`.
 4. To finish, produce the images with a one-off capture (`demo:cards`, `demo:gallery`, `demo:drive --launch --shot`) and always look at them yourself. Even when the numbers are right, spacing, cramped text and overlap show up only in the image.
-5. To check in the app itself, install and launch it with install-mac-app's `--launch --cdp` and then use `npm run demo:drive -- --port 9222 --say ... --out ... --shot app`.
+5. To check in the app itself, install and launch it with `--launch --cdp` of install-mac-app (or install-windows-app on Windows) and then use `npm run demo:drive -- --port 9222 --say ... --out ... --shot app`.
 6. The report says what you measured at which window size and how it changed, carries the images, and states what you did not check.
 
 ## Adding a scene
