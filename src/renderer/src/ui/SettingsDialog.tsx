@@ -62,6 +62,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const { settings, save } = useSettingsStore()
   const refreshStatus = useStatusStore((s) => s.refresh)
   const status = useStatusStore((s) => s.status)
+  const applyStatus = useStatusStore((s) => s.apply)
   const toast = useToastStore((s) => s.push)
   const t = useT()
   const [prep, setPrep] = useState<Preparation>(IDLE)
@@ -91,7 +92,11 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     []
   )
 
-  const refreshSetup = async (): Promise<void> => setSetup(await window.api.getSetupStatus())
+  const refreshSetup = async (): Promise<void> => {
+    const next = await window.api.getSetupStatus()
+    setSetup(next)
+    applyStatus(next.services)
+  }
   const refreshEmbedding = async (): Promise<void> => setEmbedding(await window.api.embeddingStatus())
   useEffect(() => {
     if (!open) return
@@ -223,7 +228,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const missing = [
     speechRecognitionReady(settings, setup, speechRuntime) === false,
     status !== null && engineRuns && ttsNeedsPreparation(settings.ttsEngine) && !status.tts,
-    status !== null && !status.agent,
+    status !== null && status.agent !== 'found',
     cpuSidecars && features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),
     cpuSidecars && embedding !== null && !(embedding.runtimeInstalled && embedding.modelInstalled),
     openingAizuchi &&

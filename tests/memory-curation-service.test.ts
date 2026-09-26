@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('electron', () => ({ app: {
   getPath: () => path.join(mocks.root, 'data'), getAppPath: () => process.cwd(), isPackaged: false
 } }))
-vi.mock('../src/main/services/agent-process', () => ({ findCli: () => '/test/agent', launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process', () => ({ launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: () => '/test/agent' }))
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({
     agentEngine: 'codex', agentMode: 'readonly', agentCwd: mocks.root, persona: '',

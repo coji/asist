@@ -1,23 +1,15 @@
-import { spawn, execFileSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { homedir } from 'node:os'
-import fs from 'node:fs'
 import type { AgentEngine, AgentJob, AgentProcessIdentity } from '@shared/ipc'
 import { createClaudeStreamParser, createCodexStreamParser, type AgentStreamEvent, type AgentStreamParser } from '@shared/agent-stream'
-import { errorText } from '@shared/i18n/error-text'
-import { getSettings } from './settings'
-import { t } from './i18n'
-import { AGENT_PROCESS_TOKEN, captureProcessIdentity } from './agent-process-identity'
-import { manageAgentProcess, type AgentProcess } from './agent-process-lifetime'
-import { childEnv } from './child-env'
+import { t } from '../i18n'
+import { requireCli } from './cli-locator'
+import { AGENT_PROCESS_TOKEN, captureProcessIdentity, manageAgentProcess, type AgentProcess } from './posix'
+import { childEnv } from '../child-env'
 
-/** Finding, launching and parsing the output of the CLI. Approving a job and updating its state is agent.ts. */
+/** Launching the CLI and parsing its output. Finding it is cli-locator.ts; approving a job and updating its state is agent.ts. */
 
 interface EngineSpec {
-  /** Where to look for the CLI binary, in order. An environment variable overrides the list. */
-  candidates: (home: string) => Array<string | undefined>
-  /** The command name to look up with `whence -p`. */
-  which: string
   env?: NodeJS.ProcessEnv
   /**
    * Turns one JSONL line into common events. A parser is made per process, because claude ties tool_use
@@ -28,64 +20,12 @@ interface EngineSpec {
 
 const ENGINES: Record<AgentEngine, EngineSpec> = {
   codex: {
-    which: 'codex',
-    candidates: (home) => [
-      process.env.CODEX_CLI_PATH,
-      '/opt/homebrew/bin/codex',
-      '/usr/local/bin/codex',
-      `${home}/.local/bin/codex`
-    ],
     createParser: createCodexStreamParser
   },
   claude: {
-    which: 'claude',
-    candidates: (home) => [
-      process.env.CLAUDE_CLI_PATH,
-      `${home}/.claude/local/claude`,
-      '/opt/homebrew/bin/claude',
-      '/usr/local/bin/claude',
-      `${home}/.local/bin/claude`
-    ],
     env: { CLAUDE_CODE_ENTRYPOINT: 'asist' },
     createParser: createClaudeStreamParser
   }
-}
-
-const currentEngine = (): AgentEngine => getSettings().agentEngine
-
-const cliPathCache = new Map<AgentEngine, string | null>()
-
-/** Resolves the CLI's real path. A GUI app inherits a thin PATH, so the absolute path is kept. */
-export function findCli(engine: AgentEngine = currentEngine()): string | null {
-  const cached = cliPathCache.get(engine)
-  if (cached !== undefined) return cached
-  const spec = ENGINES[engine]
-  let resolved =
-    spec
-      .candidates(homedir())
-      .filter((p): p is string => typeof p === 'string')
-      .find((p) => fs.existsSync(p)) ?? null
-  if (!resolved) {
-    try {
-      const out = execFileSync('/bin/zsh', ['-lc', `whence -p ${spec.which}`], {
-        encoding: 'utf8',
-        env: childEnv(),
-        windowsHide: true
-      }).trim()
-      if (out && fs.existsSync(out)) resolved = out
-    } catch {
-      resolved = null
-    }
-  }
-  cliPathCache.set(engine, resolved)
-  return resolved
-}
-
-export const available = (engine: AgentEngine = currentEngine()): boolean => findCli(engine) !== null
-
-/** The engines that are installed, as the settings screen lists them. */
-export function availableEngines(): AgentEngine[] {
-  return (Object.keys(ENGINES) as AgentEngine[]).filter((e) => findCli(e) !== null)
 }
 
 interface ProcessHandlers {
@@ -97,8 +37,7 @@ interface ProcessHandlers {
 }
 
 export function launchAgentProcess(job: AgentJob, args: string[], handlers: ProcessHandlers): AgentProcess {
-  const cli = findCli(job.engine)
-  if (!cli) throw new Error(errorText('jobs.start.cliMissing', { engine: job.engine }))
+  const cli = requireCli(job.engine)
   const spec = ENGINES[job.engine]
   const parse = spec.createParser()
   const token = randomUUID()

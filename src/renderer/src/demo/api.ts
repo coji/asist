@@ -391,7 +391,7 @@ export const mockApi: RendererApi = {
     ttsEngine: 'system',
     ttsLabel: 'DEMO',
     asr: false,
-    agent: false,
+    agent: 'missing',
     agentEngine: 'codex',
     voiceEngine: settings.voiceEngine,
     live: 'off'

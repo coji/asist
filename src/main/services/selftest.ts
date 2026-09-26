@@ -6,7 +6,7 @@ import * as asr from './asr'
 import * as aizuchi from './aizuchi'
 import * as brain from './brain'
 import * as agent from './agent'
-import { available, availableEngines, findCli } from './agent-process'
+import { availableEngines, locateCli, requireCli } from './agent-process/cli-locator'
 import { fetchPanel } from './panel-fetchers'
 import { providerKey } from './llm'
 import type { WeatherData } from '@shared/weather'
@@ -177,11 +177,11 @@ export async function runSelfTest(): Promise<number> {
     await test('agent: CLI検出', async () => {
       const engines = availableEngines()
       if (engines.length === 0) throw new Error('no agent CLI found (codex/claude)')
-      return engines.map((e) => `${e}=${findCli(e)}`).join(', ')
+      return engines.map((e) => `${e}=${requireCli(e)}`).join(', ')
     })
   )
 
-  if (available('codex')) {
+  if (locateCli('codex').state === 'found') {
     results.push(
       await test('agent: codex実行 + 成果物追跡', async () => {
         const job = agent.start(

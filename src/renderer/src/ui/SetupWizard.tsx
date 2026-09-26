@@ -471,7 +471,7 @@ export function SetupWizard(): React.JSX.Element | null {
               optional={[
                 {
                   label: t('setup.summary.agent'),
-                  value: services?.agent
+                  value: services?.agent === 'found'
                     ? t('setup.summary.agentAvailable', { engine: services.agentEngine })
                     : t('setup.summary.agentMissing', { engine: services?.agentEngine ?? '' }),
                   where: t('setup.summary.agentWhere')

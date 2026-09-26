@@ -35,7 +35,7 @@ import { interject } from './services/brain/interject'
 import { acknowledgePlayback } from './services/brain/job-reporting'
 import * as agent from './services/agent'
 import { usageDays } from './services/usage-ledger'
-import { available as agentAvailable } from './services/agent-process'
+import { forgetCliSearches, locateCli } from './services/agent-process/cli-locator'
 import { fetchPanel } from './services/panel-fetchers'
 import {
   configuredModels,
@@ -161,7 +161,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       ttsEngine: settings.ttsEngine,
       ttsLabel: tts.engineLabel(),
       asr: asrUp,
-      agent: agentAvailable(),
+      agent: locateCli(settings.agentEngine).state,
       agentEngine: settings.agentEngine,
       voiceEngine: settings.voiceEngine,
       live: live.connection()
@@ -174,6 +174,9 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
 
   handle(IpcChannel.Status, computeStatus)
   handle(IpcChannel.GetSetupStatus, async (): Promise<SetupStatus> => {
+    // The settings screen and the first-run setup ask for this when they open, which is when the user
+    // may just have installed or removed an agent CLI.
+    forgetCliSearches()
     const [services, asrStatus] = await Promise.all([computeStatus(), asr.installationStatus()])
     const qwenInstalled = qwenTts.installationStatus()
     return {

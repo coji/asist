@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { afterEach, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
-import { manageAgentProcess } from '../src/main/services/agent-process-lifetime'
+import { manageAgentProcess } from '../src/main/services/agent-process/posix'
 
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers() })
 

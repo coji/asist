@@ -9,7 +9,7 @@ import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import type { AgentJob } from '@shared/ipc'
 import { buildStartArgs } from '@shared/agent-cli'
-import { AGENT_PROCESS_TOKEN, captureProcessIdentity, inspectProcessIdentity, recoverAgentProcess } from '../src/main/services/agent-process-identity'
+import { AGENT_PROCESS_TOKEN, captureProcessIdentity, inspectProcessIdentity, recoverAgentProcess } from '../src/main/services/agent-process/posix'
 
 const ja = createTranslator('ja-JP')
 const writerRunning = errorText('jobs.worktree.writerRunning')

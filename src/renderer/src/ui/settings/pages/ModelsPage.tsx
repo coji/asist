@@ -161,9 +161,17 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
 
         <Card
           title={t('settingsModels.agent.title')}
-          state={status ? (status.agent ? 'ready' : 'missing') : 'unknown'}
-          stateLabel={status ? (status.agent ? t('settingsModels.agent.detected') : t('common.notFound')) : t('settingsModels.checking')}
-          description={t('settingsModels.agent.description', { engine: settings.agentEngine === 'codex' ? 'Codex' : 'Claude Code' })}
+          state={status ? (status.agent === 'found' ? 'ready' : 'missing') : 'unknown'}
+          stateLabel={
+            status
+              ? t(status.agent === 'found' ? 'settingsModels.agent.detected' : status.agent === 'missing' ? 'common.notFound' : 'common.notReady')
+              : t('settingsModels.checking')
+          }
+          description={
+            status?.agent === 'script-only'
+              ? t('jobs.start.cliScriptOnly', { engine: status.agentEngine })
+              : t('settingsModels.agent.description', { engine: settings.agentEngine === 'codex' ? 'Codex' : 'Claude Code' })
+          }
         >
           <Btn
             onClick={() =>

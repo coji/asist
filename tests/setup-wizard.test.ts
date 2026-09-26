@@ -146,7 +146,7 @@ beforeEach(async () => {
     ttsEngine: 'voicevox',
     ttsLabel: 'VOICEVOX',
     asr: false,
-    agent: false,
+    agent: 'missing',
     agentEngine: 'codex',
     voiceEngine: 'cascade',
     live: 'off'

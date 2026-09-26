@@ -479,6 +479,13 @@ export type JobStatus = 'running' | 'stopping' | 'done' | 'error' | 'cancelled'
 /** The agent CLI that runs a job. */
 export type AgentEngine = 'codex' | 'claude'
 
+/**
+ * Whether an engine's CLI was found. 'script-only' is a Windows install that left only a .cmd or .bat
+ * script, as npm does, which ASIST does not start: cmd.exe would parse the quotes and parentheses in
+ * the arguments again.
+ */
+export type AgentCliState = 'found' | 'missing' | 'script-only'
+
 export interface AgentProcessIdentity {
   pid: number
   startedAt: string
@@ -659,8 +666,8 @@ export interface AppStatus {
   ttsLabel: string
   /** Whether the speech recognition model on this Mac answers. */
   asr: boolean
-  /** Whether the selected agent engine is usable. */
-  agent: boolean
+  /** Whether the CLI of the selected agent engine was found. */
+  agent: AgentCliState
   agentEngine: AgentEngine
   /** The voice engine from the settings. With `live` the ASR and TTS states are not used. */
   voiceEngine: VoiceEngine

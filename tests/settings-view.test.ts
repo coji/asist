@@ -77,7 +77,7 @@ const status: AppStatus = {
   ttsEngine: 'system',
   ttsLabel: 'macOS',
   asr: false,
-  agent: false,
+  agent: 'missing',
   agentEngine: 'codex',
   voiceEngine: 'cascade',
   live: 'off'
@@ -88,8 +88,9 @@ const embeddingReady: EmbeddingStatus = { runtimeInstalled: true, modelInstalled
 const api = {
   saveSettings: vi.fn(async (patch: Partial<AppSettings>) => ({ ...settings, ...patch })),
   getStatus: vi.fn(async () => status),
+  // Main answers with the status a test put in the store, since opening the dialog puts the answer back there.
   getSetupStatus: vi.fn(async () => ({
-    services: status,
+    services: useStatusStore.getState().status!,
     asr: {
       selectedModel: 'auto',
       resolvedModel: 'qwen3-asr-1.7b-mlx',
@@ -234,6 +235,17 @@ describe('settings dialog', () => {
       [t('settingsModels.semanticSearch.title'), 'ready']
     ])
     expect(nav(view, 'models').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('shows the agent CLI as main finds it when the dialog opens, telling an npm install apart from a missing CLI', async () => {
+    const setupWithStoreStatus = api.getSetupStatus.getMockImplementation()!
+    api.getSetupStatus.mockImplementationOnce(async () => ({ ...(await setupWithStoreStatus()), services: { ...status, agent: 'script-only' } }))
+    const view = await render()
+    expect(useStatusStore.getState().status?.agent).toBe('script-only')
+    await act(async () => nav(view, 'agent').click())
+    const engineRow = [...view.querySelectorAll('.st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === t('settingsAgent.run.engine'))!
+    expect(engineRow.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
+    expect(engineRow.querySelector('.st-row-hint')?.textContent).toBe(t('jobs.start.cliScriptOnly', { engine: 'codex' }))
   })
 
   it('saves the conversation language together with a speech engine that can read it, and the region on its own', async () => {

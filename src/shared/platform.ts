@@ -22,7 +22,10 @@ export const SPEECH_RUNTIME_UNAVAILABLE_TEXT = {
 } as const satisfies Record<SpeechRuntimeUnavailable, MessageKey>
 
 export interface PlatformCapabilities {
-  /** Only for wording that names a part of the OS (Finder, File Explorer). No feature is gated on it. */
+  /**
+   * For wording that names a part of the OS (Finder, File Explorer), and for main's own way of doing a
+   * thing each OS does differently, such as where the agent CLIs are installed. No feature is gated on it.
+   */
   os: OsFamily
   /** The runtime of the local speech models with the memory it has, or why there is none. */
   speechRuntime: { kind: SpeechRuntime; memoryGb: number } | { kind: null; reason: SpeechRuntimeUnavailable }

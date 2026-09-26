@@ -22,15 +22,15 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
     parse: (text) => text.split('\n').map((line) => line.trim()).filter(Boolean),
     save: (fileRoots) => set({ fileRoots })
   })
-  const missing = status !== null && !status.agent
+  const missing = status !== null && status.agent !== 'found'
   return (
     <Page title="Agent" lead={t('settingsAgent.lead')}>
       <Group title={t('settingsAgent.run.title')} description={t('settingsAgent.run.description')}>
         <Row
           label={t('settingsAgent.run.engine')}
-          hint={missing ? t('settingsAgent.run.engineMissing', { engine: status.agentEngine }) : settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}
+          hint={missing ? t(status.agent === 'script-only' ? 'jobs.start.cliScriptOnly' : 'settingsAgent.run.engineMissing', { engine: status.agentEngine }) : settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}
         >
-          {missing && <Chip tone="warn">{t('common.notFound')}</Chip>}
+          {missing && <Chip tone="warn">{t(status.agent === 'script-only' ? 'common.notReady' : 'common.notFound')}</Chip>}
           <select
             className="st-select"
             aria-label={t('settingsAgent.run.engineLabel')}

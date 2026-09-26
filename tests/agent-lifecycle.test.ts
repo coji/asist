@@ -4,9 +4,8 @@ import { errorText } from '@shared/i18n/error-text'
 
 const ja = createTranslator('ja-JP')
 const mocks = vi.hoisted(() => ({ launch: vi.fn(), kill: vi.fn() }))
-vi.mock('../src/main/services/agent-process', () => ({
-  findCli: () => '/test/codex', launchAgentProcess: mocks.launch
-}))
+vi.mock('../src/main/services/agent-process', () => ({ launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: () => '/test/codex' }))
 vi.mock('node:fs', () => ({ default: { existsSync: () => true } }))
 vi.mock('../src/main/services/store', () => ({
   readJsonl: () => [], appendJsonl: vi.fn()

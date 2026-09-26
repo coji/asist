@@ -1134,6 +1134,20 @@ export const jobs = defineMessages({
       'pt-BR': 'Um job em worktree não pode começar numa pasta que não foi commitada: {path}',
       'es-419': 'Un trabajo en worktree no puede empezar en una carpeta que no está en ningún commit: {path}',
       'es-ES': 'Un trabajo en worktree no puede empezar en una carpeta que no está en ningún commit: {path}'
+    },
+    /** Windows: the only CLI found is the .cmd or .bat script an npm install leaves. The settings screen shows it too. */
+    cliScriptOnly: {
+      'ja-JP': 'npm で入れた {engine} の CLI は、ASIST から起動できません。{engine} の公式のインストーラーで入れ直してください。',
+      'en-US': 'ASIST cannot start the {engine} CLI installed with npm. Reinstall {engine} with its official installer.',
+      'fr-FR': "ASIST ne peut pas lancer le CLI {engine} installé avec npm. Réinstallez {engine} avec son programme d'installation officiel.",
+      'de-DE': 'ASIST kann die mit npm installierte CLI von {engine} nicht starten. Installieren Sie {engine} mit dem offiziellen Installationsprogramm neu.',
+      'hi-IN': 'npm से इंस्टॉल किए गए {engine} के CLI को ASIST शुरू नहीं कर सकता। {engine} को उसके आधिकारिक इंस्टॉलर से दोबारा इंस्टॉल करें।',
+      'id-ID': 'ASIST tidak dapat menjalankan CLI {engine} yang dipasang dengan npm. Pasang ulang {engine} dengan penginstal resminya.',
+      'it-IT': 'ASIST non può avviare la CLI di {engine} installata con npm. Reinstalla {engine} con il programma di installazione ufficiale.',
+      'ko-KR': 'npm으로 설치한 {engine} CLI는 ASIST에서 실행할 수 없습니다. {engine} 공식 설치 프로그램으로 다시 설치하십시오.',
+      'pt-BR': 'O ASIST não consegue iniciar o CLI do {engine} instalado com npm. Reinstale o {engine} com o instalador oficial.',
+      'es-419': 'ASIST no puede iniciar el CLI de {engine} instalado con npm. Reinstala {engine} con su instalador oficial.',
+      'es-ES': 'ASIST no puede iniciar la CLI de {engine} instalada con npm. Reinstala {engine} con su instalador oficial.'
     }
   },
   worktree: {

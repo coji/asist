@@ -47,7 +47,7 @@ export function TopBar(): React.JSX.Element {
               <StatusDot ok={status.tts} label="TTS" />
             </>
           )}
-          <StatusDot ok={status.agent} label="AGENT" />
+          <StatusDot ok={status.agent === 'found'} label="AGENT" />
         </div>
       )}
 

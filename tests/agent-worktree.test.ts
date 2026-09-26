@@ -11,7 +11,8 @@ const ja = createTranslator('ja-JP')
 
 const mocks = vi.hoisted(() => ({ root: '', launch: vi.fn(), requestConfirm: vi.fn() }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd(), getPath: () => path.join(mocks.root, 'data') } }))
-vi.mock('../src/main/services/agent-process', () => ({ findCli: () => '/test/agent', launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process', () => ({ launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: () => '/test/agent' }))
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({ agentEngine: 'codex', agentMode: 'readonly', agentCwd: mocks.root, uiLocale: 'ja-JP', conversationLocale: 'ja-JP' })
 }))
