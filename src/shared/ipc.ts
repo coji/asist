@@ -482,9 +482,10 @@ export type AgentEngine = 'codex' | 'claude'
 /**
  * Whether an engine's CLI was found. 'script-only' is a Windows install that left only a .cmd or .bat
  * script, as npm does, which ASIST does not start: cmd.exe would parse the quotes and parentheses in
- * the arguments again.
+ * the arguments again. 'sandbox-not-set-up' is a Windows codex whose own sandbox has not been set up,
+ * without which ASIST does not run it: codex there would not confine a job at all.
  */
-export type AgentCliState = 'found' | 'missing' | 'script-only'
+export type AgentCliState = 'found' | 'missing' | 'script-only' | 'sandbox-not-set-up'
 
 export interface AgentProcessIdentity {
   pid: number

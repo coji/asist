@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { CLAUDE_READONLY_TOOLS, buildResumeArgs, buildStartArgs, displayCommand } from '@shared/agent-cli'
 import { errorText } from '@shared/i18n/error-text'
 
-const codex = { engine: 'codex' as const, prompt: '調べて', cwd: '/repo', readonly: true, sessionId: 'thread-1' }
-const claude = { engine: 'claude' as const, prompt: '調べて', cwd: '/repo', readonly: false, sessionId: 'sess-1' }
+const codex = { engine: 'codex' as const, os: 'macos' as const, prompt: '調べて', cwd: '/repo', readonly: true, sessionId: 'thread-1' }
+const claude = { engine: 'claude' as const, os: 'macos' as const, prompt: '調べて', cwd: '/repo', readonly: false, sessionId: 'sess-1' }
+const curation = { memoryCuration: { through: '2026-09-22', applied: false }, readonly: false, cwd: '/memory/wt' }
 
 describe('buildStartArgs', () => {
   it('passes the cwd and the sandbox to codex exec --json, read-only for a read-only job', () => {
@@ -50,8 +51,6 @@ describe('buildResumeArgs', () => {
 })
 
 describe('a memory curation job, which starts with nobody to confirm it', () => {
-  const curation = { memoryCuration: { through: '2026-09-22', applied: false }, readonly: false, cwd: '/memory/wt' }
-
   it('never runs claude in auto mode: restricted, refusing what is not allowed, with the validator as the only command', () => {
     for (const args of [buildStartArgs({ ...claude, ...curation }), buildResumeArgs({ ...claude, ...curation })]) {
       expect(args).not.toContain('auto')
@@ -71,6 +70,47 @@ describe('a memory curation job, which starts with nobody to confirm it', () => 
     for (const args of [buildStartArgs({ ...codex, ...curation }), buildResumeArgs({ ...codex, ...curation })]) {
       expect(args).not.toContain('--approve-for-me')
       expect(args.filter((arg) => arg.includes('='))).toEqual(['sandbox_mode="workspace-write"', 'approval_policy="never"'])
+    }
+  })
+})
+
+describe('the OS a codex job runs on', () => {
+  const kinds = { readonly: {}, writing: { readonly: false }, curation } as const
+  const build = { start: buildStartArgs, resume: buildResumeArgs } as const
+  const SANDBOX = ['-c', 'windows.sandbox="elevated"']
+
+  it('keeps the macOS arguments of every kind of job, started and resumed', () => {
+    const start = ['exec', '--json', '--ignore-user-config', '--skip-git-repo-check', '-C']
+    const resume = ['exec', 'resume', '--json', '--ignore-user-config', '--skip-git-repo-check']
+    expect(buildStartArgs(codex)).toEqual([...start, '/repo', '-s', 'read-only', '-'])
+    expect(buildStartArgs({ ...codex, readonly: false })).toEqual([...start, '/repo', '--approve-for-me', '-'])
+    expect(buildStartArgs({ ...codex, ...curation })).toEqual([
+      ...start, '/memory/wt', '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"', '-'
+    ])
+    expect(buildResumeArgs(codex)).toEqual([...resume, '-c', 'sandbox_mode="read-only"', 'thread-1', '-'])
+    expect(buildResumeArgs({ ...codex, readonly: false })).toEqual([
+      ...resume, '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="on-request"', '-c', 'approvals_reviewer="auto_review"', 'thread-1', '-'
+    ])
+    expect(buildResumeArgs({ ...codex, ...curation })).toEqual([
+      ...resume, '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"', 'thread-1', '-'
+    ])
+  })
+
+  it.each(Object.keys(kinds) as Array<keyof typeof kinds>)('runs a %s codex job on Windows in the elevated sandbox, started and resumed, and otherwise as on macOS', (kind) => {
+    for (const make of Object.values(build)) {
+      const job = { ...codex, ...kinds[kind] }
+      const windows = make({ ...job, os: 'windows' })
+      const at = windows.findIndex((arg, i) => arg === SANDBOX[0] && windows[i + 1] === SANDBOX[1])
+      expect(at).toBeGreaterThan(-1)
+      expect(windows.toSpliced(at, 2)).toEqual(make(job))
+      expect(make(job)).not.toContain(SANDBOX[1])
+    }
+  })
+
+  it('gives claude the same arguments on Windows as on macOS', () => {
+    for (const job of [claude, { ...claude, readonly: true }, { ...claude, ...curation }]) {
+      expect(buildStartArgs({ ...job, os: 'windows' })).toEqual(buildStartArgs(job))
+      expect(buildResumeArgs({ ...job, os: 'windows' })).toEqual(buildResumeArgs(job))
     }
   })
 })

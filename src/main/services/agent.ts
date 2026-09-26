@@ -7,7 +7,7 @@ import crypto from 'node:crypto'
 import mitt, { type Emitter } from 'mitt'
 import type { AgentJob, DiscardPreview, JobDiff, JobEvent, JobLogEvent, JobLogLine, ReviewedMerge } from '@shared/ipc'
 import { artifactPaths, type AgentStreamEvent } from '@shared/agent-stream'
-import { buildResumeArgs, buildStartArgs, displayCommand } from '@shared/agent-cli'
+import { buildResumeArgs, buildStartArgs, displayCommand, type AgentCliJob } from '@shared/agent-cli'
 import { formatJobContextBlock, resolveJobAccess, workspaceDirName, worktreeBranchName } from '@shared/job-workspace'
 import { errorText } from '@shared/i18n/error-text'
 import { promptLanguage, type PromptLanguage, type PromptText } from '@shared/conversation-locale'
@@ -17,6 +17,7 @@ import { errorMessage, t } from './i18n'
 import { memoryDir } from './memory-store'
 import { launchAgentProcess, recoverAgentProcess } from './agent-process'
 import { requireCli } from './agent-process/cli-locator'
+import { platformCapabilities } from './platform'
 import type { AgentProcess } from './agent-process/owner'
 import {
   assertMergeable,
@@ -426,8 +427,11 @@ function createJob(prompt: string, options: StartOptions, isolate = false): Agen
   return job
 }
 
+/** A job as the argument builder reads it, on the OS this process runs on. */
+const cliJob = (job: AgentJob): AgentCliJob => ({ ...job, os: platformCapabilities().os })
+
 /** Spawns the CLI and folds its output and its exit into the job's state. */
-function launch(job: AgentJob, args: string[] = buildStartArgs(job)): void {
+function launch(job: AgentJob, args: string[] = buildStartArgs(cliJob(job))): void {
   const entry = jobs.get(job.id)
   if (!entry) return
   const id = job.id
@@ -671,7 +675,7 @@ export async function continueJob(parentId: string, prompt: string, signal?: Abo
   pushLog(job.id, 'system', t('jobs.log.startContinued', {
     engine: job.engine, cwd: job.cwd, access: accessLabel(job), parentId
   }))
-  launch(job, buildResumeArgs({ ...parent, cwd: job.cwd }))
+  launch(job, buildResumeArgs(cliJob({ ...parent, cwd: job.cwd })))
   return { ...job }
 }
 

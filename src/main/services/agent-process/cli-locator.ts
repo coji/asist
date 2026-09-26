@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import type { AgentCliState, AgentEngine } from '@shared/ipc'
 import type { OsFamily } from '@shared/platform'
-import type { MessageKey } from '@shared/i18n'
+import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
 import { errorText } from '@shared/i18n/error-text'
 import { platformCapabilities } from '../platform'
 import { childEnv } from '../child-env'
@@ -39,6 +39,19 @@ const INSTALL_LOCATIONS: Record<OsFamily, Record<AgentEngine, () => Array<string
   }
 }
 
+/**
+ * Whether codex's own Windows sandbox, which every codex job there runs in, is set up. The setup creates
+ * local users, so it needs administrator rights, and codex's interactive CLI offers it when it starts.
+ * Once it is done codex writes this marker, a file of codex's own, under its home (CODEX_HOME, which the
+ * CLI started from ASIST inherits). The marker is the check because a job must not be the first to meet
+ * the missing setup: what `codex exec` does then has not been measured, and a curation job that starts
+ * on a timer must never ask for administrator rights.
+ */
+function codexSandboxSetUp(): boolean {
+  const home = process.env.CODEX_HOME || path.win32.join(homedir(), '.codex')
+  return fs.existsSync(path.win32.join(home, '.sandbox', 'setup_marker.json'))
+}
+
 const listed = (engine: AgentEngine, os: OsFamily): Array<string | undefined> => [process.env[OVERRIDE_VARIABLE[engine]], ...INSTALL_LOCATIONS[os][engine]()]
 
 const SEARCH: Record<OsFamily, (engine: AgentEngine) => CliSearch> = {
@@ -64,7 +77,7 @@ const SEARCH: Record<OsFamily, (engine: AgentEngine) => CliSearch> = {
     const folders = (process.env.PATH ?? '').split(';').filter((folder) => folder !== '')
     const executables = [...listed(engine, 'windows'), ...folders.map((folder) => path.win32.join(folder, `${engine}.exe`))]
     const found = executables.find((file) => isFile(file, ['.exe']))
-    if (found) return { state: 'found', path: found }
+    if (found) return engine === 'codex' && !codexSandboxSetUp() ? { state: 'sandbox-not-set-up' } : { state: 'found', path: found }
     const scripts = [
       process.env[OVERRIDE_VARIABLE[engine]],
       ...folders.flatMap((folder) => [path.win32.join(folder, `${engine}.cmd`), path.win32.join(folder, `${engine}.bat`)])
@@ -91,15 +104,10 @@ export function forgetCliSearches(): void {
   kept.clear()
 }
 
-const NOT_FOUND_TEXT = {
-  missing: 'jobs.start.cliMissing',
-  'script-only': 'jobs.start.cliScriptOnly'
-} as const satisfies Record<Exclude<AgentCliState, 'found'>, MessageKey>
-
 /** The path of the engine's CLI, or an error that says why it cannot be launched. */
 export function requireCli(engine: AgentEngine): string {
   const search = locateCli(engine)
-  if (search.state !== 'found') throw new Error(errorText(NOT_FOUND_TEXT[search.state], { engine }))
+  if (search.state !== 'found') throw new Error(errorText(AGENT_CLI_UNAVAILABLE_TEXT[search.state], { engine }))
   return search.path
 }
 

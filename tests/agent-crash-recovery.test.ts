@@ -199,7 +199,7 @@ describe.runIf(process.platform !== 'win32')('Agent crash recovery with real pro
     const job: AgentJob = { id: 'large', title: 'fixture', prompt, cwd: root, engine, readonly: false, status: 'running', startedAt: Date.now() }
     const received: string[] = []
     const errors: Error[] = []
-    const managed = launchAgentProcess(job, buildStartArgs(job), {
+    const managed = launchAgentProcess(job, buildStartArgs({ ...job, os: 'macos' }), {
       onSpawn: (identity) => { group = identity.pid },
       onEvent: (event) => { if (event.kind === 'raw') received.push(event.text) },
       onStderr: () => {}, onError: (error) => errors.push(error), onExit: () => {}

@@ -8,6 +8,7 @@ import { conversationFeatures } from '@shared/conversation-locale'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import { SPEECH_RUNTIME_UNAVAILABLE_TEXT } from '@shared/platform'
+import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
 import { ttsEngineRuns } from '@shared/tts-models'
 import { osMessageKey } from '@shared/i18n/os-message'
 
@@ -168,8 +169,8 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
               : t('settingsModels.checking')
           }
           description={
-            status?.agent === 'script-only'
-              ? t('jobs.start.cliScriptOnly', { engine: status.agentEngine })
+            status && status.agent !== 'found' && status.agent !== 'missing'
+              ? t(AGENT_CLI_UNAVAILABLE_TEXT[status.agent], { engine: status.agentEngine })
               : t('settingsModels.agent.description', { engine: settings.agentEngine === 'codex' ? 'Codex' : 'Claude Code' })
           }
         >

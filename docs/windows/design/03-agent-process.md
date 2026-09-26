@@ -85,17 +85,35 @@ AGENTS.md の「外に書き込むジョブの承認の関門を保つ」と、�
 
 - **claude の記憶の整理。**
   - いまは `--restricted` と `dontAsk` で、許すコマンドを `Bash(node <path>/validate.mjs *)` の1つにしています。
-  - Windows の claude は、Git Bash が無いと Bash のツールではなく PowerShell のツールを使います。そのため、規則の書き方とパスの区切り(`\`)を実機で合わせる必要があります。
-- **codex の記憶の整理と読むだけのジョブ。**
-  - `workspace-write` と `read-only` の sandbox は、OS が強制するものです。
-  - Windows の codex の sandbox(elevated と unelevated の2つ)で、次の2つが守られることを確かめます。
-    - 書き込みが worktree の中に限られること
-    - ネットワークが閉じていること
+  - 2026-09-27 に Git for Windows の入った検証機で、claude は macOS と同じ引数のまま、restricted と dontAsk と検証用のスクリプトだけを許す規則で閉じ込められました。
+  - Windows の claude は、Git Bash が無いと Bash のツールではなく PowerShell のツールを使います。そのときの規則の書き方とパスの区切り(`\`)は、まだ確かめていません。
+- **codex のジョブ。**
+  - Windows の codex は、`windows.sandbox` で sandbox を指定しないと、何も閉じ込めません。ASIST は `--ignore-user-config` で動かすので、利用者が `~/.codex/config.toml` に `[windows] sandbox = "elevated"` と書いていても、ジョブには届きません。
+  - そのため、Windows では codex のすべてのジョブと、その続きに `-c windows.sandbox="elevated"` を付けます(ADR 0020)。
+  - elevated の sandbox には、ローカルのユーザー(CodexSandboxOffline と CodexSandboxOnline)を作る一度きりの準備が要ります。検証機では、利用者の Codex のアプリから準備しました。codex の対話の CLI も、Windows で起動したときに準備を勧めます。
+  - 準備が済むと、codex は `%USERPROFILE%\.codex\.sandbox\setup_marker.json`(CODEX_HOME があればその下)を残します。このファイルが無いときは、codex を探した結果を「sandbox の準備が済んでいない」にして、ジョブを始めません。
+  - 準備の済んでいない `codex exec` がどう動くかは、確かめていません。
+- **codex の実測。**
+  - 2026-09-27 に Windows 11 の検証機で、codex-cli 0.157.1 を ASIST と同じ引数で、%APPDATA% の下のフォルダから動かしました。
+  - エージェントに次の5つを頼みました。(1) フォルダの中に書く、(2) フォルダの外に書く、(3) https://example.com を取得する、(4) フォルダの外のファイルを読む、(5) フォルダの中で node のスクリプトを動かす。
+
+    | 引数 | (1) | (2) | (3) | (4) | (5) |
+    |---|---|---|---|---|---|
+    | 書き込むジョブ(`--approve-for-me`)、sandbox の指定なし | できた | できた | できた | できた | できた |
+    | 書き込むジョブ、`windows.sandbox="elevated"` | できた | 拒まれた | 接続できなかった | できた | できた |
+    | 記憶の整理、sandbox の指定なし | 拒まれた | 拒まれた | 拒まれた | 拒まれた | 拒まれた |
+    | 記憶の整理、`windows.sandbox="elevated"` | できた | 拒まれた | 接続できなかった | できた | できた |
+    | `windows.sandbox="unelevated"` | 起動しなかった | 起動しなかった | 起動しなかった | 起動しなかった | 起動しなかった |
+
+  - sandbox の指定なしの記憶の整理では、すべてのコマンドが "blocked by policy" で拒まれました。unelevated では、すべてのコマンドが `CreateProcessAsUserW failed: 5`(アクセス拒否)で起動しませんでした。
+  - (4) ができたのは、workspace-write の sandbox が macOS と同じく、どこのファイルでも読めるためです。
+  - 記憶の整理のジョブは、自分のフォルダの中の検証用のスクリプトを書き換えられました。codex ではそのスクリプトも同じ sandbox の中で動くので、書き換えてもできることは増えません。
+  - 読むだけのジョブ(`-s read-only` と elevated)では、フォルダの中にも外にも書けず、取得は接続できずに失敗し、読むこととフォルダの中で node のスクリプトを動かすことはできました。
 - **API キー。**
   - Windows の safeStorage(DPAPI)は、同じユーザーのほかのプロセスから守りません。
   - ジョブが `%APPDATA%\ASIST\Local State` と `api-keys.json` を読めば、キーを取り出せます。
   - これは ADR 0006 の制約として書き足します([05-adr-drafts.md](../05-adr-drafts.md))。
-  - 記憶の整理のジョブについては、sandbox の外のファイルを読めないことも確かめます。
+  - codex の記憶の整理のジョブは、上の (4) のとおり、sandbox の外のファイルを読めます。ネットワークは閉じていて、(3) の取得は接続できませんでした。
 
 ## 止めるときの違い
 

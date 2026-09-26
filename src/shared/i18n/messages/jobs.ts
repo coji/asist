@@ -1148,6 +1148,20 @@ export const jobs = defineMessages({
       'pt-BR': 'O ASIST não consegue iniciar o CLI do {engine} instalado com npm. Reinstale o {engine} com o instalador oficial.',
       'es-419': 'ASIST no puede iniciar el CLI de {engine} instalado con npm. Reinstala {engine} con su instalador oficial.',
       'es-ES': 'ASIST no puede iniciar la CLI de {engine} instalada con npm. Reinstala {engine} con su instalador oficial.'
+    },
+    /** Windows: codex was found but its own sandbox, set up once from its interactive CLI, is not. The settings screen shows it too. */
+    cliSandboxNotSetUp: {
+      'ja-JP': '{engine} の Windows サンドボックスが設定されていないため、ASIST から起動できません。ターミナルで {engine} を一度起動して、Windows サンドボックスを設定してください。',
+      'en-US': 'ASIST cannot start {engine} until its Windows sandbox is set up. Start {engine} once in a terminal and set up the Windows sandbox.',
+      'fr-FR': "ASIST ne peut pas lancer {engine} tant que son bac à sable Windows n'est pas configuré. Lancez {engine} une fois dans un terminal et configurez le bac à sable Windows.",
+      'de-DE': 'ASIST kann {engine} erst starten, wenn die Windows-Sandbox eingerichtet ist. Starten Sie {engine} einmal in einem Terminal, und richten Sie die Windows-Sandbox ein.',
+      'hi-IN': '{engine} का Windows सैंडबॉक्स सेट अप नहीं है, इसलिए ASIST इसे शुरू नहीं कर सकता। टर्मिनल में {engine} को एक बार शुरू करें और Windows सैंडबॉक्स सेट अप करें।',
+      'id-ID': 'ASIST tidak dapat menjalankan {engine} sebelum sandbox Windows-nya disiapkan. Jalankan {engine} sekali di terminal, lalu siapkan sandbox Windows.',
+      'it-IT': 'ASIST non può avviare {engine} finché la sua sandbox di Windows non è configurata. Avvia {engine} una volta in un terminale e configura la sandbox di Windows.',
+      'ko-KR': '{engine}의 Windows 샌드박스가 설정되어 있지 않아 ASIST에서 실행할 수 없습니다. 터미널에서 {engine}을(를) 한 번 실행하여 Windows 샌드박스를 설정하십시오.',
+      'pt-BR': 'O ASIST não consegue iniciar o {engine} enquanto a sandbox do Windows dele não estiver configurada. Inicie o {engine} uma vez em um terminal e configure a sandbox do Windows.',
+      'es-419': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en una terminal y configura el sandbox de Windows.',
+      'es-ES': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en un terminal y configura el sandbox de Windows.'
     }
   },
   worktree: {

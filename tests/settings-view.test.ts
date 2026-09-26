@@ -237,15 +237,18 @@ describe('settings dialog', () => {
     expect(nav(view, 'models').getAttribute('aria-pressed')).toBe('true')
   })
 
-  it('shows the agent CLI as main finds it when the dialog opens, telling an npm install apart from a missing CLI', async () => {
+  it.each([
+    ['script-only', 'jobs.start.cliScriptOnly'],
+    ['sandbox-not-set-up', 'jobs.start.cliSandboxNotSetUp']
+  ] as const)('shows the agent CLI as main finds it when the dialog opens, telling a %s CLI apart from a missing one', async (agent, reason) => {
     const setupWithStoreStatus = api.getSetupStatus.getMockImplementation()!
-    api.getSetupStatus.mockImplementationOnce(async () => ({ ...(await setupWithStoreStatus()), services: { ...status, agent: 'script-only' } }))
+    api.getSetupStatus.mockImplementationOnce(async () => ({ ...(await setupWithStoreStatus()), services: { ...status, agent } }))
     const view = await render()
-    expect(useStatusStore.getState().status?.agent).toBe('script-only')
+    expect(useStatusStore.getState().status?.agent).toBe(agent)
     await act(async () => nav(view, 'agent').click())
     const engineRow = [...view.querySelectorAll('.st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === t('settingsAgent.run.engine'))!
     expect(engineRow.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
-    expect(engineRow.querySelector('.st-row-hint')?.textContent).toBe(t('jobs.start.cliScriptOnly', { engine: 'codex' }))
+    expect(engineRow.querySelector('.st-row-hint')?.textContent).toBe(t(reason, { engine: 'codex' }))
   })
 
   it('saves the conversation language together with a speech engine that can read it, and the region on its own', async () => {

@@ -2,7 +2,7 @@ import type { SettingsContext } from '../context'
 import { useFieldDraft } from '../field-draft'
 import { Btn, Chip, Group, Link, NotSavedHint, Page, Row } from '../primitives'
 import { useT } from '@/i18n'
-import { AGENT_MODE_NAME } from '@shared/agent-cli'
+import { AGENT_CLI_UNAVAILABLE_TEXT, AGENT_MODE_NAME } from '@shared/agent-cli'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
 
@@ -22,15 +22,15 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
     parse: (text) => text.split('\n').map((line) => line.trim()).filter(Boolean),
     save: (fileRoots) => set({ fileRoots })
   })
-  const missing = status !== null && status.agent !== 'found'
+  const unavailable = status && status.agent !== 'found' ? { state: status.agent, engine: status.agentEngine } : null
   return (
     <Page title="Agent" lead={t('settingsAgent.lead')}>
       <Group title={t('settingsAgent.run.title')} description={t('settingsAgent.run.description')}>
         <Row
           label={t('settingsAgent.run.engine')}
-          hint={missing ? t(status.agent === 'script-only' ? 'jobs.start.cliScriptOnly' : 'settingsAgent.run.engineMissing', { engine: status.agentEngine }) : settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}
+          hint={unavailable ? t(unavailable.state === 'missing' ? 'settingsAgent.run.engineMissing' : AGENT_CLI_UNAVAILABLE_TEXT[unavailable.state], { engine: unavailable.engine }) : settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}
         >
-          {missing && <Chip tone="warn">{t(status.agent === 'script-only' ? 'common.notReady' : 'common.notFound')}</Chip>}
+          {unavailable && <Chip tone="warn">{t(unavailable.state === 'missing' ? 'common.notFound' : 'common.notReady')}</Chip>}
           <select
             className="st-select"
             aria-label={t('settingsAgent.run.engineLabel')}
@@ -41,7 +41,7 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
             <option value="claude">Claude Code</option>
           </select>
         </Row>
-        {missing && (
+        {unavailable && (
           <Row label={t('settingsAgent.run.install')} hint={t('settingsAgent.run.installHint')}>
             <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
           </Row>

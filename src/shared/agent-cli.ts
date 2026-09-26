@@ -1,12 +1,15 @@
-import type { AgentEngine } from './ipc'
+import type { AgentCliState, AgentEngine } from './ipc'
+import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
+import type { OsFamily } from './platform'
 import { CURATION_SKILL, SKILL_DIRS } from './memory-curation'
 
 /**
  * Argument building for the agent CLIs. The per-engine differences in starting, resuming and
  * enforcing read-only live here.
- * - codex: `exec --json`. Read-only is enforced by the OS through the `-s read-only` sandbox.
- *   Resuming is `exec resume <thread_id>`, where the sandbox is set with `-c sandbox_mode`.
+ * - codex: `exec --json`. Read-only is enforced by the OS through the `-s read-only` sandbox, which on
+ *   Windows is the elevated sandbox named with `-c windows.sandbox`. Resuming is
+ *   `exec resume <thread_id>`, where the sandbox is set with `-c sandbox_mode`.
  * - claude: `-p --output-format stream-json`. Read-only is enforced by the CLI through plan mode and
  *   a tool list that holds only reading tools. Resuming is `--resume <session_id>`.
  *
@@ -32,8 +35,20 @@ export const AGENT_MODE_NAME: Record<AgentEngine, Record<'readonly' | 'auto', st
   codex: { readonly: 'Read Only', auto: 'Approve for me' }
 }
 
+/**
+ * Why an engine's CLI cannot be launched, as a job's start error and the settings screens say it. The
+ * screens word a missing CLI their own way, with where to install it.
+ */
+export const AGENT_CLI_UNAVAILABLE_TEXT = {
+  missing: 'jobs.start.cliMissing',
+  'script-only': 'jobs.start.cliScriptOnly',
+  'sandbox-not-set-up': 'jobs.start.cliSandboxNotSetUp'
+} as const satisfies Record<Exclude<AgentCliState, 'found'>, MessageKey>
+
 export interface AgentCliJob {
   engine: AgentEngine
+  /** The OS main runs on, which decides how codex is confined. */
+  os: OsFamily
   prompt: string
   cwd: string
   readonly: boolean
@@ -94,6 +109,18 @@ function claudePermissionArgs(job: AgentCliJob): string[] {
 const CODEX_CURATION_ACCESS = ['-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"']
 
 /**
+ * Measured with codex-cli 0.157.1 on Windows 11 on 2026-09-27: codex applies no sandbox on Windows unless
+ * `windows.sandbox` names one, and --ignore-user-config drops the user's own setting, so a writing job
+ * wrote outside its folder and reached the network, and under the curation settings every command was
+ * refused as blocked by policy. The elevated sandbox confines both as on macOS. The unelevated one failed
+ * to start any command (CreateProcessAsUserW, access denied).
+ */
+const CODEX_OS_SANDBOX: Record<OsFamily, string[]> = {
+  macos: [],
+  windows: ['-c', 'windows.sandbox="elevated"']
+}
+
+/**
  * `exec resume` has no --approve-for-me (codex-cli 0.155), so a resumed job names the settings behind the
  * flag: requests for approval are raised, and the automatic review answers them.
  */
@@ -114,6 +141,7 @@ export function buildStartArgs(job: AgentCliJob): string[] {
       '--skip-git-repo-check',
       '-C',
       job.cwd,
+      ...CODEX_OS_SANDBOX[job.os],
       // --approve-for-me implies the workspace-write sandbox and cannot be combined with -s (codex-cli 0.155).
       ...(job.memoryCuration ? CODEX_CURATION_ACCESS : job.readonly ? ['-s', 'read-only'] : ['--approve-for-me']),
       '-'
@@ -132,6 +160,7 @@ export function buildResumeArgs(job: AgentCliJob): string[] {
       '--json',
       '--ignore-user-config',
       '--skip-git-repo-check',
+      ...CODEX_OS_SANDBOX[job.os],
       ...codexResumeAccess(job),
       job.sessionId,
       '-'
@@ -148,7 +177,7 @@ export function buildResumeArgs(job: AgentCliJob): string[] {
   ]
 }
 
-export function displayCommand(job: AgentCliJob, resumePrompt?: string): string {
+export function displayCommand(job: Omit<AgentCliJob, 'os'>, resumePrompt?: string): string {
   const prompt = clip(resumePrompt ?? job.prompt)
   if (job.engine === 'codex') {
     return resumePrompt
