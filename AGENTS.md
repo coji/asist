@@ -8,6 +8,10 @@ React, electron-vite and Vitest. The documentation for users is on the website
 source, building, CI and manual validation. Read the relevant implementation and tests before changing
 behavior.
 
+The app is being ported to Windows 11 (x64). Until that work is done, `docs/windows/` holds its plan,
+design and milestones, and issue #48 tracks which tasks are done and who is working on what. Read both
+before starting a task of the port, and do not work on a task another session has taken.
+
 Do not read or use `frontend-skill` in this product.
 
 ## Architecture
