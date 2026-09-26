@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /*
- * Writes build/THIRD_PARTY_NOTICES.txt, which electron-builder puts into the app's Resources next to
+ * Writes build/THIRD_PARTY_NOTICES.txt, which electron-builder puts into the app's resources folder next to
  * LICENSE.txt: ASIST's own license, the programs bundled beside the app, and the license of every npm
  * package that reaches the app. Those packages are the ones electron-vite put into a bundle
  * (the bundled-packages-*.json files the plugin in electron.vite.config.ts adds to out/) and the
@@ -66,8 +66,34 @@ export function packageSections(dirs) {
 
 const RULE = '-'.repeat(78)
 
-/** The whole text of the notices file. */
-export function renderNotices(ownLicense, sections) {
+/**
+ * Where the licenses of the programs bundled beside the app are, from the resources folder the notices are
+ * in, for each platform the app is built for. electron-builder moves Electron's license files into the
+ * resources folder only on macOS and leaves them next to ASIST.exe on Windows. The git of macOS is built
+ * from source and carries its COPYING; MinGit carries the same text as LICENSE.txt, and the licenses of the
+ * MSYS2 and MinGW libraries it runs with in two folders of their own.
+ */
+const BUNDLED_PROGRAMS = {
+  darwin: [
+    'Electron and Chromium: see LICENSE.electron.txt and LICENSES.chromium.html in this folder.',
+    'Git (GPL-2.0): see git/COPYING in this folder. The source code of the same version is attached to',
+    '  each release at https://github.com/nyosegawa/asist/releases.',
+    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.'
+  ],
+  win32: [
+    'Electron and Chromium: see LICENSE.electron.txt and LICENSES.chromium.html next to ASIST.exe, in the',
+    '  folder above this one.',
+    'Git (GPL-2.0): see git/LICENSE.txt in this folder, and the licenses of the libraries it runs with in',
+    '  git/mingw64/share/licenses and git/usr/share/licenses. The source code of the same version is',
+    '  attached to each release at https://github.com/nyosegawa/asist/releases.',
+    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.'
+  ]
+}
+
+/** The whole text of the notices file of the app for platform. */
+export function renderNotices(ownLicense, sections, platform) {
+  const programs = BUNDLED_PROGRAMS[platform]
+  if (!programs) throw new Error(`ASIST is built for darwin and win32, not ${platform}, so its bundled programs are unknown`)
   const lines = [
     'ASIST',
     '',
@@ -77,10 +103,7 @@ export function renderNotices(ownLicense, sections) {
     'Programs bundled with ASIST',
     RULE,
     '',
-    'Electron and Chromium: see LICENSE.electron.txt and LICENSES.chromium.html in this folder.',
-    'Git (GPL-2.0): see git/COPYING in this folder. The source code of the same version is attached to',
-    '  each release at https://github.com/nyosegawa/asist/releases.',
-    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.',
+    ...programs,
     '',
     RULE,
     'npm packages',
@@ -104,7 +127,9 @@ function main() {
   if (bundled.length === 0) throw new Error('out/ lists no bundled packages; run electron-vite build first')
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'))
   const sections = packageSections([...bundled, ...productionPackageDirs(lock, root)])
-  const text = renderNotices(fs.readFileSync(path.join(root, 'LICENSE'), 'utf8'), sections)
+  // The bundled programs are prepared for the machine that builds, and scripts/before-pack.mjs lets
+  // electron-builder package the app only for that machine's platform.
+  const text = renderNotices(fs.readFileSync(path.join(root, 'LICENSE'), 'utf8'), sections, process.platform)
   fs.writeFileSync(path.join(root, 'build', 'THIRD_PARTY_NOTICES.txt'), text)
   console.log(`third-party notices: ${sections.length} packages → build/THIRD_PARTY_NOTICES.txt`)
 }

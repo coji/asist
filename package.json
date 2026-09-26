@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:mac:unsigned": "npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:win:dir": "npm run build && electron-builder --win --dir --x64",
     "pretest": "node scripts/prepare-resources.mjs test",
     "test": "vitest run",
     "demo": "vite --config scripts/vite.demo.config.mts",

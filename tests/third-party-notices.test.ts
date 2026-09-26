@@ -4,8 +4,15 @@ import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 // @ts-expect-error The build script is plain JavaScript without type declarations.
 import { declaredLicense, packageSections, productionPackageDirs, renderNotices } from '../scripts/third-party-notices.mjs'
+// @ts-expect-error The build script is plain JavaScript without type declarations.
+import { UNUSED, matchesUnused } from '../scripts/resources/git-windows.mjs'
 
 let root: string
+
+/** The paths below the bundled git that the notices name, as they are written, relative to the resources folder. */
+function gitLicensePaths(notices: string): string[] {
+  return notices.match(/\bgit\/[\w./-]*\w/g) ?? []
+}
 
 /** A package folder under the temporary node_modules, with its package.json and any other files. */
 function writePackage(key: string, manifest: Record<string, unknown>, files: Record<string, string> = {}): string {
@@ -39,7 +46,26 @@ describe('third-party notices', () => {
     const nested = writePackage('node_modules/b/node_modules/a', { name: 'a', version: '1.0.0', license: 'Apache-2.0' }, { LICENSE: 'apache text' })
     const sections = packageSections([a, nested])
     expect(sections).toEqual([{ id: 'a@1.0.0', license: 'Apache-2.0', files: ['apache text', 'notice text'] }])
-    expect(renderNotices('own license', sections)).toContain('notice text')
+    expect(renderNotices('own license', sections, 'darwin')).toContain('notice text')
+  })
+
+  it('points to git licenses that the git prepared on this machine carries', () => {
+    const named = gitLicensePaths(renderNotices('own license', [], process.platform))
+    expect(named.length).toBeGreaterThan(0)
+    for (const file of named) expect(fs.existsSync(path.join(process.cwd(), 'resources', ...file.split('/'))), file).toBe(true)
+  })
+
+  it('points on Windows only to git licenses that stay when the unused parts of MinGit are removed', () => {
+    const named = gitLicensePaths(renderNotices('own license', [], 'win32'))
+    expect(named.length).toBeGreaterThan(0)
+    for (const file of named) {
+      const inMinGit = file.slice('git/'.length)
+      expect(UNUSED.filter((entry: string | RegExp) => matchesUnused(entry, inMinGit)), file).toEqual([])
+    }
+  })
+
+  it('stops for a platform whose bundled programs it does not know', () => {
+    expect(() => renderNotices('own license', [], 'linux')).toThrow(/linux/)
   })
 
   it('skips a package.json that only marks the module type of a subfolder', () => {

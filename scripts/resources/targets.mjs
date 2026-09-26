@@ -36,6 +36,22 @@ export const TARGETS = {
   }
 }
 
+const SYSTEM_NAMES = { darwin: 'macOS', win32: 'Windows' }
+
+const machine = ({ platform, arch }) => `${SYSTEM_NAMES[platform] ?? platform} ${arch}`
+
+/**
+ * Throws unless the app is packaged for the platform and architecture of the machine that packages it. The
+ * steps above prepare the tools of the machine they run on, so an app packaged for another one would carry
+ * a git, a uv and native helpers that cannot run there.
+ */
+export function requirePackagingHost(target, host) {
+  if (target.platform === host.platform && target.arch === host.arch) return
+  throw new Error(
+    `ASIST for ${machine(target)} has to be packaged on ${machine(target)}: this machine is ${machine(host)}, and the bundled git, uv and native helpers are prepared for the machine that packages the app`
+  )
+}
+
 /** The steps of purpose on a platform and architecture. Anything the app is not built for throws. */
 export function stepsFor(purpose, platform, arch) {
   const target = TARGETS[`${platform}-${arch}`]

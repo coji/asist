@@ -8,7 +8,7 @@
   - 実行ファイルのリソースの書き換えは、rcedit ではなく、JS の resedit で行います。
   - 証明書が無ければ、署名は飛ばします。
   - NSIS のインストーラーも Mac で作れます。
-  - そのため、M2 で Windows のアプリの形(`dist/win-unpacked`)を Mac で作り、中身の並びを確かめられます。
+  - そのため、M2 で Windows のアプリの形(`win-unpacked`)を Mac で作り、中身の並びを確かめられます。確かめ方は、下の「ビルドする OS」に書きました。
   - 起動を確かめるのは Windows です。
 - **ASAR の検査。** `enableEmbeddedAsarIntegrityValidation` は Windows でも効きます。
   - electron-builder が、`ASIST.exe` に ASAR の検査の値を埋め込みます。
@@ -18,7 +18,13 @@
   - そのため、いまの設定のままでも Windows のビルドは止まりません。
   - それでも、警告を読み飛ばす形は避けたいので、Mac のものは `mac.extraResources` に移します。
 - **ライセンスのファイルの場所。** Electron と Chromium のライセンスは、Windows では `ASIST.exe` の隣に `LICENSE.electron.txt` と `LICENSES.chromium.html` として置かれます。`resources/` の中ではありません(Mac だけ `Contents/Resources` に移されます)。
-  - `third-party-notices.mjs` の「このフォルダにある」という文(80行目)は、OS ごとに書き分けます。
+  - `third-party-notices.mjs` は、同梱したプログラムのライセンスの場所を、ビルドする OS ごとに書き分けます。
+  - Windows では、Electron のものは「`ASIST.exe` の隣、1つ上のフォルダ」、git のものは `git/LICENSE.txt` と、ライブラリのライセンスのフォルダ `git/mingw64/share/licenses` と `git/usr/share/licenses` を指します。
+- **`--dir` のときの CPU。** `electron-builder --win --dir` は、設定の `target` の `arch` を使わず、ビルドするマシンの CPU で作ります(Apple Silicon の Mac では `win-arm64-unpacked` になりました)。そのため、`dist:win:dir` には `--x64` を付けます。
+- **ビルドする OS。** 準備のスクリプトは、ビルドするマシンの git と uv を用意します。そのため、Mac で Windows のアプリを作ると、Mac の git と uv が入ってしまいます。
+  - `electron-builder.yml` の `beforePack`(`scripts/before-pack.mjs`)が、作る OS と CPU がビルドするマシンと違えば、理由を出して止めます。Windows のアプリは Windows で、Mac のアプリは Mac で作ります。
+  - `dist:win` と `dist:win:dir` も、Mac では `npm run build` のあとで止まります。
+  - Mac で Windows のアプリの並びだけを確かめるときは、`node scripts/prepare-resources.mjs check --platform win32 --arch x64` で取得した git と uv を指し、`beforePack` を外した設定の写しを作って、`electron-builder --win --dir --x64 --config <写し>` を動かします。出来たものは配りません。
 - **言語のファイル。** `electronLanguages` は、Windows では `locales/*.pak` を減らします。いまの11言語の指定で、12個のファイル(英語は en-US と en-GB)が残ります。
 - **NSIS のインストール先。** 利用者ごとのワンクリックのインストールでは、`%LOCALAPPDATA%\Programs\asist\ASIST.exe` に入ります。
 
@@ -34,6 +40,8 @@ extraResources:            # 両方の OS で使うもの
   - resources/vap_worker.py、vap-requirements*.txt
   - resources/hf_snapshot.py
 
+beforePack: ./scripts/before-pack.mjs   # ビルドするマシンと違う OS と CPU のアプリを作らない
+
 mac:
   extraResources:
     - build/lproj
@@ -43,18 +51,18 @@ mac:
   (いまの mac: の設定)
 
 win:
-  target: [{ target: nsis, arch: [x64] }]     # 確認用には --dir
+  target: [{ target: nsis, arch: [x64] }]     # 確認用には --dir --x64
   icon: build/icon.png                        # 256px 以上の PNG から .ico を作る
   extraResources:
     - resources/native/windows/asist-agent-launcher.exe → asist-agent-launcher.exe
-    - resources/cuda_asr_worker.py、cuda-speech-requirements.txt
+    - resources/cuda_asr_worker.py、cuda-speech-requirements.txt   # M5 で足す
 
 nsis:
   oneClick: true
   perMachine: false
 ```
 
-`package.json` には、`dist:win` と `dist:win:dir`(確認用)を足します。いまの `dist:mac:unsigned` は `CSC_IDENTITY_AUTO_DISCOVERY=false` を前に付けていて、`cmd.exe` では動きません。ただし、Mac でしか使わないので、このままでかまいません。
+`package.json` には、`dist:win` と `dist:win:dir`(確認用)を足します。どちらも Windows でだけ動きます。いまの `dist:mac:unsigned` は `CSC_IDENTITY_AUTO_DISCOVERY=false` を前に付けていて、`cmd.exe` では動きません。ただし、Mac でしか使わないので、このままでかまいません。
 
 **署名。** 当分は署名しません。証明書を入れるときは、`CSC_LINK` が `WIN_CSC_LINK` の代わりにも使われる(`platformPackager.js:84-88`)ことに気をつけます。Mac の署名のために `CSC_LINK` を設定していると、Windows でも署名しようとします。
 

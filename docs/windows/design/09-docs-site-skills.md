@@ -107,7 +107,7 @@ skills の説明(description)に「this Mac」と書いてあるものは、そ�
     - テストは macOS と Windows の CI で動くことを書きます。
     - OS に固有のことを確かめるテストは `runIf` で分け、理由を書くことを書きます(M2 の H)。
   - **Workflow。**
-    - `npm run build` に加えて、パッケージの設定を変えたら `npm run dist:win:dir` も動かすことを書きます(M2 の G)。
+    - パッケージの設定を変えたら、`npm run build` に加えて、その OS のアプリを作って確かめることを書きます(M2 の G)。アプリはビルドするマシンと同じ OS のものしか作れないので、Mac では `dist:mac:unsigned`、Windows では `dist:win:dir` を動かし、もう一方の OS は CI の `build` と `build-windows` で確かめます。
     - スキルの一覧に `install-windows-app` を足します(M3-9)。
   - **Skills の段落。**
     - `.claude/skills` と `.agents/skills` がシンボリックリンクであることは、すでに書いてあります。

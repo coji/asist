@@ -92,7 +92,7 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 | M2-5 | `native-windows.mjs` と `resources/native/windows/asist-agent-launcher.c` の最初の形を作る(`--version` と、Job Object を作って子を起動し、終わるのを待つだけ) | `scripts/resources/native-windows.mjs`、`resources/native/windows/*` | CI の windows-latest でビルドでき、`--version` が動く | Mac と CI | E |
 | M2-6 | Python の worker に `PYTHONUTF8=1` を渡す。`vap_worker.py` の `os.nice` を分ける | `onnx-worker.ts`、`vap.ts`、`mlx-runtime.ts`、`resources/vap_worker.py` | | Mac | F |
 | M2-7 | CPU の worker の lock を、両方の OS で使える形にコンパイルし直す(`--universal` か OS ごとのファイル) | `resources/*-requirements*.txt`、`uv.ts` の呼び出し側 | Mac で環境を作り直して、記憶の検索と MaAI が動く | Mac | F |
-| M2-8 | `electron-builder.yml` を `mac:` と `win:` に分け、`dist:win`、`dist:win:dir` を足す。`third-party-notices.mjs` の文を OS ごとにする | `electron-builder.yml`、`package.json`、`scripts/third-party-notices.mjs` | Mac で `npm run dist:win:dir` が通り、`dist/win-unpacked` の中身の並びが設計どおり | Mac | G |
+| M2-8 | `electron-builder.yml` を `mac:` と `win:` に分け、`dist:win`、`dist:win:dir` を足す。`third-party-notices.mjs` の文を OS ごとにする | `electron-builder.yml`、`package.json`、`scripts/third-party-notices.mjs` | Mac では `npm run dist:win:dir` が理由を出して止まる。Windows 用の git と uv を指す設定の写しで作った `win-unpacked` の中身の並びが設計どおり。Mac のアプリの `Contents/Resources` がいまと同じ | Mac | G |
 | M2-9 | `.github/actions/setup-app` のキャッシュの場所と、`ci.yml` の `test-windows` と `build-windows` を足す。キャッシュのキーを `scripts/resources/**` にする | `.github/*` | windows-latest で2つの job が最後まで動く(この時点では失敗があってよい) | CI | H |
 | M2-10 | POSIX に固有のテストを OS で分け、Windows で動かすように直すテストを直す | `tests/*` | windows-latest の `test-windows` が緑になる。落ちたままのテストがあれば、その原因を M3 のタスクにする | CI | H |
 | M2-11 | `test-windows` と `build-windows` を `result` の `needs` に入れて必須にする | `ci.yml` | | CI | H |

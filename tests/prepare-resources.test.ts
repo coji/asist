@@ -4,9 +4,12 @@ import fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { Arch } from 'electron-builder'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 // @ts-expect-error The build script is plain JavaScript without type declarations.
-import { stepsFor } from '../scripts/resources/targets.mjs'
+import { requirePackagingHost, stepsFor } from '../scripts/resources/targets.mjs'
+// @ts-expect-error The build script is plain JavaScript without type declarations.
+import beforePack from '../scripts/before-pack.mjs'
 // @ts-expect-error The build script is plain JavaScript without type declarations.
 import { UNUSED, matchesUnused, unusedFiles } from '../scripts/resources/git-windows.mjs'
 // @ts-expect-error The build script is plain JavaScript without type declarations.
@@ -30,6 +33,25 @@ describe('choosing what to prepare', () => {
 
   it('stops on a purpose it does not know', () => {
     expect(() => stepsFor('release', 'darwin', 'arm64')).toThrow(/release/)
+  })
+})
+
+describe('the machine that packages the app', () => {
+  it('packages the app only for its own platform and architecture, whose tools it prepared', () => {
+    const mac = { platform: 'darwin', arch: 'arm64' }
+    const windows = { platform: 'win32', arch: 'x64' }
+    expect(() => requirePackagingHost(mac, mac)).not.toThrow()
+    expect(() => requirePackagingHost(windows, windows)).not.toThrow()
+    expect(() => requirePackagingHost(windows, mac)).toThrow()
+    expect(() => requirePackagingHost(mac, windows)).toThrow()
+    expect(() => requirePackagingHost({ platform: 'darwin', arch: 'x64' }, mac)).toThrow()
+  })
+
+  it('reads the platform and architecture electron-builder is about to package', () => {
+    const here = { electronPlatformName: process.platform, arch: Arch[process.arch as keyof typeof Arch] }
+    expect(() => beforePack(here)).not.toThrow()
+    const other = process.platform === 'win32' ? 'darwin' : 'win32'
+    expect(() => beforePack({ ...here, electronPlatformName: other })).toThrow()
   })
 })
 
