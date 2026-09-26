@@ -8,7 +8,7 @@ npm test
 npm run build
 ```
 
-`npm test` は、最初に同梱用の git をコンパイルし、テストが使う Electron を取得します。
+`npm test` は、最初に同梱用の git を用意し(macOS ではコンパイルし、Windows では MinGit を取得します)、テストが使う Electron を取得します。
 
 ## Windows で clone する
 
@@ -36,6 +36,8 @@ npm install
 npm run dev
 ```
 
+Windows 11(x64)では、Node.js 22、上の「Windows で clone する」のとおりに設定した Git for Windows、Visual Studio の「C++ によるデスクトップ開発」が要ります。Visual Studio は Build Tools だけでもかまいません。準備のスクリプトは、git の代わりに MinGit を取得し、エージェントの CLI を動かす `asist-agent-launcher.exe` を、`vswhere` で見つけた Visual Studio の `cl.exe` でコンパイルします。Visual Studio Community 2017 と、CI(windows-latest)の Visual Studio 2026 で確かめました。コマンドは macOS と同じです。アプリは、設定と記憶を `%APPDATA%\asist` に、ログを `%APPDATA%\asist\logs` に書きます。
+
 起動時の環境変数は、親プロセスの環境変数、実行ディレクトリの `.env` の順に優先します。Finder や Dock から開いたアプリは `/` で起動するので、実行ディレクトリの `.env` を読むのは、`npm run dev` のようにリポジトリから起動したときだけです。
 
 API キーは、環境変数(実行ディレクトリの `.env` を含む)にあればそれを使い、なければ設定で保存したキーを使います。環境変数にある provider のキーは、設定では保存できません。設定で保存したキーは、Electron の safeStorage で macOS のキーチェーンの鍵を使って暗号化し、平文では書きません。暗号化が使えないときは保存せず、エラーにします。開発版とインストールしたアプリでは鍵が違うので、一方で保存したキーはもう一方では読めません。読めないときはエラーになるので、設定で入れ直します。
@@ -50,17 +52,19 @@ RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY=...
 
 ## CI
 
-GitHub Actions(`.github/workflows/ci.yml`)が、main への push と pull request のたびに、次の job を同時に動かします。アプリの job は Apple Silicon の macOS で動きます。
+GitHub Actions(`.github/workflows/ci.yml`)が、main への push と pull request のたびに、次の job を同時に動かします。アプリの job は、Apple Silicon の macOS と x64 の Windows で動きます。
 
 | job | 確かめること |
 | --- | --- |
 | `test` | `npm run typecheck`、`npm run i18n -- check`、`npm test` |
 | `fit` | `npm run demo:fit`。11 の言語とすべてのテーマで、カードと画面の文字が収まっていること。テーマを 2 台に分けて(`--shard 1/2` と `2/2`)同時に調べます |
 | `build` | `npm run dist:mac:unsigned` でネイティブのヘルパー、git、uv を含めて署名なしのアプリまで作り、アプリの中の git と uv が動くこと |
+| `test-windows` | Windows で `npm run typecheck` と `npm test`。辞書は OS に依らないので、`test` だけで確かめます |
+| `build-windows` | `npm run dist:win:dir` で Windows のアプリを作り、アプリの中の git、uv、`asist-agent-launcher.exe` が動くこと、`ASIST.exe` が ASAR の検査を通って起動すること |
 | `website` | Ubuntu でサイト(`website/`)をビルドし、全ページのリンクと画像の行き先 |
 | `result` | ほかの job に、失敗したものも取り消されたものもないこと |
 
-main の ruleset がマージの条件にしているのは `result` だけです。`website/` の中だけを変えたときは、`test`、`fit`、`build` をスキップします。スキップした job は失敗として数えないので、プルリクエストはそのままマージできます。
+main の ruleset がマージの条件にしているのは `result` だけです。`website/` の中だけを変えたときは、アプリの job をスキップします。スキップした job は失敗として数えないので、プルリクエストはそのままマージできます。
 
 プルリクエストに新しいコミットを push すると、前のコミットでまだ動いている実行は取り消します。main への push は取り消さず、続けてマージしてもコミットごとに最後まで確かめます。失敗したときに、どのコミットで壊れたかがわかるようにするためです。
 
@@ -143,6 +147,17 @@ CSC_NAME="Apple Development: ..." npm run dist:mac
 ビルドしたアプリは、Electron の fuse(`electron-builder.yml` の `electronFuses`)で `ELECTRON_RUN_AS_NODE`、`NODE_OPTIONS`、`--inspect` を受け付けず、`app.asar` 以外からアプリのコードを読み込まず、`app.asar` の中身が変わっていれば起動しません。どれも、ほかのプロセスが ASIST の署名のまま、ユーザーが許可したマイクやカレンダーを使うことを防ぐためです。ビルドのあとに `npx @electron/fuses read --app dist/mac-arm64/ASIST.app` で値を確かめられます。`--remote-debugging-port` は fuse では止まらないので、CDP でアプリを動かすときだけ付けて起動します。
 
 開発機の `/Applications` に入れて確かめるまでの手順は、[インストールの手順](../skills/install-mac-app/SKILL.md)にあります。
+
+## Windows のアプリをビルドする
+
+Windows 11 の x64 のマシンで実行します。準備のスクリプトはビルドするマシンのための git、uv、ネイティブのヘルパーを用意するので、ほかの OS では `npm run build` のあとで止まります。
+
+```powershell
+npm run dist:win       # インストーラーを dist\ASIST Setup <版>.exe に作ります
+npm run dist:win:dir   # インストールせずに動かせるアプリを dist\win-unpacked に作ります
+```
+
+証明書はまだ設定していないので、署名はしません。インストーラーは、管理者の権限を求めずに、使う人ごとに `%LOCALAPPDATA%\Programs\asist` に入れます。Electron の fuse は macOS と同じです。`app.asar` の中身が変わっていれば、`ASIST.exe` は起動してすぐに終了します。`ELECTRON_ENABLE_LOGGING=1` を付けて起動すると、そのときは `Integrity check failed for asar archive` と出ます。
 
 ## 実機での確認
 

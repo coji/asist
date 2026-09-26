@@ -42,7 +42,8 @@ jobs:
             echo app=true >> "$GITHUB_OUTPUT"
           fi
 
-  # The jobs of the app run on macos-latest, which is Apple Silicon, the only platform the app is built for.
+  # The app is built for macOS on Apple Silicon, which macos-latest is, and for Windows x64, which
+  # windows-latest is.
   test:
     needs: changes
     if: needs.changes.outputs.app == 'true'
@@ -102,6 +103,56 @@ jobs:
           "$resources/git/bin/git" --version
           "$resources/uv/uv" --version
 
+  # The checks of test on Windows, except the dictionary's, which does not depend on the OS.
+  test-windows:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-app
+      - run: npm run typecheck
+      - run: npm test
+
+  # Builds the agent launcher with the MSVC of the runner's Visual Studio, the bundle and the unpacked app.
+  build-windows:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            resources/git
+            resources/uv
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
+      - uses: ./.github/actions/setup-app
+      - run: npm run dist:win:dir
+      - name: Run the git, uv and agent launcher inside the app
+        shell: bash
+        run: |
+          resources="dist/win-unpacked/resources"
+          "$resources/git/mingw64/bin/git.exe" --version
+          "$resources/uv/uv.exe" --version
+          "$resources/asist-agent-launcher.exe" --version
+      # A changed app.asar stops ASIST.exe within a second with "Integrity check failed for asar archive"
+      # (measured 2026-09-27 on Electron 43.1.0), so an app still running after 20 seconds passed the check.
+      - name: Start the app and stop it once it has passed the ASAR integrity check
+        shell: pwsh
+        env:
+          ELECTRON_ENABLE_LOGGING: file
+          ELECTRON_LOG_FILE: ${{ runner.temp }}\electron.log
+        run: |
+          $app = Start-Process -FilePath dist\win-unpacked\ASIST.exe -PassThru
+          Start-Sleep -Seconds 20
+          $exited = $app.HasExited
+          if (-not $exited) { taskkill.exe /T /F /PID $app.Id }
+          Get-Content $env:ELECTRON_LOG_FILE -TotalCount 20 -ErrorAction SilentlyContinue
+          if ($exited) { throw "ASIST.exe exited within 20 seconds with code $($app.ExitCode)" }
+
   # The website is its own npm project, built with Astro; it needs no Mac.
   website:
     if: github.event_name != 'schedule'
@@ -121,7 +172,7 @@ jobs:
   # change to the website skips. A skipped job is not a failure.
   result:
     if: always() && github.event_name != 'schedule'
-    needs: [changes, test, fit, build, website]
+    needs: [changes, test, fit, build, website, test-windows, build-windows]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

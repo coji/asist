@@ -8,12 +8,15 @@ runs:
       with:
         node-version: 22
         cache: npm
-    # The Electron zips the tests and electron-builder download, for the version in the lockfile.
+    # The Electron zips the tests and electron-builder download, for the version in the lockfile, in the
+    # cache folders of macOS and of Windows. The folders of the other OS do not exist and are skipped.
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/Library/Caches/electron
           ~/Library/Caches/electron-builder
+          ~/AppData/Local/electron/Cache
+          ~/AppData/Local/electron-builder/Cache
         key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
     - run: npm ci
       shell: bash

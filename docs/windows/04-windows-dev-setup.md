@@ -10,7 +10,7 @@ Windows で開発のセッションを始める前に、ここまでを済ませ
 | NVIDIA のドライバー | ローカルの音声認識(CUDA 13.0 の torch) | 580 以上。GPU は RTX 20 以降(compute capability 7.5 以上)。`nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv` で確かめる |
 | Git for Windows | リポジトリの操作と、Claude Code の Bash のツール | シンボリックリンクを有効にする。改行はリポジトリの `.gitattributes` で LF にそろうので、インストーラーの改行の設定はどれでもよい |
 | Node.js 22 | CI と同じ(`.github/actions/setup-app` は `node-version: 22`) | npm も一緒に入る |
-| Visual Studio 2022 以降の Build Tools | `asist-agent-launcher.c` を `cl.exe` でビルドする | 「C++ によるデスクトップ開発」を入れる |
+| Visual Studio か、その Build Tools | `asist-agent-launcher.c` を `cl.exe` でビルドする | 「C++ によるデスクトップ開発」を入れる。確かめた版は `docs/development.md` の「ソースから起動する」にある |
 | GitHub CLI(`gh`) | PR と CI | `gh auth login` で、git の方式に SSH を選び、認証はブラウザで行う。SSH の鍵だけでは gh の API は使えない |
 | Claude Code | 開発のセッション、ASIST のエージェントのジョブの動作確認 | ネイティブのインストーラー(`irm https://claude.ai/install.ps1 \| iex`)。`%USERPROFILE%\.local\bin\claude.exe` に入り、このフォルダを利用者の PATH に足す。npm で入れた claude が残っていると PATH で先に見つかるので、`npm uninstall -g @anthropic-ai/claude-code` で消す。`claude --version` が動くこと、`Get-Command claude -All` にネイティブのものだけが出ることを確かめる |
 | PowerShell 7 | Codex のインストーラーを動かす | `winget install --id Microsoft.PowerShell --exact`。Windows に最初からある PowerShell 5.1 では、Codex のインストーラーが `OSArchitecture` を読めずに止まる(2026-09-27) |
