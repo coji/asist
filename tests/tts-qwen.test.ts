@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   stop: vi.fn()
 }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ ...mocks.settings }) }))
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/qwen-tts', () => ({
   stream: mocks.stream,
   synthesizeWav: mocks.synthesizeWav,

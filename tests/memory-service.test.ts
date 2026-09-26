@@ -88,7 +88,8 @@ describe('memory service', () => {
     expect(service.documents()).toEqual([])
   })
 
-  it('counts a committed save as done when the index cannot be rebuilt, and leaves the failure to the next read', () => {
+  // The rebuild is made to fail with a named pipe (mkfifo), which Windows does not have in a folder.
+  it.runIf(process.platform !== 'win32')('counts a committed save as done when the index cannot be rebuilt, and leaves the failure to the next read', () => {
     service.ensureLoaded()
     fs.writeFileSync(memoryFile('pages', '松葉軒.md'), MATSUBAKEN)
     service.reindex()

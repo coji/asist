@@ -322,7 +322,8 @@ it('keeps a broken curation state file as it is, starts nothing at startup, and 
 it('stops on a curation state file of an unknown shape and names the file and the fields to fix', async () => {
   const { curation } = await setup()
   fs.writeFileSync(stateFile(), '{"curatedThrough":"2026-09-08","jobs":{}}')
-  expect(() => curation.curatedThrough()).toThrow(new RegExp(`${stateFile()}[^]*jobs[^]*pendingFrom`))
+  const file = stateFile().replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+  expect(() => curation.curatedThrough()).toThrow(new RegExp(`${file}[^]*jobs[^]*pendingFrom`))
   expect(fs.readFileSync(stateFile(), 'utf8')).toBe('{"curatedThrough":"2026-09-08","jobs":{}}')
 })
 
@@ -414,7 +415,9 @@ it('keeps a merged job whose reindex is still pending beyond the 50 entries of t
   expect(git(repo, 'rev-parse', 'HEAD')).toBe(merged)
 })
 
-describe('a page name that macOS or Windows cannot give a file', () => {
+// Git for Windows cannot open a file named CON.md, a name Windows keeps for the console, so it can neither add nor
+// check out such a page, and on Windows git refuses the page before ASIST's own check of page names does.
+describe.runIf(process.platform !== 'win32')('a page name that macOS or Windows cannot give a file', () => {
   const PAGE = '---\nupdated: 2026-09-11\n---\n# 名前\n\n## 要約\n本文。\n'
 
   it('refuses to merge a curation that adds such a page, and records why', async () => {

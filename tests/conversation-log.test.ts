@@ -43,7 +43,8 @@ describe('logFileName', () => {
 })
 
 describe('ConversationLog', () => {
-  it('creates the day file readable by the user alone', () => {
+  // Windows has no POSIX permission bits; a file under the user's profile folder is guarded by that folder's access list.
+  it.runIf(process.platform !== 'win32')('creates the day file readable by the user alone', () => {
     const { log, dir } = makeLog({ now: () => new Date(2026, 8, 8, 10, 30) })
     log.append({ kind: 'user', turnId: 1, text: 'メールを読んで' })
     expect(fs.statSync(path.join(dir, '2026-09-08.jsonl')).mode & 0o777).toBe(0o600)

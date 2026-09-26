@@ -189,6 +189,8 @@ describe('a card that cannot be filled', () => {
 
 describe('the files card (show_files)', () => {
   it('refuses a path whose .. climbs out of a symbolic link, and reads the path it checked', async () => {
+    // Windows removes "link/.." from a path as text before it looks at the disk, so no .. climbs out of a link there.
+    const climbsOut = process.platform !== 'win32'
     const base = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-show-files-')))
     const root = path.join(base, 'root')
     mkdirSync(path.join(base, 'outside', 'sub'), { recursive: true })
@@ -199,8 +201,12 @@ describe('the files card (show_files)', () => {
     mocks.roots = [root]
     const { props } = await fetchPanel('files', { paths: [`${root}/link/../secret.txt`, `${root}/docs/../secret.txt`] })
     const items = props.items as Array<{ path: string; text?: string; error?: string }>
-    expect(items[0]).toMatchObject({ error: createTranslator('ja-JP')('files.errors.outsideRoots') })
-    expect(items[0].text).toBeUndefined()
+    if (climbsOut) {
+      expect(items[0]).toMatchObject({ error: createTranslator('ja-JP')('files.errors.outsideRoots') })
+      expect(items[0].text).toBeUndefined()
+    } else {
+      expect(items[0]).toMatchObject({ path: path.join(root, 'secret.txt'), text: 'inside' })
+    }
     expect(items[1]).toMatchObject({ path: path.join(root, 'secret.txt'), text: 'inside' })
   })
 })

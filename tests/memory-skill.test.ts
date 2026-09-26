@@ -207,7 +207,8 @@ describe('the memory-curation skill', () => {
 
   it('runs its validate.mjs once installed into a worktree, where the rules it imports are copied beside it', () => {
     for (const locale of LOCALES) {
-      const worktree = mkdtempSync(path.join(tmpdir(), 'asist-memory-skill-installed-'))
+      // A curation's worktree is named after the job's title, which holds Japanese characters.
+      const worktree = mkdtempSync(path.join(tmpdir(), '記憶の整理-'))
       installSkill(worktree, skillDir(locale))
       const dir = wellFormed()
       for (const skills of SKILL_DIRS) expect(validate(path.join(worktree, skills, CURATION_SKILL), dir)).toEqual({ ok: true, output: 'OK\n' })

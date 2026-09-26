@@ -26,7 +26,7 @@ function store(available = true) {
 }
 
 describe('createMailSecretStore', () => {
-  it('writes each value encrypted in an owner-only file, decrypts it on read, and removes it', () => {
+  it('writes each value encrypted, decrypts it on read, and removes it', () => {
     const secrets = store()
     secrets.set('a1', 'app-password-1')
     secrets.set('a2', 'ひみつの合言葉')
@@ -34,13 +34,18 @@ describe('createMailSecretStore', () => {
     const raw = fs.readFileSync(file, 'utf8')
     expect(raw).not.toContain('app-password-1')
     expect(JSON.parse(raw).secrets.a1).toBe(Buffer.from(reverse('app-password-1')).toString('base64'))
-    expect(fs.statSync(file).mode & 0o777).toBe(0o600)
     expect(secrets.get('a1')).toBe('app-password-1')
     expect(secrets.get('a2')).toBe('ひみつの合言葉')
     expect(secrets.get('none')).toBeNull()
     secrets.remove('a1')
     expect(secrets.get('a1')).toBeNull()
     expect(store().get('a2')).toBe('ひみつの合言葉')
+  })
+
+  // Windows has no POSIX permission bits; a file under the user's profile folder is guarded by that folder's access list.
+  it.runIf(process.platform !== 'win32')('writes the file readable by the owner alone', () => {
+    store().set('a1', 'app-password-1')
+    expect(fs.statSync(path.join(directory, 'nested', 'mail-secrets.json')).mode & 0o777).toBe(0o600)
   })
 
   it('throws instead of storing or decrypting where encryption is unavailable', () => {

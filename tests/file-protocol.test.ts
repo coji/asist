@@ -7,6 +7,8 @@ const electron = vi.hoisted(() => ({ handle: vi.fn() }))
 vi.mock('electron', () => ({ protocol: { registerSchemesAsPrivileged: vi.fn(), handle: electron.handle } }))
 
 const load = () => import('../src/main/file-protocol')
+/** The URL rules of macOS, for the tests that write a macOS path on any OS. */
+const MACOS = { windows: false }
 
 /** Registers the handler for the folder and returns what it answers for a URL and a Range header. */
 async function serve(folder: string, url: string, range?: string): Promise<Response> {
@@ -21,10 +23,10 @@ describe('asist-file:// URLs and paths', () => {
   it('turns an absolute path into a URL and reads the same path back, including Japanese characters and spaces', async () => {
     const { fileUrl, filePathFromUrl } = await load()
     const path = '/Users/me/Application Support/asist/memory/pages/大川俊介.md'
-    const url = fileUrl(path)
+    const url = fileUrl(path, MACOS)
     expect(url.startsWith('asist-file:///Users/me/')).toBe(true)
-    expect(filePathFromUrl(url)).toBe(path)
-    expect(filePathFromUrl(`${url}?t=1`)).toBe(path)
+    expect(filePathFromUrl(url, MACOS)).toBe(path)
+    expect(filePathFromUrl(`${url}?t=1`, MACOS)).toBe(path)
   })
 
   it('rejects other schemes and relative paths', async () => {
@@ -44,17 +46,17 @@ describe('asist-file:// URLs and paths', () => {
   it('keeps a #, a ? or a % in a file name as part of the path rather than a fragment or a query', async () => {
     const { fileUrl, filePathFromUrl } = await load()
     for (const file of ['/Users/me/Documents/C# notes.pdf', '/Users/me/Documents/why?.png', '/Users/me/Documents/Issue #12.png', '/Users/me/Documents/100%.png']) {
-      const url = new URL(fileUrl(file))
+      const url = new URL(fileUrl(file, MACOS))
       expect([url.hash, url.search]).toEqual(['', ''])
-      expect(filePathFromUrl(url.href)).toBe(file)
+      expect(filePathFromUrl(url.href, MACOS)).toBe(file)
     }
   })
 
   it('reads the file a page names in a relative link with its reserved characters escaped', async () => {
     const { fileUrl, filePathFromUrl } = await load()
-    const page = fileUrl('/r/report.html')
-    expect(filePathFromUrl(new URL('Q1%2C%20Q2.png', page).href)).toBe('/r/Q1, Q2.png')
-    expect(filePathFromUrl(new URL('C%23.png', page).href)).toBe('/r/C#.png')
+    const page = fileUrl('/r/report.html', MACOS)
+    expect(filePathFromUrl(new URL('Q1%2C%20Q2.png', page).href, MACOS)).toBe('/r/Q1, Q2.png')
+    expect(filePathFromUrl(new URL('C%23.png', page).href, MACOS)).toBe('/r/C#.png')
   })
 
   it('writes a macOS path as it always has, escaping every character of a name that is not plain', async () => {
@@ -91,10 +93,11 @@ describe('asist-file:// URLs and paths', () => {
     writeFileSync(path.join(base, 'outside', 'secret.txt'), 'outside')
     writeFileSync(path.join(root, 'secret.txt'), 'inside')
     symlinkSync(path.join(base, 'outside', 'sub'), path.join(root, 'link'))
+    const { fileUrl } = await load()
     // %2F keeps the .. inside one segment for the URL parser, and the path decodes to root/link/../secret.txt.
-    const response = await serve(root, `asist-file://${root}/link/..%2Fsecret.txt`)
+    const response = await serve(root, `${fileUrl(root)}/link/..%2Fsecret.txt`)
     expect(response.status).toBe(403)
-    expect((await serve(root, `asist-file://${root}/secret.txt`)).status).toBe(200)
+    expect((await serve(root, fileUrl(path.join(root, 'secret.txt')))).status).toBe(200)
   })
 
   it('serves a file whose name holds a # from the URL the files card is given', async () => {

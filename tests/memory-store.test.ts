@@ -204,7 +204,8 @@ describe('the memory store', () => {
     expect(store.isClean()).toBe(true)
   })
 
-  it('refuses a named pipe at once instead of waiting for a writer, since git never shows one in a curation worktree', () => {
+  // Windows has no named pipe in a folder (mkfifo); the refusal of a symbolic link below runs on both.
+  it.runIf(process.platform !== 'win32')('refuses a named pipe at once instead of waiting for a writer, since git never shows one in a curation worktree', () => {
     const dir = store.memoryDir()
     fs.writeFileSync(path.join(dir, 'instruction.md'), INSTRUCTION)
     const pipe = path.join(dir, 'pages', 'x.md')

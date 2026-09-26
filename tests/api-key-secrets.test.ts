@@ -65,13 +65,12 @@ afterEach(() => {
 })
 
 describe('saved API keys', () => {
-  it('round-trips a key through an owner-only encrypted file and keeps it out of process.env', async () => {
+  it('round-trips a key through an encrypted file and keeps it out of process.env', async () => {
     const keys = await import('../src/main/services/llm/keys')
     keys.saveProviderKey('anthropic', KEY)
 
     const raw = fs.readFileSync(file(), 'utf8')
     expect(raw).not.toContain(KEY)
-    expect(fs.statSync(file()).mode & 0o777).toBe(0o600)
     expect(process.env.ANTHROPIC_API_KEY).toBeUndefined()
 
     vi.resetModules()
@@ -79,6 +78,13 @@ describe('saved API keys', () => {
     expect(fresh.providerKey('anthropic')).toBe(KEY)
     const { revealedApiKeys } = await import('../src/main/services/api-key-secrets')
     expect(revealedApiKeys()).toEqual([KEY])
+  })
+
+  // Windows has no POSIX permission bits; a file under the user's profile folder is guarded by that folder's access list.
+  it.runIf(process.platform !== 'win32')('writes the file of saved keys readable by the owner alone', async () => {
+    const keys = await import('../src/main/services/llm/keys')
+    keys.saveProviderKey('anthropic', KEY)
+    expect(fs.statSync(file()).mode & 0o777).toBe(0o600)
   })
 
   it('uses a key from the environment over the saved one and refuses a save the environment would hide', async () => {

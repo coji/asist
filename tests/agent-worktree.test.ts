@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
+import { shellPath, testGitEnv } from './helpers/git'
 
 const ja = createTranslator('ja-JP')
 
@@ -46,7 +47,7 @@ const expectRefused = (agent: Agent, id: string, submodules: string[], head: str
   expect(fs.existsSync(job.worktree!.dir)).toBe(true)
 }
 const git = (cwd: string, ...args: string[]): string =>
-  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: testGitEnv() }).trim()
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -571,7 +572,7 @@ it('refuses to merge over an uncommitted edit of the user\'s that a fsmonitor ho
   // A hook that answers every query with a fresh token and no changed path, as one that lost its events does.
   const hook = path.join(mocks.root, 'fsmonitor')
   fs.writeFileSync(hook, '#!/bin/sh\nprintf "token-1\\0"\n', { mode: 0o755 })
-  git(repo, 'config', 'core.fsmonitor', hook)
+  git(repo, 'config', 'core.fsmonitor', shellPath(hook))
   const agent = await import('../src/main/services/agent')
   const job = agent.startIsolated('修正する', { cwd: repo })
   fs.writeFileSync(path.join(job.cwd, 'tracked.txt'), 'changed by the job\n')

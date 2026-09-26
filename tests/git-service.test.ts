@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
+import { shellPath, testGitEnv } from './helpers/git'
 const mocks = vi.hoisted(() => ({ windows: false }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd() } }))
 // The git of the machine the tests run on, unless a test asks for what ASIST does on Windows.
@@ -27,7 +28,7 @@ let root = ''
 let repo = ''
 
 const run = (cwd: string, args: string[]): string =>
-  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: testGitEnv() }).trim()
 
 beforeEach(() => {
   root = mkdtempSync(path.join(tmpdir(), 'asist-git-'))
@@ -223,7 +224,7 @@ describe('git service with an isolated worktree', () => {
     const log = path.join(root, 'filter-log')
     // A clean filter runs while git hashes a file it adds, and notes whether the index was locked then and
     // which index the add was for. The lock is git's own only while it writes that very index.
-    run(repo, ['config', 'filter.probe.clean', `sh -c 'printf "%s %s\\n" "\${GIT_INDEX_FILE:-index}" "$(test -e ${lock} && echo locked || echo free)" >> ${log}; cat'`])
+    run(repo, ['config', 'filter.probe.clean', `sh -c 'printf "%s %s\\n" "\${GIT_INDEX_FILE:-index}" "$(test -e "${shellPath(lock)}" && echo locked || echo free)" >> "${shellPath(log)}"; cat'`])
     fs.mkdirSync(path.join(repo, '.git', 'info'), { recursive: true })
     fs.writeFileSync(path.join(repo, '.git', 'info', 'attributes'), '*.txt filter=probe\n')
     fs.writeFileSync(path.join(wt, 'b.txt'), 'from job\n')
@@ -256,7 +257,7 @@ describe('git service with an isolated worktree', () => {
     // What commitAll does up to moving the branch, with the index never brought up to the new commit.
     const staging = path.join(root, 'crashed-index')
     fs.copyFileSync(path.resolve(wt, run(wt, ['rev-parse', '--git-path', 'index'])), staging)
-    const env = { ...process.env, GIT_INDEX_FILE: staging }
+    const env = { ...testGitEnv(), GIT_INDEX_FILE: staging }
     execFileSync('git', ['add', '-A'], { cwd: wt, env })
     const tree = execFileSync('git', ['write-tree'], { cwd: wt, env, encoding: 'utf8' }).trim()
     const commit = run(wt, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit-tree', tree, '-p', base, '-m', 'asist: job'])
@@ -414,8 +415,8 @@ describe('git service with an isolated worktree', () => {
     git.commitAll(wt, 'asist: job')
     const replaced = path.join(root, 'replaced.sh')
     fs.writeFileSync(replaced, '#!/bin/sh\necho replaced\n', { mode: 0o755 })
-    run(repo, ['config', 'diff.external', replaced])
-    run(repo, ['config', 'diff.shown.textconv', replaced])
+    run(repo, ['config', 'diff.external', shellPath(replaced)])
+    run(repo, ['config', 'diff.shown.textconv', shellPath(replaced)])
     run(repo, ['config', 'color.diff', 'always'])
     fs.mkdirSync(path.join(repo, '.git', 'info'), { recursive: true })
     fs.writeFileSync(path.join(repo, '.git', 'info', 'attributes'), '*.txt diff=shown\n')
@@ -555,7 +556,9 @@ describe('git service with an isolated worktree', () => {
       fs.rmSync(lock)
     })
 
-    it.each(['core.checkStat=minimal', 'core.trustctime=false'])('commits an edit in place that keeps the size and puts the mtime back although %s leaves out the ctime', async (setting) => {
+    // Git for Windows records the creation time of a file as its ctime, so on Windows no setting lets git see an
+    // edit in place that keeps the size and puts the mtime back; ASIST's answer there belongs to the agent's port to Windows.
+    it.runIf(process.platform !== 'win32').each(['core.checkStat=minimal', 'core.trustctime=false'])('commits an edit in place that keeps the size and puts the mtime back although %s leaves out the ctime', async (setting) => {
       const [name, value] = setting.split('=')
       run(repo, ['config', name, value])
       const base = git.headCommit(repo)
@@ -585,7 +588,7 @@ describe('git service with an isolated worktree', () => {
     it('sees an edit in the working tree of the repository that a fsmonitor hook missed, so that no merge overwrites it', () => {
       const hook = path.join(root, 'fsmonitor')
       fs.writeFileSync(hook, '#!/bin/sh\nprintf "token-1\\0"\n', { mode: 0o755 })
-      run(repo, ['config', 'core.fsmonitor', hook])
+      run(repo, ['config', 'core.fsmonitor', shellPath(hook)])
       run(repo, ['status', '--porcelain'])
       run(repo, ['status', '--porcelain'])
       fs.writeFileSync(path.join(repo, 'a.txt'), 'the user\'s edit\n')
@@ -598,7 +601,7 @@ describe('git service with an isolated worktree', () => {
       // A hook that answers every query with a fresh token and no changed path, as one that lost its events does.
       const hook = path.join(root, 'fsmonitor')
       fs.writeFileSync(hook, '#!/bin/sh\nprintf "token-1\\0"\n', { mode: 0o755 })
-      run(repo, ['config', 'core.fsmonitor', hook])
+      run(repo, ['config', 'core.fsmonitor', shellPath(hook)])
       const wt = path.join(root, 'wt')
       git.worktreeAdd(repo, wt, 'asist/fsmonitor')
       run(wt, ['status', '--porcelain'])

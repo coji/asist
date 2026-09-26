@@ -107,7 +107,10 @@ it('keeps waiting while the group holds only exited processes that are not reape
   expect(finished).toHaveBeenCalledExactlyOnceWith(0)
 })
 
-it('stops a real Node process together with its child process', { timeout: 15_000 }, async () => {
+// Process groups exist only on POSIX; on Windows the agent launcher's Job Object is to take their place, with tests of its own.
+const posix = process.platform !== 'win32'
+
+it.runIf(posix)('stops a real Node process together with its child process', { timeout: 15_000 }, async () => {
   const source = `
     const {spawn} = require('node:child_process');
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {stdio:'ignore'});
@@ -134,7 +137,7 @@ it('stops a real Node process together with its child process', { timeout: 15_00
   }
 })
 
-it('waits for a child that ignores SIGTERM when the real CLI exits on its own and leaves the child behind', { timeout: 15_000 }, async () => {
+it.runIf(posix)('waits for a child that ignores SIGTERM when the real CLI exits on its own and leaves the child behind', { timeout: 15_000 }, async () => {
   const descendantSource = `
     process.on('SIGTERM', () => {});
     process.stdout.write('ready');

@@ -53,8 +53,8 @@ describe('scripts/i18n.mjs', () => {
       failure = error as { status?: number; stderr?: string }
     }
     expect(failure.status).toBe(1)
-    expect(failure.stderr).toContain('tests/errors.test.ts:1:')
-    expect(failure.stderr).toContain('tests/errors.test.ts:2:')
+    expect(failure.stderr).toContain(`${path.join('tests', 'errors.test.ts')}:1:`)
+    expect(failure.stderr).toContain(`${path.join('tests', 'errors.test.ts')}:2:`)
   })
 
   it('refuses a message that leaves out a language, and writes nothing', () => {

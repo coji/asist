@@ -114,7 +114,9 @@ async function crashParent(descendant: boolean): Promise<{ job: AgentJob; repo: 
   return { job, repo: fixture.repo, writer }
 }
 
-describe('Agent crash recovery with real processes', { timeout: 30_000 }, () => {
+// The agent starts through /bin/sh in a process group of its own and is found again with /bin/ps, all POSIX only;
+// on Windows the agent launcher's Job Object is to take their place, with tests of its own.
+describe.runIf(process.platform !== 'win32')('Agent crash recovery with real processes', { timeout: 30_000 }, () => {
   it.each([false, true])('does not finalize the worktree after a crash until the surviving writer stops (descendant only=%s)', async (descendant) => {
     const { job, repo, writer } = await crashParent(descendant)
     agent = await import('../src/main/services/agent')

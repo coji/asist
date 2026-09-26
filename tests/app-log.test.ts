@@ -46,10 +46,15 @@ describe('redacting secrets', () => {
 
 describe('AppLog', () => {
   it('writes time, level and source to the daily file and keeps stack trace lines', () => {
-    const { log, dir, read } = makeLog()
+    const { log, read } = makeLog()
     log.write('warn', 'renderer', ['panel crashed (map)\n    at MapBody'])
     expect(read('2026-09-21.log')).toBe('2026-09-21 17:05:09.042 WARN  renderer panel crashed (map)\n    at MapBody\n')
-    // Error text can carry file paths and mail addresses, so other users must not read the file.
+  })
+
+  // Windows has no POSIX permission bits; a file under the user's profile folder is guarded by that folder's access list.
+  it.runIf(process.platform !== 'win32')('creates the daily file readable by the user alone, since error text can carry file paths and mail addresses', () => {
+    const { log, dir } = makeLog()
+    log.write('warn', 'renderer', ['panel crashed (map)'])
     expect(fs.statSync(path.join(dir, '2026-09-21.log')).mode & 0o077).toBe(0)
   })
 

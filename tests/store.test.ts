@@ -12,7 +12,8 @@ beforeAll(() => {
 
 import { appendJsonl, dataPath, writeJson } from '../src/main/services/store'
 
-describe('store', () => {
+// Windows has no POSIX permission bits; a file under the user's profile folder is guarded by that folder's access list.
+describe.runIf(process.platform !== 'win32')('store', () => {
   it('creates a job log readable by the user alone', () => {
     appendJsonl('joblogs/job-1.events.jsonl', { type: 'text', text: 'output' })
     expect(fs.statSync(dataPath('joblogs/job-1.events.jsonl')).mode & 0o777).toBe(0o600)

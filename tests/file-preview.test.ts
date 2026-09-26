@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -83,13 +83,17 @@ describe('allowedPath, the path check of show_files, asist-file:// and Reveal in
     expect(allowedPath(path.join(base, 'alias', 'not-yet.md'), [path.join(base, 'real')])).not.toBeNull()
   })
 
-  it('allows a file inside a root whose Japanese name is written in the other normalization form', () => {
+  it('matches a root whose Japanese name is written in the other normalization form as the disk matches names', () => {
     const base = mkdtempSync(path.join(tmpdir(), 'asist-roots-'))
     mkdirSync(path.join(base, 'プロジェクト資料'.normalize('NFC')))
     writeFileSync(path.join(base, 'プロジェクト資料'.normalize('NFC'), 'report.pdf'), 'x')
     const written = path.join(base, 'プロジェクト資料'.normalize('NFD'), 'report.pdf')
-    expect(allowedPath(written, [path.join(base, 'プロジェクト資料'.normalize('NFC'))])).not.toBeNull()
-    expect(allowedPath(path.join(base, 'プロジェクト資料'.normalize('NFC'), 'report.pdf'), [path.join(base, 'プロジェクト資料'.normalize('NFD'))])).not.toBeNull()
+    // APFS matches names regardless of their Unicode normalization, while NTFS keeps the two forms as two
+    // different names, so on Windows the other form names a folder that does not exist.
+    const sameFolder = process.platform !== 'win32'
+    expect(existsSync(written)).toBe(sameFolder)
+    expect(allowedPath(written, [path.join(base, 'プロジェクト資料'.normalize('NFC'))]) !== null).toBe(sameFolder)
+    expect(allowedPath(path.join(base, 'プロジェクト資料'.normalize('NFC'), 'report.pdf'), [path.join(base, 'プロジェクト資料'.normalize('NFD'))]) !== null).toBe(sameFolder)
   })
 
   it('allows a file inside a root when only the letter case differs, as the disk matches names', () => {
@@ -108,12 +112,22 @@ describe('allowedPath, the path check of show_files, asist-file:// and Reveal in
     writeFileSync(path.join(base, 'outside', 'secret.txt'), 'outside')
     writeFileSync(path.join(base, 'root', 'report.md'), '# report')
     symlinkSync(path.join(base, 'outside', 'sub'), path.join(base, 'root', 'link'))
-    const roots = [path.join(base, 'root')]
-    // As text, root/link/../secret.txt is root/secret.txt; the OS follows the link first and opens outside/secret.txt.
-    expect(allowedPath(path.join(base, 'root') + '/link/../secret.txt', roots)).toBeNull()
-    expect(allowedPath(path.join(base, 'root') + '/link/../missing.txt', roots)).toBeNull()
-    expect(allowedPath(path.join(base, 'root') + '/docs/../report.md', roots)).toBe(path.join(base, 'root', 'report.md'))
-    expect(allowedPath(path.join(base, 'root') + '/gone/../report.md', roots)).toBeNull()
+    const root = path.join(base, 'root')
+    const roots = [root]
+    expect(allowedPath(root + '/docs/../report.md', roots)).toBe(path.join(root, 'report.md'))
+    // As text, root/link/../secret.txt is root/secret.txt. macOS follows the link first and opens
+    // outside/secret.txt, while Windows removes "link/.." from the path as text before it looks at the disk.
+    if (process.platform === 'win32') {
+      expect(readFileSync(root + '/link/../secret.txt', 'utf8')).toBe('inside')
+      expect(allowedPath(root + '/link/../secret.txt', roots)).toBe(path.join(root, 'secret.txt'))
+      expect(allowedPath(root + '/link/../missing.txt', roots)).toBe(path.join(root, 'missing.txt'))
+      expect(allowedPath(root + '/gone/../report.md', roots)).toBe(path.join(root, 'report.md'))
+    } else {
+      expect(readFileSync(root + '/link/../secret.txt', 'utf8')).toBe('outside')
+      expect(allowedPath(root + '/link/../secret.txt', roots)).toBeNull()
+      expect(allowedPath(root + '/link/../missing.txt', roots)).toBeNull()
+      expect(allowedPath(root + '/gone/../report.md', roots)).toBeNull()
+    }
   })
 
   it('returns the file as the disk spells it, which is the path that is read', () => {
@@ -139,11 +153,12 @@ describe('allowedPath, the path check of show_files, asist-file:// and Reveal in
     }
   })
 
-  it('allows every path when the root folder "/" is an allowed root', () => {
+  it('allows every path on the disk when its root folder, "/" or "C:\\", is an allowed root', () => {
     const base = mkdtempSync(path.join(tmpdir(), 'asist-roots-'))
     writeFileSync(path.join(base, 'a.txt'), 'x')
-    expect(allowedPath(path.join(base, 'a.txt'), ['/'])).not.toBeNull()
-    expect(allowedPath('/etc/hosts', ['/'])).not.toBeNull()
+    const top = path.parse(base).root
+    expect(allowedPath(path.join(base, 'a.txt'), [top])).not.toBeNull()
+    expect(allowedPath(path.join(top, 'etc', 'hosts'), [top])).not.toBeNull()
   })
 })
 
