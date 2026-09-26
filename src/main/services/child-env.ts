@@ -29,6 +29,15 @@ export function childEnv(extra: NodeJS.ProcessEnv = {}, parent: NodeJS.ProcessEn
   return env
 }
 
+/**
+ * The environment a Python process starts with. Python on Windows reads and writes its pipes in the
+ * locale's code page (cp932, cp1252) and would misread the Japanese in the JSON lines, so UTF-8 mode is
+ * turned on, on every OS. Output is unbuffered so that each line reaches the app when it is printed.
+ */
+export function pythonEnv(extra: NodeJS.ProcessEnv = {}, parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return childEnv({ PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', ...extra }, parent)
+}
+
 /** Deletes every variable whose name, as the OS compares it, matches. */
 export function removeVariables(env: NodeJS.ProcessEnv, matches: (key: string) => boolean): void {
   for (const name of Object.keys(env)) if (matches(envNameKey(name))) delete env[name]

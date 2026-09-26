@@ -8,7 +8,7 @@ import { MLX_AUDIO_VERSION } from '@shared/asr-models'
 import type { SetupProgress } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './i18n'
-import { childEnv } from './child-env'
+import { pythonEnv } from './child-env'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
@@ -171,7 +171,7 @@ export function startWorker(options: WorkerOptions): MlxWorker | null {
   if (!fs.existsSync(script)) return null
   const child = spawn(pythonPath(), [script, snapshotPath(options.model), '-'], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: childEnv({ HF_HUB_OFFLINE: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1', PYTHONUNBUFFERED: '1' }),
+    env: pythonEnv({ HF_HUB_OFFLINE: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
     windowsHide: true
   })
   const worker = new MlxWorker(child, options)
@@ -210,7 +210,7 @@ function downloadModel(model: PinnedModel, signal: AbortSignal, onBytes: (done: 
     const started = Date.now()
     const child = spawn(pythonPath(), [resourcePath('hf_snapshot.py'), model.id, model.revision], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: childEnv({ HF_HUB_DISABLE_XET: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1', PYTHONUNBUFFERED: '1' }),
+      env: pythonEnv({ HF_HUB_DISABLE_XET: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
       windowsHide: true
     })
     downloads.add(child)

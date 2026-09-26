@@ -112,6 +112,5 @@
 - **lock ファイル。**
   - いまの lock ファイル(`vap-requirements.txt`、`embedding-requirements.txt`)は、`--python-platform aarch64-apple-darwin` でコンパイルしています。
   - Windows 向けにコンパイルし直すと、違いは colorama(click と tqdm が Windows でだけ使う)の1つだけでした。
-  - 2つの OS で使う lock は、`uv pip compile --universal` で1つにするか、OS ごとに別のファイルにします。1つにできるなら、1つにします。
-  - どのファイルを使うかは、`uv.ts` の `installRequirements` の呼び出し側が OS で選びます。
+  - 2つの OS で使う lock は、`uv pip compile --universal` で1つにしました。固定したバージョンとハッシュは変わらず、増えたのは Windows だけの colorama と、Linux だけの torch の依存(`sys_platform == 'linux'`、macOS と Windows には入らない)です。
 - **CUDA の実行環境。** CUDA の実行環境の lock は、Windows だけのファイルになります([05-speech.md](05-speech.md))。

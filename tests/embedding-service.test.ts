@@ -56,6 +56,11 @@ function result(id: string, vector: number[]) {
 }
 
 describe('embedding worker start', () => {
+  it('starts the worker with Python in UTF-8 mode, so that it reads the Japanese in a request as UTF-8 on Windows too', async () => {
+    await ready()
+    expect(mocks.spawn.mock.calls[0][2].env).toMatchObject({ PYTHONUTF8: '1' })
+  })
+
   it('stops a worker whose model has another number of dimensions than the pinned one', async () => {
     const starting = embedding.ensureStarted()
     child.stdout.write(`ASIST_JSON:{"type":"ready","dim":${EMBEDDING_MODEL.dim + 128}}\n`)

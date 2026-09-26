@@ -7,7 +7,7 @@ import { app } from 'electron'
 import type { SetupProgress } from '@shared/ipc'
 import type { MessageKey } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
-import { childEnv } from './child-env'
+import { pythonEnv } from './child-env'
 import { errorMessage, t } from './i18n'
 import {
   downloadMissing,
@@ -119,7 +119,7 @@ export class OnnxWorker<Answer> {
     const { name } = this.options
     const spawned = spawn(pythonPath(), [script, ...this.targets(), String(WORKER_THREADS)], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: childEnv({ PYTHONUNBUFFERED: '1' }),
+      env: pythonEnv(),
       windowsHide: true
     })
     this.child = spawned

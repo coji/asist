@@ -83,6 +83,11 @@ function wavFiles(): string[] {
 }
 
 describe('MLX transcription lifecycle', () => {
+  it('starts the worker with Python in UTF-8 mode, so that the transcript it prints is UTF-8 on Windows too', async () => {
+    await ready()
+    expect(mocks.spawn.mock.calls.at(-1)![2].env).toMatchObject({ PYTHONUTF8: '1' })
+  })
+
   it('accepts cancellation while the worker is loading without dispatching the request', async () => {
     const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'loading'))
     expect(mlx.cancelTranscription('loading')).toBe(true)

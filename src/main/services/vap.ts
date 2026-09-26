@@ -8,7 +8,7 @@ import { conversationFeatures } from '@shared/conversation-locale'
 import { parseVapWorkerLine } from '@shared/vap-protocol'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './i18n'
-import { childEnv } from './child-env'
+import { pythonEnv } from './child-env'
 import { downloadPinnedFile } from './onnx-runtime'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
@@ -303,7 +303,7 @@ async function startWorker(): Promise<boolean> {
   const spawned = spawn(pythonPath(), workerArgs(), {
     stdio: ['pipe', 'pipe', 'pipe'],
     // The models are handed over as local paths, and the route out to Hugging Face is closed at run time.
-    env: childEnv({ PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' }),
+    env: pythonEnv({ HF_HUB_OFFLINE: '1' }),
     windowsHide: true
   })
   child = spawned

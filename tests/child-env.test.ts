@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO } from '@shared/llm-catalog'
-import { childEnv } from '../src/main/services/child-env'
+import { childEnv, pythonEnv } from '../src/main/services/child-env'
 
 /** No child process may receive a provider's API key, whether it came from the parent environment or a caller. */
 
@@ -53,5 +53,13 @@ describe('childEnv', () => {
       Anthropic_Api_Key: 'not-the-key',
       path: '/extra'
     })
+  })
+})
+
+describe('pythonEnv', () => {
+  it('starts Python in UTF-8 mode and unbuffered, and still withholds every provider key', () => {
+    simulate('win32')
+    const env = pythonEnv({ HF_HUB_OFFLINE: '1' }, { Path: 'C:\\Windows', PYTHONUTF8: '0', Anthropic_Api_Key: 'secret' })
+    expect(env).toEqual({ Path: 'C:\\Windows', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' })
   })
 })

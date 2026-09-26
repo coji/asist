@@ -22,8 +22,11 @@ const MODEL = { id: 'test-org/test-model', revision: 'abc123', label: 'Test Mode
  * records its pid; for a worker script it reports ready. With FAKE_DOWNLOAD_HANG set the download never ends.
  * The pid file appears by a rename: a redirection creates the file before it writes, and a test that saw it
  * empty read pid 0, which names the test's own process group and never stops existing.
+ * It exits at once unless it was started in Python's UTF-8 mode, which Python on Windows needs to read the
+ * JSON lines.
  */
 const FAKE_PYTHON = `#!/bin/sh
+[ "$PYTHONUTF8" = 1 ] || exit 9
 case "$1" in
   *hf_snapshot.py)
     echo $$ > "$FAKE_PID_FILE.tmp"

@@ -50,6 +50,14 @@ afterEach(() => {
 const READY = 'ASIST_JSON:{"type":"ready","device":"cpu","frameHz":12.5}\n'
 
 describe('the VAP worker', () => {
+  it('starts the worker with Python in UTF-8 mode, so that its JSON lines are UTF-8 on Windows too', async () => {
+    const starting = vap.ensureStarted(() => {})
+    children[0].stdout.write(READY)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await starting).toBe(true)
+    expect(mocks.spawn.mock.calls[0][2].env).toMatchObject({ PYTHONUTF8: '1' })
+  })
+
   it('lets a preparation wait for the worker the conversation is already loading, and the other way round', async () => {
     const starting = vap.ensureStarted(() => {})
     const preparing = vap.prepare(() => {})

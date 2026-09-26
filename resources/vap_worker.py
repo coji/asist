@@ -210,11 +210,13 @@ def main() -> None:
     # VAD falls behind and utterances get dropped. One thread still finishes inside one 80 ms frame.
     torch.set_num_threads(args.threads)
     # The priority is lowered too. The conversation carries on without this estimate, which fails open,
-    # while capturing the audio cannot be allowed to stall.
-    try:
-        os.nice(5)
-    except OSError:
-        pass
+    # while capturing the audio cannot be allowed to stall. Windows has no os.nice, and there the worker
+    # keeps the normal priority.
+    if hasattr(os, "nice"):
+        try:
+            os.nice(5)
+        except OSError:
+            pass
 
     try:
         vap, aux, sinks = build_pipelines(args)

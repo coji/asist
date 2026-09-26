@@ -1,6 +1,8 @@
-# Installed with --no-deps; its dependencies are pinned in vap-requirements.txt.
-# To update, change a version here and run from the repository root:
-#   MACOSX_DEPLOYMENT_TARGET=14.0 uv pip compile resources/vap-requirements-maai.txt --no-deps --generate-hashes --no-header --python-version 3.12 --python-platform aarch64-apple-darwin -o resources/vap-requirements-maai.txt
+# Installed with --no-deps; its dependencies are pinned in vap-requirements.txt. maai is a pure Python wheel,
+# so the same lock serves macOS arm64 and Windows x64.
+# To update, change a version here, run from the repository root with the bundled uv, and put these comment
+# lines back, since uv drops them:
+#   resources/uv/uv pip compile resources/vap-requirements-maai.txt --no-deps --universal --generate-hashes --no-header --python-version 3.12 -o resources/vap-requirements-maai.txt
 maai==0.2.18 \
     --hash=sha256:1e58f21ef24ec5872ef0585a7448ebaf5969cd172dc6c50a4d070ffdfa92dcab \
     --hash=sha256:4402f02d520de0129cba72ebfa52a9a184ba6e5e353719cc1d4ab9fcc8887f29
