@@ -61,7 +61,7 @@
 - Windows のフォントを足します。
   - 本文: `'Segoe UI Variable Text', 'Segoe UI', 'Yu Gothic UI', 'Meiryo UI'`
   - 等幅: `'Cascadia Mono', Consolas`
-- 文字が収まるかを確かめる `demo:fit` は、macOS のフォントで測っています。Windows のフォントでは折り返しが変わるので、Windows でも測る必要があります。CI の Windows の runner に日本語のフォント(Yu Gothic)が入っているかは未確認です([06-open-questions.md](../06-open-questions.md))。
+- 文字が収まるかを確かめる `demo:fit` は、CI では macOS のフォントで測っています。Windows 11 の実機で、4つのテーマと11言語の、すべてのカードと33の画面を測り、はみ出しはありませんでした(2026-09-27)。CI の Windows の runner に日本語のフォント(Yu Gothic)が入っているかは未確認です([06-open-questions.md](../06-open-questions.md))。
 
 ## 画面の文言
 

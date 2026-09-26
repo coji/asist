@@ -35,6 +35,16 @@ Roughly how much height is left inside the dock on each setup. Maximized assumes
 | External 1080p maximized | about 982 | about 868 | l |
 | MacBook Pro 16-inch maximized | about 1006 | about 892 | l |
 
+On Windows the window has no title bar of its own, so a maximized window's page takes the whole work area: the screen's height in CSS px less the 48px taskbar. Measured on Windows 11 on a 1512×949 screen (2026-09-27): a page 901px tall and 791px inside the dock. The rest follow from the same subtraction, and a display scale of 150% on a 1080p screen, common on laptops, falls to s.
+
+| Setup (Windows 11) | Window height | Inside the dock | Size |
+| --- | --- | --- | --- |
+| 1920×1080 at 100%, maximized | 1032 | 922 | l |
+| 1920×1080 at 125%, maximized | 816 | 720 | l, at its lower edge |
+| 1920×1200 at 150%, maximized | 752 | 656 | m |
+| 1920×1080 at 150%, maximized | 672 | 576 | s |
+| 2560×1440 at 150%, maximized | 912 | 802 | l |
+
 ## 2. The card definition (CardDefinition)
 
 The type in `src/renderer/src/panels/shell/card.ts`. It is registered in `registry.tsx` as `type → CardDefinition`.
