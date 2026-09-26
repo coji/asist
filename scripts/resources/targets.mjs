@@ -7,8 +7,9 @@ import { prepareNativeWindows } from './native-windows.mjs'
 import { run } from './shared.mjs'
 import { prepareUv } from './uv.mjs'
 
-// electron downloads its binary the first time it is required, not on install, and test workers that
-// required it at the same time failed forty tests with half-written downloads.
+// electron downloads its binary the first time it is required, not on install. Test workers that required
+// it at the same time failed forty tests with half-written downloads, and electron-vite dev never requires
+// it: it reads the binary's path from path.txt and stops with "Electron uninstall" when that file is missing.
 function prepareElectron({ root }) {
   run(process.execPath, [createRequire(import.meta.url).resolve('electron/install.js')], { cwd: root })
 }
@@ -24,13 +25,13 @@ function preparePermissionTexts({ root }) {
 export const TARGETS = {
   'darwin-arm64': {
     test: [prepareGitMacos, prepareElectron],
-    dev: [prepareGitMacos, prepareUv, prepareNativeMacos],
+    dev: [prepareGitMacos, prepareUv, prepareNativeMacos, prepareElectron],
     build: [prepareGitMacos, prepareUv, prepareNativeMacos, preparePermissionTexts],
     check: [prepareUv]
   },
   'win32-x64': {
     test: [prepareGitWindows, prepareElectron],
-    dev: [prepareGitWindows, prepareUv, prepareNativeWindows],
+    dev: [prepareGitWindows, prepareUv, prepareNativeWindows, prepareElectron],
     build: [prepareGitWindows, prepareUv, prepareNativeWindows],
     check: [prepareGitWindows, prepareUv]
   }
