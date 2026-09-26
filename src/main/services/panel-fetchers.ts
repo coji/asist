@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { errorText } from '@shared/i18n/error-text'
 import { languageOf, regionCurrency } from '@shared/conversation-locale'
 import { conversationLocale, region } from './conversation-locale'
@@ -243,7 +244,7 @@ const files: Fetcher = async (props) => {
     const allowed = allowedPath(target, roots)
     return allowed !== null
       ? readFileItem(allowed, fileUrl)
-      : { path: target, name: target.slice(target.lastIndexOf('/') + 1), kind: 'binary', sizeBytes: 0, error: t('files.errors.outsideRoots') }
+      : { path: target, name: path.basename(target), kind: 'binary', sizeBytes: 0, error: t('files.errors.outsideRoots') }
   })
   if (items.every((item) => item.error)) {
     throw new Error(errorText('panels.errors.filesUnreadable', { files: items.map((item) => `${item.name}: ${item.error}`).join(' / ') }))

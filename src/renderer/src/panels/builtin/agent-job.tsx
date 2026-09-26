@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { MessageKey, Translate } from '@shared/i18n'
+import { baseName, dirName } from '@shared/file-path'
 import type { AgentJob, JobDiff, JobStatus } from '@shared/ipc'
 import { isJobTerminal } from '@shared/job-status'
 import { currentStep, foldJobLog } from '@shared/job-log-view'
@@ -178,8 +179,8 @@ function Artifacts({ job, size }: { job: AgentJob; size: CardContext['size'] }):
         {shown.map((path, i) => (
           <li key={path} className="card-row aj-artifact">
             <button type="button" className="card-row-link" onClick={() => openFiles(paths, job.title, i)} title={path}>
-              <span className="card-row-title">{path.split('/').pop()}</span>
-              <span className="card-row-meta">{shortPath(path.slice(0, path.lastIndexOf('/')) || '/')}</span>
+              <span className="card-row-title">{baseName(path)}</span>
+              <span className="card-row-meta">{shortPath(dirName(path))}</span>
             </button>
           </li>
         ))}

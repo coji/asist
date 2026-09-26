@@ -31,6 +31,8 @@ operation that belongs behind preload or the main process.
 - Persist each fact in one authoritative place and derive secondary views instead of
   synchronizing copies.
 - Do not add fallback behavior; fail loudly rather than degrade silently.
+- Code never splits a path or tests it as text with `/`, because Windows writes `C:\` and `\`: main
+  uses `node:path`, and shared and renderer code, which cannot import it, use `src/shared/file-path.ts`.
 - A JSON file under userData carries the version of its form (`StoredFormat`). Any change to the form,
   an added field included, raises the version, adds an upgrade from the previous version, and adds a
   sample of the new version to `tests/fixtures/stored/`. Upgrades are never removed.

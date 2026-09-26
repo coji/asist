@@ -11,21 +11,55 @@ import { t } from './i18n'
 export { classifyFile } from '@shared/files'
 
 /**
+ * What allowedPath asks of the OS: its rules for writing a path, and the lookup that resolves a path's
+ * links and spells each name as the disk stores it. Tests pass path.win32 with a disk of their own, so
+ * that the Windows rules are checked on any OS.
+ */
+export interface PathSystem {
+  path: typeof path.posix
+  realpath: (target: string) => string
+}
+
+const NATIVE: PathSystem = { path, realpath: fs.realpathSync.native }
+
+/**
  * The path to read for target when it lies under an allowed root, which are the jobs' working directories,
  * the memory folder and the folders allowed in the settings, or null when it does not. Both sides are
  * compared as the OS resolves them, so a link inside a root that points outside it, such as one checked into
  * a cloned repository, is refused, and so is a .. that climbs out of such a link. The caller reads the
  * returned path and never target itself, so that what is read is what was checked.
  */
-export function allowedPath(target: string, allowedRoots: readonly string[]): string | null {
-  if (!target.startsWith('/')) return null
-  const resolved = realPath(target)
+export function allowedPath(target: string, allowedRoots: readonly string[], system: PathSystem = NATIVE): string | null {
+  const paths = system.path
+  const windows = paths === path.win32
+  if (!paths.isAbsolute(target)) return null
+  const roots = allowedRoots.filter((root) => paths.isAbsolute(root))
+  if (windows) {
+    // NTFS opens "report.md:name" as the stream "name" of report.md, data that no listing of the folder shows.
+    if (target.slice(paths.parse(target).root.length).includes(':')) return null
+    // Resolving a path on a server connects to it and hands it the user's Windows credentials, so a target
+    // written on a drive or a share that no root is written on is refused before the disk is asked. A link
+    // under a root that points to another server is still followed.
+    const volume = (p: string): string => paths.parse(paths.normalize(p)).root.toLowerCase()
+    if (!roots.some((root) => volume(root) === volume(target))) return null
+  }
+  const resolved = realPath(target, system)
   if (resolved === null) return null
-  const allowed = allowedRoots.some((root) => {
-    const resolvedRoot = root.startsWith('/') ? realPath(root) : null
+  // Windows matches names regardless of letter case.
+  const key = windows ? (p: string): string => p.toLowerCase() : (p: string): string => p
+  const allowed = roots.some((root) => {
+    let resolvedRoot: string | null
+    try {
+      resolvedRoot = realPath(root, system)
+    } catch {
+      // A root the OS refuses to resolve, such as the folder of a past job whose parent became unreadable,
+      // allows nothing, and must not make the files under the other roots unreadable. A target inside it
+      // fails to resolve itself and throws above.
+      return false
+    }
     if (resolvedRoot === null) return false
-    // path.join leaves a single separator at the end, so the root folder "/" is a prefix of every path too.
-    return resolved === resolvedRoot || resolved.startsWith(path.join(resolvedRoot, path.sep))
+    // path.join leaves a single separator at the end, so a root such as "/" or "C:\" is a prefix of every path on it too.
+    return key(resolved) === key(resolvedRoot) || key(resolved).startsWith(key(paths.join(resolvedRoot, paths.sep)))
   })
   return allowed ? resolved : null
 }
@@ -35,27 +69,28 @@ export function allowedPath(target: string, allowedRoots: readonly string[]): st
  * not exist are kept as written, so that the read that follows reports the file as missing; a . or .. among
  * them could never be reached, and the path is refused.
  */
-function realPath(target: string): string | null {
+function realPath(target: string, { path: paths, realpath }: PathSystem): string | null {
   // The path is not normalized as text first: path.resolve would collapse "link/.." to the folder that holds
   // the link, while the OS follows the link first and climbs out of its target.
-  const names = target.split('/').filter(Boolean)
-  for (let existing = names.length; existing >= 0; existing--) {
-    let real: string
+  const missing: string[] = []
+  let existing = target
+  for (;;) {
     try {
       // fs.realpathSync keeps the letter case and the Unicode normalization the path was written in, while
       // the default APFS volume matches names regardless of both. The native call returns the names as they
       // are stored, so a Japanese folder name written in the other normalization form, or a name in another
       // letter case, still matches its root.
-      real = fs.realpathSync.native(`/${names.slice(0, existing).join('/')}`)
+      const real = realpath(existing)
+      return missing.some((name) => name === '.' || name === '..') ? null : paths.join(real, ...missing)
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code
-      if (code === 'ENOENT' || code === 'ENOTDIR') continue
-      throw err
+      if (code !== 'ENOENT' && code !== 'ENOTDIR') throw err
     }
-    const missing = names.slice(existing)
-    return missing.some((name) => name === '.' || name === '..') ? null : path.join(real, ...missing)
+    const parent = paths.dirname(existing)
+    if (parent === existing) return null
+    missing.unshift(paths.basename(existing))
+    existing = parent
   }
-  return null
 }
 
 const MAX_DIRECTORY_ENTRIES = 200

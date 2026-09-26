@@ -13,6 +13,12 @@ describe('isAppPage', () => {
     expect(isAppPage('file:///Users/me/Downloads/page.html', packaged)).toBe(false)
   })
 
+  it('accepts the packaged page on Windows whichever case its drive letter is written in, and no other file on the drive', () => {
+    const windows = 'file:///c:/Program%20Files/ASIST/resources/app.asar/out/renderer/index.html'
+    expect(isAppPage('file:///C:/Program%20Files/ASIST/resources/app.asar/out/renderer/index.html#/settings', windows)).toBe(true)
+    expect(isAppPage('file:///C:/Users/me/Downloads/index.html', windows)).toBe(false)
+  })
+
   it('refuses a web page the window was sent to', () => {
     expect(isAppPage('https://attacker.example/index.html', packaged)).toBe(false)
   })

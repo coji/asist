@@ -75,7 +75,7 @@ export function ensureRepo(dir = memoryDir()): void {
   if (!fs.existsSync(gitignore) || fs.readFileSync(gitignore, 'utf8') !== MEMORY_GITIGNORE) {
     fs.writeFileSync(gitignore, MEMORY_GITIGNORE, { mode: 0o600 })
   }
-  if (git.toplevel(dir) !== dir) git.init(dir)
+  if (git.toplevel(dir) !== git.resolvedAsFarAsExists(dir)) git.init(dir)
   git.commitAll(dir, written(git.hasHead(dir) ? 'prepared' : 'created'))
 }
 

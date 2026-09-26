@@ -410,6 +410,22 @@ describe('brain tools registry', () => {
       .toEqual(['/Users/me/work/lp'])
   })
 
+  it('takes from a memory a Windows path that begins after a space, a quote or a bracket, and no drive letter inside a word', async () => {
+    const { executeClientTool } = await load()
+    const { ctx } = makeCtx()
+    const pathsIn = async (text: string): Promise<string[]> => {
+      mocks.memory.search.mockReturnValueOnce([
+        { via: 'lexical', exact: false, record: { id: 'e1', file: 'pages/LP.md', line: 2, kind: 'section', page: 'LP', heading: '要約', aliases: [], text, date: '2026-09-01', order: 0 } }
+      ] as never)
+      return JSON.parse((await executeClientTool('resolve_project', { name: '例のLP' }, ctx)).content).candidates.map((c: { path: string }) => c.path)
+    }
+    expect(await pathsIn('9/20 に作った例のLPは C:\\Users\\me\\work\\lp にある')).toEqual(['C:\\Users\\me\\work\\lp'])
+    expect(await pathsIn('例のLP(D:/work/lp)')).toEqual(['D:/work/lp'])
+    expect(await pathsIn('例のLPは「\\\\nas\\team\\lp」にある')).toEqual(['\\\\nas\\team\\lp'])
+    expect(await pathsIn('例のLPは案A:/B テストで決める')).toEqual([])
+    expect(await pathsIn('例のLPの改行は \\\\n で書く')).toEqual([])
+  })
+
   it('continues a job in the session of the original one after the user approves it, and returns a failed result when it cannot', async () => {
     const { executeClientTool } = await load()
     const { ctx, events } = makeCtx()

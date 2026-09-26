@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -11,7 +11,7 @@ beforeAll(() => {
 })
 
 import { createTranslator } from '@shared/i18n'
-import { allowedPath, classifyFile, listDirectory, readFileItem } from '../src/main/services/file-preview'
+import { allowedPath, classifyFile, listDirectory, readFileItem, type PathSystem } from '../src/main/services/file-preview'
 import { filesLayout, formatBytes, isHtmlPage, MAX_TEXT_BYTES } from '../src/shared/files'
 
 describe('isHtmlPage', () => {
@@ -124,11 +124,84 @@ describe('allowedPath, the path check of show_files, asist-file:// and Reveal in
     expect(allowedPath(path.join(base, 'Reports', 'not-yet.pdf'), [base])).toBe(path.join(base, 'Reports', 'not-yet.pdf'))
   })
 
+  it('allows the files under the other roots when one root cannot be resolved because its parent is unreadable', () => {
+    const base = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-roots-')))
+    mkdirSync(path.join(base, 'past', 'job'), { recursive: true })
+    mkdirSync(path.join(base, 'now'))
+    writeFileSync(path.join(base, 'now', 'report.md'), '# report')
+    chmodSync(path.join(base, 'past'), 0o000)
+    try {
+      const roots = [path.join(base, 'past', 'job'), path.join(base, 'now')]
+      expect(allowedPath(path.join(base, 'now', 'report.md'), roots)).toBe(path.join(base, 'now', 'report.md'))
+      expect(allowedPath(path.join(base, 'elsewhere.md'), roots)).toBeNull()
+    } finally {
+      chmodSync(path.join(base, 'past'), 0o700)
+    }
+  })
+
   it('allows every path when the root folder "/" is an allowed root', () => {
     const base = mkdtempSync(path.join(tmpdir(), 'asist-roots-'))
     writeFileSync(path.join(base, 'a.txt'), 'x')
     expect(allowedPath(path.join(base, 'a.txt'), ['/'])).not.toBeNull()
     expect(allowedPath('/etc/hosts', ['/'])).not.toBeNull()
+  })
+})
+
+/**
+ * A Windows disk holding the given files and the folders above them. A name is found in any letter case and
+ * comes back as it was asked for, which is what makes the comparison with a root depend on letter case. Every
+ * lookup is recorded.
+ */
+function windowsDisk(...files: string[]): PathSystem & { asked: string[] } {
+  const stored = new Set<string>()
+  for (const file of files) {
+    for (let p = path.win32.normalize(file); !stored.has(p.toLowerCase()); p = path.win32.dirname(p)) stored.add(p.toLowerCase())
+  }
+  const asked: string[] = []
+  return {
+    path: path.win32,
+    asked,
+    realpath: (target) => {
+      asked.push(target)
+      const resolved = path.win32.resolve(target)
+      if (!stored.has(resolved.toLowerCase())) throw Object.assign(new Error(`ENOENT: ${target}`), { code: 'ENOENT' })
+      return resolved
+    }
+  }
+}
+
+describe('allowedPath with the Windows rules', () => {
+  const disk = windowsDisk('C:\\Users\\me\\asist-jobs\\20260927-job\\report.md', 'C:\\Users\\me\\.ssh\\id_rsa', 'C:\\Users\\me\\asist-jobs-evil\\secret.txt')
+  const roots = ['C:\\Users\\me\\asist-jobs']
+
+  it('allows a file under a root whichever separator and letter case each is written in', () => {
+    expect(allowedPath('C:\\Users\\me\\asist-jobs\\20260927-job\\report.md', roots, disk)).toBe('C:\\Users\\me\\asist-jobs\\20260927-job\\report.md')
+    expect(allowedPath('c:/users/me/ASIST-JOBS/20260927-job/report.md', roots, disk)).not.toBeNull()
+    expect(allowedPath('C:\\Users\\me\\asist-jobs\\20260927-job\\not-yet.md', ['c:/users/me/asist-jobs/'], disk)).not.toBeNull()
+  })
+
+  it('refuses a path outside the roots, a folder whose name only begins like a root, and a .. that climbs out', () => {
+    expect(allowedPath('C:\\Users\\me\\.ssh\\id_rsa', roots, disk)).toBeNull()
+    expect(allowedPath('C:\\Users\\me\\asist-jobs-evil\\secret.txt', roots, disk)).toBeNull()
+    expect(allowedPath('C:\\Users\\me\\asist-jobs\\..\\.ssh\\id_rsa', roots, disk)).toBeNull()
+  })
+
+  it('refuses a path relative to a folder or to the current drive', () => {
+    expect(allowedPath('asist-jobs\\20260927-job\\report.md', roots, disk)).toBeNull()
+    expect(allowedPath('C:asist-jobs\\20260927-job\\report.md', roots, disk)).toBeNull()
+    expect(allowedPath('\\Users\\me\\asist-jobs\\20260927-job\\report.md', roots, disk)).toBeNull()
+  })
+
+  it('refuses an alternate data stream of a file under a root', () => {
+    expect(allowedPath('C:\\Users\\me\\asist-jobs\\20260927-job\\report.md:hidden', roots, disk)).toBeNull()
+    expect(allowedPath('C:\\Users\\me\\asist-jobs\\20260927-job\\report.md::$DATA', roots, disk)).toBeNull()
+  })
+
+  it('never asks a server that holds no allowed root about a path, and allows a file on the share of a root', () => {
+    const share = windowsDisk('C:\\Users\\me\\notes.md', '\\\\nas\\team\\reports\\q3.pdf')
+    expect(allowedPath('\\\\attacker.example\\share\\a.png', ['C:\\Users\\me', '\\\\nas\\team\\reports'], share)).toBeNull()
+    expect(share.asked.some((asked) => asked.includes('attacker'))).toBe(false)
+    expect(allowedPath('\\\\NAS\\team\\reports\\q3.pdf', ['\\\\nas\\team\\reports'], share)).not.toBeNull()
   })
 })
 

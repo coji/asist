@@ -71,6 +71,19 @@ export const app = defineMessages({
       'pt-BR': '{file} está na versão de formato {version}, que este app não consegue converter para o formato atual. O arquivo ficou como estava.',
       'es-419': '{file} está en la versión de formato {version}, que esta app no puede convertir al formato actual. El archivo se dejó como estaba.',
       'es-ES': '{file} está en la versión de formato {version}, que esta app no puede convertir al formato actual. El archivo se ha dejado como está.'
+    },
+    projectPathNotAbsolute: {
+      'ja-JP': 'フォルダのフルパスではありません: {path}',
+      'en-US': 'This is not the full path of a folder: {path}',
+      'fr-FR': "Ce n'est pas le chemin complet d'un dossier : {path}",
+      'de-DE': 'Das ist kein vollständiger Ordnerpfad: {path}',
+      'hi-IN': 'यह किसी फ़ोल्डर का पूरा पाथ नहीं है: {path}',
+      'id-ID': 'Ini bukan path lengkap sebuah folder: {path}',
+      'it-IT': 'Non è il percorso completo di una cartella: {path}',
+      'ko-KR': '폴더의 전체 경로가 아닙니다: {path}',
+      'pt-BR': 'Este não é o caminho completo de uma pasta: {path}',
+      'es-419': 'No es la ruta completa de una carpeta: {path}',
+      'es-ES': 'No es la ruta completa de una carpeta: {path}'
     }
   },
   tray: {

@@ -7,8 +7,8 @@ import { JobArtifacts } from '../src/renderer/src/ui/JobArtifacts'
 import { usePanelStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
 
-const job = (artifacts?: string[]): AgentJob =>
-  ({ id: 'j1', title: '競合サービスの調査', cwd: '/jobs/j1', status: 'done', engine: 'codex', prompt: '', readonly: false, startedAt: 1, artifacts }) as AgentJob
+const job = (artifacts?: string[], cwd = '/jobs/j1'): AgentJob =>
+  ({ id: 'j1', title: '競合サービスの調査', cwd, status: 'done', engine: 'codex', prompt: '', readonly: false, startedAt: 1, artifacts }) as AgentJob
 
 let host: HTMLDivElement
 let root: Root
@@ -46,5 +46,15 @@ describe('JobArtifacts', () => {
     expect(window.api.panelFetch).toHaveBeenCalledWith('files', { paths, title: '競合サービスの調査', selected: 1 })
     expect(usePanelStore.getState().panels.some((panel) => panel.type === 'files')).toBe(true)
     expect(useViewStore.getState().open?.app).not.toBe('jobs')
+  })
+
+  it('names the files of a job on Windows by their own name and their folder inside the job', () => {
+    const paths = ['C:\\jobs\\j1\\report.md', 'C:/jobs/j1/notes/interview.md', 'C:\\jobs\\j1-old\\pricing.csv']
+    act(() => root.render(React.createElement(JobArtifacts, { job: job(paths, 'C:\\jobs\\j1') })))
+    const cards = [...host.querySelectorAll('li')]
+    expect(cards.map((card) => card.querySelector('.ja-name')?.textContent)).toEqual(['report.md', 'interview.md', 'pricing.csv'])
+    expect(cards[0].querySelector('.ja-meta')?.textContent).not.toContain('·')
+    expect(cards[1].querySelector('.ja-meta')?.textContent).toMatch(/· notes$/)
+    expect(cards[2].querySelector('.ja-meta')?.textContent).toMatch(/· C:\\jobs\\j1-old$/)
   })
 })

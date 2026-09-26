@@ -177,10 +177,15 @@ export function agentTool(locale: ConversationLocale): Def {
 }
 
 /**
- * An absolute path written in a text. The slash must not continue a word, a number or another path, so
- * that the "/20" of a date such as 9/20, or the slashes of a URL, are not taken for one.
+ * An absolute path written in a text. A POSIX path's slash must not continue a word, a number or another
+ * path, so that the "/20" of a date such as 9/20, or the slashes of a URL, are not taken for one. A drive
+ * letter or the \\ of a share counts only where a path can begin, at the start of the text, after a space,
+ * a quote or a bracket: \w in a lookbehind knows only ASCII, so "案A:/B" would otherwise yield "A:/B". A
+ * share needs a server and a share name, so an escaped "\\n" is not one.
  */
-const ABSOLUTE_PATH = /(?<![\w./:~-])\/[^\s"'、。()（）]+/
+const ABSOLUTE_PATH = new RegExp(
+  String.raw`(?:(?<![\w./:~-])/|(?<=^|[\s"'「『(（\[【<])(?:[A-Za-z]:[\\/]|\\\\[^\s\\/]+\\(?=[^\s\\/])))[^\s"'、。()（）「」『』【】]+`
+)
 
 export function projectTools(language: PromptLanguage): Def[] {
   return [

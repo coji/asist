@@ -51,13 +51,19 @@ function git(cwd: string, args: string[], options: GitOptions = {}): string {
   })
 }
 
-/** The top level of the repository dir sits in, or null when it is not inside one. */
+/**
+ * The top level of the repository dir sits in, or null when it is not inside one. It is spelled as
+ * resolvedAsFarAsExists spells a path, because git writes C:/Users/... on Windows, and a path is compared
+ * and stored in that one form.
+ */
 export function toplevel(dir: string): string | null {
+  let top: string
   try {
-    return git(dir, ['rev-parse', '--show-toplevel']).trim() || null
+    top = git(dir, ['rev-parse', '--show-toplevel']).trim()
   } catch {
     return null
   }
+  return top ? resolvedAsFarAsExists(top) : null
 }
 
 export function headCommit(repo: string, ref = 'HEAD'): string {
@@ -122,18 +128,21 @@ function worktreeOn(repo: string, branch: string): string | null {
 }
 
 /**
- * The path with its symbolic links resolved as far as it exists, which is how git records a worktree and
- * finds one by its path: one made under /tmp is listed under /private/tmp on macOS, and a worktree's folder
- * may be gone.
+ * The absolute path with its symbolic links resolved as far as it exists, and those names spelled as the
+ * disk stores them, which is how git records a worktree and finds one by its path: one made under /tmp is
+ * listed under /private/tmp on macOS, and a worktree's folder may be gone. Two spellings of one folder
+ * come out the same, such as git's C:/Users/... and a folder written in another letter case on Windows.
  */
-function resolvedAsFarAsExists(file: string): string {
+export function resolvedAsFarAsExists(file: string): string {
   const missing: string[] = []
   let existing = path.resolve(file)
   while (!fs.existsSync(existing) && path.dirname(existing) !== existing) {
     missing.unshift(path.basename(existing))
     existing = path.dirname(existing)
   }
-  return path.join(fs.realpathSync(existing), ...missing)
+  // fs.realpathSync keeps a name as it was written, such as a Windows short name like RUNNER~1, while the
+  // native call returns the name the disk stores.
+  return path.join(fs.realpathSync.native(existing), ...missing)
 }
 
 /**

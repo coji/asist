@@ -182,4 +182,9 @@ describe('artifactPaths', () => {
     expect(artifactPaths({ kind: 'tool-use', name: 'Write', input: JSON.stringify({ file_path: '/w/r.md' }) })).toEqual([])
     expect(artifactPaths({ kind: 'command', id: 'c', command: 'x', phase: 'done', ok: true })).toEqual([])
   })
+
+  it('keeps the absolute paths a job reports on Windows, with a drive letter or on a share', () => {
+    const paths = ['C:\\Users\\me\\report.md', 'D:/work/chart.png', '\\\\server\\share\\notes.txt', 'rel\\a.md', 'C:rel.md']
+    expect(artifactPaths({ kind: 'file-change', paths })).toEqual(paths.slice(0, 3))
+  })
 })

@@ -22,6 +22,7 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
+import { baseName } from '@shared/file-path'
 import { Frame } from './Frame'
 import type { Viewer } from './types'
 import './CodeViewer.css'
@@ -111,7 +112,7 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
 
 /** Picks the highlight.js language from the file name. An extension with no entry gives null, which stays plain monospace. */
 export function languageFor(fileName: string): string | null {
-  const name = fileName.slice(fileName.lastIndexOf('/') + 1).toLowerCase()
+  const name = baseName(fileName).toLowerCase()
   if (name === 'dockerfile') return 'dockerfile'
   if (name === 'makefile') return 'makefile'
   const dot = name.lastIndexOf('.')

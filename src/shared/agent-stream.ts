@@ -1,3 +1,5 @@
+import { isAbsolutePath } from './file-path'
+
 /**
  * The two agent CLIs report at different granularities. In claude every file read, file write and
  * shell command arrives as a `tool_use`, and its success is in the later `tool_result` carrying the
@@ -239,5 +241,5 @@ function codexErrorText(message: unknown): string {
 /** Extracts the absolute paths of the files an event created or edited. Relative paths are dropped. */
 export function artifactPaths(event: AgentStreamEvent): string[] {
   if (event.kind !== 'file-change') return []
-  return event.paths.filter((p) => p.startsWith('/'))
+  return event.paths.filter(isAbsolutePath)
 }

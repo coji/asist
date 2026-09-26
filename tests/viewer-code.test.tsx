@@ -65,7 +65,10 @@ describe('code: language and highlighting', () => {
     ['page.html', 'xml'],
     ['README.md', 'markdown'],
     ['notes.unknownext', null],
-    ['LICENSE', null]
+    ['LICENSE', null],
+    ['/Users/me/repo/src/app.ts', 'typescript'],
+    ['C:\\Users\\me\\repo\\Dockerfile', 'dockerfile'],
+    ['C:\\Users\\me\\make.d\\LICENSE', null]
   ])('%s → %s', (name, language) => {
     expect(languageFor(name)).toBe(language)
   })

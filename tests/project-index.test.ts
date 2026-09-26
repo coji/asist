@@ -46,6 +46,20 @@ describe('upsertProject', () => {
     list = upsertProject(list, { path: '/repo/asist', alias: '例のやつ', source: 'job', now: 3 })
     expect(list[0]).toMatchObject({ name: 'アシスト', aliases: ['asist', '例のやつ'], lastUsedAt: 5, source: 'told' })
   })
+
+  it('keeps one entry for a Windows folder that git writes with "/" and the user with "\\" in another letter case', () => {
+    let list = upsertProject([], { path: 'C:/Users/me/src/asist', source: 'job', now: 1 })
+    expect(list).toEqual([{ name: 'asist', path: 'C:/Users/me/src/asist', aliases: [], lastUsedAt: 1, source: 'job' }])
+    list = upsertProject(list, { path: 'c:\\users\\me\\src\\asist\\', name: 'アシスト', source: 'told', now: 2 })
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ name: 'アシスト', aliases: ['asist'], lastUsedAt: 2 })
+    expect(upsertProject(list, { path: 'C:\\Users\\me\\src\\asist-old', source: 'job', now: 3 })).toHaveLength(2)
+  })
+
+  it('takes the directory name of a Windows path as the name', () => {
+    expect(upsertProject([], { path: 'C:\\Users\\me\\lp-site\\', source: 'job', now: 1 })[0]).toMatchObject({ name: 'lp-site', path: 'C:\\Users\\me\\lp-site' })
+    expect(matchProjects([entry('x', 'D:\\work\\voice-notes')], 'voice-notes')[0].score).toBe(1)
+  })
 })
 
 describe('recentProjects', () => {

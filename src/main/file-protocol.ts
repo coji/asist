@@ -1,11 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { Readable } from 'node:stream'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { protocol } from 'electron'
 import { allowedPath } from './services/file-preview'
 
 /**
- * Serves files under an allowed folder to the renderer as asist-file:///<absolute path>. The files card
+ * Serves files under an allowed folder to the renderer as asist-file:// URLs, which carry the path the way a
+ * file:// URL does without a host: asist-file:///Users/me/a.png and asist-file:///C:/Users/me/a.png. The files card
  * fetches its images, PDFs, Office documents, audio and video over this URL rather than carrying bytes in
  * its props, and loads an HTML page from it so that the page's relative links resolve to the files next to
  * it. Range requests are answered so that video and audio can seek. Permission is checked on every
@@ -14,8 +16,23 @@ import { allowedPath } from './services/file-preview'
 
 export const FILE_SCHEME = 'asist-file'
 
-/** Every character of a name that is not plain is escaped, so that a # or ? in a file name stays part of the path. */
-export const fileUrl = (filePath: string): string => `${FILE_SCHEME}://${filePath.split('/').map(encodeURIComponent).join('/')}`
+/**
+ * The options of Node's pathToFileURL and fileURLToPath. Tests pass { windows: true } to check the Windows
+ * form on any OS; the app leaves them out, which means the rules of the OS it runs on.
+ */
+type UrlRules = { windows?: boolean }
+
+const DRIVE = /^[A-Za-z]:$/
+
+/**
+ * The URL of an absolute path. Every character of a name that is not plain is escaped, so that a # or ? in a
+ * file name stays part of the path; only the drive letter's colon is left as file:// URLs write it.
+ */
+export function fileUrl(filePath: string, rules?: UrlRules): string {
+  const { host, pathname } = pathToFileURL(filePath, rules)
+  const names = pathname.split('/').map((name, index) => (index === 1 && DRIVE.test(name) ? name : encodeURIComponent(decodeURIComponent(name))))
+  return `${FILE_SCHEME}://${host}${names.join('/')}`
+}
 
 /** Has to be called before app.whenReady. */
 export function registerFileScheme(): void {
@@ -90,10 +107,11 @@ export function contentHeaders(filePath: string): Record<string, string> {
 }
 
 /**
- * Takes the absolute path out of the URL. Only the form asist-file:///Users/... is accepted. Every escape
- * is decoded, because a page's relative link may escape a reserved character, such as %2C for a comma.
+ * Takes the absolute path out of the URL, as fileURLToPath does for a file:// URL without a host. A URL with
+ * a host is refused on every OS, localhost included, and so is an escaped separator. Every other escape is
+ * decoded, because a page's relative link may escape a reserved character, such as %2C for a comma.
  */
-export function filePathFromUrl(url: string): string | null {
+export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -102,7 +120,9 @@ export function filePathFromUrl(url: string): string | null {
   }
   if (parsed.protocol !== `${FILE_SCHEME}:` || parsed.host !== '' || !parsed.pathname.startsWith('/')) return null
   try {
-    return decodeURIComponent(parsed.pathname)
+    // A file:// URL takes a raw backslash for a separator, while in an asist-file:// URL it belongs to the
+    // name, so it is escaped before the path is carried over.
+    return fileURLToPath(`file://${parsed.pathname.replace(/\\/g, '%5C')}`, rules)
   } catch {
     return null
   }

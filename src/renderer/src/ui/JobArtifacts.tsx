@@ -13,6 +13,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import type { AgentJob } from '@shared/ipc'
+import { baseName, dirName, pathInside } from '@shared/file-path'
 import { classifyFile, type FileKind } from '@shared/files'
 import { useT } from '@/i18n'
 import { openFiles } from '@/panels/open-files'
@@ -40,9 +41,8 @@ const KIND_ICON: Record<FileKind, LucideIcon> = {
 
 /** The folder of a file relative to the job's working directory, which is what tells two files of one name apart. */
 function folderOf(path: string, cwd: string): string {
-  const folder = path.slice(0, path.lastIndexOf('/'))
-  if (folder === cwd) return ''
-  return folder.startsWith(`${cwd}/`) ? folder.slice(cwd.length + 1) : folder
+  const folder = dirName(path)
+  return pathInside(cwd, folder) ?? folder
 }
 
 /**
@@ -78,7 +78,7 @@ export function JobArtifacts({ job }: { job: AgentJob }): React.JSX.Element | nu
                 }}
               >
                 <Icon size={18} aria-hidden />
-                <span className="ja-name">{path.split('/').pop()}</span>
+                <span className="ja-name">{baseName(path)}</span>
                 <span className="ja-meta">{folder ? `${t(`files.kind.${kind}`)} · ${folder}` : t(`files.kind.${kind}`)}</span>
               </button>
             </li>

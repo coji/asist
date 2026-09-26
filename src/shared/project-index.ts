@@ -1,3 +1,4 @@
+import { baseName, samePath, trimTrailingSeparator } from './file-path'
 import { bigrams, matchRatio, normalizeForSearch } from './memory-search'
 
 /**
@@ -26,11 +27,9 @@ export interface ProjectCandidate {
   score: number
 }
 
-const basename = (p: string): string => p.replace(/\/+$/, '').split('/').pop() ?? p
-
 /** The words an entry can be matched against: its name, its aliases and the directory name. */
 function labelsOf(entry: ProjectEntry): string[] {
-  return [entry.name, ...entry.aliases, basename(entry.path)]
+  return [entry.name, ...entry.aliases, baseName(entry.path)]
 }
 
 /** Returns the candidates best matching the query first, dropping those below the minimum ratio. */
@@ -62,19 +61,20 @@ export function matchProjects(
 }
 
 /**
- * Grows the index from use or from a registration. An entry with the same path keeps one set of names
- * and aliases and moves its timestamp forward. A name given by a registration becomes the entry's
- * name, and the previous name becomes an alias.
+ * Grows the index from use or from a registration. An entry with the same path, however a Windows path
+ * spells its separators and letter case, keeps one set of names and aliases and moves its timestamp
+ * forward. A name given by a registration becomes the entry's name, and the previous name becomes an
+ * alias.
  */
 export function upsertProject(
   entries: readonly ProjectEntry[],
   input: { path: string; name?: string; alias?: string; source: ProjectEntry['source']; now: number }
 ): ProjectEntry[] {
-  const path = input.path.replace(/\/+$/, '')
+  const path = trimTrailingSeparator(input.path)
   const givenName = input.name?.trim() || undefined
-  const existing = entries.find((e) => e.path === path)
+  const existing = entries.find((e) => samePath(e.path, path))
   if (!existing) {
-    const name = givenName ?? basename(path)
+    const name = givenName ?? baseName(path)
     return [
       ...entries,
       {

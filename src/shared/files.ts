@@ -1,3 +1,5 @@
+import { baseName } from './file-path'
+
 /**
  * The types behind the files card (show_files). The main process only validates the path and reads the
  * file; interpreting and drawing the content is the renderer's viewer. A text kind travels as the body
@@ -75,7 +77,7 @@ const CODE_EXT = new Set([
 ])
 
 export function classifyFile(filePath: string): FileKind {
-  const name = filePath.slice(filePath.lastIndexOf('/') + 1).toLowerCase()
+  const name = baseName(filePath).toLowerCase()
   if (name === 'dockerfile' || name === 'makefile') return 'code'
   const dot = name.lastIndexOf('.')
   const ext = dot >= 0 ? name.slice(dot) : ''
@@ -98,7 +100,7 @@ const PAGE_EXT = new Set(['.html', '.htm'])
  * which the rendered page is loaded from so that the files next to it resolve.
  */
 export function isHtmlPage(filePath: string): boolean {
-  const name = filePath.slice(filePath.lastIndexOf('/') + 1).toLowerCase()
+  const name = baseName(filePath).toLowerCase()
   const dot = name.lastIndexOf('.')
   return dot >= 0 && PAGE_EXT.has(name.slice(dot))
 }
