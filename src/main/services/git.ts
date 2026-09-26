@@ -4,10 +4,13 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promptLanguage } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
+import { writeFileAtomicSync } from './atomic-json'
 import { conversationLocale } from './conversation-locale'
 import { childEnv, removeVariables } from './child-env'
+import { configText, userGitSettings } from './git-user-settings'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
+import { dataPath } from './store'
 
 /**
  * The git operations behind worktree isolation. Every call is a synchronous execFile and a failure throws,
@@ -26,17 +29,41 @@ export function gitPath(): string {
     : resourcePath(path.join('git', 'bin', 'git'))
 }
 
+let globalConfig: string | undefined
+
+/**
+ * The file git reads as the global configuration: the user's settings for how files are written in a
+ * working tree, or no file when the user's git sets none of them. They are read once per run: starting
+ * the user's git again for each of the dozens of git calls a job makes would add a git call to each (23 ms
+ * on Windows 11 x64, 2026-09-27), and every call of a run agrees with the others, such as the check before
+ * a merge and the checkout of the job. A change of the user's settings counts from the next start.
+ */
+function globalConfigFile(): string {
+  if (globalConfig !== undefined) return globalConfig
+  const settings = userGitSettings(gitPath())
+  if (settings.size === 0) {
+    // Git for Windows reads the literal /dev/null as its NUL device, but refuses os.devNull there (\\.\nul)
+    // as the reserved name NUL, which would fail every git call; so both OSes get /dev/null.
+    globalConfig = '/dev/null'
+  } else {
+    globalConfig = dataPath('gitconfig')
+    writeFileAtomicSync(globalConfig, configText(settings))
+  }
+  return globalConfig
+}
+
 /**
  * The environment git runs with: the child environment without GIT_ variables, and without the system and
- * user configuration. A user's commit.gpgsign would otherwise make every commit wait for a signature, and
- * a filter such as git-lfs names a program that a Finder launch has no PATH to.
+ * user configuration apart from the user's settings for how files are written in a working tree. A user's
+ * commit.gpgsign would otherwise make every commit wait for a signature, and a filter such as git-lfs
+ * names a program that a Finder launch has no PATH to. Those settings go in at the global level rather than
+ * on the command line, so that a repository's own configuration still overrides them as it does for the
+ * user's git.
  */
 export function gitEnv(parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env = childEnv({}, parent)
   removeVariables(env, (key) => key.startsWith('GIT_'))
-  // Git for Windows reads the literal /dev/null as its NUL device, but refuses os.devNull there (\\.\nul)
-  // as the reserved name NUL, which would fail every git call; so both OSes get /dev/null.
-  const isolated = { ...env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' }
+  const isolated = { ...env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: globalConfigFile() }
   if (platformCapabilities().os !== 'windows') return isolated
   // git.exe puts its own mingw64\bin and usr\bin, where sh and the coreutils of hooks and scripts are,
   // at the front of PATH only when MSYSTEM is unset. MinGit's etc/gitattributes is read even without the

@@ -35,7 +35,7 @@
 ## Windows の実機でないと作れないもの
 
 - **エージェントのプロセス。** `agent-process.ts:108` は `/bin/sh` を起動用のシェルにして、プロセスグループを作ります。`agent-process-lifetime.ts` は `process.kill(-pid)` でグループに信号を送ります。`agent-process-identity.ts` は `/bin/ps` でグループの全員を調べ、`ps eww` で環境変数のトークンを照合します。Windows にはどれもありません。CLI を探す処理(`agent-process.ts:29-81`)も、`/opt/homebrew` と `zsh -lc whence` だけです。
-- **同梱する git。** `scripts/build-git.sh` がソースから Mac 用にコンパイルします。Windows では MinGit を使いますが、フック、長いパス、改行、worktree の削除時のロック、`C:/` と `C:\` のパスの比較は、実機で確かめる必要があります。
+- **同梱する git。** `scripts/build-git.sh` がソースから Mac 用にコンパイルします。Windows では MinGit を使いますが、フック、worktree の削除時のロック、`C:/` と `C:\` のパスの比較は、実機で確かめる必要があります。長いパスは確かめ、改行とシンボリックリンクは ADR 0018 で決めました。
 - **ウィンドウ。** `index.ts:53-54` の `titleBarStyle: 'hiddenInset'` は、Windows では閉じるボタンなどのないウィンドウになります。トレイのアイコン(`os-integration.ts:24-26`)は黒一色のテンプレート画像で、暗いタスクバーでは見えません。`Alt+Space`(`os-integration.ts:95-97`)は Windows のウィンドウメニューと PowerToys Run が使っています。通知に要る AppUserModelID を設定していません。
 - **エコーキャンセル。** 詳しくは [design/05-speech.md](design/05-speech.md) にあります。
 

@@ -72,10 +72,10 @@
   - `MSYSTEM` を消します。親の環境に `MSYSTEM` があると、git が PATH を整えないためです。
   - `GIT_ATTR_NOSYSTEM=1` を足します。
   - `core.longpaths=true` を、`GIT_CONFIG_COUNT`、`GIT_CONFIG_KEY_0`、`GIT_CONFIG_VALUE_0` で渡します。そうすれば、呼び出しのたびに `-c` を書かずに済みます。
-- **改行。**
-  - システムの設定を読まないので、`core.autocrlf` は未設定(変換しない)になります。
-  - ジョブが CRLF で書いたファイルは CRLF のままコミットされます。そのため、LF のファイルを CRLF で書き直すと、ファイル全体が差分になります。
-  - これは利用者のリポジトリの `.gitattributes` で決まることなので、ASIST は変換しません。M4 で実際の挙動を確かめて、ADR 0016 に制約として書くかを決めます。
+  - 2026-09-27 に検証機で、530 文字のパスのファイルがジョブの worktree に取り出され、worktree を消せることを確かめました。長いパスのために、ほかに変えることはありません。
+- **改行とシンボリックリンク。**
+  - 利用者の git の `core.autocrlf`、`core.eol`、`core.symlinks` だけを、グローバルの段で引き継ぎます。理由と実測は ADR 0018 にあります。
+  - Windows で「利用者の git」とするのは、PATH で最初に見つかる、同梱したものでない `git.exe` です。Git for Windows のインストーラーは、既定で `C:\Program Files\Git\cmd` をシステムの PATH に足すので、スタートメニューから開いた ASIST からも見つかります。
 - **ライセンスの表記。**
   - `scripts/third-party-notices.mjs` の git の行(いまは `git/COPYING` を指す)は、Windows では `git/LICENSE.txt` と、ライブラリのライセンスのフォルダを指すようにします。
   - GPL の義務として、配布するときは、Git for Windows の同じタグのソースと、MSYS2 のパッケージのソースへの案内も添えます。

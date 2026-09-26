@@ -82,6 +82,5 @@
 - **入れる PR。** M4 で MinGit での挙動を確かめたとき。
 - **追記すること。** Windows で挙動が変わると分かったときだけ、制約を足します。確かめるのは次の点です。
   - フックが MinGit の sh で動くこと
-  - `core.longpaths`
-  - 改行
-  - `core.symlinks` と `core.fileMode` を git が自動で判定すること
+  - `core.fileMode` を git が自動で判定すること
+- 改行と `core.symlinks` は、ADR 0018 に決めました。`core.longpaths` は、いまの環境変数で長いパスが扱えることを確かめました。

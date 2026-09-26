@@ -1,6 +1,6 @@
 # uv と git はアプリに同梱し、Python は同梱した uv が準備のときに取得する
 
-この Mac で動かすモデルの Python 環境は、アプリに同梱した uv が作る。Python は uv が取得したものだけを使い、バージョンを固定して、Python の本体と uv のキャッシュは userData の下に置く。利用者の uv の設定と `UV_` の環境変数は読まない。利用者の手元の Python や uv に任せると、どの Python で環境ができるかが利用者ごとに変わり、その Python を消すと音声認識が動かなくなる。記憶の履歴と編集ジョブの worktree には、同梱した git を使い、システムと利用者の git の設定を読まない。`/usr/bin/git` は Command Line Tools が無い Mac ではインストールを促すだけで失敗し、記憶は起動のたびに git を使う。利用者の設定を読むと、`commit.gpgsign` や git-lfs のフィルタで記憶のコミットが失敗する。
+この Mac で動かすモデルの Python 環境は、アプリに同梱した uv が作る。Python は uv が取得したものだけを使い、バージョンを固定して、Python の本体と uv のキャッシュは userData の下に置く。利用者の uv の設定と `UV_` の環境変数は読まない。利用者の手元の Python や uv に任せると、どの Python で環境ができるかが利用者ごとに変わり、その Python を消すと音声認識が動かなくなる。記憶の履歴と編集ジョブの worktree には、同梱した git を使い、システムと利用者の git の設定を読まない。例外は、作業ツリーのファイルの改行とシンボリックリンクの扱いを決める3つの設定で、これだけは利用者の git と同じ値にする。`/usr/bin/git` は Command Line Tools が無い Mac ではインストールを促すだけで失敗し、記憶は起動のたびに git を使う。利用者の設定を読むと、`commit.gpgsign` や git-lfs のフィルタで記憶のコミットが失敗する。
 
 Windows にはシステムの git が無いので、同じく同梱する。Windows で git をソースからビルドするには MSYS2 の環境が要り、Git for Windows がそのビルドをアプリに入れるための形(MinGit)で配っているので、それを同梱する。uv も Windows で同じく同梱する。
 

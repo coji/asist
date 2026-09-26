@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
+    setupFiles: ['tests/setup/user-git-settings.ts'],
     // What a passing test logs, such as a warning it provokes on purpose, filled more than a thousand lines of
     // CI's log around the results. A failing test still shows everything it logged.
     silent: 'passed-only',
