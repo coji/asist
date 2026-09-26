@@ -27,28 +27,27 @@ C で `asist-agent-launcher.exe` を作り、これが Job Object を持ちま�
 
 ```
 ASIST (main)                       asist-agent-launcher.exe             CLI (claude.exe / codex.exe)
- │ 名前付きパイプ \\.\pipe\asist-agent-<token> を開く
- │ spawn(launcher, [cli, ...args], windowsHide)
- │──────────────────────────────▶ │ 名前付き Job「Local\asist-agent-<token>」を作る
- │                                  │ (KILL_ON_JOB_CLOSE)
- │ ◀────── パイプ: "ready" ──────── │ 制御のパイプにつなぐ
+ │ spawn(launcher, [--run, token, ASIST の pid, cli, ...args], windowsHide)
+ │──────────────────────────────▶ │ ASIST のプロセスを開く(終わるのを待てるように)
+ │                                  │ 名前付き Job「Local\asist-agent-<token>」を作る(KILL_ON_JOB_CLOSE)
  │ ジョブを保存する                   │
  │ stdin: "start\n" + プロンプト ──▶ │ stdin から1バイトずつ読んで "start" を確かめる
- │                                  │ CreateProcess(CREATE_SUSPENDED) → Job に入れる → 再開
+ │                                  │ CreateProcess(PROC_THREAD_ATTRIBUTE_JOB_LIST で最初から Job の中に)
  │                                  │──────────────────────────────▶ │ stdin の残り(プロンプト)を読む
  │ ◀──────────────── stdout(JSONL)と stderr は CLI から直接 ─────────── │
- │                                  │ CLI の終了を待つ
+ │                                  │ CLI の終了か ASIST の終了を待つ
  │                                  │ Job にまだプロセスが残っていれば止める
  │                                  │ Job が空になるのを待つ
- │ ◀────── launcher の終了(CLI の終了コード) ─┘
+ │ ◀────── launcher の終了(CLI の終了コード。止めたときは 130) ─┘
 ```
 
 - **止めるとき。**
-  - ASIST が制御のパイプに `stop` を書きます。
-  - launcher は `TerminateJobObject` で Job の全員を止め、Job の中のプロセスが0になるのを待ってから終わります。0 になったことは、完了ポートの `JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO` で分かります。
+  - ASIST が `asist-agent-launcher.exe --stop <token>` を起動します。これが名前から Job を開き、`TerminateJobObject` で全員を止め、Job の中のプロセスが0になるのを待って終わります。
+  - CLI が終わるので、`--run` の launcher も Job が空になったのを確かめてから終わります。
   - そのため、**ASIST から見ると「launcher が終わった」ことが「子孫も全員いなくなった」ことになります。** いまの `groupWatch` で25ミリ秒ごとに確かめる処理は、Windows では要りません。
 - **ASIST が落ちたとき。**
-  - 制御のパイプが切れます。launcher はそれを見て Job を止め、空になるのを待って終わります。
+  - launcher は ASIST のプロセスのハンドルを待っているので、ASIST が終わると Job を止め、空になるのを待って終わります。
+  - `start` の前に ASIST が落ちたときは、標準入力が閉じるので、CLI は起動しません。
   - launcher 自身が止められても、Job の最後のハンドルが閉じるので、`KILL_ON_JOB_CLOSE` で全員が止まります。
 - **再起動のあと(クラッシュからの回復)。**
   - 保存したトークンから Job の名前が決まります。
@@ -117,6 +116,7 @@ AGENTS.md の「外に書き込むジョブの承認の関門を保つ」と、�
 
 ## 見送った案
 
+- **ASIST と launcher を名前付きパイプでつなぎ、`stop` の指示と ASIST の終了をパイプで伝える。** ASIST の終了は ASIST のプロセスのハンドルを待てば分かり、止める指示は名前から Job を開く `--stop` で足ります。パイプのサーバーを ASIST の側に持たずに済みます。
 - **`taskkill /T /F` で止める。** 生きている親子のつながりしかたどれず、親が先に終わった孫を取りこぼします。いまの macOS の実装が防いでいる「自分で終わった CLI が子を残す」場合に、そのまま穴が開きます。
 - **Node から FFI(koffi など)で Job Object を直接扱う。**
   - `spawn` のあとに Job に入れるまでのあいだに、CLI が子を作れてしまいます。

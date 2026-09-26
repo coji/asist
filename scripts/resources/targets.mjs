@@ -30,7 +30,7 @@ export const TARGETS = {
     check: [prepareUv]
   },
   'win32-x64': {
-    test: [prepareGitWindows, prepareElectron],
+    test: [prepareGitWindows, prepareNativeWindows, prepareElectron],
     dev: [prepareGitWindows, prepareUv, prepareNativeWindows, prepareElectron],
     build: [prepareGitWindows, prepareUv, prepareNativeWindows],
     check: [prepareGitWindows, prepareUv]

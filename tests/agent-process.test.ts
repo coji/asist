@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({ spawn: vi.fn(), execFileSync: vi.fn(), existsS
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn, execFileSync: mocks.execFileSync }))
 vi.mock('node:fs', () => ({ default: { existsSync: mocks.existsSync } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ agentEngine: 'codex', uiLocale: 'ja-JP' }) }))
+// The output is parsed the same on every OS; macOS's launch through /bin/sh is the one whose spawn these tests replace.
+vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 
 const job: AgentJob = {
   id: 'job', title: '調査', prompt: '調査する', cwd: '/workspace',

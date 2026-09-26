@@ -1,7 +1,8 @@
-import { execFileSync, type ChildProcess } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 import type { AgentProcessIdentity } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { childEnv } from '../child-env'
+import type { AgentOwner, AgentProcess } from './owner'
 
 /** Carried across the exec and inherited by descendants. It identifies this one launch and is not a credential. */
 export const AGENT_PROCESS_TOKEN = 'ASIST_AGENT_EXECUTION_ID'
@@ -123,11 +124,6 @@ export function recoverAgentProcess(identity: AgentProcessIdentity, onStopped: (
   return { completion, stop }
 }
 
-export interface AgentProcess {
-  completion: Promise<void>
-  stop(): void
-}
-
 /** Owns the agent until stdout has closed and its own process group is confirmed gone. */
 export function manageAgentProcess(child: ChildProcess, onClose: (code: number | null) => void): AgentProcess {
   let streamsClosed = false
@@ -203,4 +199,24 @@ export function manageAgentProcess(child: ChildProcess, onClose: (code: number |
     }
   })
   return { completion, stop }
+}
+
+/**
+ * An agent on macOS is the process group of a shell that waits for permission to start: the CLI must not
+ * start writing before the job is persisted, and if ASIST exits first, the EOF on stdin ends the shell
+ * before the exec. The prompt follows the permission on the same stdin: the shell's read takes only the
+ * first line from a pipe, and the CLI reads the rest (see agent-cli).
+ */
+export const posixOwner: AgentOwner = {
+  start(cli, args, { cwd, env, token }, onClose) {
+    const child = spawn('/bin/sh', ['-c', 'IFS= read -r ready && [ "$ready" = start ] && exec "$@"', 'asist-agent-launcher', cli, ...args], {
+      cwd,
+      env: { ...env, [AGENT_PROCESS_TOKEN]: token },
+      detached: true,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    })
+    return { child, identity: () => captureProcessIdentity(child.pid!, token), lifetime: manageAgentProcess(child, onClose) }
+  },
+  recover: recoverAgentProcess
 }

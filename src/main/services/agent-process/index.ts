@@ -1,11 +1,14 @@
-import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { AgentEngine, AgentJob, AgentProcessIdentity } from '@shared/ipc'
+import type { OsFamily } from '@shared/platform'
 import { createClaudeStreamParser, createCodexStreamParser, type AgentStreamEvent, type AgentStreamParser } from '@shared/agent-stream'
 import { t } from '../i18n'
 import { requireCli } from './cli-locator'
-import { AGENT_PROCESS_TOKEN, captureProcessIdentity, manageAgentProcess, type AgentProcess } from './posix'
+import { platformCapabilities } from '../platform'
 import { childEnv } from '../child-env'
+import type { AgentOwner, AgentProcess } from './owner'
+import { posixOwner } from './posix'
+import { windowsOwner } from './windows'
 
 /** Launching the CLI and parsing its output. Finding it is cli-locator.ts; approving a job and updating its state is agent.ts. */
 
@@ -36,22 +39,21 @@ interface ProcessHandlers {
   onExit: (code: number | null) => void
 }
 
+const OWNERS: Record<OsFamily, AgentOwner> = { macos: posixOwner, windows: windowsOwner }
+
+const owner = (): AgentOwner => OWNERS[platformCapabilities().os]
+
+/** Stops an agent a previous run of ASIST left behind, and only that one. */
+export const recoverAgentProcess = (identity: AgentProcessIdentity, onStopped: () => void): AgentProcess =>
+  owner().recover(identity, onStopped)
+
 export function launchAgentProcess(job: AgentJob, args: string[], handlers: ProcessHandlers): AgentProcess {
   const cli = requireCli(job.engine)
   const spec = ENGINES[job.engine]
   const parse = spec.createParser()
-  const token = randomUUID()
-  // The CLI must not start writing before the job is persisted, so it waits in a shell of its own process
-  // group for permission to start. If the parent exits first, the EOF on stdin ends it before the exec.
-  // The prompt follows the permission on the same stdin: the shell's read takes only the first line from a
-  // pipe, and the CLI reads the rest (see agent-cli).
-  const child = spawn('/bin/sh', ['-c', 'IFS= read -r ready && [ "$ready" = start ] && exec "$@"', 'asist-agent-launcher', cli, ...args], {
-    cwd: job.cwd,
-    env: childEnv({ ...spec.env, [AGENT_PROCESS_TOKEN]: token }),
-    detached: true,
-    stdio: ['pipe', 'pipe', 'pipe'],
-    windowsHide: true
-  })
+  // The CLI must not start writing before the job is persisted, so it runs only once "start" is written
+  // to its standard input, after onSpawn. The prompt follows on the same input.
+  const { child, identity, lifetime } = owner().start(cli, args, { cwd: job.cwd, env: childEnv(spec.env), token: randomUUID() }, handlers.onExit)
 
   // A chunk split in the middle of a UTF-8 sequence is reassembled before the JSONL lines are split out.
   child.stdout!.setEncoding('utf8')
@@ -100,11 +102,9 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
   })
   child.on('error', handlers.onError)
   child.stdin?.on('error', handlers.onError)
-  // stdout can still hold data when exit fires, so the last output is handled before the exit is reported.
-  const lifetime = manageAgentProcess(child, handlers.onExit)
   if (child.pid !== undefined) {
     try {
-      handlers.onSpawn(captureProcessIdentity(child.pid, token))
+      handlers.onSpawn(identity())
       child.stdin!.end(`start\n${job.prompt}`)
     } catch (error) {
       child.stdin!.end()
