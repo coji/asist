@@ -9,6 +9,9 @@ import { useNoteStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
 import { useConfirmStore } from '../src/renderer/src/state/confirm'
 import { answerConfirm } from './helpers/confirm'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
+
+vi.mock('@/platform', () => import('./helpers/platform'))
 
 const t = createTranslator('ja-JP')
 const TRIP = '20260920-073000-0c9e'
@@ -126,6 +129,19 @@ describe('the notes screen', () => {
     expect(api.noteRemove).toHaveBeenCalledWith(PLAN)
     expect(titles(view)).toEqual(['旅行の持ち物'])
     expect(heading(view)).toBe('旅行の持ち物')
+  })
+
+  it("says the note goes to this OS's trash, and names that trash when it is gone", async () => {
+    for (const [capabilities, os] of [[MACOS, 'macos'], [WINDOWS, 'windows']] as const) {
+      setCapabilities(capabilities)
+      const view = await render()
+      await act(async () => button(view, t('common.delete')).click())
+      expect(useConfirmStore.getState().queue[0].detail).toBe(t(`notes.deleteDetail.${os}`))
+      await answerConfirm(true)
+      await settle()
+      expect(useToastStore.getState().toasts.at(-1)?.title).toBe(t(`notes.deleted.${os}`))
+    }
+    setCapabilities(MACOS)
   })
 
   it('searches the body as well as the title', async () => {

@@ -6,30 +6,30 @@ export const voiceEngines = defineMessages({
     // The three parts are named as briefly as the row allows: a longer label widens the select and
     // squeezes the hint beside it into one word per line.
     label: {
-      'ja-JP': 'この Mac の音声認識 + 会話モデル + 読み上げ',
-      'en-US': 'Speech recognition on this Mac + model + speech',
-      'fr-FR': 'Reconnaissance vocale de ce Mac + modèle + synthèse vocale',
-      'de-DE': 'Spracherkennung auf diesem Mac + Modell + Sprachausgabe',
-      'hi-IN': 'इस Mac का स्पीच रिकग्निशन + मॉडल + स्पीच',
-      'id-ID': 'Pengenalan suara di Mac ini + model + pembacaan',
-      'it-IT': 'Riconoscimento su questo Mac + modello + lettura',
-      'ko-KR': '이 Mac의 음성 인식 + 대화 모델 + 읽어주기',
-      'pt-BR': 'Reconhecimento de fala neste Mac + modelo + leitura',
-      'es-419': 'Reconocimiento de voz de esta Mac + modelo + lectura en voz alta',
-      'es-ES': 'Reconocimiento de voz en este Mac + modelo + lectura'
+      'ja-JP': 'このコンピュータの音声認識 + 会話モデル + 読み上げ',
+      'en-US': 'Speech recognition on this computer + model + speech',
+      'fr-FR': 'Reconnaissance vocale de cet ordinateur + modèle + synthèse vocale',
+      'de-DE': 'Spracherkennung auf diesem Computer + Modell + Sprachausgabe',
+      'hi-IN': 'इस कंप्यूटर का स्पीच रिकग्निशन + मॉडल + स्पीच',
+      'id-ID': 'Pengenalan suara di komputer ini + model + pembacaan',
+      'it-IT': 'Riconoscimento su questo computer + modello + lettura',
+      'ko-KR': '이 컴퓨터의 음성 인식 + 대화 모델 + 읽어주기',
+      'pt-BR': 'Reconhecimento de fala neste computador + modelo + leitura',
+      'es-419': 'Reconocimiento de voz de esta computadora + modelo + lectura en voz alta',
+      'es-ES': 'Reconocimiento de voz en este ordenador + modelo + lectura'
     },
     hint: {
-      'ja-JP': 'この Mac の音声認識が文字にして、会話モデルが答え、「声」で選んだエンジンが読み上げます。相槌と割り込みは ASIST が判断します。',
-      'en-US': 'This Mac turns your speech into text, the conversation model answers, and the engine chosen on the Voice page reads the reply. ASIST decides the backchannels and the interruptions.',
-      'fr-FR': 'La reconnaissance vocale de ce Mac met vos paroles en texte, le modèle de conversation répond, et le moteur choisi sur la page Voix lit la réponse. ASIST décide des acquiescements et des interruptions.',
-      'de-DE': 'Dieser Mac wandelt Ihre Sprache in Text um, das Gesprächsmodell antwortet, und die unter „Stimme“ gewählte Engine liest die Antwort vor. Über Hörersignale und Unterbrechungen entscheidet ASIST.',
-      'hi-IN': 'इस Mac पर आपकी बात टेक्स्ट बनती है, बातचीत का मॉडल जवाब देता है, और "आवाज़" पेज पर चुना हुआ इंजन जवाब बोलता है। हुंकारे और बीच में बोलने का फ़ैसला ASIST करता है।',
-      'id-ID': 'Mac ini mengubah ucapan Anda jadi teks, model percakapan menjawab, dan mesin yang dipilih di halaman Suara membacakan jawabannya. ASIST yang menentukan gumaman dan interupsinya.',
-      'it-IT': 'Questo Mac trascrive quello che dici, il modello di conversazione risponde e il motore scelto nella pagina «Voce» legge la risposta. I cenni di ascolto e le interruzioni li decide ASIST.',
-      'ko-KR': "이 Mac의 음성 인식이 글자로 옮기고, 대화 모델이 답하고, '음성'에서 선택한 엔진이 읽어줍니다. 맞장구와 끼어들기는 ASIST가 판단합니다.",
-      'pt-BR': 'Este Mac transcreve o que você fala, o modelo de conversa responde e o motor escolhido na página Voz lê a resposta. O ASIST decide os sinais de escuta e as interrupções.',
-      'es-419': 'Esta Mac convierte tu voz en texto, el modelo de conversación responde y el motor que elegiste en la página Voz lee la respuesta. ASIST decide los asentimientos y las interrupciones.',
-      'es-ES': 'Este Mac convierte en texto lo que dices, el modelo de conversación responde y el motor elegido en la página “Voz” lee la respuesta. ASIST decide los asentimientos y las interrupciones.'
+      'ja-JP': 'このコンピュータの音声認識が文字にして、会話モデルが答え、「声」で選んだエンジンが読み上げます。相槌と割り込みは ASIST が判断します。',
+      'en-US': 'This computer turns your speech into text, the conversation model answers, and the engine chosen on the Voice page reads the reply. ASIST decides the backchannels and the interruptions.',
+      'fr-FR': 'La reconnaissance vocale de cet ordinateur met vos paroles en texte, le modèle de conversation répond, et le moteur choisi sur la page Voix lit la réponse. ASIST décide des acquiescements et des interruptions.',
+      'de-DE': 'Dieser Computer wandelt Ihre Sprache in Text um, das Gesprächsmodell antwortet, und die unter „Stimme“ gewählte Engine liest die Antwort vor. Über Hörersignale und Unterbrechungen entscheidet ASIST.',
+      'hi-IN': 'इस कंप्यूटर पर आपकी बात टेक्स्ट बनती है, बातचीत का मॉडल जवाब देता है, और "आवाज़" पेज पर चुना हुआ इंजन जवाब बोलता है। हुंकारे और बीच में बोलने का फ़ैसला ASIST करता है।',
+      'id-ID': 'Komputer ini mengubah ucapan Anda jadi teks, model percakapan menjawab, dan mesin yang dipilih di halaman Suara membacakan jawabannya. ASIST yang menentukan gumaman dan interupsinya.',
+      'it-IT': 'Questo computer trascrive quello che dici, il modello di conversazione risponde e il motore scelto nella pagina «Voce» legge la risposta. I cenni di ascolto e le interruzioni li decide ASIST.',
+      'ko-KR': "이 컴퓨터의 음성 인식이 글자로 옮기고, 대화 모델이 답하고, '음성'에서 선택한 엔진이 읽어줍니다. 맞장구와 끼어들기는 ASIST가 판단합니다.",
+      'pt-BR': 'Este computador transcreve o que você fala, o modelo de conversa responde e o motor escolhido na página Voz lê a resposta. O ASIST decide os sinais de escuta e as interrupções.',
+      'es-419': 'Esta computadora convierte tu voz en texto, el modelo de conversación responde y el motor que elegiste en la página Voz lee la respuesta. ASIST decide los asentimientos y las interrupciones.',
+      'es-ES': 'Este ordenador convierte en texto lo que dices, el modelo de conversación responde y el motor elegido en la página “Voz” lee la respuesta. ASIST decide los asentimientos y las interrupciones.'
     }
   },
   gptLive: {

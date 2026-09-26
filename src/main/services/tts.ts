@@ -7,6 +7,7 @@ import { withTimeoutSignal } from '@shared/abort'
 import { CONVERSATION_LANGUAGE_NAMES, type ConversationLocale } from '@shared/conversation-locale'
 import { qwenTtsLanguage, ttsEngineRuns } from '@shared/tts-models'
 import { errorText } from '@shared/i18n/error-text'
+import { osMessageKey } from '@shared/i18n/os-message'
 import { conversationLocale } from './conversation-locale'
 import { platformCapabilities } from './platform'
 import { t } from './i18n'
@@ -53,7 +54,7 @@ const currentEngine = (): TtsEngine => getSettings().ttsEngine
 
 /** The name of the engine in the interface language. The engines named after their product keep that name in every language. */
 export function engineLabel(engine: TtsEngine = currentEngine()): string {
-  if (engine === 'system') return t('settings.ttsEngine.system')
+  if (engine === 'system') return t(osMessageKey('settings.ttsEngine.system', platformCapabilities().os))
   if (engine === 'none') return t('settings.ttsEngine.none')
   if (engine === 'qwen3tts') return 'Qwen3-TTS'
   return ENGINES[engine].label

@@ -27,6 +27,8 @@ import { Frame } from './Frame'
 import type { Viewer } from './types'
 import './CodeViewer.css'
 import { useT } from '@/i18n'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * Source code with line numbers. Only the languages that are opened often are registered on highlight.js's
@@ -186,7 +188,7 @@ export const CodeViewer: Viewer = ({ item, mode, size }) => {
   return (
     <Frame mode={mode} size={size}>
       <CodeBlock text={item.text ?? ''} language={languageFor(item.name)} maxLines={mode === 'card' ? CARD_LINES : Infinity} />
-      {item.truncated && <p className="fv-note">{t('files.viewer.truncatedOpen')}</p>}
+      {item.truncated && <p className="fv-note">{t(osMessageKey('files.viewer.truncatedOpen', platformCapabilities().os))}</p>}
     </Frame>
   )
 }

@@ -19,7 +19,7 @@
   --color-holo-text: #eaf2ff;
   --color-holo-muted: #8ca0c4;
   --color-holo-dim: #5e6c8a;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace;
   --shadow-glass:
     0 0 0 1px rgba(111, 231, 255, 0.04),
     0 18px 44px rgba(0, 0, 0, 0.5),
@@ -32,7 +32,7 @@ body,
   height: 100%;
   margin: 0;
   color: var(--color-holo-text);
-  font-family: 'Avenir Next', -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: 'Avenir Next', -apple-system, 'Hiragino Sans', 'Segoe UI Variable Text', 'Segoe UI', 'Yu Gothic UI', 'Meiryo UI', 'Noto Sans JP', sans-serif;
   overflow: hidden;
   user-select: none;
 }

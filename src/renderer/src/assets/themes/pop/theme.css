@@ -55,9 +55,10 @@
   --card-kicker-ink: #fffdf7;
   --card-kicker-fill: #1b1b1f;
   --card-kicker-padding: 2px 9px;
-  --card-title-font: ui-rounded, 'Hiragino Maru Gothic ProN', sans-serif;
+  /* Windows has no rounded font of its own, so the headings there use the heavy weights of its UI fonts. */
+  --card-title-font: ui-rounded, 'Hiragino Maru Gothic ProN', 'Segoe UI Variable Display', 'Segoe UI', 'Yu Gothic UI', sans-serif;
   --card-title-weight: 800;
-  --card-number-font: ui-rounded, 'Hiragino Maru Gothic ProN', sans-serif;
+  --card-number-font: ui-rounded, 'Hiragino Maru Gothic ProN', 'Segoe UI Variable Display', 'Segoe UI', 'Yu Gothic UI', sans-serif;
   --card-number-weight: 700;
   --card-number-scale: 0.86;
 

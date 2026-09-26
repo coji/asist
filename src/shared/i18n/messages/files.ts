@@ -15,17 +15,32 @@ export const files = defineMessages({
     'es-ES': 'Cargando los archivos'
   },
   reveal: {
-    'ja-JP': 'Finder で開く',
-    'en-US': 'Show in Finder',
-    'fr-FR': 'Afficher dans le Finder',
-    'de-DE': 'Im Finder zeigen',
-    'hi-IN': 'Finder में दिखाएँ',
-    'id-ID': 'Tampilkan di Finder',
-    'it-IT': 'Mostra nel Finder',
-    'ko-KR': 'Finder에서 보기',
-    'pt-BR': 'Mostrar no Finder',
-    'es-419': 'Mostrar en el Finder',
-    'es-ES': 'Mostrar en el Finder'
+    macos: {
+      'ja-JP': 'Finder で開く',
+      'en-US': 'Show in Finder',
+      'fr-FR': 'Afficher dans le Finder',
+      'de-DE': 'Im Finder zeigen',
+      'hi-IN': 'Finder में दिखाएँ',
+      'id-ID': 'Tampilkan di Finder',
+      'it-IT': 'Mostra nel Finder',
+      'ko-KR': 'Finder에서 보기',
+      'pt-BR': 'Mostrar no Finder',
+      'es-419': 'Mostrar en el Finder',
+      'es-ES': 'Mostrar en el Finder'
+    },
+    windows: {
+      'ja-JP': 'エクスプローラーで開く',
+      'en-US': 'Show in File Explorer',
+      'fr-FR': "Afficher dans l'Explorateur de fichiers",
+      'de-DE': 'Im Explorer zeigen',
+      'hi-IN': 'फ़ाइल एक्सप्लोरर में दिखाएँ',
+      'id-ID': 'Tampilkan di Penjelajah File',
+      'it-IT': 'Mostra in Esplora file',
+      'ko-KR': '파일 탐색기에서 보기',
+      'pt-BR': 'Mostrar no Explorador de Arquivos',
+      'es-419': 'Mostrar en el Explorador de archivos',
+      'es-ES': 'Mostrar en el Explorador de archivos'
+    }
   },
   entries: {
     'ja-JP': { other: '{count}件' },
@@ -505,30 +520,60 @@ export const files = defineMessages({
       'es-ES': '(solo se ha leído el principio)'
     },
     truncatedOpen: {
-      'ja-JP': '先頭だけ読み込み。続きは Finder で開く',
-      'en-US': 'Only the beginning was read. Open it in Finder for the rest',
-      'fr-FR': 'Seul le début a été lu. Ouvrez le fichier dans le Finder pour la suite',
-      'de-DE': 'Nur der Anfang wurde gelesen. Den Rest im Finder öffnen',
-      'hi-IN': 'सिर्फ़ शुरुआत पढ़ी गई। बाकी के लिए Finder में खोलें',
-      'id-ID': 'Hanya bagian awal yang dibaca. Buka di Finder untuk sisanya',
-      'it-IT': "È stato letto solo l'inizio. Apri il file nel Finder per il resto",
-      'ko-KR': '앞부분만 읽었습니다. 나머지는 Finder에서 열어 보십시오',
-      'pt-BR': 'Só o começo foi lido. Abra no Finder para ver o resto',
-      'es-419': 'Solo se leyó el principio. Ábrelo en el Finder para ver el resto',
-      'es-ES': 'Solo se ha leído el principio. Ábrelo en el Finder para ver el resto'
+      macos: {
+        'ja-JP': '先頭だけ読み込み。続きは Finder で開く',
+        'en-US': 'Only the beginning was read. Open it in Finder for the rest',
+        'fr-FR': 'Seul le début a été lu. Ouvrez le fichier dans le Finder pour la suite',
+        'de-DE': 'Nur der Anfang wurde gelesen. Den Rest im Finder öffnen',
+        'hi-IN': 'सिर्फ़ शुरुआत पढ़ी गई। बाकी के लिए Finder में खोलें',
+        'id-ID': 'Hanya bagian awal yang dibaca. Buka di Finder untuk sisanya',
+        'it-IT': "È stato letto solo l'inizio. Apri il file nel Finder per il resto",
+        'ko-KR': '앞부분만 읽었습니다. 나머지는 Finder에서 열어 보십시오',
+        'pt-BR': 'Só o começo foi lido. Abra no Finder para ver o resto',
+        'es-419': 'Solo se leyó el principio. Ábrelo en el Finder para ver el resto',
+        'es-ES': 'Solo se ha leído el principio. Ábrelo en el Finder para ver el resto'
+      },
+      windows: {
+        'ja-JP': '先頭だけ読み込み。続きはエクスプローラーで開く',
+        'en-US': 'Only the beginning was read. Open it in File Explorer for the rest',
+        'fr-FR': "Seul le début a été lu. Ouvrez le fichier dans l'Explorateur de fichiers pour la suite",
+        'de-DE': 'Nur der Anfang wurde gelesen. Den Rest im Explorer öffnen',
+        'hi-IN': 'सिर्फ़ शुरुआत पढ़ी गई। बाकी के लिए फ़ाइल एक्सप्लोरर में खोलें',
+        'id-ID': 'Hanya bagian awal yang dibaca. Buka di Penjelajah File untuk sisanya',
+        'it-IT': "È stato letto solo l'inizio. Apri il file in Esplora file per il resto",
+        'ko-KR': '앞부분만 읽었습니다. 나머지는 파일 탐색기에서 열어 보십시오',
+        'pt-BR': 'Só o começo foi lido. Abra no Explorador de Arquivos para ver o resto',
+        'es-419': 'Solo se leyó el principio. Ábrelo en el Explorador de archivos para ver el resto',
+        'es-ES': 'Solo se ha leído el principio. Ábrelo en el Explorador de archivos para ver el resto'
+      }
     },
     truncatedMarkdown: {
-      'ja-JP': '…続きは Finder で開く',
-      'en-US': '…open it in Finder for the rest',
-      'fr-FR': '…ouvrez le fichier dans le Finder pour la suite',
-      'de-DE': '… den Rest im Finder öffnen',
-      'hi-IN': '…बाकी के लिए Finder में खोलें',
-      'id-ID': '…buka di Finder untuk sisanya',
-      'it-IT': '…apri il file nel Finder per il resto',
-      'ko-KR': '…나머지는 Finder에서 열어 보십시오',
-      'pt-BR': '…abra no Finder para ver o resto',
-      'es-419': '…ábrelo en el Finder para ver el resto',
-      'es-ES': '…ábrelo en el Finder para ver el resto'
+      macos: {
+        'ja-JP': '…続きは Finder で開く',
+        'en-US': '…open it in Finder for the rest',
+        'fr-FR': '…ouvrez le fichier dans le Finder pour la suite',
+        'de-DE': '… den Rest im Finder öffnen',
+        'hi-IN': '…बाकी के लिए Finder में खोलें',
+        'id-ID': '…buka di Finder untuk sisanya',
+        'it-IT': '…apri il file nel Finder per il resto',
+        'ko-KR': '…나머지는 Finder에서 열어 보십시오',
+        'pt-BR': '…abra no Finder para ver o resto',
+        'es-419': '…ábrelo en el Finder para ver el resto',
+        'es-ES': '…ábrelo en el Finder para ver el resto'
+      },
+      windows: {
+        'ja-JP': '…続きはエクスプローラーで開く',
+        'en-US': '…open it in File Explorer for the rest',
+        'fr-FR': "…ouvrez le fichier dans l'Explorateur de fichiers pour la suite",
+        'de-DE': '… den Rest im Explorer öffnen',
+        'hi-IN': '…बाकी के लिए फ़ाइल एक्सप्लोरर में खोलें',
+        'id-ID': '…buka di Penjelajah File untuk sisanya',
+        'it-IT': '…apri il file in Esplora file per il resto',
+        'ko-KR': '…나머지는 파일 탐색기에서 열어 보십시오',
+        'pt-BR': '…abra no Explorador de Arquivos para ver o resto',
+        'es-419': '…ábrelo en el Explorador de archivos para ver el resto',
+        'es-ES': '…ábrelo en el Explorador de archivos para ver el resto'
+      }
     },
     stub: {
       'ja-JP': '{kind}はここでは中身を出せません',

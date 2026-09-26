@@ -8,6 +8,8 @@ import { useParsedBytes } from './use-parsed-bytes'
 import './HtmlViewer.css'
 import { useT } from '@/i18n'
 import { openLink } from '@/open-link'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * An HTML page, rendered by default and switchable to its highlighted source. The page is loaded from its
@@ -55,7 +57,7 @@ export const HtmlViewer: Viewer = ({ item, mode, size }) => {
       ) : (
         <>
           <CodeBlock text={item.text ?? ''} language={languageFor(item.name)} maxLines={mode === 'card' ? 60 : Infinity} />
-          {item.truncated && <p className="fv-note">{t('files.viewer.truncatedOpen')}</p>}
+          {item.truncated && <p className="fv-note">{t(osMessageKey('files.viewer.truncatedOpen', platformCapabilities().os))}</p>}
         </>
       )}
     </Frame>

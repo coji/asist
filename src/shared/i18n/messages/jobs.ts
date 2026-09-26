@@ -1880,17 +1880,17 @@ export const jobs = defineMessages({
       'es-ES': 'Instrucción para el agente'
     },
     warning: {
-      'ja-JP': 'ジョブはあなたの権限で動き、このMacのファイルを読めます。頼んだ覚えのない指示なら、キャンセルしてください。',
-      'en-US': 'The job runs with your permissions and can read the files on this Mac. If you did not ask for this, cancel it.',
-      'fr-FR': "Le job s'exécute avec vos droits et peut lire les fichiers de ce Mac. Si vous ne l'avez pas demandé, annulez-le.",
-      'de-DE': 'Der Job läuft mit Ihren Rechten und kann die Dateien auf diesem Mac lesen. Wenn Sie ihn nicht angefordert haben, brechen Sie ab.',
-      'hi-IN': 'यह जॉब आपकी अनुमतियों से चलती है और इस Mac की फ़ाइलें पढ़ सकती है। अगर आपने यह नहीं माँगा था, तो रद्द करें।',
-      'id-ID': 'Pekerjaan ini berjalan dengan izin Anda dan bisa membaca file di Mac ini. Jika Anda tidak memintanya, batalkan.',
-      'it-IT': "L'incarico gira con i tuoi permessi e può leggere i file di questo Mac. Se non l'hai chiesto tu, annulla.",
-      'ko-KR': '이 작업은 사용자의 권한으로 실행되며 이 Mac의 파일을 읽을 수 있습니다. 요청한 적이 없다면 취소하십시오.',
-      'pt-BR': 'O job roda com as suas permissões e pode ler os arquivos deste Mac. Se você não pediu isso, cancele.',
-      'es-419': 'El trabajo se ejecuta con tus permisos y puede leer los archivos de esta Mac. Si no lo pediste, cancélalo.',
-      'es-ES': 'El trabajo se ejecuta con tus permisos y puede leer los archivos de este Mac. Si no lo has pedido, cancélalo.'
+      'ja-JP': 'ジョブはあなたの権限で動き、このコンピュータのファイルを読めます。頼んだ覚えのない指示なら、キャンセルしてください。',
+      'en-US': 'The job runs with your permissions and can read the files on this computer. If you did not ask for this, cancel it.',
+      'fr-FR': "Le job s'exécute avec vos droits et peut lire les fichiers de cet ordinateur. Si vous ne l'avez pas demandé, annulez-le.",
+      'de-DE': 'Der Job läuft mit Ihren Rechten und kann die Dateien auf diesem Computer lesen. Wenn Sie ihn nicht angefordert haben, brechen Sie ab.',
+      'hi-IN': 'यह जॉब आपकी अनुमतियों से चलती है और इस कंप्यूटर की फ़ाइलें पढ़ सकती है। अगर आपने यह नहीं माँगा था, तो रद्द करें।',
+      'id-ID': 'Pekerjaan ini berjalan dengan izin Anda dan bisa membaca file di komputer ini. Jika Anda tidak memintanya, batalkan.',
+      'it-IT': "L'incarico gira con i tuoi permessi e può leggere i file di questo computer. Se non l'hai chiesto tu, annulla.",
+      'ko-KR': '이 작업은 사용자의 권한으로 실행되며 이 컴퓨터의 파일을 읽을 수 있습니다. 요청한 적이 없다면 취소하십시오.',
+      'pt-BR': 'O job roda com as suas permissões e pode ler os arquivos deste computador. Se você não pediu isso, cancele.',
+      'es-419': 'El trabajo se ejecuta con tus permisos y puede leer los archivos de esta computadora. Si no lo pediste, cancélalo.',
+      'es-ES': 'El trabajo se ejecuta con tus permisos y puede leer los archivos de este ordenador. Si no lo has pedido, cancélalo.'
     },
     mergeTitle: {
       'ja-JP': '変更の取り込みを確認',

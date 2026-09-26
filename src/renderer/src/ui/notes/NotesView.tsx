@@ -10,6 +10,8 @@ import { displayError } from '@/display-error'
 import { useFormatLocale, useT } from '@/i18n'
 import '@/panels/viewers/viewers.css'
 import '@/assets/notes.css'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * The notes screen, with the notes on the left, the most recently changed first, and the chosen note
@@ -148,7 +150,7 @@ export function NotesView({ open }: { open: boolean }): React.JSX.Element {
     if (!note) return
     const approved = await askConfirm({
       message: t('notes.confirmDelete', { title: titleOf(note) }),
-      detail: t('notes.deleteDetail'),
+      detail: t(osMessageKey('notes.deleteDetail', platformCapabilities().os)),
       confirmLabel: t('notes.deleteNote'),
       destructive: true
     })
@@ -157,7 +159,7 @@ export function NotesView({ open }: { open: boolean }): React.JSX.Element {
     void window.api
       .noteRemove(note.id)
       .then(() => {
-        toast({ kind: 'ok', title: t('notes.deleted'), body: titleOf(note) })
+        toast({ kind: 'ok', title: t(osMessageKey('notes.deleted', platformCapabilities().os)), body: titleOf(note) })
         update('notes', { noteId: null, editing: false })
       })
       .catch((err: unknown) => toast({ kind: 'error', title: t('notes.deleteFailed'), body: displayError(err) }))

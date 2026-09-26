@@ -109,17 +109,32 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Lectura en voz alta'
     },
     description: {
-      'ja-JP': '選んだエンジンが使えない間は、macOS の音声合成で読み上げます。Qwen3-TTS はこの Mac 上で動き、文を作りながら読み始めます。',
-      'en-US': 'While the chosen engine is unavailable, replies are read with the macOS voice. Qwen3-TTS runs on this Mac and starts reading while the sentence is still being generated.',
-      'fr-FR': "Tant que le moteur choisi est indisponible, les réponses sont lues avec la voix de macOS. Qwen3-TTS tourne sur ce Mac et commence à lire pendant que la phrase s'écrit encore.",
-      'de-DE': 'Solange die gewählte Engine nicht bereitsteht, werden Antworten mit der macOS-Stimme vorgelesen. Qwen3-TTS läuft auf diesem Mac und beginnt zu lesen, während der Satz noch entsteht.',
-      'hi-IN': 'चुना हुआ इंजन उपलब्ध न हो, तब तक जवाब macOS की आवाज़ में पढ़े जाते हैं। Qwen3-TTS इसी Mac पर चलता है और वाक्य बनते-बनते ही पढ़ना शुरू कर देता है।',
-      'id-ID': 'Selama mesin yang dipilih tidak tersedia, jawaban dibacakan dengan suara macOS. Qwen3-TTS berjalan di Mac ini dan mulai membaca sementara kalimatnya masih disusun.',
-      'it-IT': 'Finché il motore scelto non è disponibile, le risposte vengono lette con la sintesi vocale di macOS. Qwen3-TTS funziona su questo Mac e inizia a leggere mentre la frase è ancora in scrittura.',
-      'ko-KR': '선택한 엔진을 쓸 수 없는 동안에는 macOS 음성 합성으로 읽어줍니다. Qwen3-TTS는 이 Mac에서 동작하며, 문장을 만들면서 읽기 시작합니다.',
-      'pt-BR': 'Enquanto o motor escolhido não está disponível, as respostas são lidas com a voz do macOS. O Qwen3-TTS roda neste Mac e começa a ler enquanto a frase ainda está sendo gerada.',
-      'es-419': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS funciona en esta Mac y empieza a leer mientras la frase todavía se está generando.',
-      'es-ES': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS se ejecuta en este Mac y empieza a leer mientras la frase todavía se está generando.'
+      macos: {
+        'ja-JP': '選んだエンジンが使えない間は、macOS の音声合成で読み上げます。Qwen3-TTS はこの Mac 上で動き、文を作りながら読み始めます。',
+        'en-US': 'While the chosen engine is unavailable, replies are read with the macOS voice. Qwen3-TTS runs on this Mac and starts reading while the sentence is still being generated.',
+        'fr-FR': "Tant que le moteur choisi est indisponible, les réponses sont lues avec la voix de macOS. Qwen3-TTS tourne sur ce Mac et commence à lire pendant que la phrase s'écrit encore.",
+        'de-DE': 'Solange die gewählte Engine nicht bereitsteht, werden Antworten mit der macOS-Stimme vorgelesen. Qwen3-TTS läuft auf diesem Mac und beginnt zu lesen, während der Satz noch entsteht.',
+        'hi-IN': 'चुना हुआ इंजन उपलब्ध न हो, तब तक जवाब macOS की आवाज़ में पढ़े जाते हैं। Qwen3-TTS इसी Mac पर चलता है और वाक्य बनते-बनते ही पढ़ना शुरू कर देता है।',
+        'id-ID': 'Selama mesin yang dipilih tidak tersedia, jawaban dibacakan dengan suara macOS. Qwen3-TTS berjalan di Mac ini dan mulai membaca sementara kalimatnya masih disusun.',
+        'it-IT': 'Finché il motore scelto non è disponibile, le risposte vengono lette con la sintesi vocale di macOS. Qwen3-TTS funziona su questo Mac e inizia a leggere mentre la frase è ancora in scrittura.',
+        'ko-KR': '선택한 엔진을 쓸 수 없는 동안에는 macOS 음성 합성으로 읽어줍니다. Qwen3-TTS는 이 Mac에서 동작하며, 문장을 만들면서 읽기 시작합니다.',
+        'pt-BR': 'Enquanto o motor escolhido não está disponível, as respostas são lidas com a voz do macOS. O Qwen3-TTS roda neste Mac e começa a ler enquanto a frase ainda está sendo gerada.',
+        'es-419': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS funciona en esta Mac y empieza a leer mientras la frase todavía se está generando.',
+        'es-ES': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS se ejecuta en este Mac y empieza a leer mientras la frase todavía se está generando.'
+      },
+      windows: {
+        'ja-JP': '選んだエンジンが使えない間は、Windows の音声合成で読み上げます。',
+        'en-US': 'While the chosen engine is unavailable, replies are read with the Windows voice.',
+        'fr-FR': 'Tant que le moteur choisi est indisponible, les réponses sont lues avec la voix de Windows.',
+        'de-DE': 'Solange die gewählte Engine nicht bereitsteht, werden Antworten mit der Windows-Stimme vorgelesen.',
+        'hi-IN': 'चुना हुआ इंजन उपलब्ध न हो, तब तक जवाब Windows की आवाज़ में पढ़े जाते हैं।',
+        'id-ID': 'Selama mesin yang dipilih tidak tersedia, jawaban dibacakan dengan suara Windows.',
+        'it-IT': 'Finché il motore scelto non è disponibile, le risposte vengono lette con la sintesi vocale di Windows.',
+        'ko-KR': '선택한 엔진을 쓸 수 없는 동안에는 Windows 음성 합성으로 읽어줍니다.',
+        'pt-BR': 'Enquanto o motor escolhido não está disponível, as respostas são lidas com a voz do Windows.',
+        'es-419': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de Windows.',
+        'es-ES': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de Windows.'
+      }
     },
     engine: {
       'ja-JP': 'エンジン',
@@ -148,18 +163,34 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Motor de lectura'
     },
     engineMissing: {
-      'ja-JP': '{engine} が見つかりません。macOS の音声合成で読み上げています。',
-      'en-US': '{engine} was not found. Replies are read with the macOS voice.',
-      'fr-FR': '{engine} est introuvable. Les réponses sont lues avec la voix de macOS.',
-      'de-DE': '{engine} wurde nicht gefunden. Antworten werden mit der macOS-Stimme vorgelesen.',
-      'hi-IN': '{engine} नहीं मिला। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
-      'id-ID': '{engine} tidak ditemukan. Jawaban dibacakan dengan suara macOS.',
-      'it-IT': '{engine} non è stato trovato. Le risposte vengono lette con la sintesi vocale di macOS.',
-      'ko-KR': '{engine} 엔진을 찾을 수 없습니다. macOS 음성 합성으로 읽어주고 있습니다.',
-      'pt-BR': '{engine} não foi encontrado. As respostas estão sendo lidas com a voz do macOS.',
-      'es-419': 'No se encontró {engine}. Las respuestas se leen con la voz de macOS.',
-      'es-ES': 'No se encuentra {engine}. Las respuestas se leen con la voz de macOS.'
+      macos: {
+        'ja-JP': '{engine} が見つかりません。macOS の音声合成で読み上げています。',
+        'en-US': '{engine} was not found. Replies are read with the macOS voice.',
+        'fr-FR': '{engine} est introuvable. Les réponses sont lues avec la voix de macOS.',
+        'de-DE': '{engine} wurde nicht gefunden. Antworten werden mit der macOS-Stimme vorgelesen.',
+        'hi-IN': '{engine} नहीं मिला। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': '{engine} tidak ditemukan. Jawaban dibacakan dengan suara macOS.',
+        'it-IT': '{engine} non è stato trovato. Le risposte vengono lette con la sintesi vocale di macOS.',
+        'ko-KR': '{engine} 엔진을 찾을 수 없습니다. macOS 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': '{engine} não foi encontrado. As respostas estão sendo lidas com a voz do macOS.',
+        'es-419': 'No se encontró {engine}. Las respuestas se leen con la voz de macOS.',
+        'es-ES': 'No se encuentra {engine}. Las respuestas se leen con la voz de macOS.'
+      },
+      windows: {
+        'ja-JP': '{engine} が見つかりません。Windows の音声合成で読み上げています。',
+        'en-US': '{engine} was not found. Replies are read with the Windows voice.',
+        'fr-FR': '{engine} est introuvable. Les réponses sont lues avec la voix de Windows.',
+        'de-DE': '{engine} wurde nicht gefunden. Antworten werden mit der Windows-Stimme vorgelesen.',
+        'hi-IN': '{engine} नहीं मिला। जवाब Windows की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': '{engine} tidak ditemukan. Jawaban dibacakan dengan suara Windows.',
+        'it-IT': '{engine} non è stato trovato. Le risposte vengono lette con la sintesi vocale di Windows.',
+        'ko-KR': '{engine} 엔진을 찾을 수 없습니다. Windows 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': '{engine} não foi encontrado. As respostas estão sendo lidas com a voz do Windows.',
+        'es-419': 'No se encontró {engine}. Las respuestas se leen con la voz de Windows.',
+        'es-ES': 'No se encuentra {engine}. Las respuestas se leen con la voz de Windows.'
+      }
     },
+    /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
     qwenNotPrepared: {
       'ja-JP': 'Qwen3-TTS のモデルを準備していません。macOS の音声合成で読み上げています。',
       'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the macOS voice.',
@@ -175,30 +206,17 @@ export const settingsVoice = defineMessages({
     },
     engines: {
       qwen3tts: {
-        'ja-JP': 'Qwen3-TTS(この Mac 上で実行)',
-        'en-US': 'Qwen3-TTS (runs on this Mac)',
-        'fr-FR': 'Qwen3-TTS (tourne sur ce Mac)',
-        'de-DE': 'Qwen3-TTS (läuft auf diesem Mac)',
-        'hi-IN': 'Qwen3-TTS (इसी Mac पर चलता है)',
-        'id-ID': 'Qwen3-TTS (berjalan di Mac ini)',
-        'it-IT': 'Qwen3-TTS (funziona su questo Mac)',
-        'ko-KR': 'Qwen3-TTS(이 Mac에서 실행)',
-        'pt-BR': 'Qwen3-TTS (roda neste Mac)',
-        'es-419': 'Qwen3-TTS (funciona en esta Mac)',
-        'es-ES': 'Qwen3-TTS (se ejecuta en este Mac)'
-      },
-      system: {
-        'ja-JP': 'macOS の音声合成',
-        'en-US': 'macOS voice',
-        'fr-FR': 'Voix de macOS',
-        'de-DE': 'macOS-Stimme',
-        'hi-IN': 'macOS की आवाज़',
-        'id-ID': 'Suara macOS',
-        'it-IT': 'Sintesi vocale di macOS',
-        'ko-KR': 'macOS 음성 합성',
-        'pt-BR': 'Voz do macOS',
-        'es-419': 'Voz de macOS',
-        'es-ES': 'Voz de macOS'
+        'ja-JP': 'Qwen3-TTS(このコンピュータ上で実行)',
+        'en-US': 'Qwen3-TTS (runs on this computer)',
+        'fr-FR': 'Qwen3-TTS (tourne sur cet ordinateur)',
+        'de-DE': 'Qwen3-TTS (läuft auf diesem Computer)',
+        'hi-IN': 'Qwen3-TTS (इसी कंप्यूटर पर चलता है)',
+        'id-ID': 'Qwen3-TTS (berjalan di komputer ini)',
+        'it-IT': 'Qwen3-TTS (funziona su questo computer)',
+        'ko-KR': 'Qwen3-TTS(이 컴퓨터에서 실행)',
+        'pt-BR': 'Qwen3-TTS (roda neste computador)',
+        'es-419': 'Qwen3-TTS (funciona en esta computadora)',
+        'es-ES': 'Qwen3-TTS (se ejecuta en este ordenador)'
       },
       none: {
         'ja-JP': '読み上げなし(返事は文字だけ)',
@@ -334,17 +352,17 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Reconocimiento de voz'
     },
     description: {
-      'ja-JP': 'この Mac 上で動かします。',
-      'en-US': 'Runs on this Mac.',
-      'fr-FR': 'Tourne sur ce Mac.',
-      'de-DE': 'Läuft auf diesem Mac.',
-      'hi-IN': 'यह इसी Mac पर चलता है।',
-      'id-ID': 'Berjalan di Mac ini.',
-      'it-IT': 'Funziona su questo Mac.',
-      'ko-KR': '이 Mac에서 동작합니다.',
-      'pt-BR': 'Roda neste Mac.',
-      'es-419': 'Funciona en esta Mac.',
-      'es-ES': 'Se ejecuta en este Mac.'
+      'ja-JP': 'このコンピュータ上で動かします。',
+      'en-US': 'Runs on this computer.',
+      'fr-FR': 'Tourne sur cet ordinateur.',
+      'de-DE': 'Läuft auf diesem Computer.',
+      'hi-IN': 'यह इसी कंप्यूटर पर चलता है।',
+      'id-ID': 'Berjalan di komputer ini.',
+      'it-IT': 'Funziona su questo computer.',
+      'ko-KR': '이 컴퓨터에서 동작합니다.',
+      'pt-BR': 'Roda neste computador.',
+      'es-419': 'Funciona en esta computadora.',
+      'es-ES': 'Se ejecuta en este ordenador.'
     },
     model: {
       'ja-JP': 'モデル',
@@ -387,16 +405,16 @@ export const settingsVoice = defineMessages({
     },
     checking: {
       'ja-JP': '環境を確認しています。',
-      'en-US': 'Checking this Mac.',
-      'fr-FR': 'Vérification de ce Mac.',
-      'de-DE': 'Dieser Mac wird geprüft.',
-      'hi-IN': 'इस Mac को देखा जा रहा है।',
-      'id-ID': 'Memeriksa Mac ini.',
-      'it-IT': 'Controllo di questo Mac in corso.',
-      'ko-KR': '이 Mac의 환경을 확인하고 있습니다.',
-      'pt-BR': 'Verificando este Mac.',
-      'es-419': 'Verificando esta Mac.',
-      'es-ES': 'Comprobando este Mac.'
+      'en-US': 'Checking this computer.',
+      'fr-FR': 'Vérification de cet ordinateur.',
+      'de-DE': 'Dieser Computer wird geprüft.',
+      'hi-IN': 'इस कंप्यूटर को देखा जा रहा है।',
+      'id-ID': 'Memeriksa komputer ini.',
+      'it-IT': 'Controllo di questo computer in corso.',
+      'ko-KR': '이 컴퓨터의 환경을 확인하고 있습니다.',
+      'pt-BR': 'Verificando este computador.',
+      'es-419': 'Verificando esta computadora.',
+      'es-ES': 'Comprobando este ordenador.'
     },
     automatic: {
       'ja-JP': '自動(搭載メモリに合わせる)',
@@ -464,30 +482,30 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Whisper en el navegador'
     },
     browserWhisperOn: {
-      'ja-JP': 'この Mac の音声認識が止まったとき、ブラウザ内の Whisper に切り替えて認識を続けます。',
-      'en-US': 'When speech recognition on this Mac stops, recognition continues with Whisper in the browser.',
-      'fr-FR': "Quand la reconnaissance vocale de ce Mac s'arrête, la reconnaissance continue avec Whisper dans le navigateur.",
-      'de-DE': 'Bleibt die Spracherkennung auf diesem Mac stehen, läuft die Erkennung mit Whisper im Browser weiter.',
-      'hi-IN': 'इस Mac का स्पीच रिकग्निशन रुकने पर, पहचान ब्राउज़र के Whisper से चलती रहती है।',
-      'id-ID': 'Saat pengenalan suara di Mac ini berhenti, pengenalan dilanjutkan dengan Whisper di dalam browser.',
-      'it-IT': 'Quando il riconoscimento vocale su questo Mac si ferma, il riconoscimento continua con Whisper nel browser.',
-      'ko-KR': '이 Mac의 음성 인식이 멈추면 브라우저 안의 Whisper로 바꿔서 인식을 이어 갑니다.',
-      'pt-BR': 'Quando o reconhecimento de fala deste Mac para, o reconhecimento continua com o Whisper no navegador.',
-      'es-419': 'Cuando el reconocimiento de voz de esta Mac se detiene, el reconocimiento sigue con Whisper en el navegador.',
-      'es-ES': 'Cuando el reconocimiento de voz de este Mac se detiene, el reconocimiento continúa con Whisper en el navegador.'
+      'ja-JP': 'このコンピュータの音声認識が止まったとき、ブラウザ内の Whisper に切り替えて認識を続けます。',
+      'en-US': 'When speech recognition on this computer stops, recognition continues with Whisper in the browser.',
+      'fr-FR': "Quand la reconnaissance vocale de cet ordinateur s'arrête, la reconnaissance continue avec Whisper dans le navigateur.",
+      'de-DE': 'Bleibt die Spracherkennung auf diesem Computer stehen, läuft die Erkennung mit Whisper im Browser weiter.',
+      'hi-IN': 'इस कंप्यूटर का स्पीच रिकग्निशन रुकने पर, पहचान ब्राउज़र के Whisper से चलती रहती है।',
+      'id-ID': 'Saat pengenalan suara di komputer ini berhenti, pengenalan dilanjutkan dengan Whisper di dalam browser.',
+      'it-IT': 'Quando il riconoscimento vocale su questo computer si ferma, il riconoscimento continua con Whisper nel browser.',
+      'ko-KR': '이 컴퓨터의 음성 인식이 멈추면 브라우저 안의 Whisper로 바꿔서 인식을 이어 갑니다.',
+      'pt-BR': 'Quando o reconhecimento de fala deste computador para, o reconhecimento continua com o Whisper no navegador.',
+      'es-419': 'Cuando el reconocimiento de voz de esta computadora se detiene, el reconocimiento sigue con Whisper en el navegador.',
+      'es-ES': 'Cuando el reconocimiento de voz de este ordenador se detiene, el reconocimiento continúa con Whisper en el navegador.'
     },
     browserWhisperOff: {
-      'ja-JP': '準備しておくと、この Mac の音声認識が止まったときに代わりに使います。',
-      'en-US': 'Once prepared, it takes over when speech recognition on this Mac stops.',
-      'fr-FR': "Une fois préparé, il prend le relais quand la reconnaissance vocale de ce Mac s'arrête.",
-      'de-DE': 'Einmal vorbereitet, springt es ein, wenn die Spracherkennung auf diesem Mac stehen bleibt.',
-      'hi-IN': 'एक बार तैयार हो जाने पर, इस Mac का स्पीच रिकग्निशन रुकने पर यह उसकी जगह ले लेता है।',
-      'id-ID': 'Setelah disiapkan, Whisper ini mengambil alih saat pengenalan suara di Mac ini berhenti.',
-      'it-IT': 'Una volta pronto, subentra quando il riconoscimento vocale su questo Mac si ferma.',
-      'ko-KR': '준비해 두면 이 Mac의 음성 인식이 멈췄을 때 대신 씁니다.',
-      'pt-BR': 'Depois de preparado, ele assume quando o reconhecimento de fala deste Mac para.',
-      'es-419': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de esta Mac se detiene.',
-      'es-ES': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de este Mac se detiene.'
+      'ja-JP': '準備しておくと、このコンピュータの音声認識が止まったときに代わりに使います。',
+      'en-US': 'Once prepared, it takes over when speech recognition on this computer stops.',
+      'fr-FR': "Une fois préparé, il prend le relais quand la reconnaissance vocale de cet ordinateur s'arrête.",
+      'de-DE': 'Einmal vorbereitet, springt es ein, wenn die Spracherkennung auf diesem Computer stehen bleibt.',
+      'hi-IN': 'एक बार तैयार हो जाने पर, इस कंप्यूटर का स्पीच रिकग्निशन रुकने पर यह उसकी जगह ले लेता है।',
+      'id-ID': 'Setelah disiapkan, Whisper ini mengambil alih saat pengenalan suara di komputer ini berhenti.',
+      'it-IT': 'Una volta pronto, subentra quando il riconoscimento vocale su questo computer si ferma.',
+      'ko-KR': '준비해 두면 이 컴퓨터의 음성 인식이 멈췄을 때 대신 씁니다.',
+      'pt-BR': 'Depois de preparado, ele assume quando o reconhecimento de fala deste computador para.',
+      'es-419': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de esta computadora se detiene.',
+      'es-ES': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de este ordenador se detiene.'
     }
   },
   response: {

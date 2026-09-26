@@ -241,3 +241,15 @@ describe('TTS speaker selection', () => {
     await expect(tts.listSpeakers('aivisspeech')).rejects.toThrow('HTTP 503')
   })
 })
+
+describe('the name of the system voice', () => {
+  it('names the voice of the OS the app runs on', async () => {
+    const { createTranslator } = await import('@shared/i18n')
+    const t = createTranslator('ja-JP')
+    mocks.settings = { ...mocks.settings, uiLocale: 'ja-JP' } as typeof mocks.settings
+    const tts = await import('../src/main/services/tts')
+    expect(tts.engineLabel('system')).toBe(t('settings.ttsEngine.system.macos'))
+    mocks.windows = true
+    expect(tts.engineLabel('system')).toBe(t('settings.ttsEngine.system.windows'))
+  })
+})

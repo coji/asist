@@ -26,6 +26,8 @@ import { Btn, Chip, Group, Link, NotSavedHint, Page, Row, type ChipTone } from '
 import { displayError } from '@/display-error'
 import { useT, useUiLocale } from '@/i18n'
 import { personaStateKey } from '../persona-state'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /** A key this build cannot decrypt is named as on the integrations page, where it is entered again. */
 const KEY_STATE_CHIP = {
@@ -183,8 +185,8 @@ export function ConversationPage({ ctx }: { ctx: SettingsContext }): React.JSX.E
       </Group>
 
       <Group title={t('settingsConversation.appLog.title')} description={t('settingsConversation.appLog.description', { days: APP_LOG_RETENTION_DAYS })}>
-        <Row label={t('settingsConversation.appLog.folder')} hint={t('settingsConversation.appLog.folderHint')}>
-          <Btn onClick={() => void window.api.logsOpenFolder()}>{t('settingsConversation.appLog.open')}</Btn>
+        <Row label={t('settingsConversation.appLog.folder')} hint={t(osMessageKey('settingsConversation.appLog.folderHint', platformCapabilities().os))}>
+          <Btn onClick={() => void window.api.logsOpenFolder()}>{t(osMessageKey('settingsConversation.appLog.open', platformCapabilities().os))}</Btn>
         </Row>
       </Group>
     </Page>

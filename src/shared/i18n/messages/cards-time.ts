@@ -745,17 +745,17 @@ export const cardsTime = defineMessages({
         'es-ES': 'Ya hay un temporizador con este id en marcha con otros ajustes.'
       },
       clockInvalid: {
-        'ja-JP': 'タイマーを作れません。Mac の時計が正しい時刻を返していません。',
-        'en-US': "Couldn't create the timer. The clock on your Mac is not returning a valid time.",
-        'fr-FR': "Impossible de créer le minuteur. L'horloge de votre Mac ne renvoie pas une heure valable.",
-        'de-DE': 'Der Timer ließ sich nicht anlegen. Die Uhr Ihres Macs gibt keine gültige Zeit zurück.',
-        'hi-IN': 'टाइमर नहीं बन सका। आपके Mac की घड़ी सही समय नहीं दे रही।',
-        'id-ID': 'Tidak bisa membuat timer. Jam di Mac Anda tidak memberikan waktu yang sah.',
-        'it-IT': "Impossibile creare il timer. L'orologio del tuo Mac non restituisce un'ora valida.",
-        'ko-KR': '타이머를 만들 수 없습니다. Mac의 시계가 올바른 시각을 돌려주지 않습니다.',
-        'pt-BR': 'Não foi possível criar o timer. O relógio do seu Mac não está retornando uma hora válida.',
-        'es-419': 'No se pudo crear el temporizador. El reloj de tu Mac no devuelve una hora válida.',
-        'es-ES': 'No se ha podido crear el temporizador. El reloj de tu Mac no devuelve una hora válida.'
+        'ja-JP': 'タイマーを作れません。コンピュータの時計が正しい時刻を返していません。',
+        'en-US': "Couldn't create the timer. The clock on your computer is not returning a valid time.",
+        'fr-FR': "Impossible de créer le minuteur. L'horloge de votre ordinateur ne renvoie pas une heure valable.",
+        'de-DE': 'Der Timer ließ sich nicht anlegen. Die Uhr Ihres Computers gibt keine gültige Zeit zurück.',
+        'hi-IN': 'टाइमर नहीं बन सका। आपके कंप्यूटर की घड़ी सही समय नहीं दे रही।',
+        'id-ID': 'Tidak bisa membuat timer. Jam di komputer Anda tidak memberikan waktu yang sah.',
+        'it-IT': "Impossibile creare il timer. L'orologio del tuo computer non restituisce un'ora valida.",
+        'ko-KR': '타이머를 만들 수 없습니다. 컴퓨터의 시계가 올바른 시각을 돌려주지 않습니다.',
+        'pt-BR': 'Não foi possível criar o timer. O relógio do seu computador não está retornando uma hora válida.',
+        'es-419': 'No se pudo crear el temporizador. El reloj de tu computadora no devuelve una hora válida.',
+        'es-ES': 'No se ha podido crear el temporizador. El reloj de tu ordenador no devuelve una hora válida.'
       },
       tooLong: {
         'ja-JP': 'タイマーの時間が長すぎます。',

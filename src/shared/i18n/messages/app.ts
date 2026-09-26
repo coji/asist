@@ -155,17 +155,17 @@ export const app = defineMessages({
       'es-ES': 'El trabajo ha fallado'
     },
     unsupported: {
-      'ja-JP': 'この Mac では通知を出せません。',
-      'en-US': "This Mac can't show notifications.",
-      'fr-FR': 'Ce Mac ne peut pas afficher de notification.',
-      'de-DE': 'Dieser Mac kann keine Mitteilungen anzeigen.',
-      'hi-IN': 'यह Mac सूचनाएँ नहीं दिखा सकता।',
-      'id-ID': 'Mac ini tidak bisa menampilkan notifikasi.',
-      'it-IT': 'Questo Mac non può mostrare notifiche.',
-      'ko-KR': '이 Mac에서는 알림을 표시할 수 없습니다.',
-      'pt-BR': 'Este Mac não pode exibir notificações.',
-      'es-419': 'Esta Mac no puede mostrar notificaciones.',
-      'es-ES': 'Este Mac no puede mostrar notificaciones.'
+      'ja-JP': 'このコンピュータでは通知を出せません。',
+      'en-US': "This computer can't show notifications.",
+      'fr-FR': 'Cet ordinateur ne peut pas afficher de notification.',
+      'de-DE': 'Dieser Computer kann keine Mitteilungen anzeigen.',
+      'hi-IN': 'यह कंप्यूटर सूचनाएँ नहीं दिखा सकता।',
+      'id-ID': 'Komputer ini tidak bisa menampilkan notifikasi.',
+      'it-IT': 'Questo computer non può mostrare notifiche.',
+      'ko-KR': '이 컴퓨터에서는 알림을 표시할 수 없습니다.',
+      'pt-BR': 'Este computador não pode exibir notificações.',
+      'es-419': 'Esta computadora no puede mostrar notificaciones.',
+      'es-ES': 'Este ordenador no puede mostrar notificaciones.'
     }
   },
   startup: {

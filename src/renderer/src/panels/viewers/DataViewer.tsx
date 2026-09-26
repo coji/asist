@@ -5,6 +5,8 @@ import type { Viewer } from './types'
 import './DataViewer.css'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * Data files. json and jsonl are parsed into a tree that folds, while the other formats (yaml, toml, ini,
@@ -143,7 +145,7 @@ export const DataViewer: Viewer = ({ item, mode, size }) => {
   const t = useT()
   const text = item.text ?? ''
   const language = languageFor(item.name)
-  const truncatedNote = item.truncated && <p className="fv-note">{t('files.viewer.truncatedOpen')}</p>
+  const truncatedNote = item.truncated && <p className="fv-note">{t(osMessageKey('files.viewer.truncatedOpen', platformCapabilities().os))}</p>
   if (!isJson(item.name)) {
     return (
       <Frame mode={mode} size={size}>

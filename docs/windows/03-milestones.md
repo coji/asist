@@ -170,7 +170,7 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 | M5-7 | エコーキャンセルを実測する(スピーカーで、VOICEVOX、live のエンジン、システムの声それぞれ、`echoCancellation` が `true` と `"all"` のとき)。結果から Windows の既定を決める | Win | 読み上げ中に自分の声を拾い直さない設定が決まる |
 | M5-8 | Windows のマイクの取り込みを、getUserMedia を正式な経路とする形にする(ネイティブのヘルパーが無いことを fallback として扱わない) | Mac と Win | Windows で、ネイティブのヘルパーの失敗の記録が出ない |
 | M5-9 | 記憶の検索、相槌の分類器、MaAI を Windows の CPU で動かす。MaAI の1フレームあたりの時間を測る | Win | 追加の準備が Windows で終わり、MaAI の CPU の時間が 80ms のフレームに収まる |
-| M5-10 | VOICEVOX と AivisSpeech の Windows のインストール先を、自動起動の候補に足す | Win | 入れてあれば自動で起動する |
+| M5-10 | VOICEVOX と AivisSpeech の Windows のインストール先を、自動起動の候補に足す。Windows 用の文言は、いまは「自分で起動してもらう」形なので、`setup.tts.engines.voicevox.detail`、`setup.tts.engines.aivisspeech.detail`、`setup.tts.howtoInstall`、`setup.tts.howtoVerify`、`setup.tts.connectFailed`、`setup.guide.tts.notConnected` の Windows 用を書き直す | Win | 入れてあれば自動で起動する |
 | M5-11 | ADR「Windows では x64 と NVIDIA の GPU を前提にし、CUDA の torch で動かす」を実測の値とともに入れる | Win | |
 
 **PR:**

@@ -13,12 +13,13 @@ import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 
-/** The integrations page: the macOS calendar, mail, and the API key of each provider. */
+/** The integrations page: the macOS calendar where this machine has it, mail, and the API key of each provider. */
 export function IntegrationsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const t = useT()
+  const { calendar } = platformCapabilities()
   return (
-    <Page title={t('settingsIntegrations.title')} lead={t('settingsIntegrations.lead')}>
-      {platformCapabilities().calendar && <CalendarSettings settings={ctx.settings} />}
+    <Page title={t('settingsIntegrations.title')} lead={t(calendar ? 'settingsIntegrations.lead.withCalendar' : 'settingsIntegrations.lead.withoutCalendar')}>
+      {calendar && <CalendarSettings settings={ctx.settings} />}
       <MailSettings ctx={ctx} />
       <ApiKeys ctx={ctx} />
     </Page>

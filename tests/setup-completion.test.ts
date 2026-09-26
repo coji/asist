@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
   asrEnsure: vi.fn(),
   ttsEnsure: vi.fn(),
   ttsAvailable: vi.fn(),
-  engineLabel: vi.fn(() => 'macOS voice')
+  engineLabel: vi.fn(() => 'macOS voice'),
+  windows: false
 }))
 
 vi.mock('../src/main/services/settings', () => ({
@@ -36,6 +37,10 @@ vi.mock('../src/main/services/asr', () => ({
   available: mocks.asrAvailable,
   ensureServer: mocks.asrEnsure
 }))
+vi.mock('../src/main/services/platform', async () => {
+  const { MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : MACOS) }
+})
 vi.mock('../src/main/services/tts', () => ({
   ensureEngine: mocks.ttsEnsure,
   available: mocks.ttsAvailable,
@@ -48,6 +53,7 @@ beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
   mocks.settings.ttsEngine = 'system'
+  mocks.windows = false
   mocks.settings.safetyNoticeVersion = 1
   mocks.validateConfiguration.mockResolvedValue(undefined)
   mocks.asrAvailable.mockResolvedValue(false)
@@ -187,6 +193,17 @@ describe('completeSetup', () => {
     await expect(
       completeSetup({ voiceMode: 'text', microphoneVerified: false, localAsrVerified: false, systemTtsVerified: true, micAutoStart: false })
     ).rejects.toThrow(errorText('setup.completion.ttsUnavailable', { engine: 'macOS voice' }))
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('names the voice of the OS it runs on when that voice was not verified', async () => {
+    const { completeSetup } = await import('../src/main/services/setup-completion')
+    const request = { voiceMode: 'text', microphoneVerified: false, localAsrVerified: false, systemTtsVerified: false, micAutoStart: false }
+
+    mocks.windows = true
+    await expect(completeSetup(request)).rejects.toThrow(errorText('setup.completion.systemTtsUnavailable.windows'))
+    mocks.windows = false
+    await expect(completeSetup(request)).rejects.toThrow(errorText('setup.completion.systemTtsUnavailable.macos'))
     expect(mocks.saveSettings).not.toHaveBeenCalled()
   })
 })

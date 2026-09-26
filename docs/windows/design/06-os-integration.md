@@ -55,7 +55,7 @@
 
 - いまの並びは、`'Avenir Next', -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif` と、等幅の `ui-monospace, 'SF Mono', Menlo, monospace`、pop のテーマの `ui-rounded, 'Hiragino Maru Gothic ProN'` です。
 - Windows のフォントを足します。
-  - 本文: `'Segoe UI Variable', 'Segoe UI', 'Yu Gothic UI', 'Meiryo UI'`
+  - 本文: `'Segoe UI Variable Text', 'Segoe UI', 'Yu Gothic UI', 'Meiryo UI'`
   - 等幅: `'Cascadia Mono', Consolas`
 - 文字が収まるかを確かめる `demo:fit` は、macOS のフォントで測っています。Windows のフォントでは折り返しが変わるので、Windows でも測る必要があります。CI の Windows の runner に日本語のフォント(Yu Gothic)が入っているかは未確認です([06-open-questions.md](../06-open-questions.md))。
 
@@ -69,7 +69,7 @@
   - 会話のモデルへの文(`brain/prompt.ts:238,241` の「この Mac のタイムゾーン」)
 - **書き分けの方針。**
   - **OS の部品の名前を出すもの**(Finder とエクスプローラー、システム設定と Windows の設定、`~/Library/Logs` と `%APPDATA%\ASIST\logs`)は、OS ごとのキーを作ります。renderer は capabilities の `os` で選び、main はプロセスの OS で選びます。
-  - **「この Mac」のように機械を指すだけのもの**は、OS に依らない言い方にします。例えば「このパソコン」「this computer」です。
+  - **「この Mac」のように機械を指すだけのもの**は、OS に依らない言い方にします。例えば「このコンピュータ」「this computer」です。
   - **モデルへの文**は、`PromptText` の `{ ja, en }` を OS に依らない言い方にします。
 - **進め方。** `ui-text` スキルに従い、11言語を同じ変更で直し、`npm run i18n -- check` と `demo:fit` で確かめます。
 

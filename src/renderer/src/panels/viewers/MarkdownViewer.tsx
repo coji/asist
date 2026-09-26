@@ -5,6 +5,8 @@ import { Frame } from './Frame'
 import type { Viewer } from './types'
 import { useT } from '@/i18n'
 import { openLink } from '@/open-link'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * Markdown drawn as a document. GFM (tables, task lists, strikethrough, autolinks) is understood and raw HTML
@@ -53,7 +55,7 @@ export const MarkdownViewer: Viewer = ({ item, mode, size }) => {
     <Frame mode={mode} size={size}>
       <div className="fv-doc">
         <MarkdownContent text={item.text ?? ''} />
-        {item.truncated && <p className="fv-note">{t('files.viewer.truncatedMarkdown')}</p>}
+        {item.truncated && <p className="fv-note">{t(osMessageKey('files.viewer.truncatedMarkdown', platformCapabilities().os))}</p>}
       </div>
     </Frame>
   )

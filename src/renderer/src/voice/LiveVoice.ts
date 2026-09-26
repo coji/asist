@@ -5,6 +5,8 @@ import { DfnDenoiser } from './DfnDenoiser'
 import { SileroVad } from './SileroVad'
 import { errorText } from '@shared/i18n/error-text'
 import { displayError } from '@/display-error'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * The microphone input for the live engines, GPT-Live and Gemini Live. The 16 kHz frames go to the
@@ -62,7 +64,7 @@ export class LiveVoice {
     try {
       const permitted = await window.api.requestMicPermission()
       if (!current()) return
-      if (!permitted) throw new Error(errorText('voice.mic.notPermitted'))
+      if (!permitted) throw new Error(errorText(osMessageKey('voice.mic.notPermitted', platformCapabilities().os)))
       const started = await window.api.liveStart()
       if (!current()) return
       if (!started.ok) throw new Error(started.reason ?? errorText('voice.live.startFailed'))

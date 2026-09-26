@@ -29,17 +29,17 @@ export const settingsAgent = defineMessages({
       'es-ES': 'Motor y permisos'
     },
     description: {
-      'ja-JP': 'Codex は codex exec、Claude Code は claude -p で実行します。この Mac に入っている CLI と認証をそのまま使います。',
-      'en-US': 'Codex runs with codex exec and Claude Code with claude -p, using the CLI and the sign-in already on this Mac.',
-      'fr-FR': "Codex s'exécute avec codex exec et Claude Code avec claude -p, en se servant du CLI et de la connexion déjà présents sur ce Mac.",
-      'de-DE': 'Codex läuft mit codex exec, Claude Code mit claude -p, und zwar mit der CLI und der Anmeldung, die schon auf diesem Mac liegen.',
-      'hi-IN': 'Codex codex exec से और Claude Code claude -p से चलता है, और इसी Mac पर पहले से मौजूद CLI तथा साइन-इन इस्तेमाल करता है।',
-      'id-ID': 'Codex berjalan lewat codex exec dan Claude Code lewat claude -p, memakai CLI dan akun yang sudah ada di Mac ini.',
-      'it-IT': "Codex viene eseguito con codex exec e Claude Code con claude -p, usando la CLI e l'accesso già presenti su questo Mac.",
-      'ko-KR': 'Codex는 codex exec로, Claude Code는 claude -p로 실행합니다. 이 Mac에 설치된 CLI와 로그인을 그대로 사용합니다.',
-      'pt-BR': 'O Codex roda com codex exec e o Claude Code com claude -p, usando o CLI e o login que já estão neste Mac.',
-      'es-419': 'Codex se ejecuta con codex exec y Claude Code con claude -p, usando el CLI y la sesión que ya tienes en esta Mac.',
-      'es-ES': 'Codex se ejecuta con codex exec y Claude Code con claude -p, usando la CLI y la sesión que ya hay en este Mac.'
+      'ja-JP': 'Codex は codex exec、Claude Code は claude -p で実行します。このコンピュータに入っている CLI と認証をそのまま使います。',
+      'en-US': 'Codex runs with codex exec and Claude Code with claude -p, using the CLI and the sign-in already on this computer.',
+      'fr-FR': "Codex s'exécute avec codex exec et Claude Code avec claude -p, en se servant du CLI et de la connexion déjà présents sur cet ordinateur.",
+      'de-DE': 'Codex läuft mit codex exec, Claude Code mit claude -p, und zwar mit der CLI und der Anmeldung, die schon auf diesem Computer liegen.',
+      'hi-IN': 'Codex codex exec से और Claude Code claude -p से चलता है, और इसी कंप्यूटर पर पहले से मौजूद CLI तथा साइन-इन इस्तेमाल करता है।',
+      'id-ID': 'Codex berjalan lewat codex exec dan Claude Code lewat claude -p, memakai CLI dan akun yang sudah ada di komputer ini.',
+      'it-IT': "Codex viene eseguito con codex exec e Claude Code con claude -p, usando la CLI e l'accesso già presenti su questo computer.",
+      'ko-KR': 'Codex는 codex exec로, Claude Code는 claude -p로 실행합니다. 이 컴퓨터에 설치된 CLI와 로그인을 그대로 사용합니다.',
+      'pt-BR': 'O Codex roda com codex exec e o Claude Code com claude -p, usando o CLI e o login que já estão neste computador.',
+      'es-419': 'Codex se ejecuta con codex exec y Claude Code con claude -p, usando el CLI y la sesión que ya tienes en esta computadora.',
+      'es-ES': 'Codex se ejecuta con codex exec y Claude Code con claude -p, usando la CLI y la sesión que ya hay en este ordenador.'
     },
     engine: {
       'ja-JP': 'エンジン',
@@ -279,6 +279,34 @@ export const settingsAgent = defineMessages({
       'pt-BR': 'Pastas',
       'es-419': 'Carpetas',
       'es-ES': 'Carpetas'
+    },
+    placeholder: {
+      macos: {
+        'ja-JP': '/Users/you/Desktop',
+        'en-US': '/Users/you/Desktop',
+        'fr-FR': '/Users/you/Desktop',
+        'de-DE': '/Users/you/Desktop',
+        'hi-IN': '/Users/you/Desktop',
+        'id-ID': '/Users/you/Desktop',
+        'it-IT': '/Users/you/Desktop',
+        'ko-KR': '/Users/you/Desktop',
+        'pt-BR': '/Users/you/Desktop',
+        'es-419': '/Users/you/Desktop',
+        'es-ES': '/Users/you/Desktop'
+      },
+      windows: {
+        'ja-JP': 'C:\\Users\\you\\Desktop',
+        'en-US': 'C:\\Users\\you\\Desktop',
+        'fr-FR': 'C:\\Users\\you\\Desktop',
+        'de-DE': 'C:\\Users\\you\\Desktop',
+        'hi-IN': 'C:\\Users\\you\\Desktop',
+        'id-ID': 'C:\\Users\\you\\Desktop',
+        'it-IT': 'C:\\Users\\you\\Desktop',
+        'ko-KR': 'C:\\Users\\you\\Desktop',
+        'pt-BR': 'C:\\Users\\you\\Desktop',
+        'es-419': 'C:\\Users\\you\\Desktop',
+        'es-ES': 'C:\\Users\\you\\Desktop'
+      }
     }
   }
 })

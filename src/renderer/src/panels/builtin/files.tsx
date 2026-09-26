@@ -9,6 +9,8 @@ import { relativeTime } from '../primitives/format'
 import { FileViewer } from '../viewers'
 import './files.css'
 import { useT } from '@/i18n'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * files card. The layout follows the items themselves: one item shows its viewer, several images become a
@@ -42,7 +44,7 @@ function Reveal({ item }: { item: FileItem }): React.JSX.Element {
   const t = useT()
   return (
     <Actions>
-      <Action leadsTo="outside" onClick={() => void window.api.revealPath(item.path)}>{t('files.reveal')}</Action>
+      <Action leadsTo="outside" onClick={() => void window.api.revealPath(item.path)}>{t(osMessageKey('files.reveal', platformCapabilities().os))}</Action>
     </Actions>
   )
 }

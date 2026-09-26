@@ -187,17 +187,32 @@ export const settings = defineMessages({
   },
   ttsEngine: {
     system: {
-      'ja-JP': 'macOS の音声合成',
-      'en-US': 'macOS voice',
-      'fr-FR': 'Voix de macOS',
-      'de-DE': 'macOS-Stimme',
-      'hi-IN': 'macOS की आवाज़',
-      'id-ID': 'Suara macOS',
-      'it-IT': 'Sintesi vocale di macOS',
-      'ko-KR': 'macOS 음성 합성',
-      'pt-BR': 'Voz do macOS',
-      'es-419': 'Voz de macOS',
-      'es-ES': 'Voz de macOS'
+      macos: {
+        'ja-JP': 'macOS の音声合成',
+        'en-US': 'macOS voice',
+        'fr-FR': 'Voix de macOS',
+        'de-DE': 'macOS-Stimme',
+        'hi-IN': 'macOS की आवाज़',
+        'id-ID': 'Suara macOS',
+        'it-IT': 'Sintesi vocale di macOS',
+        'ko-KR': 'macOS 음성 합성',
+        'pt-BR': 'Voz do macOS',
+        'es-419': 'Voz de macOS',
+        'es-ES': 'Voz de macOS'
+      },
+      windows: {
+        'ja-JP': 'Windows の音声合成',
+        'en-US': 'Windows voice',
+        'fr-FR': 'Voix de Windows',
+        'de-DE': 'Windows-Stimme',
+        'hi-IN': 'Windows की आवाज़',
+        'id-ID': 'Suara Windows',
+        'it-IT': 'Sintesi vocale di Windows',
+        'ko-KR': 'Windows 음성 합성',
+        'pt-BR': 'Voz do Windows',
+        'es-419': 'Voz de Windows',
+        'es-ES': 'Voz de Windows'
+      }
     },
     none: {
       'ja-JP': '読み上げなし',

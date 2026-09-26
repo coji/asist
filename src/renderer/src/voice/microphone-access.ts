@@ -1,6 +1,8 @@
 import { errorText } from '@shared/i18n/error-text'
 import { displayError } from '@/display-error'
 import { translate } from '@/i18n'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 type MediaDevicesForVerification = Pick<MediaDevices, 'getUserMedia'>
 
@@ -39,7 +41,7 @@ export function microphoneCaptureErrorMessage(error: unknown): string {
       ? String((error as { name?: unknown }).name)
       : ''
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return translate('setup.mic.errors.notAllowed')
+    return translate(osMessageKey('setup.mic.errors.notAllowed', platformCapabilities().os))
   }
   if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
     return translate('setup.mic.errors.notFound')

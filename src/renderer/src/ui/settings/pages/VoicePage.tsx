@@ -16,6 +16,7 @@ import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import { asrRecommendationReason } from '../../asr-recommendation'
+import { osMessageKey } from '@shared/i18n/os-message'
 
 /** The global hotkey, labelled as this OS writes it, with the OS's refusal in place of the hint. */
 function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
@@ -63,7 +64,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const speakers = useSpeakerOptions(engineUsable, engine)
   const asrReady = setup?.asr?.ready === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
-  // True when the selected engine cannot be reached or its model is not prepared; the macOS speech
+  // True when the selected engine cannot be reached or its model is not prepared; the OS's own speech
   // synthesis needs no preparation and never counts as missing.
   const ttsMissing = engineUsable && ttsNeedsPreparation(engine) && status !== null && !status.tts
   const preview = (
@@ -113,7 +114,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
 
   return (
     <Page title={t('settingsVoice.title')} lead={t('settingsVoice.lead')}>
-      <Group title={t('settingsVoice.speech.title')} description={t('settingsVoice.speech.description')}>
+      <Group title={t('settingsVoice.speech.title')} description={t(osMessageKey('settingsVoice.speech.description', capabilities.os))}>
         <Row
           label={t('settingsVoice.speech.engine')}
           hint={
@@ -123,7 +124,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                 ? undefined
                 : engine === 'qwen3tts'
                   ? t('settingsVoice.speech.qwenNotPrepared')
-                  : t('settingsVoice.speech.engineMissing', { engine: ttsEngineLabel(t, engine) })
+                  : t(osMessageKey('settingsVoice.speech.engineMissing', capabilities.os), { engine: ttsEngineLabel(t, engine) })
           }
         >
           {ttsMissing && (engine === 'qwen3tts' ? <Link onClick={() => go('models')}>{t('common.openModels')}</Link> : <Chip tone="warn">{t('common.notFound')}</Chip>)}
@@ -135,11 +136,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           >
             {engines.map((option) => (
               <option key={option} value={option}>
-                {option === 'voicevox'
-                  ? 'VOICEVOX'
-                  : option === 'aivisspeech'
-                    ? 'AivisSpeech'
-                    : t(`settingsVoice.speech.engines.${option}`)}
+                {option === 'qwen3tts' || option === 'none' ? t(`settingsVoice.speech.engines.${option}`) : ttsEngineLabel(t, option)}
               </option>
             ))}
           </select>

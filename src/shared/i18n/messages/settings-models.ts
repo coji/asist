@@ -80,19 +80,6 @@ export const settingsModels = defineMessages({
       'es-419': 'Volver a verificar',
       'es-ES': 'Volver a comprobar'
     },
-    checkingMac: {
-      'ja-JP': '環境を確認しています。',
-      'en-US': 'Checking this Mac.',
-      'fr-FR': 'Vérification de ce Mac.',
-      'de-DE': 'Dieser Mac wird geprüft.',
-      'hi-IN': 'इस Mac को देखा जा रहा है।',
-      'id-ID': 'Memeriksa Mac ini.',
-      'it-IT': 'Controllo di questo Mac in corso.',
-      'ko-KR': '이 Mac의 환경을 확인하고 있습니다.',
-      'pt-BR': 'Verificando este Mac.',
-      'es-419': 'Verificando esta Mac.',
-      'es-ES': 'Comprobando este Mac.'
-    },
     model: {
       'ja-JP': '{memoryGb}GB · {model}。',
       'en-US': '{memoryGb} GB · {model}.',
@@ -172,17 +159,30 @@ export const settingsModels = defineMessages({
       'es-ES': 'Whisper en el navegador'
     },
     browserWhisperHint: {
-      'ja-JP': 'この Mac の音声認識が止まったときに、代わりに使います。',
-      'en-US': 'Takes over when speech recognition on this Mac stops.',
-      'fr-FR': "Prend le relais quand la reconnaissance vocale de ce Mac s'arrête.",
-      'de-DE': 'Springt ein, wenn die Spracherkennung auf diesem Mac stehen bleibt.',
-      'hi-IN': 'इस Mac का स्पीच रिकग्निशन रुकने पर यह उसकी जगह ले लेता है।',
-      'id-ID': 'Mengambil alih saat pengenalan suara di Mac ini berhenti.',
-      'it-IT': 'Subentra quando il riconoscimento vocale su questo Mac si ferma.',
-      'ko-KR': '이 Mac의 음성 인식이 멈췄을 때 대신 씁니다.',
-      'pt-BR': 'Assume quando o reconhecimento de fala deste Mac para.',
-      'es-419': 'Toma el relevo cuando el reconocimiento de voz de esta Mac se detiene.',
-      'es-ES': 'Toma el relevo cuando el reconocimiento de voz de este Mac se detiene.'
+      'ja-JP': 'このコンピュータの音声認識が止まったときに、代わりに使います。',
+      'en-US': 'Takes over when speech recognition on this computer stops.',
+      'fr-FR': "Prend le relais quand la reconnaissance vocale de cet ordinateur s'arrête.",
+      'de-DE': 'Springt ein, wenn die Spracherkennung auf diesem Computer stehen bleibt.',
+      'hi-IN': 'इस कंप्यूटर का स्पीच रिकग्निशन रुकने पर यह उसकी जगह ले लेता है।',
+      'id-ID': 'Mengambil alih saat pengenalan suara di komputer ini berhenti.',
+      'it-IT': 'Subentra quando il riconoscimento vocale su questo computer si ferma.',
+      'ko-KR': '이 컴퓨터의 음성 인식이 멈췄을 때 대신 씁니다.',
+      'pt-BR': 'Assume quando o reconhecimento de fala deste computador para.',
+      'es-419': 'Toma el relevo cuando el reconocimiento de voz de esta computadora se detiene.',
+      'es-ES': 'Toma el relevo cuando el reconocimiento de voz de este ordenador se detiene.'
+    },
+    checking: {
+      'ja-JP': '環境を確認しています。',
+      'en-US': 'Checking this computer.',
+      'fr-FR': 'Vérification de cet ordinateur.',
+      'de-DE': 'Dieser Computer wird geprüft.',
+      'hi-IN': 'इस कंप्यूटर को देखा जा रहा है।',
+      'id-ID': 'Memeriksa komputer ini.',
+      'it-IT': 'Controllo di questo computer in corso.',
+      'ko-KR': '이 컴퓨터의 환경을 확인하고 있습니다.',
+      'pt-BR': 'Verificando este computador.',
+      'es-419': 'Verificando esta computadora.',
+      'es-ES': 'Comprobando este ordenador.'
     }
   },
   speech: {
@@ -252,18 +252,19 @@ export const settingsModels = defineMessages({
       'es-ES': 'No hace falta ninguna aplicación más.'
     },
     qwen: {
-      'ja-JP': '{model} をこの Mac 上で動かします。音声認識と共有の実行環境とモデル(約 1.9GB)を取得します。常駐中は約 2GB のメモリを使うので、16GB 以上の Mac に向きます。',
-      'en-US': '{model} runs on this Mac. Downloads the model (about 1.9 GB) and the runtime it shares with speech recognition. It holds about 2 GB of memory while resident, so it suits a Mac with 16 GB or more.',
-      'fr-FR': "{model} tourne sur ce Mac. Télécharge le modèle (environ 1,9 Go) et l'environnement d'exécution qu'il partage avec la reconnaissance vocale. Il occupe environ 2 Go de mémoire tant qu'il reste chargé, ce qui convient à un Mac de 16 Go ou plus.",
-      'de-DE': '{model} läuft auf diesem Mac. Lädt das Modell (rund 1,9 GB) und die Laufzeitumgebung, die es mit der Spracherkennung teilt. Solange es im Speicher bleibt, belegt es rund 2 GB und passt damit zu einem Mac mit 16 GB oder mehr.',
-      'hi-IN': '{model} इसी Mac पर चलता है। मॉडल (करीब 1.9 GB) और स्पीच रिकग्निशन के साथ साझा रनटाइम डाउनलोड होते हैं। चलते रहने पर यह करीब 2 GB मेमोरी घेरता है, इसलिए यह 16 GB या उससे ज़्यादा वाले Mac के लिए ठीक है।',
-      'id-ID': '{model} berjalan di Mac ini. Mengunduh modelnya (sekitar 1,9 GB) dan runtime yang dipakainya bersama pengenalan suara. Model ini menahan sekitar 2 GB memori selama tetap berjalan, jadi cocok untuk Mac dengan 16 GB atau lebih.',
-      'it-IT': "{model} funziona su questo Mac. Scarica il modello (circa 1,9 GB) e l'ambiente di esecuzione condiviso con il riconoscimento vocale. Mentre resta in memoria ne occupa circa 2 GB, quindi è adatto a un Mac con 16 GB o più.",
-      'ko-KR': '{model} 모델을 이 Mac에서 실행합니다. 음성 인식과 공유하는 실행 환경과 모델(약 1.9GB)을 내려받습니다. 상주 중에는 약 2GB의 메모리를 쓰므로 16GB 이상인 Mac에 맞습니다.',
-      'pt-BR': '{model} roda neste Mac. Baixa o modelo (cerca de 1,9 GB) e o ambiente de execução que ele divide com o reconhecimento de fala. Ocupa cerca de 2 GB de memória enquanto fica residente, então combina com um Mac de 16 GB ou mais.',
-      'es-419': '{model} funciona en esta Mac. Descarga el modelo (unos 1.9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que conviene una Mac de 16 GB o más.',
-      'es-ES': '{model} se ejecuta en este Mac. Descarga el modelo (unos 1,9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que va bien en un Mac con 16 GB o más.'
+      'ja-JP': '{model} をこのコンピュータ上で動かします。音声認識と共有の実行環境とモデル(約 1.9GB)を取得します。常駐中は約 2GB のメモリを使うので、16GB 以上のコンピュータに向きます。',
+      'en-US': '{model} runs on this computer. Downloads the model (about 1.9 GB) and the runtime it shares with speech recognition. It holds about 2 GB of memory while resident, so it suits a computer with 16 GB or more.',
+      'fr-FR': "{model} tourne sur cet ordinateur. Télécharge le modèle (environ 1,9 Go) et l'environnement d'exécution qu'il partage avec la reconnaissance vocale. Il occupe environ 2 Go de mémoire tant qu'il reste chargé, ce qui convient à un ordinateur de 16 Go ou plus.",
+      'de-DE': '{model} läuft auf diesem Computer. Lädt das Modell (rund 1,9 GB) und die Laufzeitumgebung, die es mit der Spracherkennung teilt. Solange es im Speicher bleibt, belegt es rund 2 GB und passt damit zu einem Computer mit 16 GB oder mehr.',
+      'hi-IN': '{model} इसी कंप्यूटर पर चलता है। मॉडल (करीब 1.9 GB) और स्पीच रिकग्निशन के साथ साझा रनटाइम डाउनलोड होते हैं। चलते रहने पर यह करीब 2 GB मेमोरी घेरता है, इसलिए यह 16 GB या उससे ज़्यादा वाले कंप्यूटर के लिए ठीक है।',
+      'id-ID': '{model} berjalan di komputer ini. Mengunduh modelnya (sekitar 1,9 GB) dan runtime yang dipakainya bersama pengenalan suara. Model ini menahan sekitar 2 GB memori selama tetap berjalan, jadi cocok untuk komputer dengan 16 GB atau lebih.',
+      'it-IT': "{model} funziona su questo computer. Scarica il modello (circa 1,9 GB) e l'ambiente di esecuzione condiviso con il riconoscimento vocale. Mentre resta in memoria ne occupa circa 2 GB, quindi è adatto a un computer con 16 GB o più.",
+      'ko-KR': '{model} 모델을 이 컴퓨터에서 실행합니다. 음성 인식과 공유하는 실행 환경과 모델(약 1.9GB)을 내려받습니다. 상주 중에는 약 2GB의 메모리를 쓰므로 16GB 이상인 컴퓨터에 맞습니다.',
+      'pt-BR': '{model} roda neste computador. Baixa o modelo (cerca de 1,9 GB) e o ambiente de execução que ele divide com o reconhecimento de fala. Ocupa cerca de 2 GB de memória enquanto fica residente, então combina com um computador de 16 GB ou mais.',
+      'es-419': '{model} funciona en esta computadora. Descarga el modelo (unos 1.9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que conviene una computadora de 16 GB o más.',
+      'es-ES': '{model} se ejecuta en este ordenador. Descarga el modelo (unos 1,9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que va bien en un ordenador con 16 GB o más.'
     },
+    /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
     qwenTooLittleMemory: {
       'ja-JP': '{model} をこの Mac 上で動かします。音声認識と共有の実行環境とモデル(約 1.9GB)を取得します。常駐中は約 2GB のメモリを使います。この Mac はメモリが 16GB 未満なので、VOICEVOX か macOS の音声合成を勧めます。',
       'en-US': '{model} runs on this Mac. Downloads the model (about 1.9 GB) and the runtime it shares with speech recognition. It holds about 2 GB of memory while resident. This Mac has less than 16 GB of memory, so VOICEVOX or the macOS voice suits it better.',
@@ -278,17 +279,32 @@ export const settingsModels = defineMessages({
       'es-ES': '{model} se ejecuta en este Mac. Descarga el modelo (unos 1,9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria. Este Mac tiene menos de 16 GB, así que le van mejor VOICEVOX o la voz de macOS.'
     },
     external: {
-      'ja-JP': '{engine} を起動しておくと、その声で読み上げます。見つからない間は macOS の音声合成で読み上げます。',
-      'en-US': 'While {engine} is running, replies are read with its voice. While it is not found, they are read with the macOS voice.',
-      'fr-FR': "Tant que {engine} tourne, les réponses sont lues avec sa voix. Tant qu'il reste introuvable, elles sont lues avec la voix de macOS.",
-      'de-DE': 'Solange {engine} läuft, werden Antworten mit dessen Stimme vorgelesen. Solange es nicht gefunden wird, liest die macOS-Stimme.',
-      'hi-IN': '{engine} चलता रहे तो जवाब उसी की आवाज़ में पढ़े जाते हैं। जब तक वह न मिले, जवाब macOS की आवाज़ में पढ़े जाते हैं।',
-      'id-ID': 'Selama {engine} berjalan, jawaban dibacakan dengan suaranya. Selama tidak ditemukan, jawaban dibacakan dengan suara macOS.',
-      'it-IT': 'Mentre {engine} è in funzione, le risposte vengono lette con la sua voce. Finché non viene trovato, vengono lette con la sintesi vocale di macOS.',
-      'ko-KR': '{engine} 엔진을 실행해 두면 그 목소리로 읽어줍니다. 찾지 못하는 동안에는 macOS 음성 합성으로 읽어줍니다.',
-      'pt-BR': 'Enquanto o {engine} está em execução, as respostas são lidas com a voz dele. Enquanto ele não for encontrado, são lidas com a voz do macOS.',
-      'es-419': 'Mientras {engine} está en ejecución, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.',
-      'es-ES': 'Mientras {engine} está en marcha, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.'
+      macos: {
+        'ja-JP': '{engine} を起動しておくと、その声で読み上げます。見つからない間は macOS の音声合成で読み上げます。',
+        'en-US': 'While {engine} is running, replies are read with its voice. While it is not found, they are read with the macOS voice.',
+        'fr-FR': "Tant que {engine} tourne, les réponses sont lues avec sa voix. Tant qu'il reste introuvable, elles sont lues avec la voix de macOS.",
+        'de-DE': 'Solange {engine} läuft, werden Antworten mit dessen Stimme vorgelesen. Solange es nicht gefunden wird, liest die macOS-Stimme.',
+        'hi-IN': '{engine} चलता रहे तो जवाब उसी की आवाज़ में पढ़े जाते हैं। जब तक वह न मिले, जवाब macOS की आवाज़ में पढ़े जाते हैं।',
+        'id-ID': 'Selama {engine} berjalan, jawaban dibacakan dengan suaranya. Selama tidak ditemukan, jawaban dibacakan dengan suara macOS.',
+        'it-IT': 'Mentre {engine} è in funzione, le risposte vengono lette con la sua voce. Finché non viene trovato, vengono lette con la sintesi vocale di macOS.',
+        'ko-KR': '{engine} 엔진을 실행해 두면 그 목소리로 읽어줍니다. 찾지 못하는 동안에는 macOS 음성 합성으로 읽어줍니다.',
+        'pt-BR': 'Enquanto o {engine} está em execução, as respostas são lidas com a voz dele. Enquanto ele não for encontrado, são lidas com a voz do macOS.',
+        'es-419': 'Mientras {engine} está en ejecución, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.',
+        'es-ES': 'Mientras {engine} está en marcha, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.'
+      },
+      windows: {
+        'ja-JP': '{engine} を起動しておくと、その声で読み上げます。見つからない間は Windows の音声合成で読み上げます。',
+        'en-US': 'While {engine} is running, replies are read with its voice. While it is not found, they are read with the Windows voice.',
+        'fr-FR': "Tant que {engine} tourne, les réponses sont lues avec sa voix. Tant qu'il reste introuvable, elles sont lues avec la voix de Windows.",
+        'de-DE': 'Solange {engine} läuft, werden Antworten mit dessen Stimme vorgelesen. Solange es nicht gefunden wird, liest die Windows-Stimme.',
+        'hi-IN': '{engine} चलता रहे तो जवाब उसी की आवाज़ में पढ़े जाते हैं। जब तक वह न मिले, जवाब Windows की आवाज़ में पढ़े जाते हैं।',
+        'id-ID': 'Selama {engine} berjalan, jawaban dibacakan dengan suaranya. Selama tidak ditemukan, jawaban dibacakan dengan suara Windows.',
+        'it-IT': 'Mentre {engine} è in funzione, le risposte vengono lette con la sua voce. Finché non viene trovato, vengono lette con la sintesi vocale di Windows.',
+        'ko-KR': '{engine} 엔진을 실행해 두면 그 목소리로 읽어줍니다. 찾지 못하는 동안에는 Windows 음성 합성으로 읽어줍니다.',
+        'pt-BR': 'Enquanto o {engine} está em execução, as respostas são lidas com a voz dele. Enquanto ele não for encontrado, são lidas com a voz do Windows.',
+        'es-419': 'Mientras {engine} está en ejecución, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de Windows.',
+        'es-ES': 'Mientras {engine} está en marcha, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de Windows.'
+      }
     },
     get: {
       'ja-JP': '{engine} を入手する',
@@ -358,17 +374,17 @@ export const settingsModels = defineMessages({
       'es-ES': 'Detectada'
     },
     description: {
-      'ja-JP': '{engine} の CLI をこの Mac にインストールして、認証しておきます。ジョブと記憶の整理で使います。',
-      'en-US': 'Install the {engine} CLI on this Mac and sign in to it. It runs jobs and organizes the memory.',
-      'fr-FR': 'Installez le CLI {engine} sur ce Mac et connectez-vous. Il exécute les jobs et organise la mémoire.',
-      'de-DE': 'Installieren Sie die CLI von {engine} auf diesem Mac und melden Sie sich darin an. Sie führt die Jobs aus und pflegt das Gedächtnis.',
-      'hi-IN': '{engine} का CLI इस Mac पर इंस्टॉल करके उसमें साइन इन करें। यह जॉब चलाता है और याददाश्त संभालता है।',
-      'id-ID': 'Pasang CLI {engine} di Mac ini lalu masuk ke akunnya. CLI ini menjalankan pekerjaan dan menata ingatan.',
-      'it-IT': 'Installa la CLI di {engine} su questo Mac e accedi. Serve per gli incarichi e per il riordino della memoria.',
-      'ko-KR': '{engine} CLI를 이 Mac에 설치하고 로그인해 둡니다. 작업과 기억 정리에서 씁니다.',
-      'pt-BR': 'Instale o CLI do {engine} neste Mac e faça login nele. Ele executa os jobs e organiza a memória.',
-      'es-419': 'Instala el CLI de {engine} en esta Mac e inicia sesión en él. Ejecuta los trabajos y organiza la memoria.',
-      'es-ES': 'Instala la CLI de {engine} en este Mac e inicia sesión en ella. Ejecuta los trabajos y organiza la memoria.'
+      'ja-JP': '{engine} の CLI をこのコンピュータにインストールして、認証しておきます。ジョブと記憶の整理で使います。',
+      'en-US': 'Install the {engine} CLI on this computer and sign in to it. It runs jobs and organizes the memory.',
+      'fr-FR': 'Installez le CLI {engine} sur cet ordinateur et connectez-vous. Il exécute les jobs et organise la mémoire.',
+      'de-DE': 'Installieren Sie die CLI von {engine} auf diesem Computer und melden Sie sich darin an. Sie führt die Jobs aus und pflegt das Gedächtnis.',
+      'hi-IN': '{engine} का CLI इस कंप्यूटर पर इंस्टॉल करके उसमें साइन इन करें। यह जॉब चलाता है और याददाश्त संभालता है।',
+      'id-ID': 'Pasang CLI {engine} di komputer ini lalu masuk ke akunnya. CLI ini menjalankan pekerjaan dan menata ingatan.',
+      'it-IT': 'Installa la CLI di {engine} su questo computer e accedi. Serve per gli incarichi e per il riordino della memoria.',
+      'ko-KR': '{engine} CLI를 이 컴퓨터에 설치하고 로그인해 둡니다. 작업과 기억 정리에서 씁니다.',
+      'pt-BR': 'Instale o CLI do {engine} neste computador e faça login nele. Ele executa os jobs e organiza a memória.',
+      'es-419': 'Instala el CLI de {engine} en esta computadora e inicia sesión en él. Ejecuta los trabajos y organiza la memoria.',
+      'es-ES': 'Instala la CLI de {engine} en este ordenador e inicia sesión en ella. Ejecuta los trabajos y organiza la memoria.'
     },
     install: {
       'ja-JP': 'インストール手順',
@@ -576,17 +592,17 @@ export const settingsModels = defineMessages({
   },
   preparation: {
     unsupported: {
-      'ja-JP': '{feature}は Apple Silicon の Mac でだけ使えます。',
-      'en-US': '{feature} runs only on a Mac with Apple Silicon.',
-      'fr-FR': '{feature} ne fonctionne que sur un Mac avec Apple Silicon.',
-      'de-DE': '{feature} läuft nur auf einem Mac mit Apple Silicon.',
-      'hi-IN': '{feature} सिर्फ़ Apple Silicon वाले Mac पर चलता है।',
-      'id-ID': '{feature} hanya berjalan di Mac dengan Apple Silicon.',
-      'it-IT': '{feature} funziona solo su un Mac con Apple Silicon.',
-      'ko-KR': '{feature} 기능은 Apple Silicon Mac에서만 쓸 수 있습니다.',
-      'pt-BR': '{feature} só funciona em um Mac com Apple Silicon.',
-      'es-419': '{feature} solo funciona en una Mac con Apple Silicon.',
-      'es-ES': '{feature} solo funciona en un Mac con Apple Silicon.'
+      'ja-JP': '{feature}はこのコンピュータでは使えません。',
+      'en-US': "{feature} doesn't run on this computer.",
+      'fr-FR': '{feature} ne fonctionne pas sur cet ordinateur.',
+      'de-DE': '{feature} läuft auf diesem Computer nicht.',
+      'hi-IN': '{feature} इस कंप्यूटर पर नहीं चलता।',
+      'id-ID': '{feature} tidak berjalan di komputer ini.',
+      'it-IT': '{feature} non funziona su questo computer.',
+      'ko-KR': '{feature} 기능은 이 컴퓨터에서 쓸 수 없습니다.',
+      'pt-BR': '{feature} não funciona neste computador.',
+      'es-419': '{feature} no funciona en esta computadora.',
+      'es-ES': '{feature} no funciona en este ordenador.'
     },
     runtime: {
       'ja-JP': 'MLX Audio {version} の実行環境を準備しています',

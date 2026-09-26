@@ -20,6 +20,7 @@ import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import type { MessageKey } from '@shared/i18n'
+import { osMessageKey } from '@shared/i18n/os-message'
 
 /**
  * The first-run setup. It completes only once every requirement has actually been verified, and it
@@ -249,7 +250,7 @@ export function SetupWizard(): React.JSX.Element | null {
     try {
       const status = await window.api.ttsVerify()
       await refresh()
-      if (!status.tts) setError(t('setup.tts.connectFailed', { engine: status.ttsLabel }))
+      if (!status.tts) setError(t(osMessageKey('setup.tts.connectFailed', capabilities.os), { engine: status.ttsLabel }))
     } catch (err) {
       setError(displayError(err))
     } finally {
@@ -293,7 +294,7 @@ export function SetupWizard(): React.JSX.Element | null {
         mode === 'text-only' ||
         settings.ttsEngine !== 'system' ||
         (typeof window.speechSynthesis?.speak === 'function' && typeof window.SpeechSynthesisUtterance === 'function')
-      if (!systemTtsVerified) throw new Error(errorText('voice.speech.systemUnavailable'))
+      if (!systemTtsVerified) throw new Error(errorText(osMessageKey('voice.speech.systemUnavailable', capabilities.os)))
 
       const completed = await window.api.completeSetup({
         voiceMode,
@@ -333,12 +334,12 @@ export function SetupWizard(): React.JSX.Element | null {
       // A saved engine this machine cannot run is offered by no choice on the screen, so it is chosen again.
       if (!ttsEngineRuns(settings.ttsEngine, capabilities.speechRuntime)) return t('setup.guide.tts.choose')
       if (settings.ttsEngine === 'qwen3tts') return ttsChecking ? ttsDownload?.message || t('common.preparing') : t('setup.guide.tts.prepareOrSystem')
-      return ttsChecking ? t('setup.guide.tts.verifying') : t('setup.guide.tts.notConnected', { engine: services?.ttsLabel ?? t('setup.steps.tts.title') })
+      return ttsChecking ? t('setup.guide.tts.verifying') : t(osMessageKey('setup.guide.tts.notConnected', capabilities.os), { engine: services?.ttsLabel ?? t('setup.steps.tts.title') })
     }
     if (step === 'mic') {
       if (mic === 'granted') return t('setup.guide.mic.ready')
       if (mic === 'checking') return t('setup.guide.mic.checking')
-      if (mic === 'denied') return t('setup.guide.mic.denied')
+      if (mic === 'denied') return t(osMessageKey('setup.guide.mic.denied', capabilities.os))
       return t('setup.guide.mic.check')
     }
     if (step === 'extras') {
@@ -362,7 +363,7 @@ export function SetupWizard(): React.JSX.Element | null {
             ))}
           </ol>
           <h1 id="su-title">{t(`setup.steps.${step}.title`)}</h1>
-          <p>{t(`setup.steps.${step}.lead`)}</p>
+          <p>{t(step === 'mic' ? osMessageKey('setup.steps.mic.lead', capabilities.os) : `setup.steps.${step}.lead`)}</p>
         </header>
 
         <div className="su-body" data-step={step}>

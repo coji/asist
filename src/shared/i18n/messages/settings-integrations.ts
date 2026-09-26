@@ -15,17 +15,32 @@ export const settingsIntegrations = defineMessages({
     'es-ES': 'Integraciones'
   },
   lead: {
-    'ja-JP': 'macOS のカレンダーとメールにつなぎ、モデルのプロバイダの API キーを登録します。',
-    'en-US': 'Connect the macOS calendar and mail, and register the API key of each model provider.',
-    'fr-FR': 'Connectez le calendrier et la messagerie de macOS, et enregistrez la clé API de chaque fournisseur de modèles.',
-    'de-DE': 'Verbinden Sie Kalender und Mail von macOS und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
-    'hi-IN': 'macOS के कैलेंडर और मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
-    'id-ID': 'Sambungkan kalender dan email macOS, lalu daftarkan kunci API tiap penyedia model.',
-    'it-IT': 'Collega il calendario e la posta di macOS e registra la chiave API di ogni provider di modelli.',
-    'ko-KR': 'macOS의 캘린더와 메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
-    'pt-BR': 'Conecte o calendário e o e-mail do macOS e registre a chave de API de cada provedor de modelos.',
-    'es-419': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.',
-    'es-ES': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.'
+    withCalendar: {
+      'ja-JP': 'macOS のカレンダーとメールにつなぎ、モデルのプロバイダの API キーを登録します。',
+      'en-US': 'Connect the macOS calendar and mail, and register the API key of each model provider.',
+      'fr-FR': 'Connectez le calendrier et la messagerie de macOS, et enregistrez la clé API de chaque fournisseur de modèles.',
+      'de-DE': 'Verbinden Sie Kalender und Mail von macOS und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
+      'hi-IN': 'macOS के कैलेंडर और मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
+      'id-ID': 'Sambungkan kalender dan email macOS, lalu daftarkan kunci API tiap penyedia model.',
+      'it-IT': 'Collega il calendario e la posta di macOS e registra la chiave API di ogni provider di modelli.',
+      'ko-KR': 'macOS의 캘린더와 메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
+      'pt-BR': 'Conecte o calendário e o e-mail do macOS e registre a chave de API de cada provedor de modelos.',
+      'es-419': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.',
+      'es-ES': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.'
+    },
+    withoutCalendar: {
+      'ja-JP': 'メールにつなぎ、モデルのプロバイダの API キーを登録します。',
+      'en-US': 'Connect your mail, and register the API key of each model provider.',
+      'fr-FR': 'Connectez votre messagerie, et enregistrez la clé API de chaque fournisseur de modèles.',
+      'de-DE': 'Verbinden Sie Ihre Mail und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
+      'hi-IN': 'मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
+      'id-ID': 'Sambungkan email, lalu daftarkan kunci API tiap penyedia model.',
+      'it-IT': 'Collega la posta e registra la chiave API di ogni provider di modelli.',
+      'ko-KR': '메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
+      'pt-BR': 'Conecte o e-mail e registre a chave de API de cada provedor de modelos.',
+      'es-419': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.',
+      'es-ES': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.'
+    }
   },
   apiKeys: {
     title: {
@@ -225,17 +240,17 @@ export const settingsIntegrations = defineMessages({
     },
     errors: {
       encryptionUnavailable: {
-        'ja-JP': 'この Mac では API キーを暗号化して保存できません。',
-        'en-US': "This Mac can't store an API key encrypted.",
-        'fr-FR': 'Ce Mac ne peut pas enregistrer une clé API chiffrée.',
-        'de-DE': 'Dieser Mac kann einen API-Schlüssel nicht verschlüsselt ablegen.',
-        'hi-IN': 'यह Mac API कुंजी को एन्क्रिप्ट करके सेव नहीं कर सकता।',
-        'id-ID': 'Mac ini tidak bisa menyimpan kunci API dalam bentuk terenkripsi.',
-        'it-IT': 'Questo Mac non può salvare una chiave API cifrata.',
-        'ko-KR': '이 Mac에서는 API 키를 암호화해서 저장할 수 없습니다.',
-        'pt-BR': 'Este Mac não pode guardar uma chave de API criptografada.',
-        'es-419': 'Esta Mac no puede guardar una clave de API cifrada.',
-        'es-ES': 'Este Mac no puede guardar una clave de API cifrada.'
+        'ja-JP': 'このコンピュータでは API キーを暗号化して保存できません。',
+        'en-US': "This computer can't store an API key encrypted.",
+        'fr-FR': 'Cet ordinateur ne peut pas enregistrer une clé API chiffrée.',
+        'de-DE': 'Dieser Computer kann einen API-Schlüssel nicht verschlüsselt ablegen.',
+        'hi-IN': 'यह कंप्यूटर API कुंजी को एन्क्रिप्ट करके सेव नहीं कर सकता।',
+        'id-ID': 'Komputer ini tidak bisa menyimpan kunci API dalam bentuk terenkripsi.',
+        'it-IT': 'Questo computer non può salvare una chiave API cifrata.',
+        'ko-KR': '이 컴퓨터에서는 API 키를 암호화해서 저장할 수 없습니다.',
+        'pt-BR': 'Este computador não pode guardar uma chave de API criptografada.',
+        'es-419': 'Esta computadora no puede guardar una clave de API cifrada.',
+        'es-ES': 'Este ordenador no puede guardar una clave de API cifrada.'
       },
       keyUnreadable: {
         'ja-JP': '保存した {provider} の API キーを読み出せません。設定の「連携」で入れ直してください。',

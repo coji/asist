@@ -10,8 +10,11 @@ import { ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-l
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
 import { Advanced, Btn, Chip, Progress, type ChipTone } from '../settings/primitives'
+import { ttsEngineLabel } from '../settings/context'
 import type { ExtraModel } from './extras'
 import { useSystemVoice } from './system-voice'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * The contents of each first-run setup screen. State and saving belong to SetupWizard, so this file
@@ -354,6 +357,7 @@ export function TtsStep({
   onTestTts: () => void
 }): React.JSX.Element {
   const t = useT()
+  const { os } = platformCapabilities()
   const systemVoice = useSystemVoice(locale)
   return (
     <div className="su-stack">
@@ -361,13 +365,13 @@ export function TtsStep({
         {TTS_ENGINES.filter((engine) => ttsEngineSpeaks(locale, engine.id) && (engine.id !== 'qwen3tts' || qwenTtsOffered)).map((engine) => {
           const active = ttsEngine === engine.id
           const ready = active && ttsReady
-          const title = t(`setup.tts.engines.${engine.id}.title`)
+          const title = ttsEngineLabel(t, engine.id)
           return (
             <Option
               key={engine.id}
               active={active}
               title={title}
-              detail={t(`setup.tts.engines.${engine.id}.detail`)}
+              detail={t(engine.id === 'qwen3tts' ? 'setup.tts.engines.qwen3tts.detail' : osMessageKey(`setup.tts.engines.${engine.id}.detail`, os))}
               chip={
                 !active
                   ? undefined
@@ -379,7 +383,7 @@ export function TtsStep({
               }
               onClick={() => onTtsEngine(engine.id)}
             >
-              {engine.id === 'system' && systemVoice === 'missing' && <p className="su-warn">{t('setup.tts.systemVoiceMissing', { language: UI_LOCALE_NAMES[locale] })}</p>}
+              {engine.id === 'system' && systemVoice === 'missing' && <p className="su-warn">{t(osMessageKey('setup.tts.systemVoiceMissing', os), { language: UI_LOCALE_NAMES[locale] })}</p>}
               {ready ? (
                 <div className="su-inline">
                   <Btn tone="quiet" onClick={onTestTts}>
@@ -407,8 +411,8 @@ export function TtsStep({
                 engine.site && (
                   <>
                     <ol className="su-howto">
-                      <li>{t('setup.tts.howtoInstall', { engine: title })}</li>
-                      <li>{t('setup.tts.howtoVerify', { engine: title })}</li>
+                      <li>{t(osMessageKey('setup.tts.howtoInstall', os), { engine: title })}</li>
+                      <li>{t(osMessageKey('setup.tts.howtoVerify', os), { engine: title })}</li>
                     </ol>
                     <div className="su-inline">
                       <Btn tone="primary" onClick={() => void window.api.openExternal(engine.site!)}>
@@ -446,12 +450,13 @@ export function MicStep({
   onAutoMic: (value: boolean) => void
 }): React.JSX.Element {
   const t = useT()
+  const { os } = platformCapabilities()
   return (
     <div className="su-stack">
       <section className="su-panel">
         <header>
           <div>
-            <p>{mic === 'granted' ? t('setup.mic.granted') : mic === 'denied' ? t('setup.mic.denied') : t('setup.mic.unchecked')}</p>
+            <p>{mic === 'granted' ? t('setup.mic.granted') : mic === 'denied' ? t(osMessageKey('setup.mic.denied', os)) : t('setup.mic.unchecked')}</p>
           </div>
           <Chip tone={mic === 'granted' ? 'ok' : mic === 'denied' ? 'warn' : mic === 'checking' ? 'cyan' : 'dim'}>
             {mic === 'granted' ? t('setup.mic.working') : mic === 'denied' ? t('setup.mic.notAllowed') : mic === 'checking' ? t('setup.verifying') : t('setup.mic.notChecked')}
@@ -464,7 +469,7 @@ export function MicStep({
           {mic === 'denied' && (
             <>
               <Btn tone="quiet" onClick={onOpenMicSettings}>
-                {t('setup.mic.openSettings')}
+                {t(osMessageKey('setup.mic.openSettings', os))}
               </Btn>
               <Btn tone="quiet" onClick={onSwitchToTyping}>
                 {t('setup.mic.switchToTyping')}

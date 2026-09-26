@@ -218,17 +218,17 @@ export const setup = defineMessages({
         'es-ES': 'Escuchar'
       },
       lead: {
-        'ja-JP': '声を文字にするモデルを、この Mac に準備します。',
-        'en-US': 'Prepare the model that turns your voice into text on this Mac.',
-        'fr-FR': 'Préparez sur ce Mac le modèle qui met votre voix en texte.',
-        'de-DE': 'Bereiten Sie auf diesem Mac das Modell vor, das Ihre Stimme in Text verwandelt.',
-        'hi-IN': 'आपकी आवाज़ को टेक्स्ट में बदलने वाला मॉडल इस Mac पर तैयार करें।',
-        'id-ID': 'Siapkan model yang mengubah suara Anda menjadi teks di Mac ini.',
-        'it-IT': 'Prepara su questo Mac il modello che trasforma la tua voce in testo.',
-        'ko-KR': '목소리를 글자로 바꾸는 모델을 이 Mac에 준비합니다.',
-        'pt-BR': 'Prepare neste Mac o modelo que transforma a sua voz em texto.',
-        'es-419': 'Prepara en esta Mac el modelo que convierte tu voz en texto.',
-        'es-ES': 'Prepara en este Mac el modelo que convierte tu voz en texto.'
+        'ja-JP': '声を文字にするモデルを、このコンピュータに準備します。',
+        'en-US': 'Prepare the model that turns your voice into text on this computer.',
+        'fr-FR': 'Préparez sur cet ordinateur le modèle qui met votre voix en texte.',
+        'de-DE': 'Bereiten Sie auf diesem Computer das Modell vor, das Ihre Stimme in Text verwandelt.',
+        'hi-IN': 'आपकी आवाज़ को टेक्स्ट में बदलने वाला मॉडल इस कंप्यूटर पर तैयार करें।',
+        'id-ID': 'Siapkan model yang mengubah suara Anda menjadi teks di komputer ini.',
+        'it-IT': 'Prepara su questo computer il modello che trasforma la tua voce in testo.',
+        'ko-KR': '목소리를 글자로 바꾸는 모델을 이 컴퓨터에 준비합니다.',
+        'pt-BR': 'Prepare neste computador o modelo que transforma a sua voz em texto.',
+        'es-419': 'Prepara en esta computadora el modelo que convierte tu voz en texto.',
+        'es-ES': 'Prepara en este ordenador el modelo que convierte tu voz en texto.'
       }
     },
     tts: {
@@ -300,17 +300,32 @@ export const setup = defineMessages({
         'es-ES': 'Micrófono'
       },
       lead: {
-        'ja-JP': 'このあと macOS がマイクの許可を尋ねます。',
-        'en-US': 'macOS asks for permission to use the microphone.',
-        'fr-FR': "macOS va vous demander l'autorisation d'utiliser le microphone.",
-        'de-DE': 'macOS fragt gleich nach der Erlaubnis für das Mikrofon.',
-        'hi-IN': 'macOS अब माइक्रोफ़ोन इस्तेमाल करने की इजाज़त माँगेगा।',
-        'id-ID': 'macOS akan meminta izin untuk memakai mikrofon.',
-        'it-IT': 'Adesso macOS chiede il permesso di usare il microfono.',
-        'ko-KR': '이제 macOS가 마이크 사용 권한을 묻습니다.',
-        'pt-BR': 'O macOS vai pedir permissão para usar o microfone.',
-        'es-419': 'macOS pide permiso para usar el micrófono.',
-        'es-ES': 'macOS te pedirá permiso para usar el micrófono.'
+        macos: {
+          'ja-JP': 'このあと macOS がマイクの許可を尋ねます。',
+          'en-US': 'macOS asks for permission to use the microphone.',
+          'fr-FR': "macOS va vous demander l'autorisation d'utiliser le microphone.",
+          'de-DE': 'macOS fragt gleich nach der Erlaubnis für das Mikrofon.',
+          'hi-IN': 'macOS अब माइक्रोफ़ोन इस्तेमाल करने की इजाज़त माँगेगा।',
+          'id-ID': 'macOS akan meminta izin untuk memakai mikrofon.',
+          'it-IT': 'Adesso macOS chiede il permesso di usare il microfono.',
+          'ko-KR': '이제 macOS가 마이크 사용 권한을 묻습니다.',
+          'pt-BR': 'O macOS vai pedir permissão para usar o microfone.',
+          'es-419': 'macOS pide permiso para usar el micrófono.',
+          'es-ES': 'macOS te pedirá permiso para usar el micrófono.'
+        },
+        windows: {
+          'ja-JP': 'このあとマイクを使えるかを確かめます。',
+          'en-US': 'ASIST checks that it can use the microphone.',
+          'fr-FR': "ASIST va vérifier qu'il peut utiliser le microphone.",
+          'de-DE': 'ASIST prüft gleich, ob es das Mikrofon verwenden kann.',
+          'hi-IN': 'ASIST अब जाँचेगा कि वह माइक्रोफ़ोन इस्तेमाल कर सकता है या नहीं।',
+          'id-ID': 'ASIST akan memeriksa apakah mikrofon bisa dipakai.',
+          'it-IT': 'Adesso ASIST controlla di poter usare il microfono.',
+          'ko-KR': '이제 ASIST가 마이크를 쓸 수 있는지 확인합니다.',
+          'pt-BR': 'O ASIST vai verificar se pode usar o microfone.',
+          'es-419': 'ASIST comprueba que puede usar el micrófono.',
+          'es-ES': 'ASIST comprobará que puede usar el micrófono.'
+        }
       }
     },
     extras: {
@@ -603,6 +618,7 @@ export const setup = defineMessages({
         'es-419': 'La lectura en voz alta está lista. Continúa con Siguiente.',
         'es-ES': 'La lectura en voz alta está preparada. Continúa con “Siguiente”.'
       },
+      /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
       prepareOrSystem: {
         'ja-JP': '「モデルを準備する」を押すか、macOS の音声合成を選んでください。',
         'en-US': 'Press Prepare the model, or choose the macOS voice.',
@@ -630,17 +646,32 @@ export const setup = defineMessages({
         'es-ES': 'Comprobando'
       },
       notConnected: {
-        'ja-JP': '{engine} につながっていません。入れてから「検証する」を押すか、macOS の音声合成を選んでください。',
-        'en-US': '{engine} is not connected. Install it and press Verify, or choose the macOS voice.',
-        'fr-FR': "{engine} n'est pas connecté. Installez-le et cliquez sur « Vérifier », ou choisissez la voix de macOS.",
-        'de-DE': 'Es besteht keine Verbindung zu {engine}. Installieren Sie es und drücken Sie „Prüfen“, oder wählen Sie die macOS-Stimme.',
-        'hi-IN': '{engine} से कनेक्शन नहीं है। इसे इंस्टॉल करके "जाँचें" दबाएँ, या macOS की आवाज़ चुनें।',
-        'id-ID': '{engine} belum tersambung. Pasang aplikasinya lalu tekan Verifikasi, atau pilih suara macOS.',
-        'it-IT': '{engine} non è collegato. Installalo e premi «Verifica», oppure scegli la sintesi vocale di macOS.',
-        'ko-KR': "{engine}에 연결되어 있지 않습니다. 설치한 뒤에 '검증하기'를 누르거나, macOS 음성 합성을 선택하십시오.",
-        'pt-BR': '{engine} não está conectado. Instale e clique em Verificar, ou escolha a voz do macOS.',
-        'es-419': '{engine} no está conectado. Instálalo y presiona «Verificar», o elige la voz de macOS.',
-        'es-ES': 'No hay conexión con {engine}. Instálalo y pulsa “Verificar”, o elige la voz de macOS.'
+        macos: {
+          'ja-JP': '{engine} につながっていません。入れてから「検証する」を押すか、macOS の音声合成を選んでください。',
+          'en-US': '{engine} is not connected. Install it and press Verify, or choose the macOS voice.',
+          'fr-FR': "{engine} n'est pas connecté. Installez-le et cliquez sur « Vérifier », ou choisissez la voix de macOS.",
+          'de-DE': 'Es besteht keine Verbindung zu {engine}. Installieren Sie es und drücken Sie „Prüfen“, oder wählen Sie die macOS-Stimme.',
+          'hi-IN': '{engine} से कनेक्शन नहीं है। इसे इंस्टॉल करके "जाँचें" दबाएँ, या macOS की आवाज़ चुनें।',
+          'id-ID': '{engine} belum tersambung. Pasang aplikasinya lalu tekan Verifikasi, atau pilih suara macOS.',
+          'it-IT': '{engine} non è collegato. Installalo e premi «Verifica», oppure scegli la sintesi vocale di macOS.',
+          'ko-KR': "{engine}에 연결되어 있지 않습니다. 설치한 뒤에 '검증하기'를 누르거나, macOS 음성 합성을 선택하십시오.",
+          'pt-BR': '{engine} não está conectado. Instale e clique em Verificar, ou escolha a voz do macOS.',
+          'es-419': '{engine} no está conectado. Instálalo y presiona «Verificar», o elige la voz de macOS.',
+          'es-ES': 'No hay conexión con {engine}. Instálalo y pulsa “Verificar”, o elige la voz de macOS.'
+        },
+        windows: {
+          'ja-JP': '{engine} につながっていません。入れて起動してから「検証する」を押すか、Windows の音声合成を選んでください。',
+          'en-US': '{engine} is not connected. Install and start it, then press Verify, or choose the Windows voice.',
+          'fr-FR': "{engine} n'est pas connecté. Installez-le et lancez-le, puis cliquez sur « Vérifier », ou choisissez la voix de Windows.",
+          'de-DE': 'Es besteht keine Verbindung zu {engine}. Installieren und starten Sie es, drücken Sie dann „Prüfen“, oder wählen Sie die Windows-Stimme.',
+          'hi-IN': '{engine} से कनेक्शन नहीं है। इसे इंस्टॉल करके चालू करें और "जाँचें" दबाएँ, या Windows की आवाज़ चुनें।',
+          'id-ID': '{engine} belum tersambung. Pasang dan jalankan aplikasinya lalu tekan Verifikasi, atau pilih suara Windows.',
+          'it-IT': '{engine} non è collegato. Installalo e avvialo, poi premi «Verifica», oppure scegli la sintesi vocale di Windows.',
+          'ko-KR': "{engine}에 연결되어 있지 않습니다. 설치하고 실행한 뒤에 '검증하기'를 누르거나, Windows 음성 합성을 선택하십시오.",
+          'pt-BR': '{engine} não está conectado. Instale e abra, depois clique em Verificar, ou escolha a voz do Windows.',
+          'es-419': '{engine} no está conectado. Instálalo y ábrelo, luego presiona «Verificar», o elige la voz de Windows.',
+          'es-ES': 'No hay conexión con {engine}. Instálalo y ábrelo, luego pulsa “Verificar”, o elige la voz de Windows.'
+        }
       },
       choose: {
         'ja-JP': '読み上げのエンジンを1つ選んでください。',
@@ -684,17 +715,32 @@ export const setup = defineMessages({
         'es-ES': 'Comprobando el micrófono'
       },
       denied: {
-        'ja-JP': 'システム設定でマイクを許可してもう一度検証するか、文字で打つ使い方に切り替えてください。',
-        'en-US': 'Allow the microphone in System Settings and check again, or switch to typing.',
-        'fr-FR': 'Autorisez le microphone dans Réglages Système et vérifiez de nouveau, ou passez à la saisie au clavier.',
-        'de-DE': 'Erlauben Sie das Mikrofon in den Systemeinstellungen und prüfen Sie erneut, oder wechseln Sie zum Tippen.',
-        'hi-IN': 'सिस्टम सेटिंग्ज़ में माइक्रोफ़ोन की इजाज़त देकर फिर जाँचें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
-        'id-ID': 'Izinkan mikrofon di Pengaturan Sistem lalu periksa lagi, atau beralih ke mengetik.',
-        'it-IT': 'Consenti il microfono in Impostazioni di Sistema e verifica di nuovo, oppure passa alla scrittura.',
-        'ko-KR': '시스템 설정에서 마이크를 허용하고 다시 검증하거나, 글자로 입력하는 방식으로 바꾸십시오.',
-        'pt-BR': 'Permita o microfone nos Ajustes do Sistema e teste de novo, ou passe a digitar.',
-        'es-419': 'Permite el micrófono en Configuración del Sistema y vuelve a verificarlo, o cambia a escribir.',
-        'es-ES': 'Permite el micrófono en Ajustes del Sistema y vuelve a comprobarlo, o cambia a escribir.'
+        macos: {
+          'ja-JP': 'システム設定でマイクを許可してもう一度検証するか、文字で打つ使い方に切り替えてください。',
+          'en-US': 'Allow the microphone in System Settings and check again, or switch to typing.',
+          'fr-FR': 'Autorisez le microphone dans Réglages Système et vérifiez de nouveau, ou passez à la saisie au clavier.',
+          'de-DE': 'Erlauben Sie das Mikrofon in den Systemeinstellungen und prüfen Sie erneut, oder wechseln Sie zum Tippen.',
+          'hi-IN': 'सिस्टम सेटिंग्ज़ में माइक्रोफ़ोन की इजाज़त देकर फिर जाँचें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
+          'id-ID': 'Izinkan mikrofon di Pengaturan Sistem lalu periksa lagi, atau beralih ke mengetik.',
+          'it-IT': 'Consenti il microfono in Impostazioni di Sistema e verifica di nuovo, oppure passa alla scrittura.',
+          'ko-KR': '시스템 설정에서 마이크를 허용하고 다시 검증하거나, 글자로 입력하는 방식으로 바꾸십시오.',
+          'pt-BR': 'Permita o microfone nos Ajustes do Sistema e teste de novo, ou passe a digitar.',
+          'es-419': 'Permite el micrófono en Configuración del Sistema y vuelve a verificarlo, o cambia a escribir.',
+          'es-ES': 'Permite el micrófono en Ajustes del Sistema y vuelve a comprobarlo, o cambia a escribir.'
+        },
+        windows: {
+          'ja-JP': 'Windows の設定でデスクトップ アプリにマイクを許可してもう一度検証するか、文字で打つ使い方に切り替えてください。',
+          'en-US': 'Allow desktop apps to use the microphone in Windows Settings and check again, or switch to typing.',
+          'fr-FR': 'Autorisez les applications de bureau à utiliser le microphone dans Paramètres Windows et vérifiez de nouveau, ou passez à la saisie au clavier.',
+          'de-DE': 'Erlauben Sie Desktop-Apps in den Windows-Einstellungen den Zugriff auf das Mikrofon und prüfen Sie erneut, oder wechseln Sie zum Tippen.',
+          'hi-IN': 'Windows सेटिंग्स में डेस्कटॉप ऐप्स को माइक्रोफ़ोन की इजाज़त देकर फिर जाँचें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
+          'id-ID': 'Izinkan aplikasi desktop memakai mikrofon di Pengaturan Windows lalu periksa lagi, atau beralih ke mengetik.',
+          'it-IT': 'Consenti alle app desktop di usare il microfono in Impostazioni di Windows e verifica di nuovo, oppure passa alla scrittura.',
+          'ko-KR': 'Windows 설정에서 데스크톱 앱의 마이크 사용을 허용하고 다시 검증하거나, 글자로 입력하는 방식으로 바꾸십시오.',
+          'pt-BR': 'Permita que os aplicativos da área de trabalho usem o microfone nas Configurações do Windows e teste de novo, ou passe a digitar.',
+          'es-419': 'Permite que las apps de escritorio usen el micrófono en Configuración de Windows y vuelve a verificarlo, o cambia a escribir.',
+          'es-ES': 'Permite que las aplicaciones de escritorio usen el micrófono en Configuración de Windows y vuelve a comprobarlo, o cambia a escribir.'
+        }
       },
       check: {
         'ja-JP': '「マイクを検証する」を押してください。',
@@ -955,17 +1001,17 @@ export const setup = defineMessages({
       }
     },
     keyStoredNote: {
-      'ja-JP': 'キーは実際に {provider} へ問い合わせて、使えると分かったときだけこの Mac に保存します。',
-      'en-US': 'The key is tried against {provider} and stored on this Mac only once it is known to work.',
-      'fr-FR': "La clé est essayée auprès de {provider} et n'est enregistrée sur ce Mac qu'une fois qu'elle s'avère utilisable.",
-      'de-DE': 'Der Schlüssel wird bei {provider} ausprobiert und erst dann auf diesem Mac gespeichert, wenn feststeht, dass er funktioniert.',
-      'hi-IN': 'कुंजी को असल में {provider} पर आज़माया जाता है, और काम करने का पता चलने पर ही वह इस Mac पर सेव होती है।',
-      'id-ID': 'Kuncinya dicoba ke {provider} dan baru disimpan di Mac ini setelah terbukti bekerja.',
-      'it-IT': 'La chiave viene provata su {provider} e viene salvata su questo Mac solo quando risulta funzionante.',
-      'ko-KR': '키는 실제로 {provider}에 문의해 보고, 쓸 수 있다고 확인되었을 때만 이 Mac에 저장합니다.',
-      'pt-BR': 'A chave é testada em {provider} e só fica guardada neste Mac depois que se sabe que ela funciona.',
-      'es-419': 'La clave se prueba contra {provider} y se guarda en esta Mac solo cuando se sabe que funciona.',
-      'es-ES': 'La clave se prueba contra {provider} y solo se guarda en este Mac cuando se sabe que funciona.'
+      'ja-JP': 'キーは実際に {provider} へ問い合わせて、使えると分かったときだけこのコンピュータに保存します。',
+      'en-US': 'The key is tried against {provider} and stored on this computer only once it is known to work.',
+      'fr-FR': "La clé est essayée auprès de {provider} et n'est enregistrée sur cet ordinateur qu'une fois qu'elle s'avère utilisable.",
+      'de-DE': 'Der Schlüssel wird bei {provider} ausprobiert und erst dann auf diesem Computer gespeichert, wenn feststeht, dass er funktioniert.',
+      'hi-IN': 'कुंजी को असल में {provider} पर आज़माया जाता है, और काम करने का पता चलने पर ही वह इस कंप्यूटर पर सेव होती है।',
+      'id-ID': 'Kuncinya dicoba ke {provider} dan baru disimpan di komputer ini setelah terbukti bekerja.',
+      'it-IT': 'La chiave viene provata su {provider} e viene salvata su questo computer solo quando risulta funzionante.',
+      'ko-KR': '키는 실제로 {provider}에 문의해 보고, 쓸 수 있다고 확인되었을 때만 이 컴퓨터에 저장합니다.',
+      'pt-BR': 'A chave é testada em {provider} e só fica guardada neste computador depois que se sabe que ela funciona.',
+      'es-419': 'La clave se prueba contra {provider} y se guarda en esta computadora solo cuando se sabe que funciona.',
+      'es-ES': 'La clave se prueba contra {provider} y solo se guarda en este ordenador cuando se sabe que funciona.'
     },
     verifySavedKey: {
       'ja-JP': '保存してあるキーを検証する',
@@ -1095,17 +1141,17 @@ export const setup = defineMessages({
       'es-ES': '{model} (recomendado)'
     },
     unknownModel: {
-      'ja-JP': 'この Mac に合わせた音声認識',
-      'en-US': 'Speech recognition suited to this Mac',
-      'fr-FR': 'Reconnaissance vocale adaptée à ce Mac',
-      'de-DE': 'Spracherkennung, die zu diesem Mac passt',
-      'hi-IN': 'इस Mac के हिसाब का स्पीच रिकग्निशन',
-      'id-ID': 'Pengenalan suara yang cocok untuk Mac ini',
-      'it-IT': 'Riconoscimento vocale adatto a questo Mac',
-      'ko-KR': '이 Mac에 맞춘 음성 인식',
-      'pt-BR': 'Reconhecimento de fala adequado a este Mac',
-      'es-419': 'Reconocimiento de voz adecuado para esta Mac',
-      'es-ES': 'Reconocimiento de voz adecuado a este Mac'
+      'ja-JP': 'このコンピュータに合わせた音声認識',
+      'en-US': 'Speech recognition suited to this computer',
+      'fr-FR': 'Reconnaissance vocale adaptée à cet ordinateur',
+      'de-DE': 'Spracherkennung, die zu diesem Computer passt',
+      'hi-IN': 'इस कंप्यूटर के हिसाब का स्पीच रिकग्निशन',
+      'id-ID': 'Pengenalan suara yang cocok untuk komputer ini',
+      'it-IT': 'Riconoscimento vocale adatto a questo computer',
+      'ko-KR': '이 컴퓨터에 맞춘 음성 인식',
+      'pt-BR': 'Reconhecimento de fala adequado a este computador',
+      'es-419': 'Reconocimiento de voz adecuado para esta computadora',
+      'es-ES': 'Reconocimiento de voz adecuado a este ordenador'
     },
     unknownReason: {
       'ja-JP': '搭載メモリを見て、合うモデルを選びます。',
@@ -1322,17 +1368,32 @@ export const setup = defineMessages({
   },
   tts: {
     systemVoiceMissing: {
-      'ja-JP': 'この Mac に{language}の声が入っていません。システム設定 > アクセシビリティ > 読み上げコンテンツ で追加してください。',
-      'en-US': 'This Mac has no {language} voice. Add one in System Settings > Accessibility > Spoken Content.',
-      'fr-FR': "Ce Mac n'a aucune voix en {language}. Ajoutez-en une dans Réglages Système > Accessibilité > Contenu énoncé.",
-      'de-DE': 'Auf diesem Mac fehlt eine Stimme für {language}. Fügen Sie eine unter Systemeinstellungen > Bedienungshilfen > Gesprochene Inhalte hinzu.',
-      'hi-IN': 'इस Mac में {language} की आवाज़ नहीं है। System Settings > Accessibility > Spoken Content में जाकर एक जोड़ें।',
-      'id-ID': 'Mac ini tidak punya suara {language}. Tambahkan satu di System Settings > Accessibility > Spoken Content.',
-      'it-IT': 'Questo Mac non ha una voce in {language}. Aggiungine una in Impostazioni di Sistema > Accessibilità > Contenuto parlato.',
-      'ko-KR': '이 Mac에는 {language} 음성이 없습니다. 시스템 설정 > 손쉬운 사용 > 말하기 콘텐츠에서 추가하십시오.',
-      'pt-BR': 'Este Mac não tem voz em {language}. Adicione uma em Ajustes do Sistema > Acessibilidade > Conteúdo Falado.',
-      'es-419': 'Esta Mac no tiene una voz en {language}. Agrega una en Ajustes del Sistema > Accesibilidad > Contenido hablado.',
-      'es-ES': 'Este Mac no tiene una voz en {language}. Añade una en Ajustes del Sistema > Accesibilidad > Contenido hablado.'
+      macos: {
+        'ja-JP': 'この Mac に{language}の声が入っていません。システム設定 > アクセシビリティ > 読み上げコンテンツ で追加してください。',
+        'en-US': 'This Mac has no {language} voice. Add one in System Settings > Accessibility > Spoken Content.',
+        'fr-FR': "Ce Mac n'a aucune voix en {language}. Ajoutez-en une dans Réglages Système > Accessibilité > Contenu énoncé.",
+        'de-DE': 'Auf diesem Mac fehlt eine Stimme für {language}. Fügen Sie eine unter Systemeinstellungen > Bedienungshilfen > Gesprochene Inhalte hinzu.',
+        'hi-IN': 'इस Mac में {language} की आवाज़ नहीं है। System Settings > Accessibility > Spoken Content में जाकर एक जोड़ें।',
+        'id-ID': 'Mac ini tidak punya suara {language}. Tambahkan satu di System Settings > Accessibility > Spoken Content.',
+        'it-IT': 'Questo Mac non ha una voce in {language}. Aggiungine una in Impostazioni di Sistema > Accessibilità > Contenuto parlato.',
+        'ko-KR': '이 Mac에는 {language} 음성이 없습니다. 시스템 설정 > 손쉬운 사용 > 말하기 콘텐츠에서 추가하십시오.',
+        'pt-BR': 'Este Mac não tem voz em {language}. Adicione uma em Ajustes do Sistema > Acessibilidade > Conteúdo Falado.',
+        'es-419': 'Esta Mac no tiene una voz en {language}. Agrega una en Ajustes del Sistema > Accesibilidad > Contenido hablado.',
+        'es-ES': 'Este Mac no tiene una voz en {language}. Añade una en Ajustes del Sistema > Accesibilidad > Contenido hablado.'
+      },
+      windows: {
+        'ja-JP': 'このコンピュータに{language}の声が入っていません。Windows の設定 > 時刻と言語 > 音声認識 > 音声の管理 で追加してください。',
+        'en-US': 'This computer has no {language} voice. Add one in Windows Settings > Time & language > Speech > Manage voices.',
+        'fr-FR': "Cet ordinateur n'a aucune voix en {language}. Ajoutez-en une dans Paramètres Windows > Heure et langue > Voix > Gérer les voix.",
+        'de-DE': 'Auf diesem Computer fehlt eine Stimme für {language}. Fügen Sie eine unter Windows-Einstellungen > Zeit und Sprache > Spracherkennung > Stimmen verwalten hinzu.',
+        'hi-IN': 'इस कंप्यूटर में {language} की आवाज़ नहीं है। Windows सेटिंग्स > समय और भाषा > वाक् > आवाज़ें प्रबंधित करें में जाकर एक जोड़ें।',
+        'id-ID': 'Komputer ini tidak punya suara {language}. Tambahkan satu di Pengaturan Windows > Waktu & bahasa > Ucapan > Kelola suara.',
+        'it-IT': 'Questo computer non ha una voce in {language}. Aggiungine una in Impostazioni di Windows > Data/ora e lingua > Voce > Gestisci voci.',
+        'ko-KR': '이 컴퓨터에는 {language} 음성이 없습니다. Windows 설정 > 시간 및 언어 > 음성 > 음성 관리에서 추가하십시오.',
+        'pt-BR': 'Este computador não tem voz em {language}. Adicione uma em Configurações do Windows > Hora e idioma > Fala > Gerenciar vozes.',
+        'es-419': 'Esta computadora no tiene una voz en {language}. Agrega una en Configuración de Windows > Hora e idioma > Voz > Administrar voces.',
+        'es-ES': 'Este ordenador no tiene una voz en {language}. Añade una en Configuración de Windows > Hora e idioma > Voz > Administrar voces.'
+      }
     },
     groupLabel: {
       'ja-JP': '読み上げ',
@@ -1349,115 +1410,108 @@ export const setup = defineMessages({
     },
     engines: {
       system: {
-        title: {
-          'ja-JP': 'macOS の音声合成',
-          'en-US': 'macOS voice',
-          'fr-FR': 'Voix de macOS',
-          'de-DE': 'macOS-Stimme',
-          'hi-IN': 'macOS की आवाज़',
-          'id-ID': 'Suara macOS',
-          'it-IT': 'Sintesi vocale di macOS',
-          'ko-KR': 'macOS 음성 합성',
-          'pt-BR': 'Voz do macOS',
-          'es-419': 'Voz de macOS',
-          'es-ES': 'Voz de macOS'
-        },
         detail: {
-          'ja-JP': '何も入れずに使えます。声は macOS に入っているものです。',
-          'en-US': 'Works without installing anything, with the voices built into macOS.',
-          'fr-FR': 'Fonctionne sans rien installer, avec les voix intégrées à macOS.',
-          'de-DE': 'Funktioniert ohne Installation, mit den Stimmen aus macOS.',
-          'hi-IN': 'कुछ भी इंस्टॉल किए बिना काम करता है, macOS में पहले से मौजूद आवाज़ों के साथ।',
-          'id-ID': 'Bisa dipakai tanpa memasang apa pun, dengan suara bawaan macOS.',
-          'it-IT': 'Funziona senza installare niente, con le voci incluse in macOS.',
-          'ko-KR': '아무것도 설치하지 않고 쓸 수 있습니다. 목소리는 macOS에 들어 있는 것입니다.',
-          'pt-BR': 'Funciona sem instalar nada, com as vozes que já vêm no macOS.',
-          'es-419': 'Funciona sin instalar nada, con las voces que trae macOS.',
-          'es-ES': 'Funciona sin instalar nada, con las voces que trae macOS.'
+          macos: {
+            'ja-JP': '何も入れずに使えます。声は macOS に入っているものです。',
+            'en-US': 'Works without installing anything, with the voices built into macOS.',
+            'fr-FR': 'Fonctionne sans rien installer, avec les voix intégrées à macOS.',
+            'de-DE': 'Funktioniert ohne Installation, mit den Stimmen aus macOS.',
+            'hi-IN': 'कुछ भी इंस्टॉल किए बिना काम करता है, macOS में पहले से मौजूद आवाज़ों के साथ।',
+            'id-ID': 'Bisa dipakai tanpa memasang apa pun, dengan suara bawaan macOS.',
+            'it-IT': 'Funziona senza installare niente, con le voci incluse in macOS.',
+            'ko-KR': '아무것도 설치하지 않고 쓸 수 있습니다. 목소리는 macOS에 들어 있는 것입니다.',
+            'pt-BR': 'Funciona sem instalar nada, com as vozes que já vêm no macOS.',
+            'es-419': 'Funciona sin instalar nada, con las voces que trae macOS.',
+            'es-ES': 'Funciona sin instalar nada, con las voces que trae macOS.'
+          },
+          windows: {
+            'ja-JP': '何も入れずに使えます。声は Windows に入っているものです。',
+            'en-US': 'Works without installing anything, with the voices built into Windows.',
+            'fr-FR': 'Fonctionne sans rien installer, avec les voix intégrées à Windows.',
+            'de-DE': 'Funktioniert ohne Installation, mit den Stimmen aus Windows.',
+            'hi-IN': 'कुछ भी इंस्टॉल किए बिना काम करता है, Windows में पहले से मौजूद आवाज़ों के साथ।',
+            'id-ID': 'Bisa dipakai tanpa memasang apa pun, dengan suara bawaan Windows.',
+            'it-IT': 'Funziona senza installare niente, con le voci incluse in Windows.',
+            'ko-KR': '아무것도 설치하지 않고 쓸 수 있습니다. 목소리는 Windows에 들어 있는 것입니다.',
+            'pt-BR': 'Funciona sem instalar nada, com as vozes que já vêm no Windows.',
+            'es-419': 'Funciona sin instalar nada, con las voces que trae Windows.',
+            'es-ES': 'Funciona sin instalar nada, con las voces que trae Windows.'
+          }
         }
       },
       qwen3tts: {
-        title: {
-          'ja-JP': 'Qwen3-TTS',
-          'en-US': 'Qwen3-TTS',
-          'fr-FR': 'Qwen3-TTS',
-          'de-DE': 'Qwen3-TTS',
-          'hi-IN': 'Qwen3-TTS',
-          'id-ID': 'Qwen3-TTS',
-          'it-IT': 'Qwen3-TTS',
-          'ko-KR': 'Qwen3-TTS',
-          'pt-BR': 'Qwen3-TTS',
-          'es-419': 'Qwen3-TTS',
-          'es-ES': 'Qwen3-TTS'
-        },
         detail: {
-          'ja-JP': '文を作りながら読み始めます。モデル(約 1.9GB)をこの Mac に取得して動かし、動いている間は約 2GB のメモリを使います。',
-          'en-US': 'Starts reading while the sentence is still being generated. The model (about 1.9 GB) is downloaded and run on this Mac, and uses about 2 GB of memory while it runs.',
-          'fr-FR': "Commence à lire pendant que la phrase s'écrit encore. Le modèle (environ 1,9 Go) est téléchargé et exécuté sur ce Mac, et occupe environ 2 Go de mémoire pendant son fonctionnement.",
-          'de-DE': 'Beginnt zu lesen, während der Satz noch entsteht. Das Modell (rund 1,9 GB) wird auf diesen Mac geladen und läuft hier; solange es läuft, belegt es rund 2 GB Arbeitsspeicher.',
-          'hi-IN': 'वाक्य बनते-बनते ही पढ़ना शुरू कर देता है। मॉडल (करीब 1.9 GB) इसी Mac पर डाउनलोड होकर चलता है, और चलते समय करीब 2 GB मेमोरी लेता है।',
-          'id-ID': 'Mulai membaca sementara kalimatnya masih disusun. Modelnya (sekitar 1,9 GB) diunduh dan dijalankan di Mac ini, dan memakai sekitar 2 GB memori selama berjalan.',
-          'it-IT': 'Inizia a leggere mentre la frase è ancora in scrittura. Il modello (circa 1,9 GB) viene scaricato ed eseguito su questo Mac, e occupa circa 2 GB di memoria mentre è in funzione.',
-          'ko-KR': '문장을 만들면서 읽기 시작합니다. 모델(약 1.9GB)을 이 Mac에 내려받아 실행하며, 실행하는 동안 약 2GB의 메모리를 씁니다.',
-          'pt-BR': 'Começa a ler enquanto a frase ainda está sendo gerada. O modelo (cerca de 1,9 GB) é baixado e roda neste Mac, e ocupa cerca de 2 GB de memória enquanto roda.',
-          'es-419': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1.9 GB) se descarga y se ejecuta en esta Mac, y ocupa unos 2 GB de memoria mientras funciona.',
-          'es-ES': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1,9 GB) se descarga y se ejecuta en este Mac, y ocupa unos 2 GB de memoria mientras funciona.'
+          'ja-JP': '文を作りながら読み始めます。モデル(約 1.9GB)をこのコンピュータに取得して動かし、動いている間は約 2GB のメモリを使います。',
+          'en-US': 'Starts reading while the sentence is still being generated. The model (about 1.9 GB) is downloaded and run on this computer, and uses about 2 GB of memory while it runs.',
+          'fr-FR': "Commence à lire pendant que la phrase s'écrit encore. Le modèle (environ 1,9 Go) est téléchargé et exécuté sur cet ordinateur, et occupe environ 2 Go de mémoire pendant son fonctionnement.",
+          'de-DE': 'Beginnt zu lesen, während der Satz noch entsteht. Das Modell (rund 1,9 GB) wird auf diesen Computer geladen und läuft hier; solange es läuft, belegt es rund 2 GB Arbeitsspeicher.',
+          'hi-IN': 'वाक्य बनते-बनते ही पढ़ना शुरू कर देता है। मॉडल (करीब 1.9 GB) इसी कंप्यूटर पर डाउनलोड होकर चलता है, और चलते समय करीब 2 GB मेमोरी लेता है।',
+          'id-ID': 'Mulai membaca sementara kalimatnya masih disusun. Modelnya (sekitar 1,9 GB) diunduh dan dijalankan di komputer ini, dan memakai sekitar 2 GB memori selama berjalan.',
+          'it-IT': 'Inizia a leggere mentre la frase è ancora in scrittura. Il modello (circa 1,9 GB) viene scaricato ed eseguito su questo computer, e occupa circa 2 GB di memoria mentre è in funzione.',
+          'ko-KR': '문장을 만들면서 읽기 시작합니다. 모델(약 1.9GB)을 이 컴퓨터에 내려받아 실행하며, 실행하는 동안 약 2GB의 메모리를 씁니다.',
+          'pt-BR': 'Começa a ler enquanto a frase ainda está sendo gerada. O modelo (cerca de 1,9 GB) é baixado e roda neste computador, e ocupa cerca de 2 GB de memória enquanto roda.',
+          'es-419': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1.9 GB) se descarga y se ejecuta en esta computadora, y ocupa unos 2 GB de memoria mientras funciona.',
+          'es-ES': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1,9 GB) se descarga y se ejecuta en este ordenador, y ocupa unos 2 GB de memoria mientras funciona.'
         }
       },
       voicevox: {
-        title: {
-          'ja-JP': 'VOICEVOX',
-          'en-US': 'VOICEVOX',
-          'fr-FR': 'VOICEVOX',
-          'de-DE': 'VOICEVOX',
-          'hi-IN': 'VOICEVOX',
-          'id-ID': 'VOICEVOX',
-          'it-IT': 'VOICEVOX',
-          'ko-KR': 'VOICEVOX',
-          'pt-BR': 'VOICEVOX',
-          'es-419': 'VOICEVOX',
-          'es-ES': 'VOICEVOX'
-        },
         detail: {
-          'ja-JP': 'キャラクターの声で読み上げます。無料のアプリを「アプリケーション」に入れておくと、ASIST が自動で起動します。',
-          'en-US': 'Reads replies in a character voice. Put the free app in the Applications folder and ASIST starts it for you.',
-          'fr-FR': "Lit les réponses avec une voix de personnage. Placez l'app gratuite dans le dossier Applications et ASIST la démarre pour vous.",
-          'de-DE': 'Liest Antworten mit einer Charakterstimme. Legen Sie die kostenlose App in den Ordner „Programme“, dann startet ASIST sie für Sie.',
-          'hi-IN': 'जवाब किसी किरदार की आवाज़ में पढ़ता है। मुफ़्त ऐप को Applications फ़ोल्डर में रखें, ASIST उसे खुद शुरू कर देगा।',
-          'id-ID': 'Membacakan jawaban dengan suara karakter. Taruh aplikasi gratisnya di folder Aplikasi, lalu ASIST yang menjalankannya untuk Anda.',
-          'it-IT': "Legge le risposte con la voce di un personaggio. Metti l'app gratuita nella cartella «Applicazioni» e ASIST la avvia da sé.",
-          'ko-KR': "캐릭터 목소리로 읽어줍니다. 무료 앱을 '응용 프로그램' 폴더에 넣어 두면 ASIST가 알아서 실행합니다.",
-          'pt-BR': 'Lê as respostas com uma voz de personagem. Coloque o app gratuito na pasta Aplicativos e o ASIST o inicia para você.',
-          'es-419': 'Lee las respuestas con una voz de personaje. Pon la app gratuita en la carpeta Aplicaciones y ASIST la inicia por ti.',
-          'es-ES': 'Lee las respuestas con una voz de personaje. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
+          macos: {
+            'ja-JP': 'キャラクターの声で読み上げます。無料のアプリを「アプリケーション」に入れておくと、ASIST が自動で起動します。',
+            'en-US': 'Reads replies in a character voice. Put the free app in the Applications folder and ASIST starts it for you.',
+            'fr-FR': "Lit les réponses avec une voix de personnage. Placez l'app gratuite dans le dossier Applications et ASIST la démarre pour vous.",
+            'de-DE': 'Liest Antworten mit einer Charakterstimme. Legen Sie die kostenlose App in den Ordner „Programme“, dann startet ASIST sie für Sie.',
+            'hi-IN': 'जवाब किसी किरदार की आवाज़ में पढ़ता है। मुफ़्त ऐप को Applications फ़ोल्डर में रखें, ASIST उसे खुद शुरू कर देगा।',
+            'id-ID': 'Membacakan jawaban dengan suara karakter. Taruh aplikasi gratisnya di folder Aplikasi, lalu ASIST yang menjalankannya untuk Anda.',
+            'it-IT': "Legge le risposte con la voce di un personaggio. Metti l'app gratuita nella cartella «Applicazioni» e ASIST la avvia da sé.",
+            'ko-KR': "캐릭터 목소리로 읽어줍니다. 무료 앱을 '응용 프로그램' 폴더에 넣어 두면 ASIST가 알아서 실행합니다.",
+            'pt-BR': 'Lê as respostas com uma voz de personagem. Coloque o app gratuito na pasta Aplicativos e o ASIST o inicia para você.',
+            'es-419': 'Lee las respuestas con una voz de personaje. Pon la app gratuita en la carpeta Aplicaciones y ASIST la inicia por ti.',
+            'es-ES': 'Lee las respuestas con una voz de personaje. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
+          },
+          windows: {
+            'ja-JP': 'キャラクターの声で読み上げます。無料のアプリを入れて起動しておくと、ASIST がつなぎます。',
+            'en-US': 'Reads replies in a character voice. Install the free app and start it, and ASIST connects to it.',
+            'fr-FR': "Lit les réponses avec une voix de personnage. Installez l'app gratuite et lancez-la : ASIST s'y connecte.",
+            'de-DE': 'Liest Antworten mit einer Charakterstimme. Installieren und starten Sie die kostenlose App, dann verbindet sich ASIST damit.',
+            'hi-IN': 'जवाब किसी किरदार की आवाज़ में पढ़ता है। मुफ़्त ऐप इंस्टॉल करके चालू रखें, ASIST उससे जुड़ जाएगा।',
+            'id-ID': 'Membacakan jawaban dengan suara karakter. Pasang aplikasi gratisnya lalu jalankan, dan ASIST akan tersambung ke sana.',
+            'it-IT': "Legge le risposte con la voce di un personaggio. Installa l'app gratuita e avviala: ASIST si collega da sé.",
+            'ko-KR': '캐릭터 목소리로 읽어줍니다. 무료 앱을 설치하고 실행해 두면 ASIST가 연결합니다.',
+            'pt-BR': 'Lê as respostas com uma voz de personagem. Instale o app gratuito e abra-o, e o ASIST se conecta a ele.',
+            'es-419': 'Lee las respuestas con una voz de personaje. Instala la app gratuita y ábrela, y ASIST se conecta a ella.',
+            'es-ES': 'Lee las respuestas con una voz de personaje. Instala la app gratuita y ábrela, y ASIST se conectará a ella.'
+          }
         }
       },
       aivisspeech: {
-        title: {
-          'ja-JP': 'AivisSpeech',
-          'en-US': 'AivisSpeech',
-          'fr-FR': 'AivisSpeech',
-          'de-DE': 'AivisSpeech',
-          'hi-IN': 'AivisSpeech',
-          'id-ID': 'AivisSpeech',
-          'it-IT': 'AivisSpeech',
-          'ko-KR': 'AivisSpeech',
-          'pt-BR': 'AivisSpeech',
-          'es-419': 'AivisSpeech',
-          'es-ES': 'AivisSpeech'
-        },
         detail: {
-          'ja-JP': '抑揚のある声で読み上げます。無料のアプリを「アプリケーション」に入れておくと、ASIST が自動で起動します。',
-          'en-US': 'Reads replies with natural intonation. Put the free app in the Applications folder and ASIST starts it for you.',
-          'fr-FR': "Lit les réponses avec une intonation naturelle. Placez l'app gratuite dans le dossier Applications et ASIST la démarre pour vous.",
-          'de-DE': 'Liest Antworten mit natürlicher Betonung. Legen Sie die kostenlose App in den Ordner „Programme“, dann startet ASIST sie für Sie.',
-          'hi-IN': 'जवाब सहज उतार-चढ़ाव के साथ पढ़ता है। मुफ़्त ऐप को Applications फ़ोल्डर में रखें, ASIST उसे खुद शुरू कर देगा।',
-          'id-ID': 'Membacakan jawaban dengan intonasi yang alami. Taruh aplikasi gratisnya di folder Aplikasi, lalu ASIST yang menjalankannya untuk Anda.',
-          'it-IT': "Legge le risposte con un'intonazione naturale. Metti l'app gratuita nella cartella «Applicazioni» e ASIST la avvia da sé.",
-          'ko-KR': "억양이 있는 목소리로 읽어줍니다. 무료 앱을 '응용 프로그램' 폴더에 넣어 두면 ASIST가 알아서 실행합니다.",
-          'pt-BR': 'Lê as respostas com entonação natural. Coloque o app gratuito na pasta Aplicativos e o ASIST o inicia para você.',
-          'es-419': 'Lee las respuestas con una entonación natural. Pon la app gratuita en la carpeta Aplicaciones y ASIST la inicia por ti.',
-          'es-ES': 'Lee las respuestas con una entonación natural. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
+          macos: {
+            'ja-JP': '抑揚のある声で読み上げます。無料のアプリを「アプリケーション」に入れておくと、ASIST が自動で起動します。',
+            'en-US': 'Reads replies with natural intonation. Put the free app in the Applications folder and ASIST starts it for you.',
+            'fr-FR': "Lit les réponses avec une intonation naturelle. Placez l'app gratuite dans le dossier Applications et ASIST la démarre pour vous.",
+            'de-DE': 'Liest Antworten mit natürlicher Betonung. Legen Sie die kostenlose App in den Ordner „Programme“, dann startet ASIST sie für Sie.',
+            'hi-IN': 'जवाब सहज उतार-चढ़ाव के साथ पढ़ता है। मुफ़्त ऐप को Applications फ़ोल्डर में रखें, ASIST उसे खुद शुरू कर देगा।',
+            'id-ID': 'Membacakan jawaban dengan intonasi yang alami. Taruh aplikasi gratisnya di folder Aplikasi, lalu ASIST yang menjalankannya untuk Anda.',
+            'it-IT': "Legge le risposte con un'intonazione naturale. Metti l'app gratuita nella cartella «Applicazioni» e ASIST la avvia da sé.",
+            'ko-KR': "억양이 있는 목소리로 읽어줍니다. 무료 앱을 '응용 프로그램' 폴더에 넣어 두면 ASIST가 알아서 실행합니다.",
+            'pt-BR': 'Lê as respostas com entonação natural. Coloque o app gratuito na pasta Aplicativos e o ASIST o inicia para você.',
+            'es-419': 'Lee las respuestas con una entonación natural. Pon la app gratuita en la carpeta Aplicaciones y ASIST la inicia por ti.',
+            'es-ES': 'Lee las respuestas con una entonación natural. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
+          },
+          windows: {
+            'ja-JP': '抑揚のある声で読み上げます。無料のアプリを入れて起動しておくと、ASIST がつなぎます。',
+            'en-US': 'Reads replies with natural intonation. Install the free app and start it, and ASIST connects to it.',
+            'fr-FR': "Lit les réponses avec une intonation naturelle. Installez l'app gratuite et lancez-la : ASIST s'y connecte.",
+            'de-DE': 'Liest Antworten mit natürlicher Betonung. Installieren und starten Sie die kostenlose App, dann verbindet sich ASIST damit.',
+            'hi-IN': 'जवाब सहज उतार-चढ़ाव के साथ पढ़ता है। मुफ़्त ऐप इंस्टॉल करके चालू रखें, ASIST उससे जुड़ जाएगा।',
+            'id-ID': 'Membacakan jawaban dengan intonasi yang alami. Pasang aplikasi gratisnya lalu jalankan, dan ASIST akan tersambung ke sana.',
+            'it-IT': "Legge le risposte con un'intonazione naturale. Installa l'app gratuita e avviala: ASIST si collega da sé.",
+            'ko-KR': '억양이 있는 목소리로 읽어줍니다. 무료 앱을 설치하고 실행해 두면 ASIST가 연결합니다.',
+            'pt-BR': 'Lê as respostas com entonação natural. Instale o app gratuito e abra-o, e o ASIST se conecta a ele.',
+            'es-419': 'Lee las respuestas con una entonación natural. Instala la app gratuita y ábrela, y ASIST se conecta a ella.',
+            'es-ES': 'Lee las respuestas con una entonación natural. Instala la app gratuita y ábrela, y ASIST se conectará a ella.'
+          }
         }
       }
     },
@@ -1514,30 +1568,60 @@ export const setup = defineMessages({
       'es-ES': 'Verificando'
     },
     howtoInstall: {
-      'ja-JP': '公式サイトから {engine} を入れ、「アプリケーション」に置きます。',
-      'en-US': 'Install {engine} from its official site and put it in the Applications folder.',
-      'fr-FR': 'Installez {engine} depuis son site officiel et placez-le dans le dossier Applications.',
-      'de-DE': 'Installieren Sie {engine} von der offiziellen Website und legen Sie es in den Ordner „Programme“.',
-      'hi-IN': '{engine} को उसकी आधिकारिक साइट से इंस्टॉल करके Applications फ़ोल्डर में रखें।',
-      'id-ID': 'Pasang {engine} dari situs resminya lalu taruh di folder Aplikasi.',
-      'it-IT': 'Installa {engine} dal suo sito ufficiale e mettilo nella cartella «Applicazioni».',
-      'ko-KR': "공식 사이트에서 {engine} 앱을 설치하고 '응용 프로그램' 폴더에 둡니다.",
-      'pt-BR': 'Instale o {engine} pelo site oficial e coloque na pasta Aplicativos.',
-      'es-419': 'Instala {engine} desde su sitio oficial y ponlo en la carpeta Aplicaciones.',
-      'es-ES': 'Instala {engine} desde su sitio oficial y ponlo en la carpeta Aplicaciones.'
+      macos: {
+        'ja-JP': '公式サイトから {engine} を入れ、「アプリケーション」に置きます。',
+        'en-US': 'Install {engine} from its official site and put it in the Applications folder.',
+        'fr-FR': 'Installez {engine} depuis son site officiel et placez-le dans le dossier Applications.',
+        'de-DE': 'Installieren Sie {engine} von der offiziellen Website und legen Sie es in den Ordner „Programme“.',
+        'hi-IN': '{engine} को उसकी आधिकारिक साइट से इंस्टॉल करके Applications फ़ोल्डर में रखें।',
+        'id-ID': 'Pasang {engine} dari situs resminya lalu taruh di folder Aplikasi.',
+        'it-IT': 'Installa {engine} dal suo sito ufficiale e mettilo nella cartella «Applicazioni».',
+        'ko-KR': "공식 사이트에서 {engine} 앱을 설치하고 '응용 프로그램' 폴더에 둡니다.",
+        'pt-BR': 'Instale o {engine} pelo site oficial e coloque na pasta Aplicativos.',
+        'es-419': 'Instala {engine} desde su sitio oficial y ponlo en la carpeta Aplicaciones.',
+        'es-ES': 'Instala {engine} desde su sitio oficial y ponlo en la carpeta Aplicaciones.'
+      },
+      windows: {
+        'ja-JP': '公式サイトから {engine} をインストールして、起動します。',
+        'en-US': 'Install {engine} from its official site and start it.',
+        'fr-FR': 'Installez {engine} depuis son site officiel et lancez-le.',
+        'de-DE': 'Installieren Sie {engine} von der offiziellen Website und starten Sie es.',
+        'hi-IN': '{engine} को उसकी आधिकारिक साइट से इंस्टॉल करके चालू करें।',
+        'id-ID': 'Pasang {engine} dari situs resminya lalu jalankan.',
+        'it-IT': 'Installa {engine} dal suo sito ufficiale e avvialo.',
+        'ko-KR': '공식 사이트에서 {engine} 앱을 설치하고 실행합니다.',
+        'pt-BR': 'Instale o {engine} pelo site oficial e abra-o.',
+        'es-419': 'Instala {engine} desde su sitio oficial y ábrelo.',
+        'es-ES': 'Instala {engine} desde su sitio oficial y ábrelo.'
+      }
     },
     howtoVerify: {
-      'ja-JP': '「検証する」を押します。ASIST が {engine} を裏で起動して、つながるかを検証します。',
-      'en-US': 'Press Verify. ASIST starts {engine} in the background and checks the connection.',
-      'fr-FR': 'Cliquez sur « Vérifier ». ASIST démarre {engine} en arrière-plan et contrôle la connexion.',
-      'de-DE': 'Drücken Sie „Prüfen“. ASIST startet {engine} im Hintergrund und prüft die Verbindung.',
-      'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} को पीछे चलाकर कनेक्शन देखता है।',
-      'id-ID': 'Tekan Verifikasi. ASIST menjalankan {engine} di latar belakang dan memeriksa koneksinya.',
-      'it-IT': 'Premi «Verifica». ASIST avvia {engine} in background e controlla il collegamento.',
-      'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine} 앱을 뒤에서 실행해 연결되는지 검증합니다.",
-      'pt-BR': 'Clique em Verificar. O ASIST inicia o {engine} em segundo plano e confere a conexão.',
-      'es-419': 'Presiona «Verificar». ASIST inicia {engine} en segundo plano y verifica la conexión.',
-      'es-ES': 'Pulsa “Verificar”. ASIST abre {engine} en segundo plano y comprueba la conexión.'
+      macos: {
+        'ja-JP': '「検証する」を押します。ASIST が {engine} を裏で起動して、つながるかを検証します。',
+        'en-US': 'Press Verify. ASIST starts {engine} in the background and checks the connection.',
+        'fr-FR': 'Cliquez sur « Vérifier ». ASIST démarre {engine} en arrière-plan et contrôle la connexion.',
+        'de-DE': 'Drücken Sie „Prüfen“. ASIST startet {engine} im Hintergrund und prüft die Verbindung.',
+        'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} को पीछे चलाकर कनेक्शन देखता है।',
+        'id-ID': 'Tekan Verifikasi. ASIST menjalankan {engine} di latar belakang dan memeriksa koneksinya.',
+        'it-IT': 'Premi «Verifica». ASIST avvia {engine} in background e controlla il collegamento.',
+        'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine} 앱을 뒤에서 실행해 연결되는지 검증합니다.",
+        'pt-BR': 'Clique em Verificar. O ASIST inicia o {engine} em segundo plano e confere a conexão.',
+        'es-419': 'Presiona «Verificar». ASIST inicia {engine} en segundo plano y verifica la conexión.',
+        'es-ES': 'Pulsa “Verificar”. ASIST abre {engine} en segundo plano y comprueba la conexión.'
+      },
+      windows: {
+        'ja-JP': '「検証する」を押します。ASIST が {engine} につながるかを検証します。',
+        'en-US': 'Press Verify. ASIST checks the connection to {engine}.',
+        'fr-FR': 'Cliquez sur « Vérifier ». ASIST contrôle la connexion à {engine}.',
+        'de-DE': 'Drücken Sie „Prüfen“. ASIST prüft die Verbindung zu {engine}.',
+        'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} से कनेक्शन देखता है।',
+        'id-ID': 'Tekan Verifikasi. ASIST memeriksa koneksi ke {engine}.',
+        'it-IT': 'Premi «Verifica». ASIST controlla il collegamento con {engine}.',
+        'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine}에 연결되는지 검증합니다.",
+        'pt-BR': 'Clique em Verificar. O ASIST confere a conexão com o {engine}.',
+        'es-419': 'Presiona «Verificar». ASIST verifica la conexión con {engine}.',
+        'es-ES': 'Pulsa “Verificar”. ASIST comprueba la conexión con {engine}.'
+      }
     },
     officialSite: {
       'ja-JP': '{engine} の公式サイト',
@@ -1553,17 +1637,32 @@ export const setup = defineMessages({
       'es-ES': 'Sitio oficial de {engine}'
     },
     connectFailed: {
-      'ja-JP': '{engine} につながりませんでした。「アプリケーション」に入っているかを確かめて、もう一度検証してください。',
-      'en-US': "Couldn't connect to {engine}. Check that it is in the Applications folder and verify again.",
-      'fr-FR': "Impossible de se connecter à {engine}. Vérifiez qu'il est dans le dossier Applications, puis recommencez la vérification.",
-      'de-DE': 'Die Verbindung zu {engine} kam nicht zustande. Prüfen Sie, ob es im Ordner „Programme“ liegt, und prüfen Sie erneut.',
-      'hi-IN': '{engine} से कनेक्ट नहीं हो सका। देख लें कि वह Applications फ़ोल्डर में है, फिर दोबारा जाँचें।',
-      'id-ID': 'Tidak bisa menyambung ke {engine}. Pastikan aplikasinya ada di folder Aplikasi lalu verifikasi lagi.',
-      'it-IT': 'Impossibile collegarsi a {engine}. Controlla che sia nella cartella «Applicazioni» e verifica di nuovo.',
-      'ko-KR': "{engine}에 연결하지 못했습니다. '응용 프로그램' 폴더에 있는지 확인하고 다시 검증하십시오.",
-      'pt-BR': 'Não foi possível conectar ao {engine}. Confira se ele está na pasta Aplicativos e verifique de novo.',
-      'es-419': 'No se pudo conectar con {engine}. Comprueba que esté en la carpeta Aplicaciones y vuelve a verificarlo.',
-      'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está en la carpeta Aplicaciones y vuelve a verificarlo.'
+      macos: {
+        'ja-JP': '{engine} につながりませんでした。「アプリケーション」に入っているかを確かめて、もう一度検証してください。',
+        'en-US': "Couldn't connect to {engine}. Check that it is in the Applications folder and verify again.",
+        'fr-FR': "Impossible de se connecter à {engine}. Vérifiez qu'il est dans le dossier Applications, puis recommencez la vérification.",
+        'de-DE': 'Die Verbindung zu {engine} kam nicht zustande. Prüfen Sie, ob es im Ordner „Programme“ liegt, und prüfen Sie erneut.',
+        'hi-IN': '{engine} से कनेक्ट नहीं हो सका। देख लें कि वह Applications फ़ोल्डर में है, फिर दोबारा जाँचें।',
+        'id-ID': 'Tidak bisa menyambung ke {engine}. Pastikan aplikasinya ada di folder Aplikasi lalu verifikasi lagi.',
+        'it-IT': 'Impossibile collegarsi a {engine}. Controlla che sia nella cartella «Applicazioni» e verifica di nuovo.',
+        'ko-KR': "{engine}에 연결하지 못했습니다. '응용 프로그램' 폴더에 있는지 확인하고 다시 검증하십시오.",
+        'pt-BR': 'Não foi possível conectar ao {engine}. Confira se ele está na pasta Aplicativos e verifique de novo.',
+        'es-419': 'No se pudo conectar con {engine}. Comprueba que esté en la carpeta Aplicaciones y vuelve a verificarlo.',
+        'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está en la carpeta Aplicaciones y vuelve a verificarlo.'
+      },
+      windows: {
+        'ja-JP': '{engine} につながりませんでした。起動しているかを確かめて、もう一度検証してください。',
+        'en-US': "Couldn't connect to {engine}. Check that it is running and verify again.",
+        'fr-FR': "Impossible de se connecter à {engine}. Vérifiez qu'il est lancé, puis recommencez la vérification.",
+        'de-DE': 'Die Verbindung zu {engine} kam nicht zustande. Prüfen Sie, ob es läuft, und prüfen Sie erneut.',
+        'hi-IN': '{engine} से कनेक्ट नहीं हो सका। देख लें कि वह चल रहा है, फिर दोबारा जाँचें।',
+        'id-ID': 'Tidak bisa menyambung ke {engine}. Pastikan aplikasinya sedang berjalan lalu verifikasi lagi.',
+        'it-IT': 'Impossibile collegarsi a {engine}. Controlla che sia avviato e verifica di nuovo.',
+        'ko-KR': '{engine}에 연결하지 못했습니다. 실행 중인지 확인하고 다시 검증하십시오.',
+        'pt-BR': 'Não foi possível conectar ao {engine}. Confira se ele está aberto e verifique de novo.',
+        'es-419': 'No se pudo conectar con {engine}. Comprueba que esté abierto y vuelve a verificarlo.',
+        'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está abierto y vuelve a verificarlo.'
+      }
     }
   },
   mic: {
@@ -1594,17 +1693,32 @@ export const setup = defineMessages({
       'es-ES': 'Se ha comprobado que llega el sonido del micrófono.'
     },
     denied: {
-      'ja-JP': 'マイクを使えませんでした。システム設定で ASIST に許可するか、文字で打つ使い方に切り替えてください。',
-      'en-US': 'The microphone could not be used. Allow ASIST in System Settings, or switch to typing.',
-      'fr-FR': "Le microphone n'a pas pu être utilisé. Autorisez ASIST dans Réglages Système, ou passez à la saisie au clavier.",
-      'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie es ASIST in den Systemeinstellungen, oder wechseln Sie zum Tippen.',
-      'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। सिस्टम सेटिंग्ज़ में ASIST को इजाज़त दें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
-      'id-ID': 'Mikrofonnya tidak bisa dipakai. Izinkan ASIST di Pengaturan Sistem, atau beralih ke mengetik.',
-      'it-IT': "Non è stato possibile usare il microfono. Consenti l'accesso ad ASIST in Impostazioni di Sistema, oppure passa alla scrittura.",
-      'ko-KR': '마이크를 사용하지 못했습니다. 시스템 설정에서 ASIST에 허용하거나, 글자로 입력하는 방식으로 바꾸십시오.',
-      'pt-BR': 'Não foi possível usar o microfone. Permita o ASIST nos Ajustes do Sistema ou passe a digitar.',
-      'es-419': 'No se pudo usar el micrófono. Autoriza a ASIST en Configuración del Sistema, o cambia a escribir.',
-      'es-ES': 'No se ha podido usar el micrófono. Dale permiso a ASIST en Ajustes del Sistema o cambia a escribir.'
+      macos: {
+        'ja-JP': 'マイクを使えませんでした。システム設定で ASIST に許可するか、文字で打つ使い方に切り替えてください。',
+        'en-US': 'The microphone could not be used. Allow ASIST in System Settings, or switch to typing.',
+        'fr-FR': "Le microphone n'a pas pu être utilisé. Autorisez ASIST dans Réglages Système, ou passez à la saisie au clavier.",
+        'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie es ASIST in den Systemeinstellungen, oder wechseln Sie zum Tippen.',
+        'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। सिस्टम सेटिंग्ज़ में ASIST को इजाज़त दें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
+        'id-ID': 'Mikrofonnya tidak bisa dipakai. Izinkan ASIST di Pengaturan Sistem, atau beralih ke mengetik.',
+        'it-IT': "Non è stato possibile usare il microfono. Consenti l'accesso ad ASIST in Impostazioni di Sistema, oppure passa alla scrittura.",
+        'ko-KR': '마이크를 사용하지 못했습니다. 시스템 설정에서 ASIST에 허용하거나, 글자로 입력하는 방식으로 바꾸십시오.',
+        'pt-BR': 'Não foi possível usar o microfone. Permita o ASIST nos Ajustes do Sistema ou passe a digitar.',
+        'es-419': 'No se pudo usar el micrófono. Autoriza a ASIST en Configuración del Sistema, o cambia a escribir.',
+        'es-ES': 'No se ha podido usar el micrófono. Dale permiso a ASIST en Ajustes del Sistema o cambia a escribir.'
+      },
+      windows: {
+        'ja-JP': 'マイクを使えませんでした。Windows の設定でデスクトップ アプリにマイクを許可するか、文字で打つ使い方に切り替えてください。',
+        'en-US': 'The microphone could not be used. Allow desktop apps to use it in Windows Settings, or switch to typing.',
+        'fr-FR': "Le microphone n'a pas pu être utilisé. Autorisez les applications de bureau à s'en servir dans Paramètres Windows, ou passez à la saisie au clavier.",
+        'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie Desktop-Apps in den Windows-Einstellungen den Zugriff darauf, oder wechseln Sie zum Tippen.',
+        'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। Windows सेटिंग्स में डेस्कटॉप ऐप्स को इसकी इजाज़त दें, या लिखकर इस्तेमाल करने पर चले जाएँ।',
+        'id-ID': 'Mikrofonnya tidak bisa dipakai. Izinkan aplikasi desktop memakainya di Pengaturan Windows, atau beralih ke mengetik.',
+        'it-IT': 'Non è stato possibile usare il microfono. Consenti alle app desktop di usarlo in Impostazioni di Windows, oppure passa alla scrittura.',
+        'ko-KR': '마이크를 사용하지 못했습니다. Windows 설정에서 데스크톱 앱의 마이크 사용을 허용하거나, 글자로 입력하는 방식으로 바꾸십시오.',
+        'pt-BR': 'Não foi possível usar o microfone. Permita que os aplicativos da área de trabalho o usem nas Configurações do Windows ou passe a digitar.',
+        'es-419': 'No se pudo usar el micrófono. Permite que las apps de escritorio lo usen en Configuración de Windows, o cambia a escribir.',
+        'es-ES': 'No se ha podido usar el micrófono. Permite que las aplicaciones de escritorio lo usen en Configuración de Windows o cambia a escribir.'
+      }
     },
     working: {
       'ja-JP': '使えます',
@@ -1671,18 +1785,34 @@ export const setup = defineMessages({
       'es-419': 'Volver a verificar',
       'es-ES': 'Volver a comprobarlo'
     },
+    /** Hindi writes सेटिंग्स where it names the Windows app, as Hindi Windows does, and सेटिंग्ज़ for ASIST's own settings. */
     openSettings: {
-      'ja-JP': 'システム設定を開く',
-      'en-US': 'Open System Settings',
-      'fr-FR': 'Ouvrir Réglages Système',
-      'de-DE': 'Systemeinstellungen öffnen',
-      'hi-IN': 'सिस्टम सेटिंग्ज़ खोलें',
-      'id-ID': 'Buka Pengaturan Sistem',
-      'it-IT': 'Apri Impostazioni di Sistema',
-      'ko-KR': '시스템 설정 열기',
-      'pt-BR': 'Abrir os Ajustes do Sistema',
-      'es-419': 'Abrir Configuración del Sistema',
-      'es-ES': 'Abrir Ajustes del Sistema'
+      macos: {
+        'ja-JP': 'システム設定を開く',
+        'en-US': 'Open System Settings',
+        'fr-FR': 'Ouvrir Réglages Système',
+        'de-DE': 'Systemeinstellungen öffnen',
+        'hi-IN': 'सिस्टम सेटिंग्ज़ खोलें',
+        'id-ID': 'Buka Pengaturan Sistem',
+        'it-IT': 'Apri Impostazioni di Sistema',
+        'ko-KR': '시스템 설정 열기',
+        'pt-BR': 'Abrir os Ajustes do Sistema',
+        'es-419': 'Abrir Configuración del Sistema',
+        'es-ES': 'Abrir Ajustes del Sistema'
+      },
+      windows: {
+        'ja-JP': 'Windows の設定を開く',
+        'en-US': 'Open Windows Settings',
+        'fr-FR': 'Ouvrir Paramètres Windows',
+        'de-DE': 'Windows-Einstellungen öffnen',
+        'hi-IN': 'Windows सेटिंग्स खोलें',
+        'id-ID': 'Buka Pengaturan Windows',
+        'it-IT': 'Apri Impostazioni di Windows',
+        'ko-KR': 'Windows 설정 열기',
+        'pt-BR': 'Abrir as Configurações do Windows',
+        'es-419': 'Abrir Configuración de Windows',
+        'es-ES': 'Abrir Configuración de Windows'
+      }
     },
     switchToTyping: {
       'ja-JP': '文字で打つ使い方にする',
@@ -1712,17 +1842,32 @@ export const setup = defineMessages({
     },
     errors: {
       notAllowed: {
-        'ja-JP': 'マイクが許可されませんでした。システム設定で許可するか、文字だけで使う話し方に変えてください。',
-        'en-US': 'The microphone was not allowed. Allow it in System Settings, or switch to text only.',
-        'fr-FR': "Le microphone n'a pas été autorisé. Autorisez-le dans Réglages Système, ou passez au texte seulement.",
-        'de-DE': 'Das Mikrofon wurde nicht erlaubt. Erlauben Sie es in den Systemeinstellungen, oder wechseln Sie zu „Nur Text“.',
-        'hi-IN': 'माइक्रोफ़ोन की इजाज़त नहीं मिली। सिस्टम सेटिंग्ज़ में इजाज़त दें, या सिर्फ़ लिखकर इस्तेमाल करने पर चले जाएँ।',
-        'id-ID': 'Mikrofonnya tidak diizinkan. Izinkan di Pengaturan Sistem, atau beralih ke teks saja.',
-        'it-IT': 'Il microfono non è stato consentito. Consentilo in Impostazioni di Sistema, oppure passa al solo testo.',
-        'ko-KR': '마이크가 허용되지 않았습니다. 시스템 설정에서 허용하거나, 글자로만 쓰는 방식으로 바꾸십시오.',
-        'pt-BR': 'O microfone não foi permitido. Permita nos Ajustes do Sistema ou mude para só texto.',
-        'es-419': 'No se autorizó el micrófono. Autorízalo en Configuración del Sistema, o cambia a solo texto.',
-        'es-ES': 'No se ha dado permiso al micrófono. Dáselo en Ajustes del Sistema o cambia a usar solo texto.'
+        macos: {
+          'ja-JP': 'マイクが許可されませんでした。システム設定で許可するか、文字だけで使う話し方に変えてください。',
+          'en-US': 'The microphone was not allowed. Allow it in System Settings, or switch to text only.',
+          'fr-FR': "Le microphone n'a pas été autorisé. Autorisez-le dans Réglages Système, ou passez au texte seulement.",
+          'de-DE': 'Das Mikrofon wurde nicht erlaubt. Erlauben Sie es in den Systemeinstellungen, oder wechseln Sie zu „Nur Text“.',
+          'hi-IN': 'माइक्रोफ़ोन की इजाज़त नहीं मिली। सिस्टम सेटिंग्ज़ में इजाज़त दें, या सिर्फ़ लिखकर इस्तेमाल करने पर चले जाएँ।',
+          'id-ID': 'Mikrofonnya tidak diizinkan. Izinkan di Pengaturan Sistem, atau beralih ke teks saja.',
+          'it-IT': 'Il microfono non è stato consentito. Consentilo in Impostazioni di Sistema, oppure passa al solo testo.',
+          'ko-KR': '마이크가 허용되지 않았습니다. 시스템 설정에서 허용하거나, 글자로만 쓰는 방식으로 바꾸십시오.',
+          'pt-BR': 'O microfone não foi permitido. Permita nos Ajustes do Sistema ou mude para só texto.',
+          'es-419': 'No se autorizó el micrófono. Autorízalo en Configuración del Sistema, o cambia a solo texto.',
+          'es-ES': 'No se ha dado permiso al micrófono. Dáselo en Ajustes del Sistema o cambia a usar solo texto.'
+        },
+        windows: {
+          'ja-JP': 'マイクが許可されませんでした。Windows の設定で許可するか、文字だけで使う話し方に変えてください。',
+          'en-US': 'The microphone was not allowed. Allow it in Windows Settings, or switch to text only.',
+          'fr-FR': "Le microphone n'a pas été autorisé. Autorisez-le dans Paramètres Windows, ou passez au texte seulement.",
+          'de-DE': 'Das Mikrofon wurde nicht erlaubt. Erlauben Sie es in den Windows-Einstellungen, oder wechseln Sie zu „Nur Text“.',
+          'hi-IN': 'माइक्रोफ़ोन की इजाज़त नहीं मिली। Windows सेटिंग्स में इजाज़त दें, या सिर्फ़ लिखकर इस्तेमाल करने पर चले जाएँ।',
+          'id-ID': 'Mikrofonnya tidak diizinkan. Izinkan di Pengaturan Windows, atau beralih ke teks saja.',
+          'it-IT': 'Il microfono non è stato consentito. Consentilo in Impostazioni di Windows, oppure passa al solo testo.',
+          'ko-KR': '마이크가 허용되지 않았습니다. Windows 설정에서 허용하거나, 글자로만 쓰는 방식으로 바꾸십시오.',
+          'pt-BR': 'O microfone não foi permitido. Permita nas Configurações do Windows ou mude para só texto.',
+          'es-419': 'No se autorizó el micrófono. Autorízalo en Configuración de Windows, o cambia a solo texto.',
+          'es-ES': 'No se ha dado permiso al micrófono. Dáselo en Configuración de Windows o cambia a usar solo texto.'
+        }
       },
       notFound: {
         'ja-JP': '使えるマイクが見つかりません。マイクをつないで、もう一度検証してください。',
@@ -2364,17 +2509,32 @@ export const setup = defineMessages({
       'es-ES': 'Prepara Whisper en el navegador antes de terminar.'
     },
     systemTtsUnavailable: {
-      'ja-JP': 'macOS の音声合成を使えません。',
-      'en-US': 'The macOS voice is not available.',
-      'fr-FR': 'La voix de macOS est indisponible.',
-      'de-DE': 'Die macOS-Stimme steht nicht bereit.',
-      'hi-IN': 'macOS की आवाज़ उपलब्ध नहीं है।',
-      'id-ID': 'Suara macOS tidak tersedia.',
-      'it-IT': 'La sintesi vocale di macOS non è disponibile.',
-      'ko-KR': 'macOS 음성 합성을 쓸 수 없습니다.',
-      'pt-BR': 'A voz do macOS não está disponível.',
-      'es-419': 'La voz de macOS no está disponible.',
-      'es-ES': 'La voz de macOS no está disponible.'
+      macos: {
+        'ja-JP': 'macOS の音声合成を使えません。',
+        'en-US': 'The macOS voice is not available.',
+        'fr-FR': 'La voix de macOS est indisponible.',
+        'de-DE': 'Die macOS-Stimme steht nicht bereit.',
+        'hi-IN': 'macOS की आवाज़ उपलब्ध नहीं है।',
+        'id-ID': 'Suara macOS tidak tersedia.',
+        'it-IT': 'La sintesi vocale di macOS non è disponibile.',
+        'ko-KR': 'macOS 음성 합성을 쓸 수 없습니다.',
+        'pt-BR': 'A voz do macOS não está disponível.',
+        'es-419': 'La voz de macOS no está disponible.',
+        'es-ES': 'La voz de macOS no está disponible.'
+      },
+      windows: {
+        'ja-JP': 'Windows の音声合成を使えません。',
+        'en-US': 'The Windows voice is not available.',
+        'fr-FR': 'La voix de Windows est indisponible.',
+        'de-DE': 'Die Windows-Stimme steht nicht bereit.',
+        'hi-IN': 'Windows की आवाज़ उपलब्ध नहीं है।',
+        'id-ID': 'Suara Windows tidak tersedia.',
+        'it-IT': 'La sintesi vocale di Windows non è disponibile.',
+        'ko-KR': 'Windows 음성 합성을 쓸 수 없습니다.',
+        'pt-BR': 'A voz do Windows não está disponível.',
+        'es-419': 'La voz de Windows no está disponible.',
+        'es-ES': 'La voz de Windows no está disponible.'
+      }
     },
     asrUnavailable: {
       'ja-JP': '選んだ音声認識モデルを使えません。',

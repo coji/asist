@@ -5,6 +5,7 @@ import { parse } from '@babel/parser'
 import { describe, expect, it } from 'vitest'
 import { MESSAGES, UI_LOCALES, createTranslator, formatMessage } from '@shared/i18n'
 import type { Message, PluralForms } from '@shared/i18n/message'
+import { OS_MESSAGE_VARIANTS } from '@shared/i18n/os-message'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const JAPANESE = /[぀-ヿ一-鿿]/
@@ -148,7 +149,7 @@ describe('formatMessage', () => {
   })
 
   it('reads a nested key in the chosen language', () => {
-    expect(createTranslator('en-US')('settingsVoice.speech.engineMissing', { engine: 'VOICEVOX' })).toContain('VOICEVOX')
+    expect(createTranslator('en-US')('settingsVoice.speech.engineMissing.macos', { engine: 'VOICEVOX' })).toContain('VOICEVOX')
   })
 })
 
@@ -217,8 +218,25 @@ describe('the dictionary', () => {
     const used = sourceFiles().map(literals)
     const strings = new Set(used.flatMap((file) => file.strings))
     const templates = used.flatMap((file) => file.templates)
-    const unused = all.map(([key]) => key).filter((key) => !strings.has(key) && !templates.some((pattern) => pattern.test(key)))
+    // A message written once per OS is used through osMessageKey, which the source names by the key in front
+    // of `.macos` and `.windows`.
+    const osVariant = new RegExp(`\\.(${Object.keys(OS_MESSAGE_VARIANTS).join('|')})$`)
+    const isUsed = (key: string): boolean => strings.has(key) || templates.some((pattern) => pattern.test(key))
+    const unused = all.map(([key]) => key).filter((key) => !isUsed(key) && !(osVariant.test(key) && isUsed(key.replace(osVariant, ''))))
     expect(unused).toEqual([])
+  })
+
+  it('writes a message that names a part of the OS for every OS and nothing else', () => {
+    const variants = Object.keys(OS_MESSAGE_VARIANTS).sort()
+    const groups = (node: unknown, prefix: string): Array<[string, string[]]> =>
+      'ja-JP' in (node as object)
+        ? []
+        : Object.entries(node as Record<string, unknown>).flatMap(([key, child]) => [
+            ...(variants.some((os) => os in (child as object)) ? [[`${prefix}${key}`, Object.keys(child as object).sort()] as [string, string[]]] : []),
+            ...groups(child, `${prefix}${key}.`)
+          ])
+    const incomplete = groups(MESSAGES, '').filter(([, children]) => children.join() !== variants.join())
+    expect(incomplete).toEqual([])
   })
 
   // This parses every file under src as well: 177 ms alone and 2476 ms under the same load on the same day.

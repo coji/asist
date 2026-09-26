@@ -218,10 +218,10 @@ describe('first-run setup', () => {
     await press(t('setup.speaking.voice.title'))
     await press(t('setup.next'))
     await press(t('setup.next'))
-    expect(optionTitles()).toEqual([t('setup.tts.engines.system.title'), t('setup.tts.engines.voicevox.title'), t('setup.tts.engines.aivisspeech.title')])
+    expect(optionTitles()).toEqual([t('settings.ttsEngine.system.macos'), 'VOICEVOX', 'AivisSpeech'])
 
     // VOICEVOX is not running in this test, so the macOS voice carries the walk to the last screens.
-    await press(t('setup.tts.engines.system.title'))
+    await press(t('settings.ttsEngine.system.macos'))
     await press(t('setup.next'))
     await press(t('setup.mic.check'))
     await press(t('setup.next'))
@@ -239,7 +239,7 @@ describe('first-run setup', () => {
     await press(t('setup.speaking.voice.title'))
     await press(t('setup.next'))
     await press(t('setup.next'))
-    expect(optionTitles()).toEqual([t('setup.tts.engines.system.title')])
+    expect(optionTitles()).toEqual([t('settings.ttsEngine.system.macos')])
 
     await press(t('setup.next'))
     await press(t('setup.mic.check'))
@@ -314,7 +314,7 @@ describe('first-run setup', () => {
     await press(t('setup.speaking.voice.title'))
     await press(t('setup.next'))
     await press(t('setup.next'))
-    await press(t('setup.tts.engines.qwen3tts.title'))
+    await press('Qwen3-TTS')
     await press(t('setup.tts.prepareModel'))
     await act(async () => progressListener({ status: 'downloading', pct: 29, downloadedMb: 576.3, totalMb: 1974, message: 'Qwen3-TTS' }))
     const bar = container.querySelector('[role="progressbar"]')
@@ -366,12 +366,12 @@ describe('first-run setup on a machine without the local models, the Python work
     await press(ja('setup.listening.local.title'))
     await press(ja('setup.listening.prepareModel'))
     await press(ja('setup.next'))
-    expect(optionTitles()).toEqual([ja('setup.tts.engines.system.title'), ja('setup.tts.engines.voicevox.title'), ja('setup.tts.engines.aivisspeech.title')])
+    expect(optionTitles()).toEqual([ja('settings.ttsEngine.system.windows'), 'VOICEVOX', 'AivisSpeech'])
     // The saved engine is none of the choices, so the step asks for one rather than for a preparation.
     expect(container.querySelector('.su-next')?.textContent).toBe(ja('setup.guide.tts.choose'))
     expect(container.textContent).not.toContain(ja('setup.tts.prepareModel'))
 
-    await press(ja('setup.tts.engines.system.title'))
+    await press(ja('settings.ttsEngine.system.windows'))
     await press(ja('setup.next'))
     await press(ja('setup.mic.check'))
     await press(ja('setup.next'))

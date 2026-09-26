@@ -752,7 +752,7 @@ describe('settings dialog with the conversation held in another language', () =>
     expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(
       t('settings.summary.modelsNotPrepared', { count: 2 })
     )
-    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system'))
+    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system.macos'))
   })
 })
 
@@ -827,7 +827,7 @@ describe('settings dialog on a machine without the local models, the Python work
   it('offers no aizuchi to open a turn without its classifier, keeps the ones while the user speaks, and names the curation for the memory', async () => {
     useSettingsStore.setState({ settings: { ...settings, aizuchi: true } })
     const view = await render()
-    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system'))
+    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system.windows'))
     expect(nav(view, 'memory').querySelector('.st-nav-sub')?.textContent).toBe(t('settingsMemory.curation.title'))
     await act(async () => nav(view, 'voice').click())
     const labels = rowLabels(view)

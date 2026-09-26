@@ -1484,17 +1484,17 @@ export const mail = defineMessages({
         'es-ES': 'No se ha podido leer la contraseña guardada. Vuelve a introducirla en los ajustes.'
       },
       encryptionUnavailable: {
-        'ja-JP': 'この Mac ではパスワードを暗号化して保存できません。',
-        'en-US': "This Mac can't store a password encrypted.",
-        'fr-FR': 'Ce Mac ne peut pas enregistrer un mot de passe chiffré.',
-        'de-DE': 'Dieser Mac kann ein Passwort nicht verschlüsselt ablegen.',
-        'hi-IN': 'यह Mac पासवर्ड को एन्क्रिप्ट करके सेव नहीं कर सकता।',
-        'id-ID': 'Mac ini tidak bisa menyimpan kata sandi dalam bentuk terenkripsi.',
-        'it-IT': 'Questo Mac non può salvare una password cifrata.',
-        'ko-KR': '이 Mac에서는 암호를 암호화해서 저장할 수 없습니다.',
-        'pt-BR': 'Este Mac não pode guardar uma senha criptografada.',
-        'es-419': 'Esta Mac no puede guardar una contraseña cifrada.',
-        'es-ES': 'Este Mac no puede guardar una contraseña cifrada.'
+        'ja-JP': 'このコンピュータではパスワードを暗号化して保存できません。',
+        'en-US': "This computer can't store a password encrypted.",
+        'fr-FR': 'Cet ordinateur ne peut pas enregistrer un mot de passe chiffré.',
+        'de-DE': 'Dieser Computer kann ein Passwort nicht verschlüsselt ablegen.',
+        'hi-IN': 'यह कंप्यूटर पासवर्ड को एन्क्रिप्ट करके सेव नहीं कर सकता।',
+        'id-ID': 'Komputer ini tidak bisa menyimpan kata sandi dalam bentuk terenkripsi.',
+        'it-IT': 'Questo computer non può salvare una password cifrata.',
+        'ko-KR': '이 컴퓨터에서는 암호를 암호화해서 저장할 수 없습니다.',
+        'pt-BR': 'Este computador não pode guardar uma senha criptografada.',
+        'es-419': 'Esta computadora no puede guardar una contraseña cifrada.',
+        'es-ES': 'Este ordenador no puede guardar una contraseña cifrada.'
       },
       fileUnreadable: {
         'ja-JP': 'パスワードのファイルを読めません({file}): {reason}',

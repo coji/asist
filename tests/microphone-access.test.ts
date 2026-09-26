@@ -5,6 +5,9 @@ import {
   microphoneCaptureErrorMessage,
   verifyMicrophoneCapture
 } from '@/voice/microphone-access'
+import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
+
+vi.mock('@/platform', () => import('./helpers/platform'))
 
 const t = createTranslator('ja-JP')
 
@@ -58,9 +61,17 @@ describe('verifyMicrophoneCapture', () => {
   })
 
   it('turns each browser failure reason into its own message for the user', () => {
-    expect(microphoneCaptureErrorMessage({ name: 'NotAllowedError' })).toBe(t('setup.mic.errors.notAllowed'))
+    setCapabilities(MACOS)
+    expect(microphoneCaptureErrorMessage({ name: 'NotAllowedError' })).toBe(t('setup.mic.errors.notAllowed.macos'))
     expect(microphoneCaptureErrorMessage({ name: 'NotFoundError' })).toBe(t('setup.mic.errors.notFound'))
     expect(microphoneCaptureErrorMessage({ name: 'NotReadableError' })).toBe(t('setup.mic.errors.notReadable'))
     expect(microphoneCaptureErrorMessage(new Error('boom'))).toBe(t('setup.mic.errors.captureFailedDetail', { detail: 'boom' }))
+  })
+
+  it('sends the user to the settings app of the OS the microphone was refused on', () => {
+    setCapabilities(WINDOWS)
+    expect(microphoneCaptureErrorMessage({ name: 'NotAllowedError' })).toBe(t('setup.mic.errors.notAllowed.windows'))
+    setCapabilities(MACOS)
+    expect(microphoneCaptureErrorMessage({ name: 'NotAllowedError' })).toBe(t('setup.mic.errors.notAllowed.macos'))
   })
 })

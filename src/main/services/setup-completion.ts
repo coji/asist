@@ -1,7 +1,9 @@
 import type { AppSettings, CompleteSetupRequest } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
+import { osMessageKey } from '@shared/i18n/os-message'
 import { getSettings, saveSettings } from './settings'
 import { configuredModels, validateConfiguration } from './llm'
+import { platformCapabilities } from './platform'
 import * as asr from './asr'
 import * as tts from './tts'
 
@@ -27,7 +29,7 @@ export async function completeSetup(request: unknown): Promise<AppSettings> {
     throw new Error(errorText('setup.completion.safetyNotAcknowledged'))
   }
   if (settings.ttsEngine === 'system' && input?.systemTtsVerified !== true) {
-    throw new Error(errorText('setup.completion.systemTtsUnavailable'))
+    throw new Error(errorText(osMessageKey('setup.completion.systemTtsUnavailable', platformCapabilities().os)))
   }
 
   // The snapshot the screen is showing is not trusted here: the current keys and both models are checked

@@ -9,6 +9,7 @@ import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import { SPEECH_RUNTIME_UNAVAILABLE_TEXT } from '@shared/platform'
 import { ttsEngineRuns } from '@shared/tts-models'
+import { osMessageKey } from '@shared/i18n/os-message'
 
 /**
  * The models page, where the models and their runtimes are prepared. It is kept apart from the
@@ -18,7 +19,7 @@ import { ttsEngineRuns } from '@shared/tts-models'
 export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, status, setup, vap, embedding, aizuchiClassifier, prep, prepare, set, go } = ctx
   const t = useT()
-  const { speechRuntime, cpuSidecars } = platformCapabilities()
+  const { speechRuntime, cpuSidecars, os } = platformCapabilities()
   const asr = setup?.asr ?? null
   const asrReady = asr?.ready === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
@@ -44,7 +45,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
     speechRuntime.kind === null
       ? t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])
       : !asr
-        ? t('settingsModels.asr.checkingMac')
+        ? t('settingsModels.asr.checking')
         : t(
             !asr.runtimeInstalled && !asr.modelInstalled
               ? 'settingsModels.asr.needsRuntimeAndModel'
@@ -145,7 +146,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
                     ? t(setup && !setup.qwenTts.recommended ? 'settingsModels.speech.qwenTooLittleMemory' : 'settingsModels.speech.qwen', {
                         model: setup?.qwenTts.label ?? 'Qwen3-TTS'
                       })
-                    : t('settingsModels.speech.external', { engine: ttsEngineLabel(t, engine) })
+                    : t(osMessageKey('settingsModels.speech.external', os), { engine: ttsEngineLabel(t, engine) })
           }
         >
           {engineRuns && engine === 'qwen3tts' && !status?.tts && prepareButton('tts', prepare.tts)}

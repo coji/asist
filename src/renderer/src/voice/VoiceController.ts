@@ -23,6 +23,8 @@ import { AsrEngine, type AsrProgress } from './AsrEngine'
 import { speechPlayer } from './SpeechPlayer'
 import { conversationLocale } from '@/conversation-locale'
 import { displayError, errorMessageOf } from '@/display-error'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 export type VoiceState = 'off' | 'loading' | 'listening' | 'capturing' | 'transcribing'
 
@@ -387,7 +389,7 @@ export class VoiceController {
     try {
       const permitted = await window.api.requestMicPermission()
       if (!current()) return
-      if (!permitted) throw new Error(errorText('voice.mic.notPermitted'))
+      if (!permitted) throw new Error(errorText(osMessageKey('voice.mic.notPermitted', platformCapabilities().os)))
       // With local ASR explicitly enabled, the UI must not sit for 15 seconds waiting for the
       // server. Local is chosen and prepared at once, and the move up to the server is attempted
       // after the microphone has started.

@@ -42,17 +42,17 @@ export const settingsMemory = defineMessages({
       'es-ES': 'Búsqueda semántica'
     },
     description: {
-      'ja-JP': '言い方が違っても記憶を引けるように、話した内容と記憶をこの Mac 上のモデル(multilingual-e5 small)で比べます。',
-      'en-US': 'Compares what you say with your memories using a model on this Mac (multilingual-e5 small), so a memory is found even when you word it differently.',
-      'fr-FR': "Compare ce que vous dites avec vos souvenirs à l'aide d'un modèle installé sur ce Mac (Ruri v3 130m), pour retrouver un souvenir même formulé autrement.",
-      'de-DE': 'Vergleicht das Gesagte mit Ihren Erinnerungen über ein Modell auf diesem Mac (multilingual-e5 small), damit eine Erinnerung auch bei anderer Formulierung gefunden wird.',
-      'hi-IN': 'आप जो कहते हैं उसकी तुलना आपकी यादों से इसी Mac पर चलने वाला एक मॉडल (multilingual-e5 small) करता है, ताकि शब्द अलग होने पर भी याद मिल जाए।',
-      'id-ID': 'Membandingkan yang Anda ucapkan dengan ingatan memakai model di Mac ini (multilingual-e5 small), jadi sebuah ingatan tetap ketemu walau kata-katanya berbeda.',
-      'it-IT': 'Confronta quello che dici con i ricordi usando un modello su questo Mac (multilingual-e5 small), così un ricordo si trova anche se lo dici con altre parole.',
-      'ko-KR': '말투가 달라도 기억을 찾을 수 있도록, 말한 내용과 기억을 이 Mac의 모델(multilingual-e5 small)로 견줍니다.',
-      'pt-BR': 'Compara o que você diz com as suas memórias usando um modelo neste Mac (multilingual-e5 small), para encontrar uma memória mesmo quando você usa outras palavras.',
-      'es-419': 'Compara lo que dices con tus recuerdos usando un modelo de esta Mac (multilingual-e5 small), para encontrar un recuerdo aunque lo digas con otras palabras.',
-      'es-ES': 'Compara lo que dices con tus recuerdos mediante un modelo de este Mac (multilingual-e5 small), para encontrar un recuerdo aunque lo digas de otra manera.'
+      'ja-JP': '言い方が違っても記憶を引けるように、話した内容と記憶をこのコンピュータ上のモデル(multilingual-e5 small)で比べます。',
+      'en-US': 'Compares what you say with your memories using a model on this computer (multilingual-e5 small), so a memory is found even when you word it differently.',
+      'fr-FR': "Compare ce que vous dites avec vos souvenirs à l'aide d'un modèle installé sur cet ordinateur (multilingual-e5 small), pour retrouver un souvenir même formulé autrement.",
+      'de-DE': 'Vergleicht das Gesagte mit Ihren Erinnerungen über ein Modell auf diesem Computer (multilingual-e5 small), damit eine Erinnerung auch bei anderer Formulierung gefunden wird.',
+      'hi-IN': 'आप जो कहते हैं उसकी तुलना आपकी यादों से इसी कंप्यूटर पर चलने वाला एक मॉडल (multilingual-e5 small) करता है, ताकि शब्द अलग होने पर भी याद मिल जाए।',
+      'id-ID': 'Membandingkan yang Anda ucapkan dengan ingatan memakai model di komputer ini (multilingual-e5 small), jadi sebuah ingatan tetap ketemu walau kata-katanya berbeda.',
+      'it-IT': 'Confronta quello che dici con i ricordi usando un modello su questo computer (multilingual-e5 small), così un ricordo si trova anche se lo dici con altre parole.',
+      'ko-KR': '말투가 달라도 기억을 찾을 수 있도록, 말한 내용과 기억을 이 컴퓨터의 모델(multilingual-e5 small)로 견줍니다.',
+      'pt-BR': 'Compara o que você diz com as suas memórias usando um modelo neste computador (multilingual-e5 small), para encontrar uma memória mesmo quando você usa outras palavras.',
+      'es-419': 'Compara lo que dices con tus recuerdos usando un modelo de esta computadora (multilingual-e5 small), para encontrar un recuerdo aunque lo digas con otras palabras.',
+      'es-ES': 'Compara lo que dices con tus recuerdos mediante un modelo de este ordenador (multilingual-e5 small), para encontrar un recuerdo aunque lo digas de otra manera.'
     },
     use: {
       'ja-JP': '意味検索を使う',

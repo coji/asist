@@ -916,30 +916,60 @@ export const settingsConversation = defineMessages({
       'es-ES': 'Carpeta del registro'
     },
     folderHint: {
-      'ja-JP': '~/Library/Logs の下にあります。',
-      'en-US': 'It is under ~/Library/Logs.',
-      'fr-FR': 'Il se trouve sous ~/Library/Logs.',
-      'de-DE': 'Er liegt unter ~/Library/Logs.',
-      'hi-IN': 'यह ~/Library/Logs के नीचे है।',
-      'id-ID': 'Ada di bawah ~/Library/Logs.',
-      'it-IT': 'Si trova sotto ~/Library/Logs.',
-      'ko-KR': '~/Library/Logs 아래에 있습니다.',
-      'pt-BR': 'Fica em ~/Library/Logs.',
-      'es-419': 'Está dentro de ~/Library/Logs.',
-      'es-ES': 'Está dentro de ~/Library/Logs.'
+      macos: {
+        'ja-JP': '~/Library/Logs の下にあります。',
+        'en-US': 'It is under ~/Library/Logs.',
+        'fr-FR': 'Il se trouve sous ~/Library/Logs.',
+        'de-DE': 'Er liegt unter ~/Library/Logs.',
+        'hi-IN': 'यह ~/Library/Logs के नीचे है।',
+        'id-ID': 'Ada di bawah ~/Library/Logs.',
+        'it-IT': 'Si trova sotto ~/Library/Logs.',
+        'ko-KR': '~/Library/Logs 아래에 있습니다.',
+        'pt-BR': 'Fica em ~/Library/Logs.',
+        'es-419': 'Está dentro de ~/Library/Logs.',
+        'es-ES': 'Está dentro de ~/Library/Logs.'
+      },
+      windows: {
+        'ja-JP': '%APPDATA%\\asist\\logs にあります。',
+        'en-US': 'It is in %APPDATA%\\asist\\logs.',
+        'fr-FR': 'Il se trouve dans %APPDATA%\\asist\\logs.',
+        'de-DE': 'Er liegt unter %APPDATA%\\asist\\logs.',
+        'hi-IN': 'यह %APPDATA%\\asist\\logs में है।',
+        'id-ID': 'Ada di %APPDATA%\\asist\\logs.',
+        'it-IT': 'Si trova in %APPDATA%\\asist\\logs.',
+        'ko-KR': '%APPDATA%\\asist\\logs에 있습니다.',
+        'pt-BR': 'Fica em %APPDATA%\\asist\\logs.',
+        'es-419': 'Está en %APPDATA%\\asist\\logs.',
+        'es-ES': 'Está en %APPDATA%\\asist\\logs.'
+      }
     },
     open: {
-      'ja-JP': 'Finder で開く',
-      'en-US': 'Open in Finder',
-      'fr-FR': 'Afficher dans le Finder',
-      'de-DE': 'Im Finder öffnen',
-      'hi-IN': 'Finder में खोलें',
-      'id-ID': 'Buka di Finder',
-      'it-IT': 'Apri nel Finder',
-      'ko-KR': 'Finder에서 열기',
-      'pt-BR': 'Abrir no Finder',
-      'es-419': 'Abrir en el Finder',
-      'es-ES': 'Abrir en el Finder'
+      macos: {
+        'ja-JP': 'Finder で開く',
+        'en-US': 'Open in Finder',
+        'fr-FR': 'Afficher dans le Finder',
+        'de-DE': 'Im Finder öffnen',
+        'hi-IN': 'Finder में खोलें',
+        'id-ID': 'Buka di Finder',
+        'it-IT': 'Apri nel Finder',
+        'ko-KR': 'Finder에서 열기',
+        'pt-BR': 'Abrir no Finder',
+        'es-419': 'Abrir en el Finder',
+        'es-ES': 'Abrir en el Finder'
+      },
+      windows: {
+        'ja-JP': 'エクスプローラーで開く',
+        'en-US': 'Open in File Explorer',
+        'fr-FR': "Ouvrir dans l'Explorateur de fichiers",
+        'de-DE': 'Im Explorer öffnen',
+        'hi-IN': 'फ़ाइल एक्सप्लोरर में खोलें',
+        'id-ID': 'Buka di Penjelajah File',
+        'it-IT': 'Apri in Esplora file',
+        'ko-KR': '파일 탐색기에서 열기',
+        'pt-BR': 'Abrir no Explorador de Arquivos',
+        'es-419': 'Abrir en el Explorador de archivos',
+        'es-ES': 'Abrir en el Explorador de archivos'
+      }
     }
   }
 })

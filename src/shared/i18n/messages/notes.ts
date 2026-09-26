@@ -303,17 +303,32 @@ export const notes = defineMessages({
     'es-ES': "¿Eliminar “{title}”?"
   },
   deleteDetail: {
-    'ja-JP': "メモのファイルは macOS のゴミ箱に移ります。ゴミ箱に残っているあいだは Finder で戻せます。",
-    'en-US': "The note’s file moves to the macOS Trash. While it is still there, you can put it back from the Finder.",
-    'fr-FR': "Le fichier de la note va dans la corbeille de macOS. Tant qu’il y reste, vous pouvez le remettre en place depuis le Finder.",
-    'de-DE': "Die Datei der Notiz wird in den macOS-Papierkorb verschoben. Solange sie dort liegt, können Sie sie im Finder zurücklegen.",
-    'hi-IN': "नोट की फ़ाइल macOS के ट्रैश में चली जाती है। जब तक वह वहाँ है, आप उसे Finder से वापस ला सकते हैं।",
-    'id-ID': "Berkas catatan dipindahkan ke Tong Sampah macOS. Selama masih ada di sana, Anda bisa mengembalikannya dari Finder.",
-    'it-IT': "Il file della nota va nel Cestino di macOS. Finché resta lì, puoi ripristinarlo dal Finder.",
-    'ko-KR': "메모 파일은 macOS 휴지통으로 이동합니다. 휴지통에 남아 있는 동안은 Finder에서 되돌릴 수 있습니다.",
-    'pt-BR': "O arquivo da nota vai para a Lixeira do macOS. Enquanto estiver lá, você pode recuperá-lo pelo Finder.",
-    'es-419': "El archivo de la nota se mueve a la Papelera de macOS. Mientras siga ahí, puedes recuperarlo desde el Finder.",
-    'es-ES': "El archivo de la nota se mueve a la Papelera de macOS. Mientras siga ahí, puedes recuperarlo desde el Finder."
+    macos: {
+      'ja-JP': 'メモのファイルは macOS のゴミ箱に移ります。ゴミ箱に残っているあいだは Finder で戻せます。',
+      'en-US': 'The note’s file moves to the macOS Trash. While it is still there, you can put it back from the Finder.',
+      'fr-FR': 'Le fichier de la note va dans la corbeille de macOS. Tant qu’il y reste, vous pouvez le remettre en place depuis le Finder.',
+      'de-DE': 'Die Datei der Notiz wird in den macOS-Papierkorb verschoben. Solange sie dort liegt, können Sie sie im Finder zurücklegen.',
+      'hi-IN': 'नोट की फ़ाइल macOS के ट्रैश में चली जाती है। जब तक वह वहाँ है, आप उसे Finder से वापस ला सकते हैं।',
+      'id-ID': 'Berkas catatan dipindahkan ke Tong Sampah macOS. Selama masih ada di sana, Anda bisa mengembalikannya dari Finder.',
+      'it-IT': 'Il file della nota va nel Cestino di macOS. Finché resta lì, puoi ripristinarlo dal Finder.',
+      'ko-KR': '메모 파일은 macOS 휴지통으로 이동합니다. 휴지통에 남아 있는 동안은 Finder에서 되돌릴 수 있습니다.',
+      'pt-BR': 'O arquivo da nota vai para a Lixeira do macOS. Enquanto estiver lá, você pode recuperá-lo pelo Finder.',
+      'es-419': 'El archivo de la nota se mueve a la Papelera de macOS. Mientras siga ahí, puedes recuperarlo desde el Finder.',
+      'es-ES': 'El archivo de la nota se mueve a la Papelera de macOS. Mientras siga ahí, puedes recuperarlo desde el Finder.'
+    },
+    windows: {
+      'ja-JP': 'メモのファイルはごみ箱に移ります。ごみ箱に残っているあいだは元に戻せます。',
+      'en-US': 'The note’s file moves to the Recycle Bin. While it is still there, you can restore it.',
+      'fr-FR': 'Le fichier de la note va dans la Corbeille. Tant qu’il y reste, vous pouvez le restaurer.',
+      'de-DE': 'Die Datei der Notiz wird in den Papierkorb verschoben. Solange sie dort liegt, können Sie sie wiederherstellen.',
+      'hi-IN': 'नोट की फ़ाइल रीसायकल बिन में चली जाती है। जब तक वह वहाँ है, आप उसे वापस ला सकते हैं।',
+      'id-ID': 'Berkas catatan dipindahkan ke Keranjang Sampah. Selama masih ada di sana, Anda bisa memulihkannya.',
+      'it-IT': 'Il file della nota va nel Cestino. Finché resta lì, puoi ripristinarlo.',
+      'ko-KR': '메모 파일은 휴지통으로 이동합니다. 휴지통에 남아 있는 동안은 복원할 수 있습니다.',
+      'pt-BR': 'O arquivo da nota vai para a Lixeira. Enquanto estiver lá, você pode restaurá-lo.',
+      'es-419': 'El archivo de la nota se mueve a la Papelera de reciclaje. Mientras siga ahí, puedes restaurarlo.',
+      'es-ES': 'El archivo de la nota se mueve a la Papelera de reciclaje. Mientras siga ahí, puedes restaurarlo.'
+    }
   },
   deleteNote: {
     'ja-JP': "メモを削除",
@@ -329,17 +344,32 @@ export const notes = defineMessages({
     'es-ES': "Eliminar nota"
   },
   deleted: {
-    'ja-JP': "メモをゴミ箱に移しました",
-    'en-US': "Note moved to the Trash",
-    'fr-FR': "Note placée dans la corbeille",
-    'de-DE': "Notiz in den Papierkorb verschoben",
-    'hi-IN': "नोट ट्रैश में चला गया",
-    'id-ID': "Catatan dipindahkan ke Tong Sampah",
-    'it-IT': "Nota spostata nel Cestino",
-    'ko-KR': "메모를 휴지통으로 옮겼습니다",
-    'pt-BR': "Nota movida para a Lixeira",
-    'es-419': "Nota movida a la Papelera",
-    'es-ES': "Nota movida a la Papelera"
+    macos: {
+      'ja-JP': 'メモをゴミ箱に移しました',
+      'en-US': 'Note moved to the Trash',
+      'fr-FR': 'Note placée dans la corbeille',
+      'de-DE': 'Notiz in den Papierkorb verschoben',
+      'hi-IN': 'नोट ट्रैश में चला गया',
+      'id-ID': 'Catatan dipindahkan ke Tong Sampah',
+      'it-IT': 'Nota spostata nel Cestino',
+      'ko-KR': '메모를 휴지통으로 옮겼습니다',
+      'pt-BR': 'Nota movida para a Lixeira',
+      'es-419': 'Nota movida a la Papelera',
+      'es-ES': 'Nota movida a la Papelera'
+    },
+    windows: {
+      'ja-JP': 'メモをごみ箱に移しました',
+      'en-US': 'Note moved to the Recycle Bin',
+      'fr-FR': 'Note placée dans la Corbeille',
+      'de-DE': 'Notiz in den Papierkorb verschoben',
+      'hi-IN': 'नोट रीसायकल बिन में चला गया',
+      'id-ID': 'Catatan dipindahkan ke Keranjang Sampah',
+      'it-IT': 'Nota spostata nel Cestino',
+      'ko-KR': '메모를 휴지통으로 옮겼습니다',
+      'pt-BR': 'Nota movida para a Lixeira',
+      'es-419': 'Nota movida a la Papelera de reciclaje',
+      'es-ES': 'Nota movida a la Papelera de reciclaje'
+    }
   },
   deleteFailed: {
     'ja-JP': "メモを削除できませんでした",

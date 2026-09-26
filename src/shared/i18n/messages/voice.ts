@@ -180,17 +180,32 @@ export const voice = defineMessages({
       'es-ES': 'Está elegido “Sin lectura en voz alta”, así que no se genera audio.'
     },
     systemUnavailable: {
-      'ja-JP': 'この Mac では macOS の音声合成を使えません。設定の「声」でほかの読み上げを選んでください。',
-      'en-US': "This Mac can't use the macOS voice. Choose another speech engine on the Voice page in Settings.",
-      'fr-FR': 'Ce Mac ne peut pas utiliser la voix de macOS. Choisissez un autre moteur de synthèse vocale sur la page Voix des réglages.',
-      'de-DE': 'Dieser Mac kann die macOS-Stimme nicht verwenden. Wählen Sie auf der Seite „Stimme“ in den Einstellungen eine andere Engine für die Sprachausgabe.',
-      'hi-IN': 'इस Mac पर macOS की आवाज़ इस्तेमाल नहीं हो सकती। सेटिंग्ज़ के "आवाज़" पेज पर कोई दूसरा स्पीच इंजन चुनें।',
-      'id-ID': 'Mac ini tidak bisa memakai suara macOS. Pilih mesin pembacaan lain di halaman Suara pada Pengaturan.',
-      'it-IT': 'Questo Mac non può usare la sintesi vocale di macOS. Scegli un altro motore per la lettura nella pagina «Voce» delle impostazioni.',
-      'ko-KR': "이 Mac에서는 macOS 음성 합성을 사용할 수 없습니다. 설정의 '음성'에서 다른 읽어주기를 선택하십시오.",
-      'pt-BR': 'Este Mac não pode usar a voz do macOS. Escolha outro motor de leitura na página Voz dos ajustes.',
-      'es-419': 'Esta Mac no puede usar la voz de macOS. Elige otro motor de lectura en voz alta en la página Voz de Configuración.',
-      'es-ES': 'Este Mac no puede usar la voz de macOS. Elige otro motor de lectura en la página “Voz” de Ajustes.'
+      macos: {
+        'ja-JP': 'この Mac では macOS の音声合成を使えません。設定の「声」でほかの読み上げを選んでください。',
+        'en-US': "This Mac can't use the macOS voice. Choose another speech engine on the Voice page in Settings.",
+        'fr-FR': 'Ce Mac ne peut pas utiliser la voix de macOS. Choisissez un autre moteur de synthèse vocale sur la page Voix des réglages.',
+        'de-DE': 'Dieser Mac kann die macOS-Stimme nicht verwenden. Wählen Sie auf der Seite „Stimme“ in den Einstellungen eine andere Engine für die Sprachausgabe.',
+        'hi-IN': 'इस Mac पर macOS की आवाज़ इस्तेमाल नहीं हो सकती। सेटिंग्ज़ के "आवाज़" पेज पर कोई दूसरा स्पीच इंजन चुनें।',
+        'id-ID': 'Mac ini tidak bisa memakai suara macOS. Pilih mesin pembacaan lain di halaman Suara pada Pengaturan.',
+        'it-IT': 'Questo Mac non può usare la sintesi vocale di macOS. Scegli un altro motore per la lettura nella pagina «Voce» delle impostazioni.',
+        'ko-KR': "이 Mac에서는 macOS 음성 합성을 사용할 수 없습니다. 설정의 '음성'에서 다른 읽어주기를 선택하십시오.",
+        'pt-BR': 'Este Mac não pode usar a voz do macOS. Escolha outro motor de leitura na página Voz dos ajustes.',
+        'es-419': 'Esta Mac no puede usar la voz de macOS. Elige otro motor de lectura en voz alta en la página Voz de Configuración.',
+        'es-ES': 'Este Mac no puede usar la voz de macOS. Elige otro motor de lectura en la página “Voz” de Ajustes.'
+      },
+      windows: {
+        'ja-JP': 'このコンピュータでは Windows の音声合成を使えません。設定の「声」でほかの読み上げを選んでください。',
+        'en-US': "This computer can't use the Windows voice. Choose another speech engine on the Voice page in Settings.",
+        'fr-FR': 'Cet ordinateur ne peut pas utiliser la voix de Windows. Choisissez un autre moteur de synthèse vocale sur la page Voix des réglages.',
+        'de-DE': 'Dieser Computer kann die Windows-Stimme nicht verwenden. Wählen Sie auf der Seite „Stimme“ in den Einstellungen eine andere Engine für die Sprachausgabe.',
+        'hi-IN': 'इस कंप्यूटर पर Windows की आवाज़ इस्तेमाल नहीं हो सकती। सेटिंग्ज़ के "आवाज़" पेज पर कोई दूसरा स्पीच इंजन चुनें।',
+        'id-ID': 'Komputer ini tidak bisa memakai suara Windows. Pilih mesin pembacaan lain di halaman Suara pada Pengaturan.',
+        'it-IT': 'Questo computer non può usare la sintesi vocale di Windows. Scegli un altro motore per la lettura nella pagina «Voce» delle impostazioni.',
+        'ko-KR': "이 컴퓨터에서는 Windows 음성 합성을 사용할 수 없습니다. 설정의 '음성'에서 다른 읽어주기를 선택하십시오.",
+        'pt-BR': 'Este computador não pode usar a voz do Windows. Escolha outro motor de leitura na página Voz dos ajustes.',
+        'es-419': 'Esta computadora no puede usar la voz de Windows. Elige otro motor de lectura en voz alta en la página Voz de Configuración.',
+        'es-ES': 'Este ordenador no puede usar la voz de Windows. Elige otro motor de lectura en la página “Voz” de Ajustes.'
+      }
     },
     cannotRunHere: {
       'ja-JP': '{engine} は、この OS では動きません。',
@@ -301,30 +316,45 @@ export const voice = defineMessages({
   },
   mic: {
     notPermitted: {
-      'ja-JP': 'マイクを使えませんでした。システム設定で ASIST にマイクを許可してください。',
-      'en-US': "Couldn't use the microphone. Allow ASIST to use it in System Settings.",
-      'fr-FR': "Impossible d'utiliser le microphone. Autorisez ASIST à s'en servir dans Réglages Système.",
-      'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie ASIST in den Systemeinstellungen den Zugriff darauf.',
-      'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। सिस्टम सेटिंग्ज़ में ASIST को माइक्रोफ़ोन की इजाज़त दें।',
-      'id-ID': 'Mikrofon tidak bisa dipakai. Izinkan ASIST memakainya di Pengaturan Sistem.',
-      'it-IT': "Impossibile usare il microfono. Consenti l'accesso ad ASIST in Impostazioni di Sistema.",
-      'ko-KR': '마이크를 사용하지 못했습니다. 시스템 설정에서 ASIST에 마이크 사용을 허용하십시오.',
-      'pt-BR': 'Não foi possível usar o microfone. Permita o acesso do ASIST nos Ajustes do Sistema.',
-      'es-419': 'No se pudo usar el micrófono. Permite que ASIST lo use en Configuración del Sistema.',
-      'es-ES': 'No se ha podido usar el micrófono. Permite que ASIST lo use en Ajustes del Sistema.'
+      macos: {
+        'ja-JP': 'マイクを使えませんでした。システム設定で ASIST にマイクを許可してください。',
+        'en-US': "Couldn't use the microphone. Allow ASIST to use it in System Settings.",
+        'fr-FR': "Impossible d'utiliser le microphone. Autorisez ASIST à s'en servir dans Réglages Système.",
+        'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie ASIST in den Systemeinstellungen den Zugriff darauf.',
+        'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। सिस्टम सेटिंग्ज़ में ASIST को माइक्रोफ़ोन की इजाज़त दें।',
+        'id-ID': 'Mikrofon tidak bisa dipakai. Izinkan ASIST memakainya di Pengaturan Sistem.',
+        'it-IT': "Impossibile usare il microfono. Consenti l'accesso ad ASIST in Impostazioni di Sistema.",
+        'ko-KR': '마이크를 사용하지 못했습니다. 시스템 설정에서 ASIST에 마이크 사용을 허용하십시오.',
+        'pt-BR': 'Não foi possível usar o microfone. Permita o acesso do ASIST nos Ajustes do Sistema.',
+        'es-419': 'No se pudo usar el micrófono. Permite que ASIST lo use en Configuración del Sistema.',
+        'es-ES': 'No se ha podido usar el micrófono. Permite que ASIST lo use en Ajustes del Sistema.'
+      },
+      windows: {
+        'ja-JP': 'マイクを使えませんでした。Windows の設定でデスクトップ アプリにマイクを許可してください。',
+        'en-US': "Couldn't use the microphone. Allow desktop apps to use it in Windows Settings.",
+        'fr-FR': "Impossible d'utiliser le microphone. Autorisez les applications de bureau à s'en servir dans Paramètres Windows.",
+        'de-DE': 'Das Mikrofon konnte nicht verwendet werden. Erlauben Sie Desktop-Apps in den Windows-Einstellungen den Zugriff darauf.',
+        'hi-IN': 'माइक्रोफ़ोन इस्तेमाल नहीं हो सका। Windows सेटिंग्स में डेस्कटॉप ऐप्स को माइक्रोफ़ोन की इजाज़त दें।',
+        'id-ID': 'Mikrofon tidak bisa dipakai. Izinkan aplikasi desktop memakainya di Pengaturan Windows.',
+        'it-IT': 'Impossibile usare il microfono. Consenti alle app desktop di usarlo in Impostazioni di Windows.',
+        'ko-KR': '마이크를 사용하지 못했습니다. Windows 설정에서 데스크톱 앱의 마이크 사용을 허용하십시오.',
+        'pt-BR': 'Não foi possível usar o microfone. Permita que os aplicativos da área de trabalho o usem nas Configurações do Windows.',
+        'es-419': 'No se pudo usar el micrófono. Permite que las apps de escritorio lo usen en Configuración de Windows.',
+        'es-ES': 'No se ha podido usar el micrófono. Permite que las aplicaciones de escritorio lo usen en Configuración de Windows.'
+      }
     },
     unsupported: {
-      'ja-JP': 'この Mac ではマイクを使えません。',
-      'en-US': "This Mac can't use a microphone.",
-      'fr-FR': 'Ce Mac ne peut pas utiliser de microphone.',
-      'de-DE': 'Dieser Mac kann kein Mikrofon verwenden.',
-      'hi-IN': 'इस Mac पर माइक्रोफ़ोन इस्तेमाल नहीं हो सकता।',
-      'id-ID': 'Mac ini tidak bisa memakai mikrofon.',
-      'it-IT': 'Questo Mac non può usare un microfono.',
-      'ko-KR': '이 Mac에서는 마이크를 사용할 수 없습니다.',
-      'pt-BR': 'Este Mac não pode usar um microfone.',
-      'es-419': 'Esta Mac no puede usar un micrófono.',
-      'es-ES': 'Este Mac no puede usar un micrófono.'
+      'ja-JP': 'このコンピュータではマイクを使えません。',
+      'en-US': "This computer can't use a microphone.",
+      'fr-FR': 'Cet ordinateur ne peut pas utiliser de microphone.',
+      'de-DE': 'Dieser Computer kann kein Mikrofon verwenden.',
+      'hi-IN': 'इस कंप्यूटर पर माइक्रोफ़ोन इस्तेमाल नहीं हो सकता।',
+      'id-ID': 'Komputer ini tidak bisa memakai mikrofon.',
+      'it-IT': 'Questo computer non può usare un microfono.',
+      'ko-KR': '이 컴퓨터에서는 마이크를 사용할 수 없습니다.',
+      'pt-BR': 'Este computador não pode usar um microfone.',
+      'es-419': 'Esta computadora no puede usar un micrófono.',
+      'es-ES': 'Este ordenador no puede usar un micrófono.'
     },
     noAudioTrack: {
       'ja-JP': 'マイクから音を受け取れませんでした。入力機器を確かめてください。',

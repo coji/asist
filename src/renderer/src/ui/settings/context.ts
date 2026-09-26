@@ -3,6 +3,8 @@ import type { Translate } from '@shared/i18n'
 import type { SettingsPage } from '@shared/mini-apps'
 import type { SettingsPatch } from '@shared/settings'
 import type { PlatformCapabilities } from '@shared/platform'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 export type { SettingsPage }
 
@@ -55,14 +57,14 @@ const TTS_ENGINE_NAME = { voicevox: 'VOICEVOX', aivisspeech: 'AivisSpeech', qwen
 
 /** The name of a speech engine. The three engines named after their product keep that name in every language. */
 export function ttsEngineLabel(t: Translate, engine: TtsEngine): string {
-  if (engine === 'system') return t('settings.ttsEngine.system')
+  if (engine === 'system') return t(osMessageKey('settings.ttsEngine.system', platformCapabilities().os))
   if (engine === 'none') return t('settings.ttsEngine.none')
   return TTS_ENGINE_NAME[engine]
 }
 
 /** Whether the engine is a separate application to install. */
 export const isExternalTts = (engine: TtsEngine): engine is 'voicevox' | 'aivisspeech' => engine === 'voicevox' || engine === 'aivisspeech'
-/** Whether the engine can be unavailable: a separate application, or a model this app downloads. The macOS speech synthesis and the engine that reads nothing need no preparation. */
+/** Whether the engine can be unavailable: a separate application, or a model this app downloads. The OS's own speech synthesis and the engine that reads nothing need no preparation. */
 export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts(engine) || engine === 'qwen3tts'
 
 /**

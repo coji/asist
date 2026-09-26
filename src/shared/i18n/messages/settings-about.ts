@@ -73,30 +73,30 @@ export const settingsAbout = defineMessages({
   },
   local: {
     title: {
-      'ja-JP': 'この Mac で動くモデル',
-      'en-US': 'Models that run on this Mac',
-      'fr-FR': 'Modèles qui tournent sur ce Mac',
-      'de-DE': 'Modelle, die auf diesem Mac laufen',
-      'hi-IN': 'इस Mac पर चलने वाले मॉडल',
-      'id-ID': 'Model yang berjalan di Mac ini',
-      'it-IT': 'Modelli che girano su questo Mac',
-      'ko-KR': '이 Mac에서 도는 모델',
-      'pt-BR': 'Modelos que rodam neste Mac',
-      'es-419': 'Modelos que corren en esta Mac',
-      'es-ES': 'Modelos que se ejecutan en este Mac'
+      'ja-JP': 'このコンピュータで動くモデル',
+      'en-US': 'Models that run on this computer',
+      'fr-FR': 'Modèles qui tournent sur cet ordinateur',
+      'de-DE': 'Modelle, die auf diesem Computer laufen',
+      'hi-IN': 'इस कंप्यूटर पर चलने वाले मॉडल',
+      'id-ID': 'Model yang berjalan di komputer ini',
+      'it-IT': 'Modelli che girano su questo computer',
+      'ko-KR': '이 컴퓨터에서 도는 모델',
+      'pt-BR': 'Modelos que rodam neste computador',
+      'es-419': 'Modelos que corren en esta computadora',
+      'es-ES': 'Modelos que se ejecutan en este ordenador'
     },
     description: {
-      'ja-JP': 'どれもこの Mac の中だけで動きます。音声も文も外へ送りません。',
-      'en-US': 'They all run on this Mac alone. No audio and no text leaves it.',
-      'fr-FR': 'Tous fonctionnent uniquement sur ce Mac. Aucun son ni texte n’en sort.',
-      'de-DE': 'Sie laufen alle nur auf diesem Mac. Weder Ton noch Text verlässt ihn.',
-      'hi-IN': 'ये सभी सिर्फ़ इसी Mac पर चलते हैं। कोई ऑडियो या टेक्स्ट बाहर नहीं जाता।',
-      'id-ID': 'Semuanya berjalan hanya di Mac ini. Tidak ada suara atau teks yang keluar.',
-      'it-IT': 'Funzionano tutti solo su questo Mac. Né audio né testo escono da qui.',
-      'ko-KR': '모두 이 Mac 안에서만 돕니다. 음성도 문장도 밖으로 나가지 않습니다.',
-      'pt-BR': 'Todos rodam apenas neste Mac. Nem áudio nem texto saem daqui.',
-      'es-419': 'Todos funcionan solo en esta Mac. Ni el audio ni el texto salen de aquí.',
-      'es-ES': 'Todos funcionan solo en este Mac. Ni el audio ni el texto salen de aquí.'
+      'ja-JP': 'どれもこのコンピュータの中だけで動きます。音声も文も外へ送りません。',
+      'en-US': 'They all run on this computer alone. No audio and no text leaves it.',
+      'fr-FR': 'Tous fonctionnent uniquement sur cet ordinateur. Aucun son ni texte n’en sort.',
+      'de-DE': 'Sie laufen alle nur auf diesem Computer. Weder Ton noch Text verlässt ihn.',
+      'hi-IN': 'ये सभी सिर्फ़ इसी कंप्यूटर पर चलते हैं। कोई ऑडियो या टेक्स्ट बाहर नहीं जाता।',
+      'id-ID': 'Semuanya berjalan hanya di komputer ini. Tidak ada suara atau teks yang keluar.',
+      'it-IT': 'Funzionano tutti solo su questo computer. Né audio né testo escono da qui.',
+      'ko-KR': '모두 이 컴퓨터 안에서만 돕니다. 음성도 문장도 밖으로 나가지 않습니다.',
+      'pt-BR': 'Todos rodam apenas neste computador. Nem áudio nem texto saem daqui.',
+      'es-419': 'Todos funcionan solo en esta computadora. Ni el audio ni el texto salen de aquí.',
+      'es-ES': 'Todos funcionan solo en este ordenador. Ni el audio ni el texto salen de aquí.'
     }
   },
   api: {
@@ -551,17 +551,17 @@ export const settingsAbout = defineMessages({
       'es-ES': 'Lista de los municipios'
     },
     uv: {
-      'ja-JP': 'この Mac で動かすモデルの Python 環境の準備',
-      'en-US': 'Preparing the Python environments of the models that run on this Mac',
-      'fr-FR': 'Préparation des environnements Python des modèles exécutés sur ce Mac',
-      'de-DE': 'Vorbereitung der Python-Umgebungen für die Modelle auf diesem Mac',
-      'hi-IN': 'इस Mac पर चलने वाले मॉडलों के Python परिवेश की तैयारी',
-      'id-ID': 'Menyiapkan lingkungan Python untuk model yang berjalan di Mac ini',
-      'it-IT': 'Preparazione degli ambienti Python dei modelli eseguiti su questo Mac',
-      'ko-KR': '이 Mac에서 실행하는 모델의 Python 환경 준비',
-      'pt-BR': 'Preparação dos ambientes Python dos modelos que rodam neste Mac',
-      'es-419': 'Preparación de los entornos de Python de los modelos que se ejecutan en esta Mac',
-      'es-ES': 'Preparación de los entornos de Python de los modelos que se ejecutan en este Mac'
+      'ja-JP': 'このコンピュータで動かすモデルの Python 環境の準備',
+      'en-US': 'Preparing the Python environments of the models that run on this computer',
+      'fr-FR': 'Préparation des environnements Python des modèles exécutés sur cet ordinateur',
+      'de-DE': 'Vorbereitung der Python-Umgebungen für die Modelle auf diesem Computer',
+      'hi-IN': 'इस कंप्यूटर पर चलने वाले मॉडलों के Python परिवेश की तैयारी',
+      'id-ID': 'Menyiapkan lingkungan Python untuk model yang berjalan di komputer ini',
+      'it-IT': 'Preparazione degli ambienti Python dei modelli eseguiti su questo computer',
+      'ko-KR': '이 컴퓨터에서 실행하는 모델의 Python 환경 준비',
+      'pt-BR': 'Preparação dos ambientes Python dos modelos que rodam neste computador',
+      'es-419': 'Preparación de los entornos de Python de los modelos que se ejecutan en esta computadora',
+      'es-ES': 'Preparación de los entornos de Python de los modelos que se ejecutan en este ordenador'
     },
     git: {
       'ja-JP': '記憶の履歴と、編集ジョブの worktree',

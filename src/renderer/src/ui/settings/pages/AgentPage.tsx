@@ -3,6 +3,8 @@ import { useFieldDraft } from '../field-draft'
 import { Btn, Chip, Group, Link, NotSavedHint, Page, Row } from '../primitives'
 import { useT } from '@/i18n'
 import { AGENT_MODE_NAME } from '@shared/agent-cli'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /** The Agent page: the engine of the working agent, its permissions and the directory it works in. */
 export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
@@ -68,7 +70,7 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
 
       <Group title={t('settingsAgent.roots.title')} description={t('settingsAgent.roots.description')}>
         <Row label={t('settingsAgent.roots.folders')} hint={roots.failed ? <NotSavedHint /> : undefined} wide>
-          <textarea className="st-input is-mono st-roots" aria-label={t('settingsAgent.roots.title')} placeholder="/Users/you/Desktop" {...roots.props} />
+          <textarea className="st-input is-mono st-roots" aria-label={t('settingsAgent.roots.title')} placeholder={t(osMessageKey('settingsAgent.roots.placeholder', platformCapabilities().os))} {...roots.props} />
           <div className="st-row-actions">
             <Btn
               onClick={() =>
