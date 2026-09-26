@@ -7,7 +7,8 @@ import {
   nativeImage,
   Notification,
   Tray,
-  type BrowserWindow
+  type BrowserWindow,
+  type NativeImage
 } from 'electron'
 import { IpcChannel, type HotkeyStatus } from '@shared/ipc'
 import * as agent from './services/agent'
@@ -15,6 +16,12 @@ import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './services/i18n'
 import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
+import type { OsFamily } from '@shared/platform'
+import macosTrayIcon from './assets/tray/macos-template.png?inline'
+import windowsTrayIcon16 from './assets/tray/windows-16.png?inline'
+import windowsTrayIcon20 from './assets/tray/windows-20.png?inline'
+import windowsTrayIcon24 from './assets/tray/windows-24.png?inline'
+import windowsTrayIcon32 from './assets/tray/windows-32.png?inline'
 
 /**
  * How the app lives in the OS: a resident tray item, the global hotkey, the OS's notifications and a
@@ -22,9 +29,21 @@ import { getSettings } from './services/settings'
  * Quitting waits until the agents have stopped.
  */
 
-/** An 18x18 template icon of the orb. Only black and alpha, which is what the macOS menu bar expects. */
-const TRAY_ICON_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABBElEQVR4nK2UOwrCQBCGv8RHGZEgnkFvYC14Au31DloJNrbexrvYaKMnsAr4QCXwT1jWdUF0YNhk5p9/57G7EJYEqGuN2aJS8/4zaQzzJqnWHNgAe+Ai3cuWe9iPJBPgDOyAFTCSrmQ7CxMks1THwBOYR7KeCzP2y0ykbaAAFg6g6RA01GyEKRRj8ZWzrP/gBFnaPWDgESJsGVNxpPo4AUuxWyZr4KpStrLXhFkqpu72qhzvDRg6O/eBh0iMbOb4h4rJoiMEWtr5Btxl60bwH0tLVM5TegQ6wgdLCzXbiJrAVFPqOL5gs2PjT73so+O3oJ8P5F+vCJ7jp0tr8pdnxOTrh+0Fb5w/wpVCPGcAAAAASUVORK5CYII='
+const TRAY_ICONS: Record<OsFamily, () => NativeImage> = {
+  // An 18x18 template of the orb, only black and alpha, which the menu bar recolours for light and dark.
+  macos: () => {
+    const icon = nativeImage.createFromDataURL(macosTrayIcon)
+    icon.setTemplateImage(true)
+    return icon
+  },
+  // The coloured logo, one size for each display scale, from which Windows picks the one for the screen.
+  windows: () => {
+    const icon = nativeImage.createEmpty()
+    const sizes: [number, string][] = [[1, windowsTrayIcon16], [1.25, windowsTrayIcon20], [1.5, windowsTrayIcon24], [2, windowsTrayIcon32]]
+    for (const [scaleFactor, dataURL] of sizes) icon.addRepresentation({ scaleFactor, dataURL })
+    return icon
+  }
+}
 
 let tray: Tray | null = null
 let hotkey: HotkeyStatus = 'off'
@@ -70,9 +89,7 @@ export function setupOsIntegration(window: BrowserWindow): void {
     window.focus()
   }
 
-  const icon = nativeImage.createFromDataURL(`data:image/png;base64,${TRAY_ICON_B64}`)
-  icon.setTemplateImage(true)
-  tray = new Tray(icon)
+  tray = new Tray(TRAY_ICONS[platformCapabilities().os]())
   tray.setToolTip('ASIST')
   // The menu is built again whenever the interface language changes, because its labels are fixed once set.
   buildTrayMenu = (): void =>

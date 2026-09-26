@@ -699,6 +699,12 @@ export interface SetupProgress {
   message?: string
 }
 
+/** The colours of the window buttons the OS draws over the page, taken from the theme. */
+export interface WindowControlColors {
+  /** A CSS colour for the symbols on the buttons. */
+  symbol: string
+}
+
 /** The global hotkey: off in the settings, registered with the OS, or refused because another application holds it. */
 export type HotkeyStatus = 'off' | 'registered' | 'failed'
 
@@ -810,6 +816,7 @@ export const IpcChannel = {
   AppVersion: 'app-version',
   GetPlatformCapabilities: 'get-platform-capabilities',
   HotkeyStatus: 'hotkey-status',
+  PaintWindowControls: 'paint-window-controls',
   LicensesOpen: 'licenses-open',
   ApiUsage: 'api-usage',
   LogsOpenFolder: 'logs-open-folder',
@@ -1094,6 +1101,8 @@ export interface RendererApi {
   getPlatformCapabilities(): Promise<PlatformCapabilities>
   /** Whether the global hotkey is off in the settings, registered, or refused by the OS. */
   hotkeyStatus(): Promise<HotkeyStatus>
+  /** Colours the window's minimize, maximize and close buttons where the OS draws them over the page. */
+  paintWindowControls(colors: WindowControlColors): Promise<void>
   /** Opens THIRD_PARTY_NOTICES.txt, the licenses of ASIST and of everything it bundles, in the default text editor. */
   licensesOpen(): Promise<void>
   /** The paid API use summed per local day, oldest first. */

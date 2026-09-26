@@ -51,6 +51,7 @@ Removing a name from `THEMES` makes a saved `settings.json` that chose it unread
 - Draw a thicker outline with `box-shadow`, never a wider `border`: a border grows every card and pushed one past its s height. A filled kicker keeps the header at 17px (the line height in `.panel-kicker`).
 - The pictures behind the weather and clock cards stay night scenes in every theme. Text over them carries `.ui-on-scene`, which gives it future's text colours.
 - `--ui-kicker` is text on the surface; the filled kicker of a card uses `--card-kicker-ink` and `--card-kicker-fill`, so a light kicker on an ink pill does not leak into other text.
+- On Windows the minimize, maximize and close buttons sit over the top right of the page with no background of their own, and their symbols are drawn in `--ui-text`, which `applyTheme` sends to the main process. A theme's `--ui-text` therefore has to read over the top right of its picture, where no surface lies under the buttons.
 - Tests name no theme and list none; they read `THEMES`, so adding a theme does not break them.
 
 ## Verify

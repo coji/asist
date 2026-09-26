@@ -11,6 +11,7 @@ import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import { SETTINGS_PAGES } from '@shared/mini-apps'
 import { THEMES } from '@shared/themes'
+import { hotkeyLabel } from '@shared/platform'
 import { localDate, type UsageDay } from '@shared/api-usage'
 import { SettingsDialog } from '../src/renderer/src/ui/SettingsDialog'
 import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer/src/state/stores'
@@ -783,7 +784,7 @@ describe('settings dialog on a machine without the local models, the Python work
     expect(labels).not.toContain(t('settingsVoice.mic.echoCancellation'))
     expect(labels).not.toContain(t('settingsVoice.mic.noiseSuppression'))
     expect(labels).not.toContain(t('settingsVoice.mic.turnTaking'))
-    expect(hint(view, t('settingsVoice.mic.hotkey'))).toBe(t('settingsVoice.mic.hotkeyHint', { hotkey: 'Ctrl+Alt+Space' }))
+    expect(hint(view, t('settingsVoice.mic.hotkey'))).toBe(t('settingsVoice.mic.hotkeyHint', { hotkey: hotkeyLabel(WINDOWS) }))
   })
 
   it('prepares nothing the machine cannot run, and counts only what it can', async () => {

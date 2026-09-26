@@ -2,7 +2,31 @@ import type { ThemeName } from '@shared/themes'
 
 export { DEFAULT_THEME, THEMES, isThemeName, type ThemeName } from '@shared/themes'
 
-/** Draws the UI in a theme. A theme swaps the values of the tokens in assets/themes.css; the components read only those tokens. */
+/**
+ * Draws the UI in a theme. A theme swaps the values of the tokens in assets/themes.css; the components read
+ * only those tokens. The window buttons Windows draws over the top bar are not part of the page, so the
+ * main process is given their colour.
+ */
 export function applyTheme(theme: ThemeName): void {
   document.documentElement.dataset.theme = theme
+  void window.api.paintWindowControls({ symbol: tokenColor('--ui-text') })
+}
+
+/**
+ * A colour token of the theme on screen as rgb(), which the main process can parse. The computed style
+ * keeps the form the theme wrote (an oklch() stays oklch()), so the colour is drawn on a pixel and read
+ * back.
+ */
+function tokenColor(token: string): string {
+  const probe = document.createElement('span')
+  probe.style.color = `var(${token})`
+  document.body.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+  if (!context) throw new Error('no 2d canvas to resolve a theme colour')
+  context.fillStyle = color
+  context.fillRect(0, 0, 1, 1)
+  const [r, g, b] = context.getImageData(0, 0, 1, 1).data
+  return `rgb(${r}, ${g}, ${b})`
 }

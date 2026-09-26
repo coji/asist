@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Emitter } from 'mitt'
 import type { AgentJob, JobEvent } from '@shared/ipc'
+import { MACOS, WINDOWS } from './helpers/platform'
 
 type Listener = (event: { preventDefault: () => void }) => void
 
@@ -41,7 +42,7 @@ vi.mock('electron', () => {
     dialog: { showErrorBox: mocks.showErrorBox },
     globalShortcut: { unregister: vi.fn(), register: mocks.register, unregisterAll: vi.fn() },
     Menu: { buildFromTemplate: vi.fn(() => ({})) },
-    nativeImage: { createFromDataURL: () => ({ setTemplateImage: vi.fn() }) },
+    nativeImage: { createFromDataURL: () => ({ setTemplateImage: vi.fn() }), createEmpty: () => ({ addRepresentation: vi.fn() }) },
     Notification,
     Tray
   }
@@ -147,7 +148,7 @@ describe('the global hotkey', () => {
     setupOsIntegration(hiddenWindow() as never)
     mocks.windows = true
     setupOsIntegration(hiddenWindow() as never)
-    expect(mocks.register.mock.calls.map(([accelerator]) => accelerator)).toEqual(['Alt+Space', 'Ctrl+Alt+Space'])
+    expect(mocks.register.mock.calls.map(([accelerator]) => accelerator)).toEqual([MACOS.hotkey, WINDOWS.hotkey])
     expect(hotkeyStatus()).toBe('registered')
   })
 

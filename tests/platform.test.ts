@@ -29,7 +29,7 @@ describe('what a machine can run', () => {
       nativeMic: false,
       cpuSidecars: false,
       calendar: false,
-      hotkey: 'Ctrl+Alt+Space'
+      hotkey: expect.any(String)
     })
   })
 

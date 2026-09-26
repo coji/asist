@@ -68,6 +68,7 @@ import { errorText } from '@shared/i18n/error-text'
 import { isAppPage } from '@shared/app-page'
 import { isExternalLink } from '@shared/external-link'
 import { reportOpenMiniApp } from './services/mini-app-view'
+import { windowChrome } from './window-chrome'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { conversationLocale } from './services/conversation-locale'
 
@@ -119,6 +120,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     if (!window.isDestroyed()) window.webContents.send(channel, payload)
   }
   const microphone = microphonePermission(platformCapabilities().os)
+  const chrome = windowChrome(platformCapabilities().os)
 
   brain.events.on('event', (event) => send(IpcChannel.TurnEvent, event))
   agent.events.on('event', (event) => {
@@ -207,6 +209,10 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   handle(IpcChannel.AppVersion, () => app.getVersion())
   handle(IpcChannel.GetPlatformCapabilities, () => platformCapabilities())
   handle(IpcChannel.HotkeyStatus, () => hotkeyStatus())
+  handle(IpcChannel.PaintWindowControls, (_e, colors: { symbol: unknown }) => {
+    if (typeof colors?.symbol !== 'string') throw new Error('invalid window control colours')
+    chrome.paintControls(window, { symbol: colors.symbol })
+  })
   handle(IpcChannel.LicensesOpen, async () => {
     // npm run build writes the file into build/, and electron-builder copies it into the app's Resources.
     const file = app.isPackaged ? path.join(process.resourcesPath, 'THIRD_PARTY_NOTICES.txt') : path.join(app.getAppPath(), 'build', 'THIRD_PARTY_NOTICES.txt')

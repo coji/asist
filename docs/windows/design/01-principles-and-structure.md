@@ -71,8 +71,8 @@ asist/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts                         変更。ウィンドウの設定を window-chrome.ts から受け取る
-│   │   ├── window-chrome.ts                 新規。タイトルバーとアプリのメニューを OS ごとに決める
-│   │   ├── os-integration.ts                変更。トレイのアイコン、ショートカット、通知の AUMID を OS ごとにする
+│   │   ├── window-chrome.ts                 新規。タイトルバー、アプリのメニュー、通知の AUMID を OS ごとに決める
+│   │   ├── os-integration.ts                変更。トレイのアイコンとショートカットを OS ごとにする
 │   │   └── services/
 │   │       ├── agent-process/               新規のフォルダ。いまの agent-process*.ts を移す
 │   │       │   ├── index.ts                 起動と出力の解析。OS ごとの実装を選ぶ

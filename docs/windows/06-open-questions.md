@@ -5,7 +5,6 @@
 | 問い | いまの案 | 決める時期 |
 |---|---|---|
 | Windows でカレンダーをどう作るか(CalDAV、Google Calendar API、Microsoft Graph、作らない) | 最初は出さない | 第2段階の前 |
-| Windows のショートカットの既定の値 | `Ctrl+Alt+Space`(実機でぶつからないか確かめてから) | M3-4 |
 | 署名と配布(署名しない、個人向けの証明書、Microsoft Store) | 当分は署名しない。SmartScreen の警告をドキュメントに書く | 配布の前 |
 | 紹介動画を作り直すか | 公開済みの動画はそのままにし、必要なら Windows の告知の短い動画を別に作る | M6 |
 | macOS で、ネイティブのマイクが動いている最中に落ちたとき、getUserMedia に切り替える動きを残すか(AGENTS.md の「fallback を足さない」とぶつかる) | Windows の対応とは別の PR で決める | いつでも |
@@ -29,7 +28,6 @@
 | MinGit から Git Credential Manager などを消しても、ASIST の使う git の操作が全部動くか | M2-2、M3-1 | 同梱する大きさ |
 | windows-latest の runner に日本語のフォント(Yu Gothic)があるか | M2-9 | `demo:fit` を Windows の CI で動かせるか |
 | windows-latest の runner でシンボリックリンクを作れるか | M2-10 | シンボリックリンクのテストの扱い |
-| `titleBarOverlay` の色を、テーマの半透明の色で塗れるか | M3-2 | タイトルバーの見た目 |
 | 署名の無い Windows のアプリで、electron-updater の更新がどう振る舞うか | M6-7 | 自動更新 |
 | npm の Codex CLI の中にある本物の `codex.exe` の場所 | M4-2 | 案内の文(いまの案では使わない) |
 | 許可したフォルダの中に、別のサーバーの共有フォルダ(`\\server\share`)を指すシンボリックリンクやジャンクションがあるとき、`allowedPath` の `realpath` がそのサーバーに接続して、利用者の資格情報を送るか。いまは、書かれたパスのドライブか共有フォルダが、許可したフォルダのどれとも違うときにだけ、ディスクに問い合わせる前に拒んでいる | M3 | `realPath` を作り直して、リンクの行き先を1段ずつ確かめてから進むか |

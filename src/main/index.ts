@@ -30,6 +30,7 @@ import { createTranslator } from '@shared/i18n'
 import { initMail } from './services/mail'
 import { isAppPage } from '@shared/app-page'
 import { isExternalLink } from '@shared/external-link'
+import { windowChrome } from './window-chrome'
 
 let mainWindow: BrowserWindow | null = null
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
@@ -41,6 +42,8 @@ registerFileScheme()
 const PAGE_PERMISSIONS = new Set(['media', 'clipboard-sanitized-write', 'fullscreen'])
 
 function createWindow(): void {
+  const chrome = windowChrome(platformCapabilities().os)
+  chrome.prepare()
   const rendererFile = path.join(__dirname, '../renderer/index.html')
   const appPage = process.env.ELECTRON_RENDERER_URL ?? pathToFileURL(rendererFile).href
   mainWindow = new BrowserWindow({
@@ -51,8 +54,7 @@ function createWindow(): void {
     show: false,
     title: 'ASIST',
     backgroundColor: '#05070F',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 16 },
+    ...chrome.frame,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,

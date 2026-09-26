@@ -63,9 +63,10 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes }: Machine
       nativeMic: false,
       cpuSidecars: false,
       calendar: false,
-      // Alt+Space opens the window menu and PowerToys Run on Windows. This one is provisional until it
-      // is tried against other applications on a real machine.
-      hotkey: 'Ctrl+Alt+Space'
+      // On a Windows 11 machine with PowerToys, Copilot and Claude running (2026-09-27), Alt+Space and
+      // Ctrl+Alt+Space were already taken, as were Ctrl+Win+Space and Win+Shift+Space, which switch the
+      // input language. Ctrl+Shift+Space was free but is a key inside Word and VS Code.
+      hotkey: 'Alt+Shift+Space'
     }
   }
   throw new Error(errorText('app.startup.unsupportedPlatform', { platform, arch }))
@@ -74,7 +75,7 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes }: Machine
 /** The symbols macOS menus write the modifier keys with. */
 const MAC_MODIFIERS: Record<string, string> = { Ctrl: '⌃', Control: '⌃', Alt: '⌥', Option: '⌥', Shift: '⇧', Cmd: '⌘', Command: '⌘', CommandOrControl: '⌘', CmdOrCtrl: '⌘' }
 
-/** The hotkey as this OS writes a shortcut: ⌥Space on macOS, Ctrl+Alt+Space on Windows. */
+/** The hotkey as this OS writes a shortcut: ⌥Space on macOS, Alt+Shift+Space on Windows. */
 export function hotkeyLabel({ os, hotkey }: Pick<PlatformCapabilities, 'os' | 'hotkey'>): string {
   if (os === 'windows') return hotkey
   return hotkey
