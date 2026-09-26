@@ -88,11 +88,38 @@ const notRegular = (file: string): Error => new Error(errorText('memory.errors.n
  * shows: reading a pipe blocks the main process until a writer appears, and a link to /dev/zero never
  * ends. The file is opened without following a link and without waiting for a writer, and its type is
  * checked on the open descriptor, so nothing can be put in its place in between.
+ *
+ * Windows has neither O_NOFOLLOW nor O_NONBLOCK, and Node leaves both undefined there, so the open follows a
+ * symbolic link or a junction. The path is therefore looked at with lstat first, and the opened file must
+ * be the one lstat saw. A regular file that another one replaced in between, as an editor or git saves by
+ * a rename, is looked at again, and a link put in its place is then refused by the lstat.
  */
 function readFileOf(dir: string, file: string): string | null {
+  const target = path.join(dir, file)
+  for (let attempt = 1; ; attempt++) {
+    const read = readIfUnchanged(target, file)
+    if (read !== REPLACED) return read
+    // A file replaced at every look is refused rather than read without the check.
+    if (attempt === READ_ATTEMPTS) throw notRegular(file)
+  }
+}
+
+const REPLACED = Symbol('replaced')
+const READ_ATTEMPTS = 3
+
+/** One look at the file and one read of it, or REPLACED when the file opened is not the one the look saw. */
+function readIfUnchanged(target: string, file: string): string | null | typeof REPLACED {
+  let seen: fs.BigIntStats
+  try {
+    seen = fs.lstatSync(target, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
+  }
+  if (!seen.isFile()) throw notRegular(file)
   let fd: number
   try {
-    fd = fs.openSync(path.join(dir, file), fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK)
+    fd = fs.openSync(target, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK)
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     if (code === 'ENOENT') return null
@@ -100,7 +127,9 @@ function readFileOf(dir: string, file: string): string | null {
     throw error
   }
   try {
-    if (!fs.fstatSync(fd).isFile()) throw notRegular(file)
+    const opened = fs.fstatSync(fd, { bigint: true })
+    if (!opened.isFile()) throw notRegular(file)
+    if (opened.ino !== seen.ino || opened.dev !== seen.dev) return REPLACED
     return fs.readFileSync(fd, 'utf8')
   } finally {
     fs.closeSync(fd)

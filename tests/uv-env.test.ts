@@ -28,6 +28,18 @@ describe('the environment uv runs with', () => {
     expect(env.PATH).toBe('/usr/bin')
   })
 
+  it('drops the user uv settings written in any case on Windows, where the case of a name does not matter', () => {
+    const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' })
+    try {
+      const env = uvEnv({ Path: 'C:\\Windows', Uv_Index_Url: 'https://mirror.invalid/simple' }, '/data')
+      expect(env).not.toHaveProperty('Uv_Index_Url')
+      expect(env.Path).toBe('C:\\Windows')
+    } finally {
+      Object.defineProperty(process, 'platform', platform)
+    }
+  })
+
   it('passes no provider key to uv', () => {
     expect(uvEnv({ ANTHROPIC_API_KEY: 'sk-test' }, '/data').ANTHROPIC_API_KEY).toBeUndefined()
   })

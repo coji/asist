@@ -12,7 +12,7 @@ interface GroupMember { pid: number; pgid: number; state: string; startedAt: str
 function processTable(): GroupMember[] {
   const output = execFileSync('/bin/ps', ['-axo', 'pid=,pgid=,stat=,lstart='], {
     encoding: 'utf8', timeout: 2_000, maxBuffer: 4 * 1024 * 1024,
-    env: childEnv({ LC_ALL: 'C' })
+    env: childEnv({ LC_ALL: 'C' }), windowsHide: true
   })
   const lines = output.split('\n').filter((line) => line.trim())
   if (lines.length === 0) throw new Error(errorText('jobs.process.tableUnreadable'))
@@ -40,7 +40,7 @@ function memberToken(pid: number, token: string): 'ours' | 'foreign' | 'unreadab
   try {
     environment = execFileSync('/bin/ps', ['eww', '-p', String(pid), '-o', 'command='], {
       encoding: 'utf8', timeout: 2_000, maxBuffer: 4 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'], env: childEnv()
+      stdio: ['ignore', 'pipe', 'ignore'], env: childEnv(), windowsHide: true
     })
   } catch (error) {
     // ps exits with 1 when the member ended after the table was read.

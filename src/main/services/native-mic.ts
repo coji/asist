@@ -118,7 +118,8 @@ function startWatchdog(): void {
 function spawnHelper(myGeneration: number): void {
   const spawned = spawn(binaryPath(), [String(CONFIG_RESTART_LIMIT), String(CONFIG_WINDOW_MS / 1000)], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: childEnv()
+    env: childEnv(),
+    windowsHide: true
   })
   child = spawned
   lastFrameAt = Date.now()

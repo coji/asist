@@ -105,7 +105,7 @@ async function startEngine(engine: HttpTtsEngine): Promise<void> {
   const binary = ENGINES[engine].binaries.find((p) => fs.existsSync(p))
   if (!binary) return
   console.log(`starting ${ENGINES[engine].label} engine:`, binary)
-  const child = spawn(binary, [], { detached: true, stdio: 'ignore', cwd: path.dirname(binary), env: childEnv() })
+  const child = spawn(binary, [], { detached: true, stdio: 'ignore', cwd: path.dirname(binary), env: childEnv(), windowsHide: true })
   children.set(engine, child)
   const clear = (): void => {
     if (children.get(engine) === child) children.delete(engine)

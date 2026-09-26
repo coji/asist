@@ -6,6 +6,7 @@ import { errMessage } from '@shared/api-errors'
 import { errorText } from '@shared/i18n/error-text'
 import type { AgentJob, ReviewedMerge } from '@shared/ipc'
 import { localDateKey } from '@shared/local-date'
+import { pageNameError } from '@shared/memory-page'
 import {
   buildCurationPrompt,
   curationDue,
@@ -153,12 +154,22 @@ function assertInsideMemory(job: AgentJob): ReviewedMerge {
     throw new Error(errorText('memory.errors.outsideMemory', { files: worktree.repo }))
   }
   const base = mergeBase(worktree, worktree.commit)
-  const outside = git
-    .diffEntries(worktree.repo, base, worktree.commit)
-    .filter((entry) => !MEMORY_FILE_MODES.has(entry.mode))
-    .map((entry) => entry.path)
+  const entries = git.diffEntries(worktree.repo, base, worktree.commit)
+  const outside = entries.filter((entry) => !MEMORY_FILE_MODES.has(entry.mode)).map((entry) => entry.path)
   if (outside.length > 0) {
     throw new Error(errorText('memory.errors.outsideMemory', { files: outside.slice(0, 10).join('\n') }))
+  }
+  // A page added under a name that macOS or Windows cannot give a file would keep the memory folder from
+  // being checked out there. A page already in the memory keeps its name, so that it goes on loading.
+  const unusable = entries
+    .filter((entry) => entry.added && entry.mode !== '000000')
+    .map((entry) => entry.path)
+    .filter((file) => {
+      const page = /^pages\/([^/]+)\.md$/.exec(file)
+      return page !== null && pageNameError(page[1]) !== null
+    })
+  if (unusable.length > 0) {
+    throw new Error(errorText('memory.errors.pageNamesRefused', { files: unusable.slice(0, 10).join('\n') }))
   }
   return { commit: worktree.commit, base, into: git.checkedOut(worktree.repo) }
 }

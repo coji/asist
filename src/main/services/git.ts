@@ -5,7 +5,7 @@ import path from 'node:path'
 import { promptLanguage } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from './conversation-locale'
-import { childEnv } from './child-env'
+import { childEnv, removeVariables } from './child-env'
 import { resourcePath } from './resource-path'
 
 /**
@@ -29,7 +29,7 @@ export function gitPath(): string {
  */
 export function gitEnv(parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env = childEnv({}, parent)
-  for (const name of Object.keys(env)) if (name.startsWith('GIT_')) delete env[name]
+  removeVariables(env, (key) => key.startsWith('GIT_'))
   return { ...env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' }
 }
 
@@ -46,7 +46,8 @@ function git(cwd: string, args: string[], options: GitOptions = {}): string {
     maxBuffer: options.maxBuffer ?? 4 * 1024 * 1024,
     input: options.input,
     stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
-    env: { ...gitEnv(), ...options.env }
+    env: { ...gitEnv(), ...options.env },
+    windowsHide: true
   })
 }
 
@@ -601,12 +602,14 @@ export interface DiffEntry {
   path: string
   /** The git file mode after the change, such as 100644, 120000 for a symbolic link, or 000000 for a deletion. */
   mode: string
+  /** Whether the path did not exist at base. */
+  added: boolean
 }
 
 /** Every path the changes from base to commit touch, with its mode afterwards. Renames count as a deletion and an addition. */
 export function diffEntries(repo: string, base: string, commit: string): DiffEntry[] {
   return rawEntries(git(repo, ['diff', ...EXACT_DIFF, '--raw', '-z', '--no-renames', base, commit], WHOLE))
-    .map((entry) => ({ path: entry.path, mode: entry.newMode }))
+    .map((entry) => ({ path: entry.path, mode: entry.newMode, added: entry.oldMode === '000000' }))
 }
 
 /**

@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
+import { writeFileAtomicSync } from './atomic-json'
 
 /**
  * Reads and writes the JSON and JSONL files under userData, such as the jobs and the measurements. The
@@ -13,13 +14,8 @@ const FILE_MODE = { mode: 0o600 }
 export const dataPath = (...parts: string[]): string =>
   path.join(app.getPath('userData'), ...parts)
 
-/** Writes through a temporary file and a rename, so a crash mid-write never leaves broken JSON behind. */
 export function writeJson(name: string, value: unknown): void {
-  const file = dataPath(name)
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  const tmp = `${file}.tmp`
-  fs.writeFileSync(tmp, JSON.stringify(value), FILE_MODE)
-  fs.renameSync(tmp, file)
+  writeFileAtomicSync(dataPath(name), JSON.stringify(value))
 }
 
 export function appendJsonl(name: string, value: unknown): void {

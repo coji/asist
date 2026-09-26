@@ -302,7 +302,8 @@ async function startWorker(): Promise<boolean> {
   const spawned = spawn(pythonPath(), workerArgs(), {
     stdio: ['pipe', 'pipe', 'pipe'],
     // The models are handed over as local paths, and the route out to Hugging Face is closed at run time.
-    env: childEnv({ PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' })
+    env: childEnv({ PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' }),
+    windowsHide: true
   })
   child = spawned
   workerReady = false

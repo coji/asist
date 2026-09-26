@@ -216,6 +216,13 @@ describe('the memory-curation skill', () => {
     }
   })
 
+  it('reports a page whose name macOS or Windows cannot give a file, in both skills', () => {
+    const dir = wellFormed()
+    const page = fs.readFileSync(path.join(dir, 'pages', '松葉軒.md'), 'utf8')
+    for (const name of ['CON', 'CONOUT$']) fs.writeFileSync(path.join(dir, 'pages', `${name}.md`), page)
+    expect(problemsIn(dir).sort()).toEqual(['pages/CON.md', 'pages/CONOUT$.md'])
+  })
+
   it('takes a directory that holds pages written under each of the two fixed headings, in both skills', () => {
     const dir = wellFormed()
     fs.writeFileSync(path.join(dir, 'pages', 'Matsubaken.md'), '---\nupdated: 2026-09-22\n---\n# Matsubaken\n\n## Summary\nThe ramen shop.\n')

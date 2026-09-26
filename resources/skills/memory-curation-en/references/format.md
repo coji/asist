@@ -67,6 +67,8 @@ updated: 2026-09-09
 - aliases may be an array on one line or "  - Tanaka" lines below the key.
 - The file name is the page's proper name. Other names go into aliases, and the page is pulled in when a
   name or an alias turns up in the conversation as it is written.
+- The memory folder is opened on macOS and on Windows, so a name uses none of `/ \ : * ? " < > |` and is not
+  a name Windows keeps for a device, such as CON, PRN, AUX, NUL, COM1 to COM9 or LPT1 to LPT9.
 - A name too short or too common to match on ("cat", "wife") is of no use. Write "our cat" or "Rina, his
   wife" instead.
 

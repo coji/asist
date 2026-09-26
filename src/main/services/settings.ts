@@ -13,6 +13,7 @@ import { DEFAULT_THEME } from '@shared/themes'
 import { DEFAULT_LIVE_MODELS } from '@shared/voice-engine'
 import { defaultModelsFor } from '@shared/llm-catalog'
 import { storedContent } from '@shared/stored-format'
+import { writeJsonFileAtomicSync } from './atomic-json'
 import { openStoredFileSync } from './stored-file'
 
 /** Reads and writes userData/settings.json. The file is read once and then cached for the life of the process. */
@@ -57,7 +58,8 @@ function defaultSettings(): AppSettings {
     agentCwd: os.homedir(),
     agentEngine: 'codex',
     agentMode: 'readonly',
-    fileRoots: ['Desktop', 'Downloads', 'Documents'].map((name) => path.join(os.homedir(), name)),
+    // The system knows where these folders are, which is outside the home folder when OneDrive keeps them.
+    fileRoots: (['desktop', 'downloads', 'documents'] as const).map((name) => app.getPath(name)),
     // The first launch must not raise a permission dialog or start the large ASR initialization on its own.
     micAutoStart: false,
     localAsrEnabled: false,
@@ -99,20 +101,7 @@ export function getSettings(): AppSettings {
 
 export function saveSettings(patch: SettingsPatch): AppSettings {
   const next = parseAppSettings(mergeSettings(getSettings(), parseSettingsPatch(patch)))
-  const target = settingsFile()
-  const temp = `${target}.tmp`
-  fs.mkdirSync(path.dirname(target), { recursive: true })
-  try {
-    fs.writeFileSync(temp, JSON.stringify(storedContent(SETTINGS_FORMAT, next), null, 2) + '\n', { mode: 0o600 })
-    fs.renameSync(temp, target)
-    fs.chmodSync(target, 0o600)
-  } finally {
-    try {
-      fs.rmSync(temp, { force: true })
-    } catch {
-      // Removing the temporary file must never affect the target the atomic rename has already produced.
-    }
-  }
+  writeJsonFileAtomicSync(settingsFile(), storedContent(SETTINGS_FORMAT, next))
   // The cache is updated only after the write succeeded, so a patch that failed to persist is not
   // treated as applied inside this process.
   cache = next

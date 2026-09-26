@@ -12,6 +12,7 @@ import {
   type NoteRecord,
   type NoteSummary
 } from '@shared/notes'
+import { writeFileAtomic } from './atomic-json'
 
 export interface NoteServiceOptions {
   /** Normally the notes folder inside app.getPath('userData'). */
@@ -85,18 +86,8 @@ export function createNoteService(options: NoteServiceOptions): NoteService {
     }
   }
   const save = async (id: string, markdown: string, signal?: AbortSignal): Promise<NoteSummary> => {
-    signal?.throwIfAborted()
-    await fs.mkdir(options.directory, { recursive: true })
     const file = fileOf(id)
-    const temporary = `${file}.tmp`
-    try {
-      await fs.writeFile(temporary, markdown, { encoding: 'utf8', mode: 0o600, signal })
-      signal?.throwIfAborted()
-      await fs.rename(temporary, file)
-    } catch (error) {
-      await fs.rm(temporary, { force: true }).catch(() => undefined)
-      throw error
-    }
+    await writeFileAtomic(file, markdown, signal)
     const stat = await fs.stat(file)
     await notify()
     return summarizeNote(id, markdown, stat.mtimeMs)

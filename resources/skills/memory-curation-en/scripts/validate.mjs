@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues } from '../../memory-format.mjs'
+import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
 
 // Checks a memory directory. Usage: node validate.mjs <memoryDir>
 // Every problem is printed on its own line and the exit code is 1; with none it prints OK. The rules for a
@@ -32,6 +32,11 @@ const MESSAGES = {
     `the body holds ${length} characters (keep it to ${INSTRUCTION_MAX_CHARS}; the details stay in user.md, me.md and the pages)`
 }
 
+const NAME_MESSAGES = {
+  characters: 'the page name holds a character a file name cannot (/ \\ : * ? " < > |); rename the page',
+  reserved: 'Windows does not allow this name for a file; rename the page'
+}
+
 /** Checks one file against the rules for its kind, and returns whether it exists. */
 function check(file, kind) {
   const full = path.join(dir, file)
@@ -53,7 +58,11 @@ check('me.md', 'me')
 if (!check('instruction.md', 'instruction')) {
   problems.push('instruction.md: it is missing (it is the summary that goes into every conversation; write it from user.md, me.md and the pages)')
 }
-for (const file of listMd('pages')) check(file, 'page')
+for (const file of listMd('pages')) {
+  const nameIssue = pageNameIssue(path.basename(file, '.md'))
+  if (nameIssue) problems.push(`${file}: ${NAME_MESSAGES[nameIssue]}`)
+  check(file, 'page')
+}
 for (const file of listMd('journal')) {
   if (DATE.test(path.basename(file, '.md'))) check(file, 'journal')
   else problems.push(`${file}: the file name must be YYYY-MM-DD.md`)

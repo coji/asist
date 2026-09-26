@@ -69,7 +69,8 @@ export function findCli(engine: AgentEngine = currentEngine()): string | null {
     try {
       const out = execFileSync('/bin/zsh', ['-lc', `whence -p ${spec.which}`], {
         encoding: 'utf8',
-        env: childEnv()
+        env: childEnv(),
+        windowsHide: true
       }).trim()
       if (out && fs.existsSync(out)) resolved = out
     } catch {
@@ -109,7 +110,8 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
     cwd: job.cwd,
     env: childEnv({ ...spec.env, [AGENT_PROCESS_TOKEN]: token }),
     detached: true,
-    stdio: ['pipe', 'pipe', 'pipe']
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true
   })
 
   // A chunk split in the middle of a UTF-8 sequence is reassembled before the JSONL lines are split out.

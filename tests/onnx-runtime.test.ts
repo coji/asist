@@ -51,7 +51,10 @@ describe('downloading a pinned file', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status: 200 })))
     const target = path.join(mocks.directory, 'models', 'model.onnx')
     // A folder in place of the temporary file makes every write fail, as a full disk or a missing permission does.
-    fs.mkdirSync(`${target}.download`, { recursive: true })
+    const folder = path.join(mocks.directory, 'models', 'folder')
+    fs.mkdirSync(folder, { recursive: true })
+    const createWriteStream = fs.createWriteStream
+    vi.spyOn(fs, 'createWriteStream').mockImplementation(((_file: string, options: never) => createWriteStream(folder, options)) as never)
     const uncaught: Error[] = []
     const onUncaught = (error: Error): void => { uncaught.push(error) }
     process.prependListener('uncaughtException', onUncaught)
@@ -87,8 +90,7 @@ describe('downloading a pinned file', () => {
     await expect(
       downloadPinnedFile({ url: 'https://example.invalid/model.onnx', file: 'model.onnx', sha256 }, target, new AbortController().signal, () => {})
     ).rejects.toMatchObject({ code: 'ENOSPC' })
-    expect(fs.existsSync(target)).toBe(false)
-    expect(fs.existsSync(`${target}.download`)).toBe(false)
+    expect(fs.readdirSync(mocks.directory)).toEqual([])
   })
 
   it('puts a file whose content matches its hash in place', async () => {

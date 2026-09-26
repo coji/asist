@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
-import { childEnv } from './child-env'
+import { childEnv, removeVariables } from './child-env'
 import { resourcePath } from './resource-path'
 
 /**
@@ -27,7 +27,7 @@ export function uvPath(): string {
 /** The environment uv runs with: the child environment without the user's UV_ variables, and ASIST's own directories. */
 export function uvEnv(parent: NodeJS.ProcessEnv = process.env, userData = app.getPath('userData')): NodeJS.ProcessEnv {
   const env = childEnv({}, parent)
-  for (const name of Object.keys(env)) if (name.startsWith('UV_')) delete env[name]
+  removeVariables(env, (key) => key.startsWith('UV_'))
   return {
     ...env,
     UV_NO_CONFIG: '1',
@@ -51,7 +51,7 @@ function registerQuitHook(): void {
 export function runUv(args: string[], signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) return reject(new DOMException(errorText('settingsModels.preparation.stopped'), 'AbortError'))
-    const spawned = spawn(uvPath(), args, { stdio: ['ignore', 'pipe', 'pipe'], env: uvEnv() })
+    const spawned = spawn(uvPath(), args, { stdio: ['ignore', 'pipe', 'pipe'], env: uvEnv(), windowsHide: true })
     running.add(spawned)
     registerQuitHook()
     let stderr = ''

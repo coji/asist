@@ -1,6 +1,5 @@
 import { app, powerMonitor } from 'electron'
 import fs from 'node:fs'
-import path from 'node:path'
 import mitt from 'mitt'
 import { errorText } from '@shared/i18n/error-text'
 import type { AppTimer, TimerCreateRequest, TimerEvent } from '@shared/ipc'
@@ -9,6 +8,7 @@ import { storedContent } from '@shared/stored-format'
 import { notifyFromRenderer } from '../os-integration'
 import { t } from './i18n'
 import { dataPath } from './store'
+import { writeJsonFileAtomicSync } from './atomic-json'
 import { openStoredFileSync } from './stored-file'
 
 const FILE = 'timers.json'
@@ -78,23 +78,7 @@ function readTimerPersistence(): unknown {
 
 /** The atomic writer for the timers, which is unreachable while the strict load is failing. */
 function writeTimerPersistence(value: TimerPersistenceData): void {
-  const file = dataPath(FILE)
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  const temporary = `${file}.tmp`
-  try {
-    fs.writeFileSync(temporary, `${JSON.stringify(storedContent(TIMERS_FORMAT, value), null, 2)}\n`, {
-      encoding: 'utf8',
-      mode: 0o600
-    })
-    fs.renameSync(temporary, file)
-  } catch (error) {
-    try {
-      fs.rmSync(temporary, { force: true })
-    } catch {
-      // A failure to clean the temporary file must not hide the real save error, which matters more.
-    }
-    throw error
-  }
+  writeJsonFileAtomicSync(dataPath(FILE), storedContent(TIMERS_FORMAT, value))
 }
 
 function isNodeError(value: unknown): value is NodeJS.ErrnoException {

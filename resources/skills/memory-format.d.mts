@@ -50,3 +50,5 @@ export declare function writtenInJapanese(text: string): boolean
 export declare function parsePage(markdown: string, fallbackTitle: string): ParsedPage
 export declare function instructionBody(markdown: string): string
 export declare function documentIssues(kind: DocumentKind, markdown: string): DocumentIssue[]
+export type PageNameIssue = 'characters' | 'reserved'
+export declare function pageNameIssue(name: string): PageNameIssue | null

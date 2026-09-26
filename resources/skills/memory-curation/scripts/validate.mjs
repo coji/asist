@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues } from '../../memory-format.mjs'
+import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
 
 // Checks a memory directory. Usage: node validate.mjs <memoryDir>
 // Every problem is printed on its own line and the exit code is 1; with none it prints OK. The rules for a
@@ -32,6 +32,11 @@ const MESSAGES = {
     `本文が ${length} 字あります(${INSTRUCTION_MAX_CHARS} 字までにしてください。詳しいことは user.md、me.md、ページに残します)`
 }
 
+const NAME_MESSAGES = {
+  characters: 'ページの名前に使えない文字があります(/ \\ : * ? " < > | は使えません)。名前を変えてください',
+  reserved: 'この名前は Windows でファイルの名前に使えません。名前を変えてください'
+}
+
 /** Checks one file against the rules for its kind, and returns whether it exists. */
 function check(file, kind) {
   const full = path.join(dir, file)
@@ -53,7 +58,11 @@ check('me.md', 'me')
 if (!check('instruction.md', 'instruction')) {
   problems.push('instruction.md: ありません(毎回の会話に載せる要約なので、user.md、me.md、ページから書いてください)')
 }
-for (const file of listMd('pages')) check(file, 'page')
+for (const file of listMd('pages')) {
+  const nameIssue = pageNameIssue(path.basename(file, '.md'))
+  if (nameIssue) problems.push(`${file}: ${NAME_MESSAGES[nameIssue]}`)
+  check(file, 'page')
+}
 for (const file of listMd('journal')) {
   if (DATE.test(path.basename(file, '.md'))) check(file, 'journal')
   else problems.push(`${file}: ファイル名は YYYY-MM-DD.md にしてください`)

@@ -122,6 +122,22 @@ export function instructionBody(markdown) {
     .join('\n')
 }
 
+/** The names Windows keeps for devices. No file there can take one, whatever extension follows it. */
+const WINDOWS_DEVICE_NAME = /^(con|conin\$|conout\$|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(\..*)?$/i
+
+/**
+ * What keeps a page's name, its file name without .md, from being used, or null when nothing does. A
+ * memory folder is a git repository that may be cloned on macOS or on Windows, so a name either of them
+ * cannot give a file is refused on both: 'characters' for a character that cannot stand in a file name or
+ * a leading dot, which hides the file, and 'reserved' for a name Windows keeps for a device. A dot or a
+ * space at the end of the name is not at the end of the file name, which always ends in .md.
+ */
+export function pageNameIssue(name) {
+  if (/[/\\:*?"<>|]/.test(name) || name.startsWith('.')) return 'characters'
+  if (WINDOWS_DEVICE_NAME.test(name)) return 'reserved'
+  return null
+}
+
 /**
  * What in a document breaks the rules, as values rather than sentences, since ASIST writes them in the
  * language of its interface and each skill in its own. `kind` is where the document lives: instruction,

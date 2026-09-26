@@ -119,7 +119,8 @@ export class OnnxWorker<Answer> {
     const { name } = this.options
     const spawned = spawn(pythonPath(), [script, ...this.targets(), String(WORKER_THREADS)], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: childEnv({ PYTHONUNBUFFERED: '1' })
+      env: childEnv({ PYTHONUNBUFFERED: '1' }),
+      windowsHide: true
     })
     this.child = spawned
     this.ready = false

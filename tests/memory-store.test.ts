@@ -231,6 +231,70 @@ describe('the memory store', () => {
     expect(() => store.readAll()).toThrow(errorText('memory.errors.notRegular', { file: 'pages' }))
   })
 
+  it('reads a document that a save by rename replaced between the look at it and the open', () => {
+    const dir = store.memoryDir()
+    const document = path.join(dir, 'user.md')
+    fs.writeFileSync(document, '# 本人\n')
+    const open = fs.openSync
+    let saves = 0
+    vi.spyOn(fs, 'openSync').mockImplementation(((target: fs.PathLike, flags: number) => {
+      if (saves++ === 0) {
+        fs.writeFileSync(`${document}.saving`, '# 本人\n\n## 好み\n麺類。\n')
+        fs.renameSync(`${document}.saving`, document)
+      }
+      return open(target, flags)
+    }) as never)
+    try {
+      expect(store.readDocument('user.md')).toBe('# 本人\n\n## 好み\n麺類。\n')
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  describe('on Windows, which has no O_NOFOLLOW and whose open follows a link or a junction', () => {
+    /** Opens as Windows does, where both flags are 0. beforeOpen runs between the look at the file and the open. */
+    const openAsWindows = (beforeOpen: () => void = () => {}): void => {
+      const open = fs.openSync
+      const unixOnly = fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK
+      vi.spyOn(fs, 'openSync').mockImplementation(((target: fs.PathLike, flags: number) => {
+        beforeOpen()
+        return open(target, flags & ~unixOnly)
+      }) as never)
+    }
+    const secretOutside = (): string => {
+      const secret = path.join(mkdtempSync(path.join(tmpdir(), 'asist-memory-outside-')), 'secret.md')
+      fs.writeFileSync(secret, MATSUBAKEN)
+      return secret
+    }
+
+    it('reads no file through a link in place of a document', () => {
+      const dir = store.memoryDir()
+      fs.symlinkSync(secretOutside(), path.join(dir, 'user.md'))
+      openAsWindows()
+      try {
+        expect(() => store.readDocument('user.md')).toThrow(errorText('memory.errors.notRegular', { file: 'user.md' }))
+      } finally {
+        vi.restoreAllMocks()
+      }
+    })
+
+    it('refuses a document that a link replaced between the look at it and the open', () => {
+      const dir = store.memoryDir()
+      const document = path.join(dir, 'user.md')
+      fs.writeFileSync(document, '# 本人\n')
+      const secret = secretOutside()
+      openAsWindows(() => {
+        fs.rmSync(document)
+        fs.symlinkSync(secret, document)
+      })
+      try {
+        expect(() => store.readDocument('user.md')).toThrow(errorText('memory.errors.notRegular', { file: 'user.md' }))
+      } finally {
+        vi.restoreAllMocks()
+      }
+    })
+  })
+
   it('writes a page name holding the dollar patterns of a replacement string as it was given, in the page and in the commit', () => {
     const dir = store.memoryDir()
     for (const name of ['Ke$$ha', 'A$&B', "C$'D", 'E$`F']) {

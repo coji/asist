@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { storedContent, type StoredFormat } from '@shared/stored-format'
+import { writeJsonFileAtomicSync } from './atomic-json'
 import { openStoredFileSync } from './stored-file'
 
 /**
@@ -86,15 +87,7 @@ export function createEncryptedSecretStore<Id extends string = string>(options: 
   }
 
   const save = (next: SecretFile): void => {
-    const temp = `${filePath}.tmp`
-    fs.mkdirSync(path.dirname(filePath), { recursive: true })
-    try {
-      fs.writeFileSync(temp, `${JSON.stringify(storedContent(format, next), null, 2)}\n`, { mode: 0o600 })
-      fs.renameSync(temp, filePath)
-      fs.chmodSync(filePath, 0o600)
-    } finally {
-      fs.rmSync(temp, { force: true })
-    }
+    writeJsonFileAtomicSync(filePath, storedContent(format, next))
     cache = next
   }
 

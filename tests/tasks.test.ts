@@ -221,7 +221,7 @@ describe('persistence in main', () => {
     const first = await service.create({ title: '牛乳を買う', due: '2026-09-20' })
     expect(first).toMatchObject({ id: 'id-1', status: 'todo', order: 0, due: '2026-09-20' })
     await service.create({ title: 'レビュー', status: 'doing' })
-    expect(await fs.stat(`${filePath}.tmp`).catch(() => null)).toBeNull()
+    expect(await fs.readdir(path.dirname(filePath))).toEqual(['tasks.json'])
     expect(JSON.parse(await fs.readFile(filePath, 'utf8'))).toMatchObject({ version: 1, tasks: [{ title: '牛乳を買う' }, { title: 'レビュー' }] })
 
     const updated = await service.update('id-1', { status: 'done', notes: '2本' })
@@ -281,7 +281,7 @@ describe('persistence in main', () => {
     controller.abort()
     await expect(service.create({ title: '中断される' }, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
     expect(await fs.readFile(filePath, 'utf8')).toBe(original)
-    expect(await fs.stat(`${filePath}.tmp`).catch(() => null)).toBeNull()
+    expect(await fs.readdir(path.dirname(filePath))).toEqual(['tasks.json'])
     expect((await service.list()).map((t) => t.title)).toEqual(['元からある'])
   })
 })

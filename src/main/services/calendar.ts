@@ -58,7 +58,8 @@ export function runCalendarNative(
         timeout: input.operation === 'requestAccess' ? 120_000 : 15_000,
         maxBuffer: 4 * 1024 * 1024,
         signal,
-        env: childEnv()
+        env: childEnv(),
+        windowsHide: true
       },
       (error, stdout) => {
         if (error) {

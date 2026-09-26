@@ -1,9 +1,9 @@
 import fs from 'node:fs'
-import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { MAX_MAIL_DRAFTS, mailDraftPatchSchema, parseMailInput, replySubject, type MailDraft } from '@shared/mail'
 import { errorText } from '@shared/i18n/error-text'
 import { storedContent, type StoredFormat } from '@shared/stored-format'
+import { writeJsonFileAtomicSync } from './atomic-json'
 import { openStoredFileSync } from './stored-file'
 
 export const DRAFTS_FORMAT: StoredFormat<MailDraft[]> = {
@@ -80,11 +80,7 @@ export class MailDraftStore {
 
   /** Writes through a temporary file and a rename, and leaves the in-memory state behind if the write fails. */
   private commit(next: MailDraft[]): void {
-    const file = this.options.filePath
-    fs.mkdirSync(path.dirname(file), { recursive: true })
-    const temp = `${file}.tmp`
-    fs.writeFileSync(temp, `${JSON.stringify(storedContent(DRAFTS_FORMAT, next), null, 2)}\n`, { mode: 0o600 })
-    fs.renameSync(temp, file)
+    writeJsonFileAtomicSync(this.options.filePath, storedContent(DRAFTS_FORMAT, next))
     this.drafts = next
     this.options.onChanged?.(next.map((draft) => ({ ...draft })))
   }

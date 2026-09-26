@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@shared/i18n'
 
 const ja = createTranslator('ja-JP')
@@ -412,4 +412,34 @@ it('keeps a merged job whose reindex is still pending beyond the 50 entries of t
   expect(restored.curation.curatedThrough()).toBe('2026-09-11')
   expect(restored.curation.pendingJob()).toBeNull()
   expect(git(repo, 'rev-parse', 'HEAD')).toBe(merged)
+})
+
+describe('a page name that macOS or Windows cannot give a file', () => {
+  const PAGE = '---\nupdated: 2026-09-11\n---\n# 名前\n\n## 要約\n本文。\n'
+
+  it('refuses to merge a curation that adds such a page, and records why', async () => {
+    const { curation, agent } = await setup()
+    const job = curation.pendingJob()!
+    fs.mkdirSync(path.join(job.cwd, 'pages'))
+    fs.writeFileSync(path.join(job.cwd, 'pages', 'CON.md'), PAGE)
+    fs.writeFileSync(path.join(job.cwd, 'pages', '松葉軒.md'), PAGE)
+    lastLaunch().onExit(0)
+    expect(agent.get(job.id)?.mergeState).toBe('discarded')
+    expect(curation.lastFailure()?.message).toBe(ja('memory.errors.pageNamesRefused', { files: 'pages/CON.md' }))
+    expect(fs.existsSync(path.join(mocks.root, 'repo', 'pages', '松葉軒.md'))).toBe(false)
+  })
+
+  it('merges a change to such a page that the memory already had, so that it goes on loading', async () => {
+    const repo = path.join(mocks.root, 'repo')
+    fs.mkdirSync(path.join(repo, 'pages'))
+    fs.writeFileSync(path.join(repo, 'pages', 'CON.md'), PAGE)
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-qm', 'an older page')
+    const { curation, agent } = await setup()
+    const job = curation.pendingJob()!
+    fs.writeFileSync(path.join(job.cwd, 'pages', 'CON.md'), PAGE.replace('本文。', '書き足した本文。'))
+    lastLaunch().onExit(0)
+    expect(agent.get(job.id)?.mergeState).toBe('merged')
+    expect(fs.readFileSync(path.join(repo, 'pages', 'CON.md'), 'utf8')).toContain('書き足した本文。')
+  })
 })

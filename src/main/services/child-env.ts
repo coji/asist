@@ -10,8 +10,26 @@ import { LLM_PROVIDERS, LLM_PROVIDER_INFO } from '@shared/llm-catalog'
 /** Variables that no child receives, even when a caller passes one in `extra`. */
 export const WITHHELD_VARIABLES: readonly string[] = LLM_PROVIDERS.map((provider) => LLM_PROVIDER_INFO[provider].envKey)
 
+/**
+ * A variable's name as the OS compares it. Windows ignores the case, so Anthropic_Api_Key there is the same
+ * variable as ANTHROPIC_API_KEY, and a copy of process.env keeps whichever case the name was set in.
+ */
+export function envNameKey(name: string): string {
+  return process.platform === 'win32' ? name.toUpperCase() : name
+}
+
 export function childEnv(extra: NodeJS.ProcessEnv = {}, parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...parent, ...extra }
-  for (const name of WITHHELD_VARIABLES) delete env[name]
+  const env: NodeJS.ProcessEnv = { ...parent }
+  for (const [name, value] of Object.entries(extra)) {
+    removeVariables(env, (key) => key === envNameKey(name))
+    env[name] = value
+  }
+  const withheld = new Set(WITHHELD_VARIABLES.map(envNameKey))
+  removeVariables(env, (key) => withheld.has(key))
   return env
+}
+
+/** Deletes every variable whose name, as the OS compares it, matches. */
+export function removeVariables(env: NodeJS.ProcessEnv, matches: (key: string) => boolean): void {
+  for (const name of Object.keys(env)) if (matches(envNameKey(name))) delete env[name]
 }

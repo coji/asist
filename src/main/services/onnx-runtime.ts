@@ -5,6 +5,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
+import { replaceFileAtomic } from './atomic-json'
 import { t } from './i18n'
 import { userAgent } from './user-agent'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment } from './uv'
@@ -103,19 +104,18 @@ export async function downloadPinnedFile(
   signal: AbortSignal,
   onBytes: (bytes: number) => void
 ): Promise<void> {
-  await fs.promises.mkdir(path.dirname(target), { recursive: true })
   const response = await fetch(source.url, { signal, headers: { 'user-agent': userAgent() } })
   if (!response.ok || !response.body) {
     throw new Error(errorText('settingsModels.preparation.downloadFailed', { file: source.file, status: response.status }))
   }
-  const temporary = `${target}.download`
-  const hash = crypto.createHash('sha256')
-  try {
+  const body = response.body
+  await replaceFileAtomic(target, async (temporary) => {
+    const hash = crypto.createHash('sha256')
     // pipeline settles only after the file has been flushed and closed, and a failure in any stage
     // rejects it and cancels the response. A failed write has to end the download here: the hash covers
     // the bytes received, not the bytes written, so the check below would accept a truncated file.
     await pipeline(
-      Readable.fromWeb(response.body),
+      Readable.fromWeb(body),
       async function* (chunks: AsyncIterable<Buffer>) {
         for await (const chunk of chunks) {
           hash.update(chunk)
@@ -123,18 +123,11 @@ export async function downloadPinnedFile(
           yield chunk
         }
       },
-      fs.createWriteStream(temporary, { mode: 0o600 })
+      fs.createWriteStream(temporary, { mode: 0o600, flags: 'wx', flush: true })
     )
-  } catch (error) {
-    await fs.promises.rm(temporary, { force: true })
-    throw error
-  }
-  const digest = hash.digest('hex')
-  if (digest !== source.sha256) {
-    await fs.promises.rm(temporary, { force: true })
-    throw new Error(errorText('settingsModels.preparation.checksumMismatch', { file: source.file, digest }))
-  }
-  await fs.promises.rename(temporary, target)
+    const digest = hash.digest('hex')
+    if (digest !== source.sha256) throw new Error(errorText('settingsModels.preparation.checksumMismatch', { file: source.file, digest }))
+  })
 }
 
 /**

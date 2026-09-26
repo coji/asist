@@ -44,6 +44,8 @@ operation that belongs behind preload or the main process.
   `src/renderer/src/assets/themes.css`; a component or its CSS never writes a colour itself.
 - Keep generated output and local secrets out of Git: never commit `.env`, `node_modules/`, `out/`,
   `dist/`, `coverage/`, logs or TypeScript build info.
+- Start every child process with `windowsHide: true`; without it, each one ASIST starts on Windows opens
+  a console window.
 
 ## Comments
 

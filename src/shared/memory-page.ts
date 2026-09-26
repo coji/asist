@@ -9,9 +9,11 @@ import {
   SUMMARY_HEADING,
   documentIssues,
   instructionBody,
+  pageNameIssue,
   parsePage,
   writtenInJapanese,
   type DocumentIssue,
+  type PageNameIssue,
   type ParsedPage
 } from '../../resources/skills/memory-format.mjs'
 
@@ -148,17 +150,28 @@ export const DOCUMENT_FILE = /^(instruction\.md|me\.md|user\.md|pages\/[^/\\]+\.
 
 const MAX_PAGE_NAME_LENGTH = 60
 
-/**
- * The input for a new page. The name becomes the file name, so characters that cannot appear in a
- * path are rejected.
- */
+const PAGE_NAME_ERRORS = {
+  characters: 'memory.errors.nameCharacters',
+  reserved: 'memory.errors.nameReserved'
+} as const satisfies Record<PageNameIssue, string>
+
+/** Why a page's name, its file name without .md, cannot be used, or null when it can. */
+export function pageNameError(name: string): string | null {
+  const issue = pageNameIssue(name)
+  return issue ? errorText(PAGE_NAME_ERRORS[issue]) : null
+}
+
+/** The input for a new page. The name becomes the file name. */
 export const memoryPageInputSchema = z.strictObject({
   name: z
     .string()
     .trim()
     .min(1, errorText('memory.errors.nameEmpty'))
     .max(MAX_PAGE_NAME_LENGTH, errorText('memory.errors.nameTooLong', { limit: MAX_PAGE_NAME_LENGTH }))
-    .refine((name) => !/[/\\:*?"<>|]/.test(name) && !name.startsWith('.'), errorText('memory.errors.nameCharacters'))
+    .superRefine((name, context) => {
+      const message = pageNameError(name)
+      if (message) context.addIssue({ code: 'custom', message })
+    })
 })
 
 export function documentKindOf(file: string): MemoryDocumentKind | null {

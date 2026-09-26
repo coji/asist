@@ -27,6 +27,21 @@ beforeEach(() => {
   run(repo, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'a'])
 })
 
+describe('the environment git runs with', () => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
+
+  it('drops the GIT_ variables written in any case on Windows, where the case of a name does not matter', () => {
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' })
+    try {
+      const env = git.gitEnv({ Path: 'C:\\Windows', Git_Dir: 'C:\\elsewhere\\.git', git_work_tree: 'C:\\elsewhere' })
+      expect(Object.keys(env).filter((name) => name.toUpperCase().startsWith('GIT_')).sort()).toEqual(['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM'])
+      expect(env.Path).toBe('C:\\Windows')
+    } finally {
+      Object.defineProperty(process, 'platform', platform)
+    }
+  })
+})
+
 describe('git service with an isolated worktree', () => {
   it('returns the repository top inside a repository and null outside one', () => {
     fs.mkdirSync(path.join(repo, 'sub'))

@@ -11,11 +11,12 @@ const SETTINGS_FILE_INVALID = '[asist:settings.errors.fileInvalid'
 
 const mocks = vi.hoisted(() => ({
   userData: '',
-  systemLanguages: ['ja-JP']
+  systemLanguages: ['ja-JP'],
+  folders: {} as Record<string, string>
 }))
 
 vi.mock('electron', () => ({
-  app: { getPath: () => mocks.userData, getPreferredSystemLanguages: () => mocks.systemLanguages }
+  app: { getPath: (name: string) => mocks.folders[name] ?? mocks.userData, getPreferredSystemLanguages: () => mocks.systemLanguages }
 }))
 
 // The first import of the settings service transforms its whole module graph, and the imports after vi.resetModules
@@ -29,6 +30,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.resetModules()
   mocks.systemLanguages = ['ja-JP']
+  mocks.folders = {}
   mocks.userData = mkdtempSync(path.join(tmpdir(), 'asist-settings-'))
 })
 afterEach(() => {
@@ -51,6 +53,17 @@ describe('settings persistence', () => {
     expect(settings.getSettings()).toMatchObject({ uiLocale: 'de-DE', conversationLocale: 'de-DE', region: 'DE' })
     // A German conversation reads the English persona, the one every language but Japanese shares.
     expect(settings.getSettings().persona).toBe(defaultPersona('en-US'))
+  })
+
+  it('offers the folders where the system keeps the desktop, the downloads and the documents, wherever that is', async () => {
+    mocks.folders = {
+      desktop: 'C:\\Users\\someone\\OneDrive\\デスクトップ',
+      downloads: 'C:\\Users\\someone\\Downloads',
+      documents: 'C:\\Users\\someone\\OneDrive\\ドキュメント'
+    }
+    const settings = await import('../src/main/services/settings')
+
+    expect([...settings.getSettings().fileRoots].sort()).toEqual(Object.values(mocks.folders).sort())
   })
 
   it('leaves every other setting as it is when one is saved', async () => {

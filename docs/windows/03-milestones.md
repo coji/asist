@@ -55,7 +55,7 @@ Windows の書き方のパスと、OS ごとに使える機能を、Mac の上�
 | M1-5 | renderer のパスの処理(`JobLog.tsx`、`JobArtifacts.tsx`、`agent-job.tsx`、`CodeViewer.tsx`)を M1-1 の関数に替える | 各ファイル | Windows のパスのジョブのログと成果物が、demo で正しく出る | Mac | A |
 | M1-6 | git から受け取るパスを `path.resolve` と `realpathSync.native` で整える(`memory-store.ts:78`、`agent.ts:386`、`git.ts:128-136`) | `git.ts`、`memory-store.ts`、`agent.ts` | Mac のテストがそのまま通る(Windows での効果は M4 で確かめる) | Mac | A |
 | M1-7 | 置き換えの書き込みを `atomic-json.ts` の1つの関数にまとめ、8か所をそれに替える。一時ファイルの名前を書き込みごとに変える。Windows では EPERM、EBUSY、EACCES のときに約2秒まで再試行する | `atomic-json.ts` ほか8ファイル、テスト | 再試行のテスト(`fs.rename` を差し替えて、何回目で成功するか、上限で投げるか)が通る | Mac | B |
-| M1-8 | 記憶のページの名前で、Windows の予約名と末尾の `.` と空白を拒む。Windows ではシンボリックリンクを `lstat` と `ino` の比較で拒む | `shared/memory-page.ts`、`memory-store.ts`、テスト | 予約名のテストが通る | Mac | B |
+| M1-8 | 記憶のページの名前で、Windows の予約名を拒む。Windows ではシンボリックリンクを `lstat` と `ino` の比較で拒む | `shared/memory-page.ts`、`memory-store.ts`、テスト | 予約名のテストが通る | Mac | B |
 | M1-9 | 既定のフォルダを `app.getPath` から取る | `settings.ts` | | Mac | B |
 | M1-10 | `childEnv` と `gitEnv` で、Windows では環境変数の名前を大文字小文字を区別せずに消す | `child-env.ts`、`git.ts`、テスト | 差し替えた環境で `Anthropic_Api_Key` も消えるテストが通る | Mac | B |
 | M1-11 | すべての `spawn` と `execFile` に `windowsHide: true` を付ける | `git.ts`、`uv.ts`、`mlx-runtime.ts`、`vap.ts`、`onnx-worker.ts`、`tts.ts`、`native-mic.ts`、`calendar.ts` ほか | 付け忘れを見つけるテスト(ソースを読んで、`spawn(` と `execFile` の呼び出しに `windowsHide` があるか)を足すかは、AGENTS.md の「形だけを確かめるテストを書かない」との兼ね合いで決める | Mac | B |
