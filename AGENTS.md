@@ -34,6 +34,9 @@ operation that belongs behind preload or the main process.
 - Persist each fact in one authoritative place and derive secondary views instead of
   synchronizing copies.
 - Do not add fallback behavior; fail loudly rather than degrade silently.
+- Fix a defect where its cause is, in a form in which it cannot happen, rather than with a guard for the
+  one case that showed it; the code after the fix reads better than before. When a fix is much larger
+  than the defect, or needs a choice only the user can make, stop and ask instead of patching.
 - Code never splits a path or tests it as text with `/`, because Windows writes `C:\` and `\`: main
   uses `node:path`, and shared and renderer code, which cannot import it, use `src/shared/file-path.ts`.
 - A JSON file under userData carries the version of its form (`StoredFormat`). Any change to the form,
@@ -91,6 +94,10 @@ behavior each covers. Before changing how a feature behaves, list the folder and
 records whose names cover that behavior; if the change contradicts one, say so to the user first.
 Before committing, ask whether the work settled a choice or turned an approach down for good; if
 so, the record goes into the same commit (`adr` skill).
+
+A design document under `docs/` holds only what the code cannot show: the reasons for a decision and
+measured values. It does not restate types, APIs or steps the code already shows, and no code or
+comment refers to it. Something that can be checked is checked and written as a fact, not left open.
 
 ## Workflow
 

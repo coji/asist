@@ -33,7 +33,7 @@ When a decision is settled in the conversation and passes the test, say so and w
 - File: `docs/adr/NNNN-<slug>.md`, where NNNN is the highest existing number plus one. The slug is an English phrase naming the behavior as a task would describe it (`language-settings-are-three`, `notes-are-never-changed-by-the-agent`), since agents choose what to read from the names alone. Not a topic (`i18n`, `notes`).
 - The heading is the decision itself in Japanese (「言語の設定を、画面の言語、会話の言語、地域の3つに分ける」), not a topic (「多言語対応について」).
 - The body is Japanese, one paragraph by default: what was decided, and why. Add these sections only when they have content:
-  - `## 見送った案`: each option not taken, with the reason in a sentence.
+  - `## 見送った案`: each option not taken, with the reason in a sentence. Only options that were compared as designs belong here, not one the user merely confirmed in a conversation, and never the history of the discussion.
   - `## 実測`: the value, the condition it was measured under, and the date.
   - `## 分かっている制約`: limits that follow from the decision.
 - Write only what the code cannot show. No file lists, no implementation steps, no restating of types or function bodies. A name that anchors the decision (such as the one function that decides it) may appear.
