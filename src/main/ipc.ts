@@ -1,5 +1,5 @@
 import { shouldPushJobCard } from '@shared/job-cards'
-import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess } from './services/calendar'
+import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess, signOutCalendar } from './services/calendar'
 import { events as mailEvents, getMailService, openMailGuide } from './services/mail'
 import { confirmEvents, pendingConfirms, resolveConfirm } from './services/confirm'
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
@@ -430,6 +430,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
 
   handle(IpcChannel.CalendarStatus, () => calendarStatus())
   handle(IpcChannel.CalendarRequestAccess, () => requestCalendarAccess())
+  handle(IpcChannel.CalendarSignOut, () => signOutCalendar())
   handle(IpcChannel.CalendarEvents, (_e, range: unknown) => listCalendar(range))
   // An add, edit or delete from the screen takes the same path as the agent's and is saved only after the
   // in-app confirmation is approved.

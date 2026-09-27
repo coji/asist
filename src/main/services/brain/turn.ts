@@ -284,7 +284,7 @@ async function runTurn(
       memoryBlock,
       historySummary: history.summary,
       voiceLayer: route.kind === 'live' ? 'delegated' : 'self',
-      calendar: platformCapabilities().calendar
+      calendar: platformCapabilities().calendar !== null
     })
     signal.throwIfAborted()
   } catch (err) {

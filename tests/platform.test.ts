@@ -23,7 +23,9 @@ const machine = (
   arch,
   totalMemoryBytes,
   nvidiaGpu: () => nvidiaGpuSupport(nvidiaSmi),
-  micCancelsEcho
+  micCancelsEcho,
+  calendarBackend: undefined,
+  googleClient: () => false
 })
 
 describe('what a machine can run', () => {
@@ -32,7 +34,7 @@ describe('what a machine can run', () => {
       os: 'macos',
       speechRuntime: { kind: 'mlx', memoryGb: 16 },
       nativeMic: true,
-      calendar: true,
+      calendar: 'eventkit',
       hotkey: 'Alt+Space'
     })
   })
@@ -45,7 +47,7 @@ describe('what a machine can run', () => {
 
   it('never runs nvidia-smi on a Mac', () => {
     const nvidiaGpu = vi.fn(() => nvidiaGpuSupport(null))
-    deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 16 * GIB, nvidiaGpu, micCancelsEcho: unasked })
+    deriveCapabilities({ ...machine('darwin', 'arm64'), nvidiaGpu })
     expect(nvidiaGpu).not.toHaveBeenCalled()
   })
 
@@ -54,7 +56,7 @@ describe('what a machine can run', () => {
       os: 'windows',
       speechRuntime: { kind: 'cuda', memoryGb: 8 },
       nativeMic: false,
-      calendar: false,
+      calendar: null,
       hotkey: expect.any(String)
     })
     expect(deriveCapabilities(machine('win32', 'x64', 'NVIDIA GeForce RTX 2060, 6144, 581.29, 7.5')).speechRuntime).toEqual({ kind: 'cuda', memoryGb: 6 })
@@ -75,6 +77,30 @@ describe('what a machine can run', () => {
       expect(deriveCapabilities(machine('win32', 'x64', null, 32 * GIB, micCancelsEcho)).nativeMic).toBe(cancelsEcho)
       expect(micCancelsEcho).toHaveBeenCalledOnce()
     }
+  })
+
+  it('gives both systems Google Calendar when ASIST_CALENDAR_BACKEND asks for it and the build has the OAuth client', () => {
+    const google = { calendarBackend: 'google', googleClient: () => true }
+    expect(deriveCapabilities({ ...machine('darwin', 'arm64'), ...google }).calendar).toBe('google')
+    expect(deriveCapabilities({ ...machine('win32', 'x64'), ...google }).calendar).toBe('google')
+    // An empty value is the variable left blank in .env, which keeps each system's own calendar.
+    expect(deriveCapabilities({ ...machine('darwin', 'arm64'), calendarBackend: '', googleClient: () => true }).calendar).toBe('eventkit')
+    expect(deriveCapabilities({ ...machine('win32', 'x64'), calendarBackend: '', googleClient: () => true }).calendar).toBeNull()
+  })
+
+  it.each([
+    ['darwin', 'arm64'],
+    ['win32', 'x64']
+  ])('stops the launch on %s %s when Google Calendar is asked for without the OAuth client', (platform, arch) => {
+    expect(() => deriveCapabilities({ ...machine(platform, arch), calendarBackend: 'google', googleClient: () => false })).toThrow(
+      errorText('app.startup.googleClientMissing', { variable: 'ASIST_CALENDAR_BACKEND' })
+    )
+  })
+
+  it('stops the launch on a value of ASIST_CALENDAR_BACKEND it does not know, rather than keep the default calendar', () => {
+    expect(() => deriveCapabilities({ ...machine('win32', 'x64'), calendarBackend: 'eventkit', googleClient: () => true })).toThrow(
+      errorText('app.startup.calendarBackendUnknown', { variable: 'ASIST_CALENDAR_BACKEND', value: 'eventkit' })
+    )
   })
 
   it.each([

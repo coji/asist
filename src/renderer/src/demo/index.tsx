@@ -18,11 +18,13 @@ import { DEMO_VIEWS } from './views'
  */
 export async function bootDemo(root: Root): Promise<boolean> {
   window.api = mockApi
-  // The shell, the card samples and the dictionary page are drawn here without the app, and read the
-  // capabilities all the same.
-  await loadPlatformCapabilities()
   const route = resolveDemoRoute(location.pathname)
   const screen = route.kind === 'screen' && route.name in SCREENS ? DEMO_VIEWS[route.name as ScreenName] : undefined
+  // A screen may swap the capabilities, as the Google calendar's settings do, so it prepares the mock
+  // before they are read. The shell, the card samples and the dictionary page are drawn here without the
+  // app, and read the capabilities all the same.
+  screen?.prepare?.(mockApi)
+  await loadPlatformCapabilities()
   // The capture scripts change the interface language of a page that is already open, which spares them from
   // loading every screen again for every language.
   Object.assign(window, {
@@ -70,7 +72,6 @@ export async function bootDemo(root: Root): Promise<boolean> {
   if (route.kind === 'screen') {
     if (!(route.name in SCREENS)) throw new Error(`demo に ${route.name} という画面はありません`)
     const target = DEMO_VIEWS[route.name as ScreenName]
-    target.prepare?.(mockApi)
     // What a view opens is written in the interface language, which the settings hold.
     await useSettingsStore.getState().load()
     target.open?.()

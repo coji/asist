@@ -12,7 +12,19 @@ export const DEMO_CALENDAR_STATUS: CalendarStatus = {
     { id: 'demo-work', title: '仕事', source: 'Google', writable: true },
     { id: 'demo-home', title: '自宅', source: 'iCloud', writable: true },
     { id: 'demo-holiday', title: '日本の祝日', source: 'Google', writable: false }
-  ]
+  ],
+  account: null
+}
+
+/** The same calendars read from one Google account, as ASIST_CALENDAR_BACKEND=google shows them. */
+export const DEMO_GOOGLE_CALENDAR_STATUS: CalendarStatus = {
+  authorization: 'fullAccess',
+  calendars: [
+    { id: 'demo-work', title: '仕事', source: 'Google', writable: true },
+    { id: 'demo-home', title: '自宅', source: 'Google', writable: true },
+    { id: 'demo-holiday', title: '日本の祝日', source: 'Google', writable: false }
+  ],
+  account: 'demo@example.com'
 }
 
 let seq = 0

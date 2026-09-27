@@ -5,7 +5,7 @@ import { CALENDAR_RANGES } from './calendar'
 import type { PromptText } from './conversation-locale'
 import { bilingual } from './tool-registry'
 import type { PanelSlot } from './ipc'
-import type { PlatformCapabilities } from './platform'
+import type { CalendarBackend, PlatformCapabilities } from './platform'
 
 /**
  * The catalog of the built-in panels, shared by main and the renderer.
@@ -17,8 +17,11 @@ import type { PlatformCapabilities } from './platform'
 
 export interface PanelCatalogEntry {
   type: string
-  /** The tool's description, written for the LLM in both prompt languages. No screen shows it. */
-  description: PromptText
+  /**
+   * The tool's description, written for the LLM in both prompt languages. No screen shows it. A card whose
+   * source depends on the machine, such as the calendar, words it from the capabilities.
+   */
+  description: PromptText | ((capabilities: PlatformCapabilities) => PromptText)
   slot: PanelSlot
   /**
    * The zod schema of the props, one per panel whatever the language: it decides what is valid, and
@@ -51,6 +54,22 @@ const s = (v: unknown): string => String(v ?? '').trim()
  * card gives it a heading of its own.
  */
 export const NEWS_TOP_TOPIC = ''
+
+/** What the calendar card reads, as the model is told, for each calendar a machine can have. */
+const CALENDAR_SOURCE: Record<CalendarBackend, PromptText> = {
+  eventkit: { ja: 'macOSのカレンダー', en: 'the macOS calendars' },
+  google: { ja: 'Google カレンダー', en: 'the calendars in Google Calendar' }
+}
+
+/** The calendar card is offered only where panelAvailable finds a calendar. */
+function calendarSource(calendar: CalendarBackend | null): PromptText {
+  if (calendar === null) throw new Error('the calendar card is described on a machine without a calendar')
+  return CALENDAR_SOURCE[calendar]
+}
+
+/** The description of a card's tool on this machine. */
+export const panelDescription = (entry: PanelCatalogEntry, capabilities: PlatformCapabilities): PromptText =>
+  typeof entry.description === 'function' ? entry.description(capabilities) : entry.description
 
 export const PANEL_CATALOG: PanelCatalogEntry[] = [
   {
@@ -283,10 +302,10 @@ export const PANEL_CATALOG: PanelCatalogEntry[] = [
   },
   {
     type: 'calendar',
-    description: {
-      ja: 'カレンダーのカード。設定で選択したmacOSのカレンダーの予定を、今日・今週・来週(range)か、from/to(端末のローカル日付 YYYY-MM-DD、to を含む、366日まで)の範囲で見せる。query は件名・場所の部分一致。「今日の予定は?」「来週空いてる?」「10月の予定」「スミカとの打ち合わせいつ?」やブリーフィングで使う。結果の today・range・events[].date/time は端末のローカル日時の文字列なので、そのまま読んで答える(日付を計算しない)。週は暦どおり月曜〜日曜で、週末には nextWeek に来週分も付く。events[].id と start/end(オフセット付きISO)は change_calendar にそのまま渡せる。返答では range の日付を一度言う。',
-      en: 'The calendar card. It shows the events of the macOS calendars chosen in the settings, either for today, this week or next week (range), or over from/to, which are local calendar days written YYYY-MM-DD, with to included and at most 366 days. query matches part of a title or a location. Use it whenever the user asks about their schedule — what is on today, whether next week is free, what a given month holds, when the meeting with someone is — and in a briefing. today, range and events[].date/time in the result are already written in this machine\'s local time, so read them out as they are and never work a date out yourself. A week runs Monday to Sunday as the calendar does, and at the weekend next week\'s events come along in nextWeek. events[].id and start/end, an ISO timestamp with its offset, can be handed to change_calendar unchanged. Say the dates of the range once in your answer.'
-    },
+    description: ({ calendar }) => ({
+      ja: `カレンダーのカード。設定で選択した${calendarSource(calendar).ja}の予定を、今日・今週・来週(range)か、from/to(端末のローカル日付 YYYY-MM-DD、to を含む、366日まで)の範囲で見せる。query は件名・場所の部分一致。「今日の予定は?」「来週空いてる?」「10月の予定」「スミカとの打ち合わせいつ?」やブリーフィングで使う。結果の today・range・events[].date/time は端末のローカル日時の文字列なので、そのまま読んで答える(日付を計算しない)。週は暦どおり月曜〜日曜で、週末には nextWeek に来週分も付く。events[].id と start/end(オフセット付きISO)は change_calendar にそのまま渡せる。返答では range の日付を一度言う。`,
+      en: `The calendar card. It shows the events of ${calendarSource(calendar).en} chosen in the settings, either for today, this week or next week (range), or over from/to, which are local calendar days written YYYY-MM-DD, with to included and at most 366 days. query matches part of a title or a location. Use it whenever the user asks about their schedule — what is on today, whether next week is free, what a given month holds, when the meeting with someone is — and in a briefing. today, range and events[].date/time in the result are already written in this machine's local time, so read them out as they are and never work a date out yourself. A week runs Monday to Sunday as the calendar does, and at the weekend next week's events come along in nextWeek. events[].id and start/end, an ISO timestamp with its offset, can be handed to change_calendar unchanged. Say the dates of the range once in your answer.`
+    }),
     slot: 'right',
     tool: true,
     fetch: true,
@@ -393,6 +412,6 @@ export const PANEL_CATALOG: PanelCatalogEntry[] = [
 
 export const catalogByType = new Map(PANEL_CATALOG.map((e) => [e.type, e]))
 
-/** Whether this machine can show a card of the type: the calendar card needs the calendar of the OS. */
+/** Whether this machine can show a card of the type: the calendar card needs a calendar to read. */
 export const panelAvailable = (type: string, capabilities: Pick<PlatformCapabilities, 'calendar'>): boolean =>
-  type !== 'calendar' || capabilities.calendar
+  type !== 'calendar' || capabilities.calendar !== null

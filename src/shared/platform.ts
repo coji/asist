@@ -22,6 +22,15 @@ export type SpeechRuntime = 'mlx' | 'cuda'
  */
 export type SpeechRuntimeUnavailable = NvidiaGpuUnavailable
 
+/**
+ * Where the calendar reads and writes events: the Mac's own calendars through EventKit, or one Google
+ * account through the Google Calendar API.
+ */
+export type CalendarBackend = 'eventkit' | 'google'
+
+/** The environment variable that makes both systems use Google Calendar, for development until Google verifies the app. */
+export const CALENDAR_BACKEND_VARIABLE = 'ASIST_CALENDAR_BACKEND'
+
 /** The sentence the screens show, and an error carries, for each reason. */
 export const SPEECH_RUNTIME_UNAVAILABLE_TEXT = {
   'no-nvidia-gpu': 'speechRecognition.unavailable.noNvidiaGpu',
@@ -47,7 +56,8 @@ export interface PlatformCapabilities {
    * captures through getUserMedia.
    */
   nativeMic: boolean
-  calendar: boolean
+  /** Where the calendar lives, or null where there is none. */
+  calendar: CalendarBackend | null
   /** The Electron accelerator of the global hotkey; the label on the screen is derived from it. */
   hotkey: string
 }
@@ -64,19 +74,36 @@ export interface Machine {
    * voice processing.
    */
   micCancelsEcho: () => boolean
+  /** The value of ASIST_CALENDAR_BACKEND, undefined when it is not set. */
+  calendarBackend: string | undefined
+  /** Whether the build carries the OAuth client ASIST signs in to Google with, asked only when Google is. */
+  googleClient: () => boolean
+}
+
+/**
+ * The calendar of a machine: the OS's own default, or Google on both systems when the variable asks for
+ * it. Google without its OAuth client, or a value the variable does not know, stops the launch rather than
+ * leave the calendar on something the developer did not ask for.
+ */
+function calendarOf(osDefault: CalendarBackend | null, requested: string | undefined, googleClient: () => boolean): CalendarBackend | null {
+  if (requested === undefined || requested === '') return osDefault
+  if (requested !== 'google') throw new Error(errorText('app.startup.calendarBackendUnknown', { variable: CALENDAR_BACKEND_VARIABLE, value: requested }))
+  if (!googleClient()) throw new Error(errorText('app.startup.googleClientMissing', { variable: CALENDAR_BACKEND_VARIABLE }))
+  return 'google'
 }
 
 /**
  * The capabilities of a machine. Only Apple Silicon Macs and x64 Windows are built for; any other
  * combination fails, because a guess at what it can run would show features that then fail.
  */
-export function deriveCapabilities({ platform, arch, totalMemoryBytes, nvidiaGpu, micCancelsEcho }: Machine): PlatformCapabilities {
+export function deriveCapabilities(machine: Machine): PlatformCapabilities {
+  const { platform, arch, totalMemoryBytes, nvidiaGpu, micCancelsEcho } = machine
   if (platform === 'darwin' && arch === 'arm64') {
     return {
       os: 'macos',
       speechRuntime: { kind: 'mlx', memoryGb: Math.max(1, Math.round(totalMemoryBytes / 1024 ** 3)) },
       nativeMic: true,
-      calendar: true,
+      calendar: calendarOf('eventkit', machine.calendarBackend, machine.googleClient),
       hotkey: 'Alt+Space'
     }
   }
@@ -86,7 +113,7 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes, nvidiaGpu
       os: 'windows',
       speechRuntime: gpu.usable ? { kind: 'cuda', memoryGb: gpu.memoryGb } : { kind: null, reason: gpu.reason },
       nativeMic: micCancelsEcho(),
-      calendar: false,
+      calendar: calendarOf(null, machine.calendarBackend, machine.googleClient),
       // On a Windows 11 machine with PowerToys, Copilot and Claude running (2026-09-27), Alt+Space and
       // Ctrl+Alt+Space were already taken, as were Ctrl+Win+Space and Win+Shift+Space, which switch the
       // input language. Ctrl+Shift+Space was free but is a key inside Word and VS Code.

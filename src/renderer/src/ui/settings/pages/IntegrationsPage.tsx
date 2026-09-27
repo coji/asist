@@ -13,13 +13,20 @@ import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 
-/** The integrations page: the macOS calendar where this machine has it, mail, and the API key of each provider. */
+/** What the page's lead says it connects to, for each calendar a machine can have. */
+const LEAD = {
+  eventkit: 'settingsIntegrations.lead.withCalendar',
+  google: 'settingsIntegrations.lead.withGoogleCalendar',
+  none: 'settingsIntegrations.lead.withoutCalendar'
+} as const satisfies Record<string, MessageKey>
+
+/** The integrations page: the calendar where this machine has one, mail, and the API key of each provider. */
 export function IntegrationsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const t = useT()
   const { calendar } = platformCapabilities()
   return (
-    <Page title={t('settingsIntegrations.title')} lead={t(calendar ? 'settingsIntegrations.lead.withCalendar' : 'settingsIntegrations.lead.withoutCalendar')}>
-      {calendar && <CalendarSettings settings={ctx.settings} />}
+    <Page title={t('settingsIntegrations.title')} lead={t(LEAD[calendar ?? 'none'])}>
+      {calendar !== null && <CalendarSettings settings={ctx.settings} />}
       <MailSettings ctx={ctx} />
       <ApiKeys ctx={ctx} />
     </Page>

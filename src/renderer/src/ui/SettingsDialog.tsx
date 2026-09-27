@@ -269,7 +269,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     memory: { text: t(settings.memoryEmbeddingEnabled ? 'settings.summary.memorySemanticOn' : 'settings.summary.memorySemanticOff') },
     agent: { text: `${agentEngine} · ${AGENT_MODE_NAME[settings.agentEngine][settings.agentMode]}` },
     integrations: {
-      text: !calendar
+      text: calendar === null
         ? t('settings.summary.integrationsKeys', keyCounts)
         : t(settings.calendar.enabled ? 'settings.summary.integrationsCalendarOn' : 'settings.summary.integrationsCalendarOff', keyCounts)
     },

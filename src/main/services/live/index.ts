@@ -110,7 +110,7 @@ function geminiSystemInstruction(startedAt: Date): string {
     historySummary: history.summary,
     jobContext: agentRunner.contextBlock(),
     startedAt,
-    calendar: platformCapabilities().calendar
+    calendar: platformCapabilities().calendar !== null
   })
 }
 

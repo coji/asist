@@ -142,7 +142,9 @@ describe('Windows with an NVIDIA GPU the CUDA runtime runs on', () => {
       arch: 'x64',
       totalMemoryBytes: 16 * 1024 ** 3,
       nvidiaGpu: () => nvidiaGpuSupport('NVIDIA GeForce GTX 1650, 4096, 581.57, 7.5'),
-      micCancelsEcho: () => false
+      micCancelsEcho: () => false,
+      calendarBackend: undefined,
+      googleClient: () => false
     }))
     const asr = await import('../src/main/services/asr')
     expect(await asr.installationStatus()).toMatchObject({ resolvedModel: 'qwen3-asr-0.6b', label: asrModelSpec('cuda', 'qwen3-asr-0.6b')!.label, totalMemoryGb: 4 })

@@ -50,6 +50,26 @@ RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY=...
 
 このキーは iframe の URL に載るので、配布したアプリから取り出せます。キーの「API の制限」で Maps Embed API だけを許可し、同じプロジェクトでほかの有料の API を有効にしないでください。本番のアプリは `file://` から開くので Referer が送られず、ウェブサイトによる制限は使えません。Google の規約で地図の帰属表示を変えられないため、カードの地図には色のフィルターをかけていません。
 
+### Google カレンダーで動かす
+
+カレンダーは、macOS では EventKit、Windows ではなし、が既定です。Google のアプリの審査が通るまでは、開発のときだけ、環境変数 `ASIST_CALENDAR_BACKEND=google` で macOS と Windows のどちらも Google Calendar API を使えます。値は `google` だけを受け付け、ほかの値では起動を止めます。
+
+1. Google Cloud のプロジェクト(issue #81 の手順で作ったもの)で、自分のアカウントが Google Auth Platform の「対象」のテストユーザーに入っていることを確かめます。テストユーザーでないアカウントではログインできません。
+2. リポジトリ直下の `.env` に、デスクトップ アプリのクライアントの値と切り替えを書きます。
+
+```bash
+ASIST_GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+ASIST_GOOGLE_CLIENT_SECRET=...
+ASIST_CALENDAR_BACKEND=google
+```
+
+3. `npm run dev` で起動し、設定の「連携」の「カレンダー」で「Google でログイン」を押します。ブラウザで同意の画面が開き、「Google はこのアプリを確認していません」と出たら「続行」で進みます。権限の2つの項目は、両方にチェックを入れます。
+4. ログインしたら、カレンダー連携をオンにし、表示するカレンダーと新規予定の保存先を選びます。
+
+クライアント ID とシークレットは、`electron.vite.config.ts` がビルドのときに main プロセスへ埋め込みます。`npm run dev` では起動するときの `.env` を、`npm run dist:mac` などでは実行したシェルの環境変数か `.env` を読みます。CI では、アプリを作る `build` と `build-windows` の job にだけ、リポジトリの secret から同じ名前で渡します。クライアントがないまま `ASIST_CALENDAR_BACKEND=google` で起動すると、起動はそのことを伝えるエラーで止まります。`ASIST_CALENDAR_BACKEND` は起動するときに読むので、ビルドし直さずに切り替えられます。
+
+ログインの refresh token は、API キーと同じく safeStorage で暗号化して `userData/google-calendar.json` に保存します。開発版とインストールしたアプリでは macOS の鍵が違うので、一方でログインしたものはもう一方では読めません。設定には読めないことが出るので、ログインし直すか、ログアウトします。アプリが審査の前の「テスト中」のあいだは、Google がログインを7日で切るので、そのあとは設定から再びログインします。
+
 ## CI
 
 GitHub Actions(`.github/workflows/ci.yml`)が、main への push と pull request のたびに、次の job を同時に動かします。アプリの job は、Apple Silicon の macOS と x64 の Windows で動きます。

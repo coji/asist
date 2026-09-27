@@ -12,6 +12,7 @@ import {
  * The machine the demo pretends to run on. `?os=windows` gives the screens the capabilities of an x64
  * Windows PC with an RTX 2080, so what Windows offers can be looked at on a Mac, and `?gpu=` with a reason
  * such as `no-nvidia-gpu` takes that GPU away; without them the demo is an Apple Silicon Mac.
+ * `?calendar=google` gives either system Google Calendar, as ASIST_CALENDAR_BACKEND does in the app.
  */
 
 type DemoMachine = Omit<Machine, 'nvidiaGpu'>
@@ -19,8 +20,8 @@ type DemoMachine = Omit<Machine, 'nvidiaGpu'>
 // The Windows PC's microphone has echo cancellation on, so the demo shows the settings that go with the
 // native microphone on both systems.
 const MACHINES: Record<OsFamily, DemoMachine> = {
-  macos: { platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true },
-  windows: { platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true }
+  macos: { platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true, calendarBackend: undefined, googleClient: () => true },
+  windows: { platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true, calendarBackend: undefined, googleClient: () => true }
 }
 
 /** What nvidia-smi prints for the GPU of the Windows machine the port was measured on. */
@@ -51,4 +52,8 @@ export function demoNvidiaGpu(search: string): NvidiaGpuSupport {
 
 /** The capabilities of the machine the query names. */
 export const demoCapabilities = (search: string): PlatformCapabilities =>
-  deriveCapabilities({ ...MACHINES[demoOs(search)], nvidiaGpu: () => demoNvidiaGpu(search) })
+  deriveCapabilities({
+    ...MACHINES[demoOs(search)],
+    nvidiaGpu: () => demoNvidiaGpu(search),
+    calendarBackend: new URLSearchParams(search).get('calendar') ?? undefined
+  })

@@ -22,7 +22,7 @@ beforeAll(() => {
 })
 afterAll(() => rmSync(mocks.userData, { recursive: true, force: true }))
 
-import { runCalendarNative } from '../src/main/services/calendar'
+import { runCalendarNative } from '../src/main/services/calendar-eventkit'
 
 async function failure(answer: unknown): Promise<string> {
   mocks.stdout = JSON.stringify(answer)

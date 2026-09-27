@@ -118,6 +118,7 @@ const api: RendererApi = {
 
   calendarStatus: () => ipcRenderer.invoke(IpcChannel.CalendarStatus),
   calendarRequestAccess: () => ipcRenderer.invoke(IpcChannel.CalendarRequestAccess),
+  calendarSignOut: () => ipcRenderer.invoke(IpcChannel.CalendarSignOut),
   calendarEvents: (range) => ipcRenderer.invoke(IpcChannel.CalendarEvents, range),
   calendarChange: (change) => ipcRenderer.invoke(IpcChannel.CalendarChange, change),
   calendarOpenGuide: () => ipcRenderer.invoke(IpcChannel.CalendarOpenGuide),

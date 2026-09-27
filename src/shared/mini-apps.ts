@@ -12,9 +12,9 @@ import type { PlatformCapabilities } from './platform'
 export const MINI_APPS = ['notes', 'tasks', 'mail', 'calendar', 'jobs', 'memory', 'settings'] as const
 export type MiniApp = (typeof MINI_APPS)[number]
 
-/** Whether this machine has the mini app: the calendar needs the calendar of the OS. */
+/** Whether this machine has the mini app: the calendar needs a calendar to read. */
 export const miniAppAvailable = (app: MiniApp, capabilities: Pick<PlatformCapabilities, 'calendar'>): boolean =>
-  app !== 'calendar' || capabilities.calendar
+  app !== 'calendar' || capabilities.calendar !== null
 
 /** The pages of the settings mini app, in the order the list on the left shows them. */
 export const SETTINGS_PAGES = ['conversation', 'persona', 'voice', 'appearance', 'memory', 'agent', 'integrations', 'models', 'usage', 'about'] as const

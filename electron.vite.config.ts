@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import type { Plugin } from 'vite'
+import { loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -30,9 +30,23 @@ function bundledPackages(): Plugin {
   }
 }
 
-export default defineConfig({
+/**
+ * The OAuth client of Google, embedded in the main process from the environment of the build or from .env.
+ * CI passes them from its secrets to the jobs that package the app, and they are never in the repository.
+ * An empty value leaves the app without Google Calendar, which only ASIST_CALENDAR_BACKEND=google asks for.
+ */
+function googleClientDefines(mode: string): Record<string, string> {
+  const env = loadEnv(mode, process.cwd(), 'ASIST_GOOGLE_')
+  return {
+    ASIST_GOOGLE_CLIENT_ID: JSON.stringify(env.ASIST_GOOGLE_CLIENT_ID ?? ''),
+    ASIST_GOOGLE_CLIENT_SECRET: JSON.stringify(env.ASIST_GOOGLE_CLIENT_SECRET ?? '')
+  }
+}
+
+export default defineConfig(({ mode }) => ({
   main: {
     plugins: [externalizeDepsPlugin(), bundledPackages()],
+    define: googleClientDefines(mode),
     resolve: {
       alias: { '@shared': resolve('src/shared') }
     }
@@ -55,4 +69,4 @@ export default defineConfig({
       plugins: () => [bundledPackages()]
     }
   }
-})
+}))

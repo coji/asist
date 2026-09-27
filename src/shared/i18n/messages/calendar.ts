@@ -548,6 +548,19 @@ export const calendar = defineMessages({
       'pt-BR': 'Salvo no seu Mac. Não se sabe se já chegou aos seus outros serviços',
       'es-419': 'Se guardó en tu Mac. No se sabe si ya llegó a tus otros servicios',
       'es-ES': 'Guardado en tu Mac. No se sabe si ha llegado a tus otros servicios'
+    },
+    toGoogle: {
+      'ja-JP': 'Google カレンダーに保存しました',
+      'en-US': 'Saved to Google Calendar',
+      'fr-FR': 'Enregistré dans Google Agenda',
+      'de-DE': 'In Google Kalender gespeichert',
+      'hi-IN': 'Google Calendar में सेव किया',
+      'id-ID': 'Tersimpan di Google Kalender',
+      'it-IT': 'Salvato in Google Calendar',
+      'ko-KR': 'Google 캘린더에 저장했습니다',
+      'pt-BR': 'Salvo no Google Agenda',
+      'es-419': 'Se guardó en Google Calendar',
+      'es-ES': 'Guardado en Google Calendar'
     }
   },
   notice: {
@@ -628,6 +641,19 @@ export const calendar = defineMessages({
       'pt-BR': 'Privacidade nos Ajustes do Sistema',
       'es-419': 'Privacidad en macOS',
       'es-ES': 'Privacidad de macOS'
+    },
+    signIn: {
+      'ja-JP': 'Google でログイン',
+      'en-US': 'Sign in with Google',
+      'fr-FR': 'Se connecter avec Google',
+      'de-DE': 'Mit Google anmelden',
+      'hi-IN': 'Google से साइन इन करें',
+      'id-ID': 'Masuk dengan Google',
+      'it-IT': 'Accedi con Google',
+      'ko-KR': 'Google로 로그인',
+      'pt-BR': 'Fazer login com o Google',
+      'es-419': 'Iniciar sesión con Google',
+      'es-ES': 'Iniciar sesión con Google'
     }
   },
   access: {
@@ -682,6 +708,32 @@ export const calendar = defineMessages({
       'pt-BR': 'Exibir eventos exige acesso completo.',
       'es-419': 'Para mostrar los eventos hace falta el acceso completo.',
       'es-ES': 'Para mostrar los eventos hace falta acceso completo.'
+    },
+    googleSignedOut: {
+      'ja-JP': 'Google にログインしていません。',
+      'en-US': 'Not signed in to Google.',
+      'fr-FR': "Vous n'êtes pas connecté à Google.",
+      'de-DE': 'Sie sind nicht bei Google angemeldet.',
+      'hi-IN': 'आप Google में साइन इन नहीं हैं।',
+      'id-ID': 'Anda belum masuk ke Google.',
+      'it-IT': "Non hai eseguito l'accesso a Google.",
+      'ko-KR': 'Google에 로그인하지 않았습니다.',
+      'pt-BR': 'Você não entrou na sua conta do Google.',
+      'es-419': 'No iniciaste sesión en Google.',
+      'es-ES': 'No has iniciado sesión en Google.'
+    },
+    unreadable: {
+      'ja-JP': '保存した Google のログインを読めません。ログアウトするか、もう一度ログインしてください。',
+      'en-US': "The saved Google sign-in can't be read. Sign out, or sign in again.",
+      'fr-FR': 'La connexion Google enregistrée est illisible. Déconnectez-vous ou reconnectez-vous.',
+      'de-DE': 'Die gespeicherte Google-Anmeldung kann nicht gelesen werden. Melden Sie sich ab oder erneut an.',
+      'hi-IN': 'सेव किया गया Google साइन इन पढ़ा नहीं जा सकता। साइन आउट करें या फिर से साइन इन करें।',
+      'id-ID': 'Proses masuk Google yang tersimpan tidak bisa dibaca. Keluar, atau masuk lagi.',
+      'it-IT': "L'accesso a Google salvato non è leggibile. Esci o accedi di nuovo.",
+      'ko-KR': '저장한 Google 로그인을 읽을 수 없습니다. 로그아웃하거나 다시 로그인하십시오.',
+      'pt-BR': 'Não é possível ler o login do Google salvo. Saia ou entre de novo.',
+      'es-419': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.',
+      'es-ES': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.'
     }
   },
   card: {
@@ -1561,6 +1613,203 @@ export const calendar = defineMessages({
       'pt-BR': 'Não foi possível ler nem gravar o calendário deste Mac. Confira a permissão do calendário e o estado da sincronização.',
       'es-419': 'No se pudo leer ni escribir el calendario de esta Mac. Revisa el permiso del calendario y el estado de la sincronización.',
       'es-ES': 'No se ha podido leer ni escribir el calendario de este Mac. Comprueba el permiso del calendario y el estado de la sincronización.'
+    },
+    googleSignedOut: {
+      'ja-JP': 'Google にログインしていません。設定の連携でログインしてください。',
+      'en-US': 'Not signed in to Google. Sign in under Integrations in the settings.',
+      'fr-FR': "Vous n'êtes pas connecté à Google. Connectez-vous dans Intégrations, dans les réglages.",
+      'de-DE': 'Sie sind nicht bei Google angemeldet. Melden Sie sich in den Einstellungen unter Integrationen an.',
+      'hi-IN': 'आप Google में साइन इन नहीं हैं। सेटिंग्ज़ में इंटीग्रेशन के तहत साइन इन करें।',
+      'id-ID': 'Anda belum masuk ke Google. Masuk lewat Integrasi di pengaturan.',
+      'it-IT': "Non hai eseguito l'accesso a Google. Accedi da Integrazioni nelle impostazioni.",
+      'ko-KR': 'Google에 로그인하지 않았습니다. 설정의 연동에서 로그인하십시오.',
+      'pt-BR': 'Você não entrou na sua conta do Google. Entre em Integrações, nos ajustes.',
+      'es-419': 'No iniciaste sesión en Google. Inicia sesión en Integraciones, en la configuración.',
+      'es-ES': 'No has iniciado sesión en Google. Inicia sesión en Integraciones, en los ajustes.'
+    },
+    googleSignInDenied: {
+      'ja-JP': 'Google でのログインが許可されませんでした。',
+      'en-US': 'The sign-in was not allowed in Google.',
+      'fr-FR': "La connexion n'a pas été autorisée dans Google.",
+      'de-DE': 'Die Anmeldung wurde bei Google nicht erlaubt.',
+      'hi-IN': 'Google में साइन इन की इजाज़त नहीं दी गई।',
+      'id-ID': 'Proses masuk tidak diizinkan di Google.',
+      'it-IT': "L'accesso non è stato consentito in Google.",
+      'ko-KR': 'Google에서 로그인을 허용하지 않았습니다.',
+      'pt-BR': 'O login não foi permitido no Google.',
+      'es-419': 'No se permitió el inicio de sesión en Google.',
+      'es-ES': 'No se ha permitido el inicio de sesión en Google.'
+    },
+    googleSignInFailed: {
+      'ja-JP': 'Google にログインできませんでした。もう一度ログインしてください。',
+      'en-US': "Couldn't sign in to Google. Sign in again.",
+      'fr-FR': 'La connexion à Google a échoué. Connectez-vous de nouveau.',
+      'de-DE': 'Die Anmeldung bei Google ist fehlgeschlagen. Melden Sie sich erneut an.',
+      'hi-IN': 'Google में साइन इन नहीं हो सका। फिर से साइन इन करें।',
+      'id-ID': 'Tidak bisa masuk ke Google. Masuk lagi.',
+      'it-IT': 'Accesso a Google non riuscito. Accedi di nuovo.',
+      'ko-KR': 'Google에 로그인하지 못했습니다. 다시 로그인하십시오.',
+      'pt-BR': 'Não foi possível entrar no Google. Entre de novo.',
+      'es-419': 'No se pudo iniciar sesión en Google. Vuelve a iniciar sesión.',
+      'es-ES': 'No se ha podido iniciar sesión en Google. Vuelve a iniciar sesión.'
+    },
+    googleSignInTimedOut: {
+      'ja-JP': 'ブラウザでのログインが {minutes} 分以内に終わりませんでした。',
+      'en-US': 'The sign-in in the browser did not finish within {minutes} minutes.',
+      'fr-FR': "La connexion dans le navigateur ne s'est pas terminée en {minutes} minutes.",
+      'de-DE': 'Die Anmeldung im Browser wurde nicht innerhalb von {minutes} Minuten abgeschlossen.',
+      'hi-IN': 'ब्राउज़र में साइन इन {minutes} मिनट में पूरा नहीं हुआ।',
+      'id-ID': 'Proses masuk di browser tidak selesai dalam {minutes} menit.',
+      'it-IT': "L'accesso nel browser non si è concluso entro {minutes} minuti.",
+      'ko-KR': '브라우저에서 로그인이 {minutes}분 안에 끝나지 않았습니다.',
+      'pt-BR': 'O login no navegador não terminou em {minutes} minutos.',
+      'es-419': 'El inicio de sesión en el navegador no terminó en {minutes} minutos.',
+      'es-ES': 'El inicio de sesión en el navegador no ha terminado en {minutes} minutos.'
+    },
+    googleScopesMissing: {
+      'ja-JP': 'カレンダーの読み書きが許可されませんでした。もう一度ログインし、両方の項目にチェックを入れてください。',
+      'en-US': 'Reading and writing the calendar was not allowed. Sign in again and check both items.',
+      'fr-FR': "La lecture et l'écriture de l'agenda n'ont pas été autorisées. Reconnectez-vous et cochez les deux éléments.",
+      'de-DE': 'Lesen und Schreiben des Kalenders wurden nicht erlaubt. Melden Sie sich erneut an und setzen Sie bei beiden Punkten ein Häkchen.',
+      'hi-IN': 'कैलेंडर पढ़ने और लिखने की इजाज़त नहीं मिली। फिर से साइन इन करें और दोनों विकल्प चुनें।',
+      'id-ID': 'Membaca dan menulis kalender tidak diizinkan. Masuk lagi dan centang kedua pilihan.',
+      'it-IT': 'La lettura e la scrittura del calendario non sono state consentite. Accedi di nuovo e seleziona entrambe le voci.',
+      'ko-KR': '캘린더 읽기와 쓰기가 허용되지 않았습니다. 다시 로그인하고 두 항목을 모두 선택하십시오.',
+      'pt-BR': 'A leitura e a escrita da agenda não foram permitidas. Entre de novo e marque os dois itens.',
+      'es-419': 'No se permitió leer ni escribir el calendario. Vuelve a iniciar sesión y marca las dos opciones.',
+      'es-ES': 'No se ha permitido leer ni escribir el calendario. Vuelve a iniciar sesión y marca las dos opciones.'
+    },
+    googleRateLimited: {
+      'ja-JP': 'Google カレンダーへの問い合わせが多すぎます。しばらく待ってからもう一度試してください。',
+      'en-US': 'Too many requests to Google Calendar. Wait a while and try again.',
+      'fr-FR': 'Trop de requêtes envoyées à Google Agenda. Patientez un moment, puis réessayez.',
+      'de-DE': 'Zu viele Anfragen an Google Kalender. Warten Sie eine Weile und versuchen Sie es erneut.',
+      'hi-IN': 'Google Calendar को बहुत ज़्यादा अनुरोध भेजे गए। थोड़ी देर रुककर फिर कोशिश करें।',
+      'id-ID': 'Terlalu banyak permintaan ke Google Kalender. Tunggu sebentar, lalu coba lagi.',
+      'it-IT': "Troppe richieste a Google Calendar. Attendi un po' e riprova.",
+      'ko-KR': 'Google 캘린더에 요청이 너무 많습니다. 잠시 기다린 뒤 다시 시도하십시오.',
+      'pt-BR': 'Muitas solicitações ao Google Agenda. Aguarde um pouco e tente de novo.',
+      'es-419': 'Demasiadas solicitudes a Google Calendar. Espera un momento y vuelve a intentarlo.',
+      'es-ES': 'Demasiadas solicitudes a Google Calendar. Espera un momento y vuelve a intentarlo.'
+    },
+    googleRequestFailed: {
+      'ja-JP': 'Google カレンダーがエラーを返しました(HTTP {status})。',
+      'en-US': 'Google Calendar returned an error (HTTP {status}).',
+      'fr-FR': 'Google Agenda a renvoyé une erreur (HTTP {status}).',
+      'de-DE': 'Google Kalender hat einen Fehler gemeldet (HTTP {status}).',
+      'hi-IN': 'Google Calendar ने गड़बड़ी लौटाई (HTTP {status})।',
+      'id-ID': 'Google Kalender mengembalikan galat (HTTP {status}).',
+      'it-IT': 'Google Calendar ha restituito un errore (HTTP {status}).',
+      'ko-KR': 'Google 캘린더가 오류를 반환했습니다(HTTP {status}).',
+      'pt-BR': 'O Google Agenda retornou um erro (HTTP {status}).',
+      'es-419': 'Google Calendar devolvió un error (HTTP {status}).',
+      'es-ES': 'Google Calendar ha devuelto un error (HTTP {status}).'
+    },
+    googleOnly: {
+      'ja-JP': 'ログアウトは Google カレンダーにだけあります。',
+      'en-US': 'Only Google Calendar has a sign-out.',
+      'fr-FR': 'Seul Google Agenda propose la déconnexion.',
+      'de-DE': 'Nur Google Kalender hat eine Abmeldung.',
+      'hi-IN': 'साइन आउट सिर्फ़ Google Calendar में होता है।',
+      'id-ID': 'Hanya Google Kalender yang bisa keluar.',
+      'it-IT': 'Solo Google Calendar prevede la disconnessione.',
+      'ko-KR': '로그아웃은 Google 캘린더에만 있습니다.',
+      'pt-BR': 'Só o Google Agenda tem a opção de sair.',
+      'es-419': 'Solo Google Calendar permite cerrar sesión.',
+      'es-ES': 'Solo Google Calendar permite cerrar sesión.'
+    },
+    tokenEncryptionUnavailable: {
+      'ja-JP': 'このコンピュータでは暗号化が使えないため、Google のログインを保存できません。',
+      'en-US': 'Encryption is unavailable on this computer, so the Google sign-in cannot be saved.',
+      'fr-FR': "Le chiffrement n'est pas disponible sur cet ordinateur : la connexion Google ne peut pas être enregistrée.",
+      'de-DE': 'Auf diesem Computer ist keine Verschlüsselung verfügbar, daher kann die Google-Anmeldung nicht gespeichert werden.',
+      'hi-IN': 'इस कंप्यूटर पर एन्क्रिप्शन उपलब्ध नहीं है, इसलिए Google साइन इन सेव नहीं हो सकता।',
+      'id-ID': 'Enkripsi tidak tersedia di komputer ini, jadi proses masuk Google tidak bisa disimpan.',
+      'it-IT': "La crittografia non è disponibile su questo computer, quindi l'accesso a Google non può essere salvato.",
+      'ko-KR': '이 컴퓨터에서는 암호화를 쓸 수 없어 Google 로그인을 저장할 수 없습니다.',
+      'pt-BR': 'A criptografia não está disponível neste computador, então o login do Google não pode ser salvo.',
+      'es-419': 'El cifrado no está disponible en esta computadora, así que no se puede guardar el inicio de sesión de Google.',
+      'es-ES': 'El cifrado no está disponible en este ordenador, así que no se puede guardar el inicio de sesión de Google.'
+    },
+    tokenUnreadable: {
+      'ja-JP': '保存した Google のログインを読めません。ログアウトするか、もう一度ログインしてください。',
+      'en-US': "The saved Google sign-in can't be read. Sign out, or sign in again.",
+      'fr-FR': 'La connexion Google enregistrée est illisible. Déconnectez-vous ou reconnectez-vous.',
+      'de-DE': 'Die gespeicherte Google-Anmeldung kann nicht gelesen werden. Melden Sie sich ab oder erneut an.',
+      'hi-IN': 'सेव किया गया Google साइन इन पढ़ा नहीं जा सकता। साइन आउट करें या फिर से साइन इन करें।',
+      'id-ID': 'Proses masuk Google yang tersimpan tidak bisa dibaca. Keluar, atau masuk lagi.',
+      'it-IT': "L'accesso a Google salvato non è leggibile. Esci o accedi di nuovo.",
+      'ko-KR': '저장한 Google 로그인을 읽을 수 없습니다. 로그아웃하거나 다시 로그인하십시오.',
+      'pt-BR': 'Não é possível ler o login do Google salvo. Saia ou entre de novo.',
+      'es-419': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.',
+      'es-ES': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.'
+    },
+    tokenFileUnreadable: {
+      'ja-JP': '{file} を読めません: {reason}',
+      'en-US': "Can't read {file}: {reason}",
+      'fr-FR': 'Impossible de lire {file} : {reason}',
+      'de-DE': '{file} kann nicht gelesen werden: {reason}',
+      'hi-IN': '{file} पढ़ी नहीं जा सकती: {reason}',
+      'id-ID': '{file} tidak bisa dibaca: {reason}',
+      'it-IT': 'Impossibile leggere {file}: {reason}',
+      'ko-KR': '{file}을(를) 읽을 수 없습니다: {reason}',
+      'pt-BR': 'Não é possível ler {file}: {reason}',
+      'es-419': 'No se puede leer {file}: {reason}',
+      'es-ES': 'No se puede leer {file}: {reason}'
+    },
+    tokenFileBroken: {
+      'ja-JP': '{file} の内容が壊れています。ファイルを消してから、もう一度 Google にログインしてください。',
+      'en-US': 'The content of {file} is broken. Delete the file, then sign in to Google again.',
+      'fr-FR': 'Le contenu de {file} est endommagé. Supprimez le fichier, puis reconnectez-vous à Google.',
+      'de-DE': 'Der Inhalt von {file} ist beschädigt. Löschen Sie die Datei und melden Sie sich dann erneut bei Google an.',
+      'hi-IN': '{file} की सामग्री खराब है। फ़ाइल मिटाएँ, फिर से Google में साइन इन करें।',
+      'id-ID': 'Isi {file} rusak. Hapus berkas itu, lalu masuk lagi ke Google.',
+      'it-IT': 'Il contenuto di {file} è danneggiato. Elimina il file e poi accedi di nuovo a Google.',
+      'ko-KR': '{file}의 내용이 손상되었습니다. 파일을 지운 뒤 Google에 다시 로그인하십시오.',
+      'pt-BR': 'O conteúdo de {file} está corrompido. Apague o arquivo e entre de novo no Google.',
+      'es-419': 'El contenido de {file} está dañado. Borra el archivo y vuelve a iniciar sesión en Google.',
+      'es-ES': 'El contenido de {file} está dañado. Borra el archivo y vuelve a iniciar sesión en Google.'
+    },
+    googleBadResponse: {
+      'ja-JP': 'Google から読めない形の応答が返りました。',
+      'en-US': 'Google returned an answer ASIST cannot read.',
+      'fr-FR': "Google a renvoyé une réponse qu'ASIST ne sait pas lire.",
+      'de-DE': 'Google hat eine Antwort geliefert, die ASIST nicht lesen kann.',
+      'hi-IN': 'Google ने ऐसा जवाब लौटाया जिसे ASIST पढ़ नहीं सकता।',
+      'id-ID': 'Google mengembalikan jawaban yang tidak bisa dibaca ASIST.',
+      'it-IT': 'Google ha restituito una risposta che ASIST non sa leggere.',
+      'ko-KR': 'Google이 ASIST가 읽을 수 없는 응답을 반환했습니다.',
+      'pt-BR': 'O Google retornou uma resposta que o ASIST não consegue ler.',
+      'es-419': 'Google devolvió una respuesta que ASIST no puede leer.',
+      'es-ES': 'Google ha devuelto una respuesta que ASIST no puede leer.'
+    }
+  },
+  google: {
+    browserDone: {
+      'ja-JP': 'ASIST にログインしました。このタブを閉じて ASIST に戻ってください。',
+      'en-US': 'ASIST is signed in. Close this tab and go back to ASIST.',
+      'fr-FR': 'ASIST est connecté. Fermez cet onglet et revenez à ASIST.',
+      'de-DE': 'ASIST ist angemeldet. Schließen Sie diesen Tab und kehren Sie zu ASIST zurück.',
+      'hi-IN': 'ASIST साइन इन हो गया। यह टैब बंद करें और ASIST पर लौटें।',
+      'id-ID': 'ASIST sudah masuk. Tutup tab ini dan kembali ke ASIST.',
+      'it-IT': "ASIST ha eseguito l'accesso. Chiudi questa scheda e torna ad ASIST.",
+      'ko-KR': 'ASIST에 로그인했습니다. 이 탭을 닫고 ASIST로 돌아가십시오.',
+      'pt-BR': 'O ASIST entrou na sua conta. Feche esta aba e volte ao ASIST.',
+      'es-419': 'ASIST inició sesión. Cierra esta pestaña y vuelve a ASIST.',
+      'es-ES': 'ASIST ha iniciado sesión. Cierra esta pestaña y vuelve a ASIST.'
+    },
+    browserFailed: {
+      'ja-JP': 'ログインできませんでした。このタブを閉じて ASIST に戻ってください。',
+      'en-US': "Couldn't sign in. Close this tab and go back to ASIST.",
+      'fr-FR': 'La connexion a échoué. Fermez cet onglet et revenez à ASIST.',
+      'de-DE': 'Die Anmeldung ist fehlgeschlagen. Schließen Sie diesen Tab und kehren Sie zu ASIST zurück.',
+      'hi-IN': 'साइन इन नहीं हो सका। यह टैब बंद करें और ASIST पर लौटें।',
+      'id-ID': 'Tidak bisa masuk. Tutup tab ini dan kembali ke ASIST.',
+      'it-IT': 'Accesso non riuscito. Chiudi questa scheda e torna ad ASIST.',
+      'ko-KR': '로그인하지 못했습니다. 이 탭을 닫고 ASIST로 돌아가십시오.',
+      'pt-BR': 'Não foi possível entrar. Feche esta aba e volte ao ASIST.',
+      'es-419': 'No se pudo iniciar sesión. Cierra esta pestaña y vuelve a ASIST.',
+      'es-ES': 'No se ha podido iniciar sesión. Cierra esta pestaña y vuelve a ASIST.'
     }
   }
 })

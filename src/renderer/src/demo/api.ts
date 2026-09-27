@@ -618,6 +618,7 @@ export const mockApi: RendererApi = {
   },
   calendarStatus: async () => DEMO_CALENDAR_STATUS,
   calendarRequestAccess: async () => DEMO_CALENDAR_STATUS,
+  calendarSignOut: async () => ({ authorization: 'notDetermined', calendars: [], account: null }),
   calendarEvents: async ({ start, end }) =>
     demoCalendarEvents().filter((e) => overlaps(e, Date.parse(start), Date.parse(end))),
   calendarChange: async (change) => demoCalendarChange(change),

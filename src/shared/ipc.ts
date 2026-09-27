@@ -819,6 +819,7 @@ export const IpcChannel = {
   SetupProgress: 'setup-progress',
   CalendarStatus: 'calendar-status',
   CalendarRequestAccess: 'calendar-request-access',
+  CalendarSignOut: 'calendar-sign-out',
   CalendarEvents: 'calendar-events',
   CalendarChange: 'calendar-change',
   CalendarOpenGuide: 'calendar-open-guide',
@@ -1034,10 +1035,13 @@ export interface RendererApi {
   onJobEvent(callback: (event: JobEvent) => void): () => void
 
   calendarStatus(): Promise<CalendarStatus>
+  /** Asks macOS for access to EventKit, or signs in to Google through the browser unless it already has. */
   calendarRequestAccess(): Promise<CalendarStatus>
+  /** Takes back ASIST's access to Google Calendar. Only the Google calendar has a sign-in of ASIST's own. */
+  calendarSignOut(): Promise<CalendarStatus>
   /** The events in the range the calendar screen shows, at most 62 days, read only from the calendars chosen in the settings. */
   calendarEvents(range: CalendarListRange): Promise<CalendarEvent[]>
-  /** Adds, changes or deletes an event. It is saved only when the user approves it in the macOS confirmation dialog. */
+  /** Adds, changes or deletes an event. It is saved only when the user approves it in the in-app confirmation. */
   calendarChange(change: CalendarChange): Promise<CalendarChangeResult>
   calendarOpenGuide(): Promise<void>
   calendarOpenPrivacy(): Promise<void>

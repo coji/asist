@@ -40,6 +40,19 @@ export const settingsIntegrations = defineMessages({
       'pt-BR': 'Conecte o e-mail e registre a chave de API de cada provedor de modelos.',
       'es-419': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.',
       'es-ES': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.'
+    },
+    withGoogleCalendar: {
+      'ja-JP': 'Google カレンダーとメールにつなぎ、モデルのプロバイダの API キーを登録します。',
+      'en-US': 'Connect Google Calendar and mail, and register the API key of each model provider.',
+      'fr-FR': 'Connectez Google Agenda et la messagerie, et enregistrez la clé API de chaque fournisseur de modèles.',
+      'de-DE': 'Verbinden Sie Google Kalender und Mail und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
+      'hi-IN': 'Google Calendar और मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
+      'id-ID': 'Sambungkan Google Kalender dan email, lalu daftarkan kunci API tiap penyedia model.',
+      'it-IT': 'Collega Google Calendar e la posta e registra la chiave API di ogni provider di modelli.',
+      'ko-KR': 'Google 캘린더와 메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
+      'pt-BR': 'Conecte o Google Agenda e o e-mail e registre a chave de API de cada provedor de modelos.',
+      'es-419': 'Conecta Google Calendar y el correo, y registra la clave de API de cada proveedor de modelos.',
+      'es-ES': 'Conecta Google Calendar y el correo, y registra la clave de API de cada proveedor de modelos.'
     }
   },
   apiKeys: {

@@ -7,8 +7,14 @@ import { LLM_PROVIDERS, LLM_PROVIDER_INFO } from '@shared/llm-catalog'
  * ANTHROPIC_API_KEY.
  */
 
-/** Variables that no child receives, even when a caller passes one in `extra`. */
-export const WITHHELD_VARIABLES: readonly string[] = LLM_PROVIDERS.map((provider) => LLM_PROVIDER_INFO[provider].envKey)
+/**
+ * Variables that no child receives, even when a caller passes one in `extra`. The secret of Google's OAuth
+ * client reaches process.env from .env in a run from the repository, and no child signs in to Google.
+ */
+export const WITHHELD_VARIABLES: readonly string[] = [
+  ...LLM_PROVIDERS.map((provider) => LLM_PROVIDER_INFO[provider].envKey),
+  'ASIST_GOOGLE_CLIENT_SECRET'
+]
 
 /**
  * A variable's name as the OS compares it. Windows ignores the case, so Anthropic_Api_Key there is the same

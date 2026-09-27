@@ -2656,6 +2656,19 @@ export const setup = defineMessages({
       'pt-BR': '{engine} (voz: {voice})',
       'es-419': '{engine} (voz: {voice})',
       'es-ES': '{engine} (voz: {voice})'
+    },
+    calendarValueGoogle: {
+      'ja-JP': 'Google カレンダーの予定を見て、追加や変更ができます',
+      'en-US': 'Reads events from Google Calendar, and adds or changes them',
+      'fr-FR': 'Lit les événements de Google Agenda, et peut en ajouter ou en modifier',
+      'de-DE': 'Sieht die Termine aus Google Kalender und fügt welche hinzu oder ändert sie',
+      'hi-IN': 'Google Calendar के इवेंट पढ़ता है, और उन्हें जोड़ता या बदलता है',
+      'id-ID': 'Membaca acara dari Google Kalender, lalu menambah atau mengubahnya',
+      'it-IT': 'Legge gli eventi di Google Calendar e li aggiunge o li modifica',
+      'ko-KR': 'Google 캘린더의 일정을 보고, 추가하거나 바꿀 수 있습니다',
+      'pt-BR': 'Lê os eventos do Google Agenda e adiciona ou altera eventos',
+      'es-419': 'Lee los eventos de Google Calendar, y los agrega o los cambia',
+      'es-ES': 'Lee los eventos de Google Calendar, y los añade o los cambia'
     }
   },
   completion: {

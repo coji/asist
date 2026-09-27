@@ -1,10 +1,7 @@
-import { z } from 'zod'
 import {
   calendarChangeSchema,
-  calendarEventSchema,
   calendarListSchema,
   calendarSearchSchema,
-  calendarStatusSchema,
   type CalendarChange,
   type CalendarChangeResult,
   type CalendarEvent,
@@ -16,13 +13,11 @@ import type { AppSettings } from '@shared/settings'
 import { t } from './i18n'
 import { getSettings } from './settings'
 import { formatLocaleOf } from '@shared/conversation-locale'
+import { CalendarWriteRejected, type CalendarBackend } from './calendar-backend'
 
 interface Dependencies {
   settings: () => AppSettings['calendar']
-  native: (
-    input: Record<string, unknown>,
-    signal?: AbortSignal
-  ) => Promise<unknown>
+  backend: CalendarBackend
   confirm: (detail: string, signal: AbortSignal, destructive: boolean) => Promise<boolean>
 }
 
@@ -53,12 +48,8 @@ export class CalendarService {
   private changing = false
   constructor(private readonly deps: Dependencies) {}
 
-  async status(requestAccess = false): Promise<CalendarStatus> {
-    return calendarStatusSchema.parse(
-      await this.deps.native({
-        operation: requestAccess ? 'requestAccess' : 'status'
-      })
-    )
+  status(requestAccess = false): Promise<CalendarStatus> {
+    return requestAccess ? this.deps.backend.requestAccess() : this.deps.backend.status()
   }
 
   private enabled(): AppSettings['calendar'] {
@@ -94,11 +85,9 @@ export class CalendarService {
   private async eventsIn(start: string, end: string, signal?: AbortSignal): Promise<CalendarEvent[]> {
     const settings = this.enabled()
     if (!settings.readCalendarIds.length) throw new Error(errorText('calendar.errors.noReadCalendars'))
-    const events = z
-      .array(calendarEventSchema)
-      .parse(await this.deps.native({ operation: 'search', calendarIds: settings.readCalendarIds, start, end }, signal))
-    // The helper asks EventKit from a minute before the range, so that an event without length at its
-    // start is matched however EventKit tests overlap, and the range is applied here, by the rule the
+    const events = await this.deps.backend.events(settings.readCalendarIds, start, end, signal)
+    // A backend asks its calendar from a minute before the range, so that an event without length at its
+    // start is matched however the calendar tests overlap, and the range is applied here, by the rule the
     // calendar screen puts an event on a day with.
     return events.filter((event) => overlaps(event, Date.parse(start), Date.parse(end)))
   }
@@ -121,12 +110,7 @@ export class CalendarService {
           throw new Error(errorText('calendar.errors.noWriteCalendar'))
         calendarId = settings.writeCalendarId
       } else {
-        before = calendarEventSchema.parse(
-          await this.deps.native(
-            { operation: 'get', eventId: input.eventId },
-            signal
-          )
-        )
+        before = await this.deps.backend.event(input.eventId, signal)
         if (!settings.readCalendarIds.includes(before.calendarId))
           throw new Error(errorText('calendar.errors.notReadable'))
         if (before.recurring || before.hasAttendees)
@@ -138,6 +122,9 @@ export class CalendarService {
       )
       if (!calendar?.writable)
         throw new Error(errorText('calendar.errors.destinationUnwritable'))
+      // Google keeps events on a writable calendar that its API does not let anyone change, such as a
+      // birthday or an out-of-office block.
+      if (before && !before.writable) throw new Error(errorText('calendar.errors.locked'))
       const after =
         input.operation === 'delete'
           ? undefined
@@ -150,7 +137,7 @@ export class CalendarService {
         t(`calendar.confirm.${input.operation}`, { calendar: `${calendar.source} / ${calendar.title}` }),
         before ? `${t('calendar.confirm.before')}\n${describe(before)}` : '',
         after ? `${t('calendar.confirm.after')}\n${describe(after)}` : '',
-        t('calendar.confirm.syncNote')
+        this.deps.backend.syncNote ? t(this.deps.backend.syncNote) : ''
       ]
         .filter(Boolean)
         .join('\n\n')
@@ -163,21 +150,22 @@ export class CalendarService {
       // Once dispatched, do not cancel or retry a write: a lost response cannot prove it was not saved.
       let event: CalendarEvent
       try {
-        event = calendarEventSchema.parse(
-          await this.deps.native({
-            ...input,
-            calendarId,
-            ...(before ? { revision: before.revision } : {})
-          })
+        event = await this.deps.backend.write(
+          input.operation === 'create'
+            ? { operation: 'create', calendar, event: input.event }
+            : input.operation === 'update'
+              ? { operation: 'update', before: before!, event: input.event }
+              : { operation: 'delete', before: before! }
         )
-      } catch {
-        throw new Error(errorText('calendar.errors.resultUnknown'))
+      } catch (error) {
+        if (error instanceof CalendarWriteRejected) throw error
+        throw new Error(errorText('calendar.errors.resultUnknown'), { cause: error })
       }
       return {
         saved: true,
         operation: input.operation,
         event,
-        sync: t('calendar.saved.toMac')
+        sync: t(this.deps.backend.savedTo)
       }
     } finally {
       this.changing = false

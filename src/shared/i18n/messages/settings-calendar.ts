@@ -170,6 +170,19 @@ export const settingsCalendar = defineMessages({
       'pt-BR': 'O acesso ao calendário está permitido.',
       'es-419': 'El acceso al calendario está concedido.',
       'es-ES': 'El acceso al calendario está permitido.'
+    },
+    unreadable: {
+      'ja-JP': '保存した Google のログインを読めません。ログアウトするか、もう一度ログインしてください。',
+      'en-US': "The saved Google sign-in can't be read. Sign out, or sign in again.",
+      'fr-FR': 'La connexion Google enregistrée est illisible. Déconnectez-vous ou reconnectez-vous.',
+      'de-DE': 'Die gespeicherte Google-Anmeldung kann nicht gelesen werden. Melden Sie sich ab oder erneut an.',
+      'hi-IN': 'सेव किया गया Google साइन इन पढ़ा नहीं जा सकता। साइन आउट करें या फिर से साइन इन करें।',
+      'id-ID': 'Proses masuk Google yang tersimpan tidak bisa dibaca. Keluar, atau masuk lagi.',
+      'it-IT': "L'accesso a Google salvato non è leggibile. Esci o accedi di nuovo.",
+      'ko-KR': '저장한 Google 로그인을 읽을 수 없습니다. 로그아웃하거나 다시 로그인하십시오.',
+      'pt-BR': 'Não é possível ler o login do Google salvo. Saia ou entre de novo.',
+      'es-419': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.',
+      'es-ES': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.'
     }
   },
   access: {
@@ -366,5 +379,163 @@ export const settingsCalendar = defineMessages({
     'pt-BR': 'Erro',
     'es-419': 'Error',
     'es-ES': 'Error'
+  },
+  google: {
+    description: {
+      'ja-JP': 'Google カレンダーの予定を読み書きします。追加、変更、削除は実行する前に確認します。',
+      'en-US': 'Reads and writes the events in Google Calendar. Adding, changing and deleting are confirmed before they run.',
+      'fr-FR': "Lit et modifie les événements de Google Agenda. Les ajouts, les modifications et les suppressions sont confirmés avant d'être appliqués.",
+      'de-DE': 'Liest und schreibt die Termine in Google Kalender. Hinzufügen, Ändern und Löschen bestätigen Sie, bevor sie ausgeführt werden.',
+      'hi-IN': 'Google Calendar के इवेंट पढ़े और लिखे जाते हैं। जोड़ना, बदलना और मिटाना, चलने से पहले पूछा जाता है।',
+      'id-ID': 'Membaca dan menulis acara di Google Kalender. Penambahan, perubahan, dan penghapusan dikonfirmasi sebelum dijalankan.',
+      'it-IT': "Legge e scrive gli eventi di Google Calendar. L'aggiunta, la modifica e l'eliminazione vengono confermate prima di essere eseguite.",
+      'ko-KR': 'Google 캘린더의 일정을 읽고 씁니다. 추가, 변경, 삭제는 실행하기 전에 확인합니다.',
+      'pt-BR': 'Lê e escreve os eventos do Google Agenda. Adicionar, alterar e apagar são confirmados antes de acontecer.',
+      'es-419': 'Lee y escribe los eventos de Google Calendar. Agregar, cambiar y eliminar se confirman antes de ejecutarse.',
+      'es-ES': 'Lee y escribe los eventos de Google Calendar. Antes de añadir, cambiar o eliminar un evento se pide confirmación.'
+    },
+    account: {
+      'ja-JP': 'Google アカウント',
+      'en-US': 'Google account',
+      'fr-FR': 'Compte Google',
+      'de-DE': 'Google-Konto',
+      'hi-IN': 'Google खाता',
+      'id-ID': 'Akun Google',
+      'it-IT': 'Account Google',
+      'ko-KR': 'Google 계정',
+      'pt-BR': 'Conta do Google',
+      'es-419': 'Cuenta de Google',
+      'es-ES': 'Cuenta de Google'
+    },
+    signedIn: {
+      'ja-JP': 'ログイン中',
+      'en-US': 'Signed in',
+      'fr-FR': 'Connecté',
+      'de-DE': 'Angemeldet',
+      'hi-IN': 'साइन इन है',
+      'id-ID': 'Sudah masuk',
+      'it-IT': 'Accesso eseguito',
+      'ko-KR': '로그인됨',
+      'pt-BR': 'Conectado',
+      'es-419': 'Sesión iniciada',
+      'es-ES': 'Sesión iniciada'
+    },
+    notSignedIn: {
+      'ja-JP': '未ログイン',
+      'en-US': 'Not signed in',
+      'fr-FR': 'Non connecté',
+      'de-DE': 'Nicht angemeldet',
+      'hi-IN': 'साइन इन नहीं',
+      'id-ID': 'Belum masuk',
+      'it-IT': 'Accesso non eseguito',
+      'ko-KR': '로그인 안 됨',
+      'pt-BR': 'Não conectado',
+      'es-419': 'Sin sesión',
+      'es-ES': 'Sin sesión'
+    },
+    signedOutHint: {
+      'ja-JP': 'Google にログインしていません。',
+      'en-US': 'Not signed in to Google.',
+      'fr-FR': "Vous n'êtes pas connecté à Google.",
+      'de-DE': 'Sie sind nicht bei Google angemeldet.',
+      'hi-IN': 'आप Google में साइन इन नहीं हैं।',
+      'id-ID': 'Anda belum masuk ke Google.',
+      'it-IT': "Non hai eseguito l'accesso a Google.",
+      'ko-KR': 'Google에 로그인하지 않았습니다.',
+      'pt-BR': 'Você não entrou na sua conta do Google.',
+      'es-419': 'No iniciaste sesión en Google.',
+      'es-ES': 'No has iniciado sesión en Google.'
+    },
+    signingIn: {
+      'ja-JP': 'ブラウザで Google にログインしてください。',
+      'en-US': 'Sign in to Google in your browser.',
+      'fr-FR': 'Connectez-vous à Google dans votre navigateur.',
+      'de-DE': 'Melden Sie sich im Browser bei Google an.',
+      'hi-IN': 'अपने ब्राउज़र में Google में साइन इन करें।',
+      'id-ID': 'Masuk ke Google di browser Anda.',
+      'it-IT': 'Accedi a Google nel browser.',
+      'ko-KR': '브라우저에서 Google에 로그인하십시오.',
+      'pt-BR': 'Entre na sua conta do Google no navegador.',
+      'es-419': 'Inicia sesión en Google en tu navegador.',
+      'es-ES': 'Inicia sesión en Google en tu navegador.'
+    },
+    signIn: {
+      'ja-JP': 'Google でログイン',
+      'en-US': 'Sign in with Google',
+      'fr-FR': 'Se connecter avec Google',
+      'de-DE': 'Mit Google anmelden',
+      'hi-IN': 'Google से साइन इन करें',
+      'id-ID': 'Masuk dengan Google',
+      'it-IT': 'Accedi con Google',
+      'ko-KR': 'Google로 로그인',
+      'pt-BR': 'Fazer login com o Google',
+      'es-419': 'Iniciar sesión con Google',
+      'es-ES': 'Iniciar sesión con Google'
+    },
+    signOut: {
+      'ja-JP': 'ログアウト',
+      'en-US': 'Sign out',
+      'fr-FR': 'Se déconnecter',
+      'de-DE': 'Abmelden',
+      'hi-IN': 'साइन आउट करें',
+      'id-ID': 'Keluar',
+      'it-IT': 'Esci',
+      'ko-KR': '로그아웃',
+      'pt-BR': 'Sair',
+      'es-419': 'Cerrar sesión',
+      'es-ES': 'Cerrar sesión'
+    },
+    enableHint: {
+      'ja-JP': 'Google にログインするとオンにできます。',
+      'en-US': 'Sign in to Google to turn it on.',
+      'fr-FR': "Connectez-vous à Google pour l'activer.",
+      'de-DE': 'Melden Sie sich bei Google an, um sie einzuschalten.',
+      'hi-IN': 'इसे चालू करने के लिए Google में साइन इन करें।',
+      'id-ID': 'Masuk ke Google untuk menyalakannya.',
+      'it-IT': 'Accedi a Google per attivarla.',
+      'ko-KR': 'Google에 로그인하면 켤 수 있습니다.',
+      'pt-BR': 'Entre na sua conta do Google para ativar.',
+      'es-419': 'Inicia sesión en Google para activarla.',
+      'es-ES': 'Inicia sesión en Google para activarla.'
+    },
+    list: {
+      'ja-JP': 'カレンダーの一覧',
+      'en-US': 'Calendar list',
+      'fr-FR': 'Liste des agendas',
+      'de-DE': 'Kalenderliste',
+      'hi-IN': 'कैलेंडर की सूची',
+      'id-ID': 'Daftar kalender',
+      'it-IT': 'Elenco dei calendari',
+      'ko-KR': '캘린더 목록',
+      'pt-BR': 'Lista de agendas',
+      'es-419': 'Lista de calendarios',
+      'es-ES': 'Lista de calendarios'
+    },
+    refreshHint: {
+      'ja-JP': 'カレンダーの一覧が古いときは更新します。',
+      'en-US': 'Refresh the list when it is out of date.',
+      'fr-FR': "Actualisez la liste quand elle n'est plus à jour.",
+      'de-DE': 'Aktualisieren Sie die Liste, wenn sie nicht mehr stimmt.',
+      'hi-IN': 'सूची पुरानी हो तो उसे रीफ़्रेश करें।',
+      'id-ID': 'Segarkan daftarnya kalau sudah tidak terbaru.',
+      'it-IT': "Aggiorna l'elenco quando non è più attuale.",
+      'ko-KR': '캘린더 목록이 오래되었으면 새로 고칩니다.',
+      'pt-BR': 'Atualize a lista quando ela estiver desatualizada.',
+      'es-419': 'Actualiza la lista cuando esté desactualizada.',
+      'es-ES': 'Actualiza la lista cuando esté desactualizada.'
+    },
+    noCalendars: {
+      'ja-JP': 'カレンダーがありません。Google カレンダーで作ってから、一覧を更新してください。',
+      'en-US': 'There are no calendars. Create one in Google Calendar, then refresh the list.',
+      'fr-FR': 'Aucun agenda. Créez-en un dans Google Agenda, puis actualisez la liste.',
+      'de-DE': 'Es gibt keine Kalender. Erstellen Sie einen in Google Kalender und aktualisieren Sie dann die Liste.',
+      'hi-IN': 'कोई कैलेंडर नहीं है। Google Calendar में एक बनाएँ, फिर सूची रीफ़्रेश करें।',
+      'id-ID': 'Tidak ada kalender. Buat satu di Google Kalender, lalu segarkan daftarnya.',
+      'it-IT': "Non ci sono calendari. Creane uno in Google Calendar, poi aggiorna l'elenco.",
+      'ko-KR': '캘린더가 없습니다. Google 캘린더에서 만든 뒤 목록을 새로 고치십시오.',
+      'pt-BR': 'Não há agendas. Crie uma no Google Agenda e depois atualize a lista.',
+      'es-419': 'No hay calendarios. Crea uno en Google Calendar y luego actualiza la lista.',
+      'es-ES': 'No hay calendarios. Crea uno en Google Calendar y después actualiza la lista.'
+    }
   }
 })

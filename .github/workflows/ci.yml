@@ -97,6 +97,11 @@ jobs:
           key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:mac:unsigned
+        # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
+        # gets no secrets and builds without it, which only ASIST_CALENDAR_BACKEND=google would notice.
+        env:
+          ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
+          ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}
       - name: Run the git and uv inside the app
         run: |
           resources="dist/mac-arm64/ASIST.app/Contents/Resources"
@@ -131,6 +136,11 @@ jobs:
           key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:win:dir
+        # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
+        # gets no secrets and builds without it, which only ASIST_CALENDAR_BACKEND=google would notice.
+        env:
+          ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
+          ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}
       - name: Run the git, uv, agent launcher and microphone helper inside the app
         shell: bash
         run: |

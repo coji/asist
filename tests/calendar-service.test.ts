@@ -14,6 +14,7 @@ beforeAll(() => {
 afterAll(() => rmSync(mocks.userData, { recursive: true, force: true }))
 
 import { CalendarService } from '../src/main/services/calendar-service'
+import { eventKitBackend } from '../src/main/services/calendar-eventkit'
 import {
   calendarEventInputSchema,
   calendarWindow,
@@ -71,7 +72,7 @@ function fixture(patch = {}) {
   const confirm = vi.fn(async () => true)
   const service = new CalendarService({
     settings: () => settings,
-    native,
+    backend: eventKitBackend(native),
     confirm
   })
   const signal = new AbortController()

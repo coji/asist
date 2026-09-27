@@ -1,6 +1,7 @@
 import { resolveWeatherCard, WeatherIssueError } from '../weather'
 import { weatherCardKeyOf, type WeatherData, type WeatherIssue } from '@shared/weather'
-import { PANEL_CATALOG, panelAvailable, type PanelCatalogEntry } from '@shared/panel-catalog'
+import { PANEL_CATALOG, panelAvailable, panelDescription, type PanelCatalogEntry } from '@shared/panel-catalog'
+import type { PlatformCapabilities } from '@shared/platform'
 import { MINI_APPS, miniAppAvailable } from '@shared/mini-apps'
 import type { AgentJob, PanelEvent, TurnEvent } from '@shared/ipc'
 import type { SearchSource, ToolSpec } from '@shared/conversation'
@@ -86,12 +87,12 @@ const WEB_SEARCH_USAGE: PromptText = {
   en: 'Anything you can answer by reading and summarizing: news, what is new, checking a fact. Say one short filler sentence first, such as that you will look it up. If two or three searches are not enough, say you will look into it properly in the background, hand the work to run_agent_task, and do not keep at it in silence.'
 }
 
-function panelTool(entry: PanelCatalogEntry, language: PromptLanguage): Def {
+function panelTool(entry: PanelCatalogEntry, language: PromptLanguage, capabilities: PlatformCapabilities): Def {
   const type = entry.type
   const localWrite = LOCAL_WRITE_PANELS.has(type)
   return {
     name: `show_${type.replace(/-/g, '_')}`,
-    description: entry.description,
+    description: panelDescription(entry, capabilities),
     ...(PANEL_USAGE[type] ? { usage: PANEL_USAGE[type] } : {}),
     inputSchema: inputJsonSchema(entry.schema),
     // Showing and fetching only read, while the timer writes locally and therefore runs serially.
@@ -257,11 +258,11 @@ export function toolRegistry(locale: ConversationLocale = conversationLocale()):
   const language = promptLanguage(locale)
   const capabilities = platformCapabilities()
   const registry = createToolRegistry<ToolContext>([
-    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, language)),
+    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, language, capabilities)),
     agentTool(locale),
     ...taskTools(language),
     ...noteTools(language),
-    ...(capabilities.calendar ? calendarTools(locale) : []),
+    ...(capabilities.calendar !== null ? calendarTools(locale) : []),
     ...mailTools(language),
     ...jobTools(locale),
     ...projectTools(language),

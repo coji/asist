@@ -1,3 +1,4 @@
+import type { CalendarStatus } from '@shared/calendar'
 import type { RendererApi, SetupProgress } from '@shared/ipc'
 import type { SettingsPage } from '@shared/mini-apps'
 import { dayKey } from '@shared/calendar-layout'
@@ -11,6 +12,7 @@ import type { ScreenName } from './screens'
 import { prepareSetupDemo } from './setup-demo'
 import { DEMO_NOTES } from './fixtures/notes'
 import { DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGES } from './fixtures/mail'
+import { DEMO_GOOGLE_CALENDAR_STATUS } from './fixtures/calendar'
 
 /**
  * How the demo opens each screen and state. The names and how they appear in the list live in
@@ -31,6 +33,27 @@ export interface DemoView {
 
 const view = (): ReturnType<typeof useViewStore.getState> => useViewStore.getState()
 const settingsPage = (page: SettingsPage): DemoView => ({ open: () => view().openApp({ app: 'settings', page }) })
+
+/**
+ * The integrations page of a machine whose calendar is Google's: signed in, signed out, or holding a sign-in
+ * another build saved. Signing in from the page succeeds at once, and signing out goes back to the page
+ * without an account.
+ */
+const googleCalendarSettings = (signIn: 'signedIn' | 'signedOut' | 'unreadable'): DemoView => ({
+  prepare: (api) => {
+    const capabilities = api.getPlatformCapabilities
+    api.getPlatformCapabilities = async () => ({ ...(await capabilities()), calendar: 'google' })
+    const signedOut: CalendarStatus = { authorization: 'notDetermined', calendars: [], account: null }
+    const signedIn = signIn === 'signedIn'
+    let status: CalendarStatus =
+      signIn === 'signedIn' ? DEMO_GOOGLE_CALENDAR_STATUS : signIn === 'unreadable' ? { ...signedOut, authorization: 'unreadable' } : signedOut
+    api.calendarStatus = async () => status
+    api.calendarRequestAccess = async () => (status = DEMO_GOOGLE_CALENDAR_STATUS)
+    api.calendarSignOut = async () => (status = signedOut)
+    if (!signedIn) void api.saveSettings({ calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null } })
+  },
+  open: () => view().openApp({ app: 'settings', page: 'integrations' })
+})
 
 /**
  * Semantic search on the models page while its model downloads. The download stops at 40% and never
@@ -124,6 +147,9 @@ export const DEMO_VIEWS: Record<ScreenName, DemoView> = {
   'settings/memory': settingsPage('memory'),
   'settings/agent': settingsPage('agent'),
   'settings/integrations': settingsPage('integrations'),
+  'settings/integrations/google': googleCalendarSettings('signedIn'),
+  'settings/integrations/google-signed-out': googleCalendarSettings('signedOut'),
+  'settings/integrations/google-unreadable': googleCalendarSettings('unreadable'),
   'settings/models': settingsPage('models'),
   'settings/usage': settingsPage('usage'),
   'settings/about': settingsPage('about'),

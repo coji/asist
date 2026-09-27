@@ -79,7 +79,9 @@ function prepareCrashFixture(descendant: boolean): { entry: string; repo: string
   buildSync({
     stdin: { contents: `import * as agent from './src/main/services/agent'; console.log(JSON.stringify(agent.startIsolated('fixture writer',{cwd:process.env.ASIST_TEST_REPO!,worktreeRoot:process.env.ASIST_TEST_WORKTREES!,noteProject:false}))); setInterval(()=>{},1000);`, resolveDir: process.cwd(), loader: 'ts' },
     outfile: entry, bundle: true, platform: 'node', format: 'cjs', target: 'node22',
-    alias: { electron }, tsconfig: path.join(process.cwd(), 'tsconfig.node.json'), logLevel: 'silent'
+    alias: { electron }, tsconfig: path.join(process.cwd(), 'tsconfig.node.json'), logLevel: 'silent',
+    // What electron.vite.config.ts embeds in every build of the main process.
+    define: { ASIST_GOOGLE_CLIENT_ID: '""', ASIST_GOOGLE_CLIENT_SECRET: '""' }
   })
   vi.stubEnv('CODEX_CLI_PATH', cli)
   return { entry, repo, env: {

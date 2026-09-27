@@ -91,6 +91,7 @@ export const rendererApiMethods = [
   'onJobEvent',
   'calendarStatus',
   'calendarRequestAccess',
+  'calendarSignOut',
   'calendarEvents',
   'calendarChange',
   'calendarOpenGuide',
