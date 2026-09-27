@@ -35,6 +35,7 @@ export const SCREENS = {
   'setup/key-failed': { label: 'セットアップ(キーの認証に失敗)', group: '起動と確認' },
   'setup/mic-denied': { label: 'セットアップ(マイクが不許可)', group: '起動と確認' },
   'setup/tts-missing': { label: 'セットアップ(読み上げのアプリがない)', group: '起動と確認' },
+  'setup/live-key-failed': { label: 'セットアップ(音声モデルのキーの認証に失敗)', group: '起動と確認' },
   safety: { label: 'リスクの確認(セットアップを終えた人)', group: '起動と確認' },
   boot: { label: '起動中', group: '起動と確認' },
   'boot/error': { label: '起動の失敗', group: '起動と確認' },

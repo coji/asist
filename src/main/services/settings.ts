@@ -32,8 +32,8 @@ function defaultSettings(): AppSettings {
     // Choosing a provider during the first setup replaces these with that provider's defaults from
     // llm-catalog, so this value is only what the screen shows before a choice has been made.
     ...defaultModelsFor('anthropic'),
-    // The cascade voice engine is the default, because a live engine can only be chosen on the settings
-    // screen once the provider's key has been saved.
+    // The cascade voice engine is the default, because a live engine needs its provider's key, which only
+    // the first setup or the settings screen can verify; completing the setup saves the engine it chose.
     voiceEngine: 'cascade',
     gptLive: { ...DEFAULT_LIVE_MODELS['gpt-live'] },
     geminiLive: { ...DEFAULT_LIVE_MODELS['gemini-live'] },

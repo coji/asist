@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { LLM_PROVIDER_INFO, defaultModelsFor, modelLabel, sameModel, type LlmProvider } from '@shared/llm-catalog'
-import { keyReadable, type SetupProgress, type SetupStatus } from '@shared/ipc'
+import { keyReadable, type SetupProgress, type SetupStatus, type SetupVoiceMode } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { errorText } from '@shared/i18n/error-text'
 import { qwenTtsRuns, ttsEngineRuns } from '@shared/tts-models'
@@ -21,6 +21,8 @@ import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import type { MessageKey } from '@shared/i18n'
 import { osMessageKey } from '@shared/i18n/os-message'
+import { LIVE_ENGINE_INFO, type LiveEngine } from '@shared/voice-engine'
+import { LiveEngineChoice } from './setup/live'
 
 /**
  * The first-run setup. It completes only once every requirement has actually been verified, and it
@@ -34,6 +36,7 @@ type StepId = (typeof STEPS)[number]
 /** The way of talking is named in the same words on its own screen and in the summary. */
 const SPEAKING_TITLE = {
   voice: 'setup.speaking.voice.title',
+  live: 'setup.speaking.live.title',
   'type-and-listen': 'setup.speaking.typeAndListen.title',
   'text-only': 'setup.speaking.textOnly.title'
 } as const satisfies Record<SpeakingMode, MessageKey>
@@ -51,6 +54,8 @@ export function SetupWizard(): React.JSX.Element | null {
   const [apiBusy, setApiBusy] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<SpeakingMode | null>(null)
+  const [live, setLive] = useState<LiveEngine | null>(null)
+  const [liveKey, setLiveKey] = useState('')
   const [listening, setListening] = useState<ListeningChoice | null>(null)
   const [localReady, setLocalReady] = useState(false)
   const [localProgress, setLocalProgress] = useState<number | null>(null)
@@ -123,12 +128,15 @@ export function SetupWizard(): React.JSX.Element | null {
   const serverReady = setup?.services.asr === true
   const listeningReady = (listening === 'server' && serverReady) || (listening === 'local' && localReady)
   const ttsReady = setup?.services.tts === true
+  const liveProvider = live ? LIVE_ENGINE_INFO[live].provider : null
+  const liveKeyState = liveProvider ? (setup?.services.llmKeys[liveProvider] ?? 'missing') : 'missing'
+  const liveKeyVerified = liveKeyState === 'verified'
 
-  const needed = (id: StepId): boolean => {
+  const needed = (id: StepId, way: SpeakingMode | null = mode): boolean => {
     // Before the way of talking is chosen, every screen counts as needed.
-    if (id === 'listening') return mode === null || mode === 'voice'
-    if (id === 'tts') return mode !== 'text-only'
-    if (id === 'mic') return mode === null || mode === 'voice'
+    if (id === 'listening') return way === null || way === 'voice'
+    if (id === 'tts') return way !== 'text-only' && way !== 'live'
+    if (id === 'mic') return way === null || way === 'voice' || way === 'live'
     return true
   }
   const ready: Record<StepId, boolean> = {
@@ -136,7 +144,7 @@ export function SetupWizard(): React.JSX.Element | null {
     language: true,
     safety: settings.safetyNoticeVersion >= 1,
     model: modelReady,
-    speaking: mode !== null,
+    speaking: mode !== null && (mode !== 'live' || liveKeyVerified),
     listening: listeningReady,
     tts: ttsReady,
     mic: mic === 'granted',
@@ -176,6 +184,48 @@ export function SetupWizard(): React.JSX.Element | null {
       // Before it saves, main checks that this pair can really be fetched with the provider's key.
       if (!modelsMatch) await saveSettings(defaults)
       setApiKey('')
+      await refresh()
+    } catch (err) {
+      setError(displayError(err))
+    } finally {
+      setApiBusy(false)
+    }
+  }
+
+  /**
+   * Chooses a way of talking. A live engine starts on the one whose provider the model step verified,
+   * so that its key is not asked for twice.
+   */
+  const chooseMode = (next: SpeakingMode): void => {
+    setError('')
+    setMode(next)
+    if (next === 'live' && !live) setLive(provider === 'openai' ? 'gpt-live' : provider === 'google' ? 'gemini-live' : null)
+  }
+
+  /**
+   * Chooses a live engine. Main marks a key verified only in its memory, so a key saved in an earlier
+   * session or set in the environment reads as saved until it is checked, and it is checked here at once
+   * rather than asked for again.
+   */
+  const chooseLive = (next: LiveEngine): void => {
+    setLive(next)
+    setLiveKey('')
+    setError('')
+    const nextProvider = LIVE_ENGINE_INFO[next].provider
+    if (setup?.services.llmKeys[nextProvider] === 'saved') void verifyLiveKey(nextProvider, null)
+  }
+
+  /**
+   * Verifies the key of the live engine's provider, which the conversation model may not use: the typed
+   * key, which is saved once it works, or with null the key main already holds.
+   */
+  const verifyLiveKey = async (keyProvider: LlmProvider, key: string | null): Promise<void> => {
+    if (apiBusy || (key !== null && !key.trim())) return
+    setApiBusy(true)
+    setError('')
+    try {
+      applyStatus(key === null ? await window.api.verifySavedApiKey(keyProvider) : await window.api.saveApiKey(keyProvider, key))
+      setLiveKey('')
       await refresh()
     } catch (err) {
       setError(displayError(err))
@@ -278,11 +328,11 @@ export function SetupWizard(): React.JSX.Element | null {
     setFinishing(true)
     setError('')
     try {
-      const voiceMode = mode === 'voice' && listening ? listening : 'text'
+      const voiceMode: SetupVoiceMode = mode === 'voice' && listening ? listening : mode === 'live' && live ? live : 'text'
       // Text-only use turns the TTS engine off, so a reply is neither synthesized nor played and
       // appears as text alone.
       if (mode === 'text-only' && settings.ttsEngine !== 'none') await saveSettings({ ttsEngine: 'none' })
-      if (mode === 'voice') await verifyMicrophoneCapture()
+      if (mode === 'voice' || mode === 'live') await verifyMicrophoneCapture()
       if (voiceMode === 'local') {
         await voiceController.prepareLocalAsr(({ progress }) => setLocalProgress(progress))
         setLocalReady(true)
@@ -290,6 +340,7 @@ export function SetupWizard(): React.JSX.Element | null {
       }
       const systemTtsVerified =
         mode === 'text-only' ||
+        mode === 'live' ||
         settings.ttsEngine !== 'system' ||
         (typeof window.speechSynthesis?.speak === 'function' && typeof window.SpeechSynthesisUtterance === 'function')
       if (!systemTtsVerified) throw new Error(errorText(osMessageKey('voice.speech.systemUnavailable', capabilities.os)))
@@ -321,7 +372,15 @@ export function SetupWizard(): React.JSX.Element | null {
       if (apiBusy) return t('setup.guide.model.verifying')
       return apiKey.trim() ? t('setup.guide.model.pressVerify') : t('setup.guide.model.enterKey', { provider: LLM_PROVIDER_INFO[provider].label })
     }
-    if (step === 'speaking') return mode ? t('setup.guide.speaking.chosen') : t('setup.guide.speaking.choose')
+    if (step === 'speaking') {
+      if (!mode) return t('setup.guide.speaking.choose')
+      if (mode !== 'live' || liveKeyVerified) return t('setup.guide.speaking.chosen')
+      if (!live || !liveProvider) return t('setup.guide.speaking.chooseLive')
+      if (apiBusy) return t('setup.guide.model.verifying')
+      return liveKey.trim()
+        ? t('setup.guide.model.pressVerify')
+        : t('setup.guide.speaking.enterLiveKey', { engine: LIVE_ENGINE_INFO[live].label, provider: LLM_PROVIDER_INFO[liveProvider].label })
+    }
     if (step === 'listening') {
       if (listeningReady) return t('setup.guide.listening.ready')
       if (!listening) return t('setup.guide.listening.choose')
@@ -393,7 +452,29 @@ export function SetupWizard(): React.JSX.Element | null {
               onRecheck={() => void verifyKey(true)}
             />
           )}
-          {step === 'speaking' && <SpeakingStep mode={mode} onMode={setMode} />}
+          {step === 'speaking' && (
+            <SpeakingStep
+              mode={mode}
+              onMode={chooseMode}
+              liveChoice={
+                <LiveEngineChoice
+                  engine={live}
+                  onEngine={chooseLive}
+                  keyVerified={liveKeyVerified}
+                  keyConfigured={keyReadable(liveKeyState)}
+                  apiKey={liveKey}
+                  onApiKey={setLiveKey}
+                  busy={apiBusy}
+                  onVerify={() => {
+                    if (liveProvider) void verifyLiveKey(liveProvider, liveKey)
+                  }}
+                  onRecheck={() => {
+                    if (liveProvider) void verifyLiveKey(liveProvider, null)
+                  }}
+                />
+              }
+            />
+          )}
           {step === 'listening' && (
             <ListeningStep
               speechRuntime={capabilities.speechRuntime}
@@ -445,8 +526,10 @@ export function SetupWizard(): React.JSX.Element | null {
               onOpenMicSettings={() => void window.api.micOpenPrivacy()}
               onSwitchToTyping={() => {
                 setMode('type-and-listen')
-                // The mic screen is no longer needed, so the wizard moves on to the next one that is.
-                move(1, STEPS.indexOf('mic'))
+                setError('')
+                // The first screen still to be done may come before this one: a live engine skipped the
+                // reading screen, which typing needs.
+                setStep(STEPS.find((id) => needed(id, 'type-and-listen') && !ready[id]) ?? 'summary')
               }}
               autoMic={autoMic}
               onAutoMic={setAutoMic}
@@ -457,14 +540,18 @@ export function SetupWizard(): React.JSX.Element | null {
             <SummaryStep
               rows={[
                 { label: t('setup.summary.language'), value: UI_LOCALE_NAMES[locale] },
-                { label: t('setup.summary.conversationModel'), value: modelLabel(settings.conversationModel) },
-                { label: t('setup.summary.bridgeModel'), value: modelLabel(settings.bridgeModel) },
+                // As on the settings screen, Gemini Live decides by itself and no live engine speaks a bridge phrase.
+                ...(mode === 'live' && live === 'gemini-live' ? [] : [{ label: t('setup.summary.conversationModel'), value: modelLabel(settings.conversationModel) }]),
+                ...(mode === 'live' ? [] : [{ label: t('setup.summary.bridgeModel'), value: modelLabel(settings.bridgeModel) }]),
                 { label: t('setup.summary.speaking'), value: t(SPEAKING_TITLE[mode]) },
+                ...(mode === 'live' && live
+                  ? [{ label: t('setup.summary.liveEngine'), value: t('setup.summary.liveEngineValue', { engine: LIVE_ENGINE_INFO[live].label, voice: settings[live === 'gpt-live' ? 'gptLive' : 'geminiLive'].voice }) }]
+                  : []),
                 ...(mode === 'voice'
                   ? [{ label: t('setup.summary.listening'), value: listening === 'local' ? t('setup.listening.local.title') : (setup?.asr?.label ?? '') }]
                   : []),
-                { label: t('setup.summary.tts'), value: mode === 'text-only' ? t('setup.summary.ttsUnused') : (services?.ttsLabel ?? '') },
-                ...(mode === 'voice' ? [{ label: t('setup.summary.mic'), value: autoMic ? t('setup.summary.micAtLaunch') : t('setup.summary.micManual') }] : [])
+                ...(mode === 'live' ? [] : [{ label: t('setup.summary.tts'), value: mode === 'text-only' ? t('setup.summary.ttsUnused') : (services?.ttsLabel ?? '') }]),
+                ...(mode === 'voice' || mode === 'live' ? [{ label: t('setup.summary.mic'), value: autoMic ? t('setup.summary.micAtLaunch') : t('setup.summary.micManual') }] : [])
               ]}
               optional={[
                 {

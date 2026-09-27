@@ -124,6 +124,7 @@ export const rendererApiMethods = [
   'getSettings',
   'saveSettings',
   'saveApiKey',
+  'verifySavedApiKey',
   'listSpeakers',
   'ttsTest',
   'openExternal',

@@ -1,7 +1,9 @@
 import { ttsEngineLabel } from '@/ui/settings/context'
 import { translate } from '@/i18n'
 import type { ApiKeyState, RendererApi, SetupProgress } from '@shared/ipc'
-import { LLM_PROVIDERS, type LlmProvider } from '@shared/llm-catalog'
+import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
+import { errorText } from '@shared/i18n/error-text'
+import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import { voiceController } from '@/voice/VoiceController'
 
 /**
@@ -12,8 +14,11 @@ import { voiceController } from '@/voice/VoiceController'
  * - 'key-failed': starts with a stored key that could not be verified.
  * - 'mic-denied': the microphone permission is refused.
  * - 'tts-missing': neither VOICEVOX nor AivisSpeech is installed, so verification fails.
+ * - 'live-key-failed': the OpenAI and Google keys a live engine runs on are refused as unauthenticated.
  */
-export type SetupDemoVariant = 'fresh' | 'key-failed' | 'mic-denied' | 'tts-missing'
+export type SetupDemoVariant = 'fresh' | 'key-failed' | 'mic-denied' | 'tts-missing' | 'live-key-failed'
+
+const LIVE_PROVIDERS: LlmProvider[] = Object.values(LIVE_ENGINE_INFO).map((info) => info.provider)
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -62,6 +67,9 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
   }
   api.saveApiKey = async (provider) => {
     await sleep(700)
+    if (variant === 'live-key-failed' && LIVE_PROVIDERS.includes(provider)) {
+      throw new Error(errorText('llmModels.errors.authentication', { provider: LLM_PROVIDER_INFO[provider].label }))
+    }
     keys[provider] = 'verified'
     return api.getStatus()
   }

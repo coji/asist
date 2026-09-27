@@ -31,23 +31,25 @@ The first time you open ASIST, you go through nine screens in order. Screens tha
 
 4. **Choose how you talk**
 
-   Choose "Talk by voice", "Type, and hear the replies" or "Text only".
+   Choose "Talk by voice", "Talk in real time with a voice model", "Type, and hear the replies" or "Text only".
+
+   With "Talk in real time with a voice model", GPT-Live or Gemini Live listens and speaks, so the screens for speech recognition and reading aloud are skipped. GPT-Live needs an OpenAI API key and Gemini Live a Google one. If you verified a key from the same provider on the previous screen, that engine is chosen for you. A key saved earlier or set in an environment variable is verified when you choose the engine, so you do not enter it again. If there is no key, enter it on this screen and click "Verify and save". The voice is the provider's default, and you can change it in the settings later. [Voice engine](/en/docs/settings/voice-engine/) compares the two and their prices.
 
    ![The screen with "Talk by voice" chosen](/screens/en/setup-3-speaking.webp)
 
-5. **Prepare the speech recognition model** (when you talk by voice)
+5. **Prepare the speech recognition model** (with "Talk by voice")
 
    Depending on how much memory your Mac has, ASIST recommends Qwen3-ASR or Whisper running on MLX. Click "Prepare the model" to download the model and run it on your Mac. You can also choose Whisper running inside the browser.
 
    ![The screen after the recommended model is ready](/screens/en/setup-4-listening.webp)
 
-6. **Choose a voice for reading aloud** (when you hear the replies)
+6. **Choose a voice for reading aloud** (with "Talk by voice" or "Type, and hear the replies")
 
    Only the options that can speak the conversation language appear. For Japanese, these are the macOS voices, Qwen3-TTS, VOICEVOX and AivisSpeech. You can choose Qwen3-TTS with 16 GB of memory or more; it downloads a model (about 1.9 GB) and runs it on your Mac. If you choose a macOS voice, ASIST checks whether a voice for that language is installed, and if not, shows you where in System Settings to add one.
 
    ![The screen with reading aloud ready](/screens/en/setup-5-speech.webp)
 
-7. **Allow the microphone** (when you talk by voice)
+7. **Allow the microphone** (with "Talk by voice" or "Talk in real time with a voice model")
 
    Click "Check the microphone", and macOS asks for permission to use the microphone. Click "Allow", and ASIST checks that it actually receives sound.
 
@@ -59,7 +61,7 @@ The first time you open ASIST, you go through nine screens in order. Screens tha
 
 8. **Wait for the other models**
 
-   ASIST prepares the model for searching the memory by meaning. When you talk by voice in Japanese, it also prepares a model that chooses which backchannel to say, and MaAI, which detects when you have finished speaking. For anything that could not be prepared, you can try again or leave it for later. Anything you leave for later is prepared under "Models" in the settings.
+   ASIST prepares the model for searching the memory by meaning. When you choose "Talk by voice" for a conversation in Japanese, it also prepares a model that chooses which backchannel to say, and MaAI, which detects when you have finished speaking. For anything that could not be prepared, you can try again or leave it for later. Anything you leave for later is prepared under "Models" in the settings.
 
    ![The screen after the other models are ready](/screens/en/setup-7-extras.webp)
 

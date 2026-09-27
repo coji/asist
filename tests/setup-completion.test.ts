@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   },
   saveSettings: vi.fn(),
   validateConfiguration: vi.fn(),
+  validateProviderKey: vi.fn(),
+  keys: {} as Record<string, string | undefined>,
   configuredModels: vi.fn(() => [
     { label: t('llmModels.targets.conversationModel'), provider: 'anthropic', id: 'claude-main' },
     { label: t('llmModels.targets.bridgeModel'), provider: 'anthropic', id: 'claude-fast' }
@@ -31,7 +33,9 @@ vi.mock('../src/main/services/settings', () => ({
 }))
 vi.mock('../src/main/services/llm', () => ({
   validateConfiguration: mocks.validateConfiguration,
-  configuredModels: mocks.configuredModels
+  configuredModels: mocks.configuredModels,
+  validateProviderKey: mocks.validateProviderKey,
+  providerKey: (provider: string) => mocks.keys[provider]
 }))
 vi.mock('../src/main/services/asr', () => ({
   available: mocks.asrAvailable,
@@ -56,6 +60,8 @@ beforeEach(() => {
   mocks.windows = false
   mocks.settings.safetyNoticeVersion = 1
   mocks.validateConfiguration.mockResolvedValue(undefined)
+  mocks.validateProviderKey.mockResolvedValue(undefined)
+  mocks.keys = {}
   mocks.asrAvailable.mockResolvedValue(false)
   mocks.asrEnsure.mockResolvedValue(true)
   mocks.ttsEnsure.mockResolvedValue(undefined)
@@ -152,9 +158,51 @@ describe('completeSetup', () => {
     expect(mocks.saveSettings).toHaveBeenCalledTimes(1)
     expect(mocks.saveSettings).toHaveBeenCalledWith({
       onboardingVersion: 1,
+      voiceEngine: 'cascade',
       localAsrEnabled: false,
       micAutoStart: true
     })
+  })
+
+  it.each([
+    ['gpt-live', 'openai'],
+    ['gemini-live', 'google']
+  ] as const)('completes with %s after checking its provider key, without this computer recognizing or reading anything', async (engine, provider) => {
+    // The speech engine left from before is not installed, which must not hold a live setup back.
+    mocks.settings.ttsEngine = 'voicevox'
+    mocks.ttsAvailable.mockResolvedValue(false)
+    mocks.keys[provider] = 'live-key'
+    const { completeSetup } = await import('../src/main/services/setup-completion')
+
+    await expect(
+      completeSetup({ voiceMode: engine, microphoneVerified: true, localAsrVerified: false, systemTtsVerified: false, micAutoStart: true })
+    ).resolves.toMatchObject({ onboardingVersion: 1, voiceEngine: engine })
+
+    expect(mocks.validateProviderKey).toHaveBeenCalledWith(provider, 'live-key')
+    expect(mocks.asrAvailable).not.toHaveBeenCalled()
+    expect(mocks.ttsEnsure).not.toHaveBeenCalled()
+    expect(mocks.saveSettings).toHaveBeenCalledWith({ onboardingVersion: 1, voiceEngine: engine, localAsrEnabled: false, micAutoStart: true })
+  })
+
+  it('does not complete with a live engine whose provider key is missing or refused', async () => {
+    const { completeSetup } = await import('../src/main/services/setup-completion')
+    const request = { voiceMode: 'gpt-live', microphoneVerified: true, localAsrVerified: false, systemTtsVerified: true, micAutoStart: false }
+
+    await expect(completeSetup(request)).rejects.toThrow(errorText('setup.completion.liveKeyMissing', { engine: 'GPT-Live', provider: 'OpenAI' }))
+    mocks.keys.openai = 'refused-key'
+    mocks.validateProviderKey.mockRejectedValue(new Error('unauthenticated'))
+    await expect(completeSetup(request)).rejects.toThrow('unauthenticated')
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('does not complete with a live engine before the microphone is verified', async () => {
+    mocks.keys.google = 'live-key'
+    const { completeSetup } = await import('../src/main/services/setup-completion')
+
+    await expect(
+      completeSetup({ voiceMode: 'gemini-live', microphoneVerified: false, localAsrVerified: false, systemTtsVerified: true, micAutoStart: false })
+    ).rejects.toThrow(errorText('setup.completion.micNotChecked'))
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
   })
 
   it('does not auto-start the microphone in text-only mode', async () => {

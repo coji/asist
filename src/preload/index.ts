@@ -151,6 +151,7 @@ const api: RendererApi = {
   getSettings: () => ipcRenderer.invoke(IpcChannel.GetSettings),
   saveSettings: (patch) => ipcRenderer.invoke(IpcChannel.SaveSettings, patch),
   saveApiKey: (provider, key) => ipcRenderer.invoke(IpcChannel.SaveApiKey, provider, key),
+  verifySavedApiKey: (provider) => ipcRenderer.invoke(IpcChannel.VerifySavedApiKey, provider),
   listSpeakers: (engine?: TtsEngine) => ipcRenderer.invoke(IpcChannel.ListSpeakers, engine),
   ttsTest: () => ipcRenderer.invoke(IpcChannel.TtsTest),
   openExternal: (url) => ipcRenderer.invoke(IpcChannel.OpenExternal, url),

@@ -134,6 +134,7 @@ export const DEMO_VIEWS: Record<ScreenName, DemoView> = {
   'setup/key-failed': { prepare: (api) => prepareSetupDemo(api, 'key-failed') },
   'setup/mic-denied': { prepare: (api) => prepareSetupDemo(api, 'mic-denied') },
   'setup/tts-missing': { prepare: (api) => prepareSetupDemo(api, 'tts-missing') },
+  'setup/live-key-failed': { prepare: (api) => prepareSetupDemo(api, 'live-key-failed') },
   // Someone who finished the setup before the notice of the risks existed sees it once at launch.
   safety: { prepare: (api) => void api.saveSettings({ safetyNoticeVersion: 0 }) },
   boot: {

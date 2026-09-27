@@ -13,6 +13,7 @@ import { Advanced, Btn, Chip, Progress, type ChipTone } from '../settings/primit
 import { ttsEngineLabel } from '../settings/context'
 import type { ExtraModel } from './extras'
 import { useSystemVoice } from './system-voice'
+import { ApiKeyField } from './api-key-field'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
 
@@ -22,8 +23,11 @@ import { platformCapabilities } from '@/platform'
  * written after the heading; it is shown as a chip at the right edge.
  */
 
-/** How the user talks: by voice, by typing and hearing the reply, or in text only with nothing spoken. */
-export type SpeakingMode = 'voice' | 'type-and-listen' | 'text-only'
+/**
+ * How the user talks: by voice through this computer's recognition and speech, by voice with a live
+ * engine that listens and speaks itself, by typing and hearing the reply, or in text only.
+ */
+export type SpeakingMode = 'voice' | 'live' | 'type-and-listen' | 'text-only'
 /** How speech is recognized: 'server' is the model on this Mac, 'local' is Whisper inside the browser. */
 export type ListeningChoice = 'server' | 'local'
 
@@ -112,52 +116,37 @@ export function ModelStep({
           <span>{t('setup.model.verifiedNote', { provider: info.label })}</span>
         </div>
       ) : (
-        <div className="su-field">
-          <label htmlFor="su-key">
-            {t('setup.model.apiKey', { provider: info.label })}
-            <button type="button" className="su-link" onClick={() => void window.api.openExternal(info.console)}>
-              {t('setup.model.createKey')}
-              <ExternalLink size={12} aria-hidden />
-            </button>
-          </label>
-          {keyConfigured && <p className="su-warn">{t('setup.model.savedKeyFailed')}</p>}
-          <div className="su-inline">
-            <input
-              id="su-key"
-              type="password"
-              autoComplete="off"
-              className="st-input is-mono"
-              value={apiKey}
-              placeholder={info.keyPlaceholder}
-              onChange={(event) => onApiKey(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') onVerify()
-              }}
-            />
-            <Btn tone="primary" disabled={busy || !apiKey.trim()} onClick={onVerify}>
-              {busy ? t('setup.model.verifying') : t('setup.model.verifyAndSave')}
-            </Btn>
-          </div>
-          <p className="su-hint">
-            {info.consoleNote && <>{t('setup.model.keyIssueNote', { note: t(info.consoleNote) })} </>}
-            {t('setup.model.keyStoredNote', { provider: info.label })}
-            {keyConfigured && (
-              <button type="button" className="su-link" disabled={busy} onClick={onRecheck}>
-                {t('setup.model.verifySavedKey')}
-              </button>
-            )}
-          </p>
-        </div>
+        <ApiKeyField
+          provider={provider}
+          keyConfigured={keyConfigured}
+          apiKey={apiKey}
+          onApiKey={onApiKey}
+          busy={busy}
+          onVerify={onVerify}
+          onRecheck={onRecheck}
+        />
       )}
     </div>
   )
 }
 
-export function SpeakingStep({ mode, onMode }: { mode: SpeakingMode | null; onMode: (mode: SpeakingMode) => void }): React.JSX.Element {
+export function SpeakingStep({
+  mode,
+  onMode,
+  liveChoice
+}: {
+  mode: SpeakingMode | null
+  onMode: (mode: SpeakingMode) => void
+  /** The choice of the live engine and its key, shown inside the live option once it is chosen. */
+  liveChoice: ReactNode
+}): React.JSX.Element {
   const t = useT()
   return (
     <div className="su-stack">
       <Option active={mode === 'voice'} title={t('setup.speaking.voice.title')} detail={t('setup.speaking.voice.detail')} onClick={() => onMode('voice')} />
+      <Option active={mode === 'live'} title={t('setup.speaking.live.title')} detail={t('setup.speaking.live.detail')} onClick={() => onMode('live')}>
+        {liveChoice}
+      </Option>
       <Option
         active={mode === 'type-and-listen'}
         title={t('setup.speaking.typeAndListen.title')}

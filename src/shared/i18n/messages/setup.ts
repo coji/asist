@@ -561,6 +561,32 @@ export const setup = defineMessages({
         'pt-BR': 'Escolha uma forma de falar.',
         'es-419': 'Elige una forma de hablar.',
         'es-ES': 'Elige una forma de hablar.'
+      },
+      chooseLive: {
+        'ja-JP': '使う音声モデルを選んでください。',
+        'en-US': 'Choose a voice model.',
+        'fr-FR': 'Choisissez un modèle vocal.',
+        'de-DE': 'Wählen Sie ein Sprachmodell.',
+        'hi-IN': 'एक वॉइस मॉडल चुनें।',
+        'id-ID': 'Pilih model suara.',
+        'it-IT': 'Scegli un modello vocale.',
+        'ko-KR': '사용할 음성 모델을 선택하십시오.',
+        'pt-BR': 'Escolha um modelo de voz.',
+        'es-419': 'Elige un modelo de voz.',
+        'es-ES': 'Elige un modelo de voz.'
+      },
+      enterLiveKey: {
+        'ja-JP': '{engine} に使う {provider} の API キーを入れてください。',
+        'en-US': 'Enter your {provider} API key for {engine}.',
+        'fr-FR': 'Saisissez votre clé API {provider} pour {engine}.',
+        'de-DE': 'Geben Sie Ihren API-Schlüssel von {provider} für {engine} ein.',
+        'hi-IN': '{engine} के लिए {provider} की अपनी API कुंजी डालें।',
+        'id-ID': 'Masukkan kunci API {provider} Anda untuk {engine}.',
+        'it-IT': 'Inserisci la tua chiave API di {provider} per {engine}.',
+        'ko-KR': '{engine}에 쓸 {provider} API 키를 입력하십시오.',
+        'pt-BR': 'Digite a sua chave de API de {provider} para {engine}.',
+        'es-419': 'Escribe tu clave de API de {provider} para {engine}.',
+        'es-ES': 'Introduce tu clave de API de {provider} para {engine}.'
       }
     },
     listening: {
@@ -1113,17 +1139,125 @@ export const setup = defineMessages({
       }
     },
     changeLater: {
-      'ja-JP': 'どれを選んでも、あとから設定の「声」で変えられます。',
-      'en-US': 'You can change this later on the Voice page in Settings.',
-      'fr-FR': 'Quel que soit votre choix, vous pourrez le changer plus tard sur la page Voix des réglages.',
-      'de-DE': 'Was Sie auch wählen, Sie können es später auf der Seite „Stimme“ in den Einstellungen ändern.',
-      'hi-IN': 'इसे आप बाद में सेटिंग्ज़ के "आवाज़" पेज पर बदल सकते हैं।',
-      'id-ID': 'Pilihan mana pun bisa Anda ubah nanti di halaman Suara pada Pengaturan.',
-      'it-IT': 'Qualunque cosa scegli, puoi cambiarla più tardi nella pagina «Voce» delle impostazioni.',
-      'ko-KR': "무엇을 선택하든 나중에 설정의 '음성'에서 바꿀 수 있습니다.",
-      'pt-BR': 'Você pode mudar isso depois, na página Voz dos ajustes.',
-      'es-419': 'Puedes cambiar esto más adelante en la página Voz de Configuración.',
-      'es-ES': 'Elijas lo que elijas, puedes cambiarlo más adelante en la página “Voz” de Ajustes.'
+      'ja-JP': 'どれを選んでも、あとから設定で変えられます。',
+      'en-US': 'You can change this later in Settings.',
+      'fr-FR': 'Quel que soit votre choix, vous pourrez le changer plus tard dans les réglages.',
+      'de-DE': 'Was Sie auch wählen, Sie können es später in den Einstellungen ändern.',
+      'hi-IN': 'इसे आप बाद में सेटिंग्ज़ में बदल सकते हैं।',
+      'id-ID': 'Pilihan mana pun bisa Anda ubah nanti di Pengaturan.',
+      'it-IT': 'Qualunque cosa scegli, puoi cambiarla più tardi nelle impostazioni.',
+      'ko-KR': '무엇을 선택하든 나중에 설정에서 바꿀 수 있습니다.',
+      'pt-BR': 'Você pode mudar isso depois, nos ajustes.',
+      'es-419': 'Puedes cambiar esto más adelante en Configuración.',
+      'es-ES': 'Elijas lo que elijas, puedes cambiarlo más adelante en Ajustes.'
+    },
+    live: {
+      title: {
+        'ja-JP': '音声モデルとリアルタイムで話す',
+        'en-US': 'Talk in real time with a voice model',
+        'fr-FR': 'Parler en temps réel avec un modèle vocal',
+        'de-DE': 'In Echtzeit mit einem Sprachmodell sprechen',
+        'hi-IN': 'वॉइस मॉडल से रीयल-टाइम में बात करें',
+        'id-ID': 'Bicara secara real-time dengan model suara',
+        'it-IT': 'Parlare in tempo reale con un modello vocale',
+        'ko-KR': '음성 모델과 실시간으로 말하기',
+        'pt-BR': 'Falar em tempo real com um modelo de voz',
+        'es-419': 'Hablar en tiempo real con un modelo de voz',
+        'es-ES': 'Hablar en tiempo real con un modelo de voz'
+      },
+      detail: {
+        'ja-JP': 'GPT-Live か Gemini Live が聞き取りと読み上げを受け持ちます。準備するのは API キーとマイクの許可だけです。',
+        'en-US': 'GPT-Live or Gemini Live listens and speaks. All you prepare is an API key and the microphone permission.',
+        'fr-FR': "GPT-Live ou Gemini Live écoute et parle. Il suffit de préparer une clé API et l'autorisation du microphone.",
+        'de-DE': 'GPT-Live oder Gemini Live hört zu und spricht. Vorzubereiten sind nur ein API-Schlüssel und die Erlaubnis für das Mikrofon.',
+        'hi-IN': 'GPT-Live या Gemini Live सुनता और बोलता है। आपको बस एक API कुंजी और माइक्रोफ़ोन की इजाज़त तैयार करनी है।',
+        'id-ID': 'GPT-Live atau Gemini Live yang mendengarkan dan berbicara. Yang perlu disiapkan hanya kunci API dan izin mikrofon.',
+        'it-IT': 'GPT-Live o Gemini Live ascolta e parla. Servono solo una chiave API e il permesso per il microfono.',
+        'ko-KR': 'GPT-Live 또는 Gemini Live가 듣고 말합니다. 준비할 것은 API 키와 마이크 권한뿐입니다.',
+        'pt-BR': 'O GPT-Live ou o Gemini Live ouve e fala. Você só prepara uma chave de API e a permissão do microfone.',
+        'es-419': 'GPT-Live o Gemini Live escucha y habla. Solo necesitas preparar una clave de API y el permiso del micrófono.',
+        'es-ES': 'GPT-Live o Gemini Live escucha y habla. Solo hay que preparar una clave de API y el permiso del micrófono.'
+      },
+      engineGroup: {
+        'ja-JP': '音声モデル',
+        'en-US': 'Voice model',
+        'fr-FR': 'Modèle vocal',
+        'de-DE': 'Sprachmodell',
+        'hi-IN': 'वॉइस मॉडल',
+        'id-ID': 'Model suara',
+        'it-IT': 'Modello vocale',
+        'ko-KR': '음성 모델',
+        'pt-BR': 'Modelo de voz',
+        'es-419': 'Modelo de voz',
+        'es-ES': 'Modelo de voz'
+      },
+      note: {
+        'ja-JP': 'どちらも提供元の声で話し、話した音声は提供元に送られます。声はあとから設定の「会話」で変えられます。',
+        'en-US': "Both speak in the provider's own voices, and what you say is sent to the provider. You can change the voice later on the Conversation page in Settings.",
+        'fr-FR': 'Les deux parlent avec les voix du fournisseur, et ce que vous dites lui est envoyé. Vous pourrez changer de voix plus tard sur la page Conversation des réglages.',
+        'de-DE': 'Beide sprechen mit den Stimmen des Anbieters, und was Sie sagen, wird an ihn gesendet. Die Stimme können Sie später auf der Seite „Gespräch“ in den Einstellungen ändern.',
+        'hi-IN': 'दोनों में आवाज़ प्रोवाइडर की होती है, और आपकी कही बात प्रोवाइडर को भेजी जाती है। आवाज़ आप बाद में सेटिंग्ज़ के "बातचीत" पेज पर बदल सकते हैं।',
+        'id-ID': 'Keduanya memakai suara milik penyedia, dan ucapan Anda dikirim ke penyedia itu. Suaranya bisa Anda ganti nanti di halaman Percakapan pada Pengaturan.',
+        'it-IT': 'Entrambi parlano con le voci del provider, e quello che dici viene inviato al provider. La voce si può cambiare più tardi nella pagina «Conversazione» delle impostazioni.',
+        'ko-KR': "둘 다 제공업체의 목소리로 말하며, 말한 음성은 제공업체로 보내집니다. 목소리는 나중에 설정의 '대화'에서 바꿀 수 있습니다.",
+        'pt-BR': 'Os dois falam com as vozes do provedor, e o que você diz é enviado a ele. Você pode mudar a voz depois, na página Conversa dos ajustes.',
+        'es-419': 'Ambos hablan con las voces del proveedor, y lo que dices se envía a ese proveedor. Puedes cambiar la voz más adelante en la página Conversación de Configuración.',
+        'es-ES': 'Ambos hablan con las voces del proveedor, y lo que dices se envía a ese proveedor. Puedes cambiar la voz más adelante en la página “Conversación” de Ajustes.'
+      },
+      keyNeeded: {
+        'ja-JP': '{engine} には {provider} の API キーが要ります。',
+        'en-US': '{engine} needs your {provider} API key.',
+        'fr-FR': '{engine} a besoin de votre clé API {provider}.',
+        'de-DE': '{engine} braucht Ihren API-Schlüssel von {provider}.',
+        'hi-IN': '{engine} के लिए {provider} की API कुंजी चाहिए।',
+        'id-ID': '{engine} memerlukan kunci API {provider} Anda.',
+        'it-IT': '{engine} richiede la tua chiave API di {provider}.',
+        'ko-KR': '{engine}에는 {provider} API 키가 필요합니다.',
+        'pt-BR': '{engine} precisa da sua chave de API de {provider}.',
+        'es-419': '{engine} necesita tu clave de API de {provider}.',
+        'es-ES': '{engine} necesita tu clave de API de {provider}.'
+      },
+      keyVerified: {
+        'ja-JP': '{engine} は、検証済みの {provider} のキーで動きます。',
+        'en-US': '{engine} will use the {provider} key you already verified.',
+        'fr-FR': '{engine} utilisera la clé {provider} déjà vérifiée.',
+        'de-DE': '{engine} verwendet den bereits geprüften Schlüssel von {provider}.',
+        'hi-IN': '{engine} पहले से जाँची हुई {provider} की कुंजी से चलेगा।',
+        'id-ID': '{engine} akan memakai kunci {provider} yang sudah terverifikasi.',
+        'it-IT': '{engine} userà la chiave di {provider} già verificata.',
+        'ko-KR': '이미 검증한 {provider} 키를 {engine}에서 사용합니다.',
+        'pt-BR': '{engine} vai usar a chave de {provider} já verificada.',
+        'es-419': '{engine} usará la clave de {provider} que ya verificaste.',
+        'es-ES': '{engine} usará la clave de {provider} que ya has verificado.'
+      },
+      engines: {
+        gptLive: {
+          'ja-JP': '聞いて話し、答える内容とツールの実行は会話モデルに任せます。セッションが開いている時間で課金されます(1分 $0.05)。',
+          'en-US': 'Listens and speaks, and leaves what to answer and the tools to the conversation model. Billed for the time the session is open ($0.05 per minute).',
+          'fr-FR': 'Écoute et parle, et laisse le modèle de conversation décider de la réponse et exécuter les outils. Le temps pendant lequel la session reste ouverte est facturé (0,05 $ la minute).',
+          'de-DE': 'Hört zu und spricht; den Inhalt der Antwort und die Werkzeuge übernimmt das Gesprächsmodell. Abgerechnet wird die Zeit, in der die Sitzung offen ist (0,05 $ pro Minute).',
+          'hi-IN': 'सुनता और बोलता है; जवाब में क्या कहना है और टूल चलाना बातचीत का मॉडल संभालता है। सेशन जितनी देर खुला रहता है, उतना शुल्क लगता है (1 मिनट $0.05)।',
+          'id-ID': 'Mendengarkan dan berbicara, sementara model percakapan menentukan isi jawaban dan menjalankan tool. Ditagih selama sesinya terbuka ($0,05 per menit).',
+          'it-IT': 'Ascolta e parla, mentre il modello di conversazione decide che cosa rispondere ed esegue gli strumenti. Il costo è calcolato sul tempo in cui la sessione resta aperta ($0,05 al minuto).',
+          'ko-KR': '듣고 말하며, 답할 내용과 도구 실행은 대화 모델이 맡습니다. 세션이 열려 있는 시간만큼 요금이 매겨집니다(1분 $0.05).',
+          'pt-BR': 'Ouve e fala, enquanto o modelo de conversa decide o que responder e executa as ferramentas. A cobrança é pelo tempo com a sessão aberta (US$ 0,05 por minuto).',
+          'es-419': 'Escucha y habla, mientras que el modelo de conversación decide qué responder y ejecuta las herramientas. Se cobra por el tiempo que la sesión está abierta ($0.05 por minuto).',
+          'es-ES': 'Escucha y habla, mientras que el modelo de conversación decide qué responder y ejecuta las herramientas. Se cobra por el tiempo que la sesión está abierta (0,05 $ por minuto).'
+        },
+        geminiLive: {
+          'ja-JP': '聞き取り、考え、ツールを呼び、読み上げます。入力と出力の音声の長さに応じて課金されます(入力 1分 $0.005、出力 1分 $0.018)。',
+          'en-US': 'Listens, decides, calls the tools and speaks. Billed for the minutes of audio in and out ($0.005 in, $0.018 out per minute).',
+          'fr-FR': "Écoute, décide, appelle les outils et lit la réponse. Les minutes d'audio entrant et sortant sont facturées (0,005 $ la minute en entrée, 0,018 $ la minute en sortie).",
+          'de-DE': 'Hört zu, entscheidet, ruft die Werkzeuge auf und spricht. Abgerechnet wird die Dauer des gesendeten und empfangenen Audios (0,005 $ pro Minute für die Eingabe, 0,018 $ pro Minute für die Ausgabe).',
+          'hi-IN': 'सुनता है, तय करता है, टूल चलाता है और बोलता है। आने और जाने वाली आवाज़ के मिनटों का शुल्क लगता है (आने पर $0.005, जाने पर $0.018 प्रति मिनट)।',
+          'id-ID': 'Mendengarkan, memutuskan, memanggil tool, dan berbicara. Ditagih per menit audio yang masuk dan keluar ($0,005 per menit masuk, $0,018 per menit keluar).',
+          'it-IT': 'Ascolta, decide, chiama gli strumenti e legge la risposta. Il costo è calcolato sui minuti di audio in entrata e in uscita ($0,005 al minuto in entrata, $0,018 al minuto in uscita).',
+          'ko-KR': '듣고, 생각하고, 도구를 부르고, 읽어줍니다. 음성 입출력의 분 단위로 요금이 매겨집니다(입력 1분 $0.005, 출력 1분 $0.018).',
+          'pt-BR': 'Ouve, decide, chama as ferramentas e fala. A cobrança é pelos minutos de áudio de entrada e de saída (US$ 0,005 por minuto na entrada e US$ 0,018 por minuto na saída).',
+          'es-419': 'Escucha, decide, llama a las herramientas y habla. Se cobra por los minutos de audio de entrada y de salida ($0.005 por minuto de entrada, $0.018 por minuto de salida).',
+          'es-ES': 'Escucha, decide, llama a las herramientas y habla. Se cobra por los minutos de audio de entrada y de salida (0,005 $ la entrada y 0,018 $ la salida, por minuto).'
+        }
+      }
     }
   },
   listening: {
@@ -2496,6 +2630,32 @@ export const setup = defineMessages({
       'pt-BR': 'Página Integrações dos ajustes',
       'es-419': 'Página Integraciones de Configuración',
       'es-ES': 'Página “Integraciones” de Ajustes'
+    },
+    liveEngine: {
+      'ja-JP': '声のエンジン',
+      'en-US': 'Voice engine',
+      'fr-FR': 'Moteur vocal',
+      'de-DE': 'Sprach-Engine',
+      'hi-IN': 'वॉइस इंजन',
+      'id-ID': 'Mesin suara',
+      'it-IT': 'Motore vocale',
+      'ko-KR': '음성 엔진',
+      'pt-BR': 'Motor de voz',
+      'es-419': 'Motor de voz',
+      'es-ES': 'Motor de voz'
+    },
+    liveEngineValue: {
+      'ja-JP': '{engine}(声: {voice})',
+      'en-US': '{engine} (voice: {voice})',
+      'fr-FR': '{engine} (voix : {voice})',
+      'de-DE': '{engine} (Stimme: {voice})',
+      'hi-IN': '{engine} (आवाज़: {voice})',
+      'id-ID': '{engine} (suara: {voice})',
+      'it-IT': '{engine} (voce: {voice})',
+      'ko-KR': '{engine} (목소리: {voice})',
+      'pt-BR': '{engine} (voz: {voice})',
+      'es-419': '{engine} (voz: {voice})',
+      'es-ES': '{engine} (voz: {voice})'
     }
   },
   completion: {
@@ -2604,6 +2764,19 @@ export const setup = defineMessages({
       'pt-BR': 'Marque a caixa na etapa Riscos antes de terminar.',
       'es-419': 'Marca la casilla del paso Riesgos antes de terminar.',
       'es-ES': 'Marca la casilla del paso Riesgos antes de terminar.'
+    },
+    liveKeyMissing: {
+      'ja-JP': '{engine} に使う {provider} の API キーを検証してから終えてください。',
+      'en-US': 'Verify your {provider} API key for {engine} before you finish.',
+      'fr-FR': 'Vérifiez votre clé API {provider} pour {engine} avant de terminer.',
+      'de-DE': 'Prüfen Sie Ihren API-Schlüssel von {provider} für {engine}, bevor Sie abschließen.',
+      'hi-IN': 'खत्म करने से पहले {engine} के लिए {provider} की API कुंजी जाँच लें।',
+      'id-ID': 'Verifikasi kunci API {provider} untuk {engine} sebelum menyelesaikan penyiapan.',
+      'it-IT': 'Verifica la chiave API di {provider} per {engine} prima di finire.',
+      'ko-KR': '{engine}에 쓸 {provider} API 키를 검증한 뒤에 마치십시오.',
+      'pt-BR': 'Verifique a sua chave de API de {provider} para {engine} antes de terminar.',
+      'es-419': 'Verifica tu clave de API de {provider} para {engine} antes de terminar.',
+      'es-ES': 'Comprueba tu clave de API de {provider} para {engine} antes de terminar.'
     }
   },
   safety: {

@@ -21,7 +21,8 @@ export const VOICE_ENGINES = ['cascade', 'gpt-live', 'gemini-live'] as const
 export type VoiceEngine = (typeof VOICE_ENGINES)[number]
 export type LiveEngine = Exclude<VoiceEngine, 'cascade'>
 
-export const isLiveEngine = (engine: VoiceEngine): engine is LiveEngine => engine !== 'cascade'
+/** Takes any string, because the first-run setup hands main a voice mode that is either a way of listening or a live engine. */
+export const isLiveEngine = (value: string): value is LiveEngine => value !== 'cascade' && (VOICE_ENGINES as readonly string[]).includes(value)
 
 /** The model and voice chosen for a live engine. `model` is the model ID of the provider's Live API. */
 export interface LiveModelSetting {

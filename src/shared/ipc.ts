@@ -32,7 +32,7 @@ import type { AppSettings, SettingsPatch } from './settings'
 export type { AppSettings } from './settings'
 import type { ConversationModel, LlmProvider } from './llm-catalog'
 export type { ConversationModel, LlmProvider } from './llm-catalog'
-import type { VoiceEngine } from './voice-engine'
+import type { LiveEngine, VoiceEngine } from './voice-engine'
 export type { VoiceEngine } from './voice-engine'
 
 /**
@@ -719,7 +719,8 @@ export interface WindowControlColors {
 /** The global hotkey: off in the settings, registered with the OS, or refused because another application holds it. */
 export type HotkeyStatus = 'off' | 'registered' | 'failed'
 
-export type SetupVoiceMode = 'server' | 'local' | 'text'
+/** How setup finishes: speech recognized by the server or in the browser, typed text, or a live engine that listens and speaks itself. */
+export type SetupVoiceMode = 'server' | 'local' | 'text' | LiveEngine
 
 /** The choices the renderer re-checked just before the finish button. The main process validates the external services again. */
 export interface CompleteSetupRequest {
@@ -857,6 +858,7 @@ export const IpcChannel = {
   GetSettings: 'get-settings',
   SaveSettings: 'save-settings',
   SaveApiKey: 'save-api-key',
+  VerifySavedApiKey: 'verify-saved-api-key',
   ListSpeakers: 'list-speakers',
   TtsTest: 'tts-test',
   OpenExternal: 'open-external',
@@ -1100,6 +1102,12 @@ export interface RendererApi {
    * returns the status afterwards.
    */
   saveApiKey(provider: LlmProvider, key: string): Promise<AppStatus>
+  /**
+   * Validates the key main already holds for the provider, saved in an earlier session or set in the
+   * environment, and returns the status afterwards. A key is verified only in main's memory, so such a key
+   * reads as saved until this runs.
+   */
+  verifySavedApiKey(provider: LlmProvider): Promise<AppStatus>
   listSpeakers(engine?: TtsEngine): Promise<SpeakerOption[]>
   ttsTest(): Promise<SpeechSegment>
   /** Opens a web page in the browser or a mail address in the mail app, and refuses any other link. */

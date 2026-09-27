@@ -9,6 +9,7 @@ import { useSettingsStore, useStatusStore } from '../src/renderer/src/state/stor
 import { voiceController } from '../src/renderer/src/voice/VoiceController'
 import { liveVoice } from '../src/renderer/src/voice/LiveVoice'
 import { asrDownloadGb, asrModelSpec, recommendAsrModel } from '@shared/asr-models'
+import { isLiveEngine } from '@shared/voice-engine'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, platformCapabilities, setCapabilities } from './helpers/platform'
 
 // The voice modules build an AudioContext at import time, so they are replaced for a test that only renders the UI.
@@ -66,6 +67,11 @@ const api = {
     status = { ...status, llmKeys: { ...status.llmKeys, [provider]: 'verified' } }
     return status
   }),
+  // As in main, the key already held for the provider is checked against the API and then reads as verified.
+  verifySavedApiKey: vi.fn(async (provider: string) => {
+    status = { ...status, llmKeys: { ...status.llmKeys, [provider]: 'verified' } }
+    return status
+  }),
   saveSettings: vi.fn(async (patch: Partial<AppSettings>) => {
     settings = { ...settings, ...patch }
     if (patch.conversationModel) status = { ...status, llm: verifiedKeys.has(patch.conversationModel.provider) }
@@ -74,9 +80,14 @@ const api = {
     if (patch.ttsEngine) status = { ...status, ttsEngine: patch.ttsEngine, tts: patch.ttsEngine === 'system' }
     return settings
   }),
-  // As in main, the microphone at launch is kept only for a way of talking that listens.
-  completeSetup: vi.fn(async (request: { voiceMode: string; micAutoStart: boolean }) =>
-    ({ ...settings, onboardingVersion: 1, micAutoStart: request.voiceMode !== 'text' && request.micAutoStart })),
+  // As in main, the microphone at launch is kept only for a way of talking that listens, and a live
+  // engine handed over as the voice mode becomes the voice engine.
+  completeSetup: vi.fn(async (request: { voiceMode: string; micAutoStart: boolean }) => ({
+    ...settings,
+    onboardingVersion: 1,
+    voiceEngine: isLiveEngine(request.voiceMode) ? request.voiceMode : 'cascade',
+    micAutoStart: request.voiceMode !== 'text' && request.micAutoStart
+  })),
   onSetupProgress: vi.fn((listener: (progress: SetupProgress) => void) => {
     progressListener = listener
     return () => {}
@@ -155,7 +166,9 @@ beforeEach(async () => {
     ttsEngine: 'voicevox',
     asrModel: 'auto',
     micAutoStart: false,
-    localAsrEnabled: false
+    localAsrEnabled: false,
+    gptLive: { model: 'gpt-live-1', voice: 'marin' },
+    geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' }
   } as unknown as AppSettings
   status = {
     llm: false,
@@ -341,7 +354,8 @@ describe('first-run setup', () => {
     expect(container.querySelector('.st-progress-label')?.textContent).toContain('576.3 / 1974 MB')
   })
 
-  it('turns the microphone on at the end of a voice setup through the gate every other switch uses, for the engine the settings choose', async () => {
+  it('turns the microphone on at the end of a voice setup through the gate every other switch uses, for the engine the setup saved', async () => {
+    // An engine left from before is replaced by the way of talking chosen here.
     settings = { ...settings, voiceEngine: 'gpt-live' } as AppSettings
     status = { ...status, asr: true, tts: true }
     await render()
@@ -360,8 +374,177 @@ describe('first-run setup', () => {
     await press(ja('setup.start'))
 
     expect(api.completeSetup).toHaveBeenCalledWith(expect.objectContaining({ voiceMode: 'server', micAutoStart: true }))
+    expect(voiceController.enable).toHaveBeenCalledOnce()
+    expect(liveVoice.enable).not.toHaveBeenCalled()
+  })
+})
+
+describe('first-run setup with a live engine', () => {
+  const live = ja('setup.speaking.live.title')
+  const engine = (id: string): HTMLButtonElement => container.querySelector<HTMLButtonElement>(`.su-provider[data-engine="${id}"]`)!
+  const typeKey = async (value: string): Promise<void> => {
+    const input = container.querySelector<HTMLInputElement>('#su-key')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+  /** Verifies the Anthropic key on the model screen and opens the speaking screen. */
+  const toSpeaking = async (): Promise<void> => {
+    await render()
+    await toModel(ja)
+    await verifyKey(ja)
+    await press(ja('setup.next'))
+  }
+  /** Walks from the speaking screen through the microphone and the extras to the summary. */
+  const toSummary = async (): Promise<void> => {
+    await press(ja('setup.next'))
+    expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.mic.title'))
+    await press(ja('setup.mic.check'))
+    await act(async () => container.querySelector<HTMLInputElement>('.su-check input')!.click())
+    await press(ja('setup.next'))
+    await flush()
+    await press(ja('setup.next'))
+  }
+  const finishFromSpeaking = async (): Promise<void> => {
+    await toSummary()
+    await press(ja('setup.start'))
+  }
+
+  it('skips listening and reading but keeps the microphone', async () => {
+    await toSpeaking()
+    await press(live)
+    expect(stepStates()).toMatchObject({
+      [ja('setup.steps.listening.label')]: 'skipped',
+      [ja('setup.steps.tts.label')]: 'skipped',
+      [ja('setup.steps.mic.label')]: 'todo'
+    })
+  })
+
+  it('keeps the next button disabled until the key of the chosen engine is verified', async () => {
+    await toSpeaking()
+    await press(live)
+    // The model screen verified Anthropic, which neither engine runs on, so none is chosen for the user.
+    expect(engine('gpt-live').getAttribute('aria-checked')).toBe('false')
+    expect(engine('gemini-live').getAttribute('aria-checked')).toBe('false')
+    expect(button(ja('setup.next')).disabled).toBe(true)
+
+    await act(async () => engine('gpt-live').click())
+    expect(button(ja('setup.next')).disabled).toBe(true)
+    await typeKey('sk-live')
+    await press(ja('setup.model.verifyAndSave'))
+
+    expect(api.saveApiKey).toHaveBeenLastCalledWith('openai', 'sk-live')
+    expect(button(ja('setup.next')).disabled).toBe(false)
+  })
+
+  it('keeps the next button disabled when the key is refused', async () => {
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gemini-live').click())
+    api.saveApiKey.mockRejectedValueOnce(new Error('unauthenticated'))
+    await typeKey('AIza-refused')
+    await press(ja('setup.model.verifyAndSave'))
+
+    expect(container.querySelector('.su-error')?.textContent).toContain('unauthenticated')
+    expect(button(ja('setup.next')).disabled).toBe(true)
+  })
+
+  it('chooses the engine whose provider the model screen verified and asks for no key', async () => {
+    await render()
+    await toModel(ja)
+    await act(async () => container.querySelector<HTMLButtonElement>('.su-provider[data-provider="openai"]')!.click())
+    await typeKey('sk-test')
+    await press(ja('setup.model.verifyAndSave'))
+    await press(ja('setup.next'))
+    await press(live)
+
+    expect(engine('gpt-live').getAttribute('aria-checked')).toBe('true')
+    expect(container.querySelector('#su-key')).toBeNull()
+    expect(button(ja('setup.next')).disabled).toBe(false)
+  })
+
+  it('checks a key saved in an earlier session when its engine is chosen, instead of asking for it again', async () => {
+    status = { ...status, llmKeys: { ...status.llmKeys, openai: 'saved' } }
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gpt-live').click())
+    await flush()
+
+    expect(api.verifySavedApiKey).toHaveBeenCalledWith('openai')
+    expect(api.saveApiKey).not.toHaveBeenCalledWith('openai', expect.anything())
+    expect(container.querySelector('#su-key')).toBeNull()
+    expect(button(ja('setup.next')).disabled).toBe(false)
+  })
+
+  it('lets a key set in the environment be verified again after a failed check, since a typed key cannot replace it', async () => {
+    status = { ...status, llmKeys: { ...status.llmKeys, google: 'saved' } }
+    api.verifySavedApiKey.mockRejectedValueOnce(new Error('offline'))
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gemini-live').click())
+    await flush()
+    expect(container.querySelector('.su-warn')?.textContent).toBe(ja('setup.model.savedKeyFailed'))
+    expect(button(ja('setup.next')).disabled).toBe(true)
+
+    // Main refuses to save a typed key while the environment holds one, so the recheck is the way on.
+    await press(ja('setup.model.verifySavedKey'))
+    expect(api.verifySavedApiKey).toHaveBeenCalledTimes(2)
+    expect(api.verifySavedApiKey).toHaveBeenLastCalledWith('google')
+    expect(button(ja('setup.next')).disabled).toBe(false)
+  })
+
+  it('opens the reading step, which the live engine skipped, when the microphone is refused and the user switches to typing', async () => {
+    api.requestMicPermission.mockResolvedValueOnce(false)
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gpt-live').click())
+    await typeKey('sk-live')
+    await press(ja('setup.model.verifyAndSave'))
+    await press(ja('setup.next'))
+    await press(ja('setup.mic.check'))
+    await press(ja('setup.mic.switchToTyping'))
+
+    expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.tts.title'))
+    expect(stepStates()).toMatchObject({ [ja('setup.steps.tts.label')]: 'current', [ja('setup.steps.mic.label')]: 'skipped' })
+  })
+
+  it('finishes with GPT-Live as the voice engine and turns the microphone on through it', async () => {
+    settings = { ...settings, gptLive: { model: 'gpt-live-1', voice: 'cedar' } } as AppSettings
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gpt-live').click())
+    await typeKey('sk-live')
+    await press(ja('setup.model.verifyAndSave'))
+    await toSummary()
+    // The summary names the voice the settings hold, which the settings screen may have changed before.
+    expect(container.querySelector('.su-summary')?.textContent).toContain(ja('setup.summary.liveEngineValue', { engine: 'GPT-Live', voice: 'cedar' }))
+    await press(ja('setup.start'))
+
+    expect(api.completeSetup).toHaveBeenCalledWith({
+      voiceMode: 'gpt-live',
+      micAutoStart: true,
+      microphoneVerified: true,
+      localAsrVerified: true,
+      systemTtsVerified: true
+    })
+    expect(useSettingsStore.getState().settings?.voiceEngine).toBe('gpt-live')
     expect(liveVoice.enable).toHaveBeenCalledOnce()
     expect(voiceController.enable).not.toHaveBeenCalled()
+  })
+
+  it('finishes with Gemini Live as the voice engine without preparing any recognition model', async () => {
+    vi.mocked(voiceController.prepareLocalAsr).mockClear()
+    await toSpeaking()
+    await press(live)
+    await act(async () => engine('gemini-live').click())
+    await typeKey('AIza-live')
+    await press(ja('setup.model.verifyAndSave'))
+    await finishFromSpeaking()
+
+    expect(api.completeSetup).toHaveBeenCalledWith(expect.objectContaining({ voiceMode: 'gemini-live', microphoneVerified: true }))
+    expect(useSettingsStore.getState().settings?.voiceEngine).toBe('gemini-live')
+    expect(voiceController.prepareLocalAsr).not.toHaveBeenCalled()
   })
 })
 

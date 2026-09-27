@@ -2,7 +2,9 @@ import type { AppSettings, CompleteSetupRequest } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { getSettings, saveSettings } from './settings'
-import { configuredModels, validateConfiguration } from './llm'
+import { configuredModels, providerKey, validateConfiguration, validateProviderKey } from './llm'
+import { LLM_PROVIDER_INFO } from '@shared/llm-catalog'
+import { LIVE_ENGINE_INFO, isLiveEngine, type VoiceEngine } from '@shared/voice-engine'
 import { platformCapabilities } from './platform'
 import * as asr from './asr'
 import * as tts from './tts'
@@ -14,9 +16,12 @@ import * as tts from './tts'
 export async function completeSetup(request: unknown): Promise<AppSettings> {
   const input = request as Partial<CompleteSetupRequest> | null
   const voiceMode = input?.voiceMode
-  if (voiceMode !== 'server' && voiceMode !== 'local' && voiceMode !== 'text') {
+  if (typeof voiceMode !== 'string' || (voiceMode !== 'server' && voiceMode !== 'local' && voiceMode !== 'text' && !isLiveEngine(voiceMode))) {
     throw new Error(errorText('setup.completion.listeningNotChosen'))
   }
+  const voiceEngine: VoiceEngine = isLiveEngine(voiceMode) ? voiceMode : 'cascade'
+  // A live engine speaks in the provider's voice, so the TTS engine in the settings is neither used nor checked.
+  const speaks = voiceEngine === 'cascade'
   if (voiceMode !== 'text' && input?.microphoneVerified !== true) {
     throw new Error(errorText('setup.completion.micNotChecked'))
   }
@@ -28,7 +33,7 @@ export async function completeSetup(request: unknown): Promise<AppSettings> {
   if (settings.safetyNoticeVersion < 1) {
     throw new Error(errorText('setup.completion.safetyNotAcknowledged'))
   }
-  if (settings.ttsEngine === 'system' && input?.systemTtsVerified !== true) {
+  if (speaks && settings.ttsEngine === 'system' && input?.systemTtsVerified !== true) {
     throw new Error(errorText(osMessageKey('setup.completion.systemTtsUnavailable', platformCapabilities().os)))
   }
 
@@ -37,12 +42,19 @@ export async function completeSetup(request: unknown): Promise<AppSettings> {
   // of a selected model is missing.
   await validateConfiguration(configuredModels(settings))
 
+  if (isLiveEngine(voiceEngine)) {
+    const { provider, label } = LIVE_ENGINE_INFO[voiceEngine]
+    const key = providerKey(provider)
+    if (!key) throw new Error(errorText('setup.completion.liveKeyMissing', { engine: label, provider: LLM_PROVIDER_INFO[provider].label }))
+    await validateProviderKey(provider, key)
+  }
+
   if (voiceMode === 'server') {
     const serverReady = (await asr.available()) || (await asr.ensureServer())
     if (!serverReady) throw new Error(errorText('setup.completion.asrUnavailable'))
   }
 
-  if (settings.ttsEngine !== 'none') {
+  if (speaks && settings.ttsEngine !== 'none') {
     await tts.ensureEngine()
     if (!(await tts.available())) {
       throw new Error(errorText('setup.completion.ttsUnavailable', { engine: tts.engineLabel() }))
@@ -52,6 +64,7 @@ export async function completeSetup(request: unknown): Promise<AppSettings> {
   // The completion version reaches the atomic settings write only after every check above has passed.
   return saveSettings({
     onboardingVersion: 1,
+    voiceEngine,
     localAsrEnabled: voiceMode === 'local',
     micAutoStart: voiceMode === 'text' ? false : input?.micAutoStart === true
   })

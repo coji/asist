@@ -545,6 +545,13 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     })
   )
 
+  handle(IpcChannel.VerifySavedApiKey, async (_e, rawProvider: unknown): Promise<AppStatus> => {
+    const provider = LLM_PROVIDERS.find((candidate) => candidate === rawProvider)
+    if (!provider) throw new Error(errorText('settings.errors.unknownProvider', { provider: String(rawProvider) }))
+    await validateProviderKey(provider, providerKey(provider) ?? '')
+    return computeStatus()
+  })
+
   handle(IpcChannel.ListSpeakers, (_e, engine?: TtsEngine) => tts.listSpeakers(engine))
 
   handle(IpcChannel.TtsTest, async () => {
