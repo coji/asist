@@ -5,21 +5,21 @@
 export interface LandingText {
   meta: { title: string; description: string; ogDescription: string }
   nav: { label: string; footerLabel: string; home: string; cards: string; apps: string; agent: string; memory: string; start: string; docs: string; github: string; language: string }
-  hero: { titleHtml: string; leadHtml: string; start: string; macos: string; free: string; silicon: string; artAlt: string; youHtml: string; meHtml: string; cardAlt: string }
+  hero: { titleHtml: string; leadHtml: string; start: string; platforms: string; free: string; artAlt: string; youHtml: string; meHtml: string; cardAlt: string }
   home: { title: string; headline: string; body: string; shotAlt: string; card: string; talk: string; apps: string }
   cards: { title: string; headline: string; body: string; label: string; weather: string; map: string; calendar: string; fx: string; mailDraft: string; todo: string; timer: string; note: string }
   apps: { title: string; headline: string; body: string; agent: string; tasks: string; notes: string; mail: string; memory: string; calendar: string; settings: string }
   agent: { title: string; headline: string; body: string; artAlt: string; askHtml: string; confirm: string; confirmMeta: string; cancel: string; startJob: string }
   memory: { title: string; headline: string; body: string; artAlt: string; diaryDate: string; diaryTitle: string; diaryBody: string; noteHtml: string }
-  start: { title: string; sub: string; download: string; setup: string; bubble: string; step1: string; step2: string; step3: string }
+  start: { title: string; sub: string; download: string; setup: string; mac: string; windows: string; bubble: string; step1: string; step2: string; step3: string }
   footer: { analytics: string; analyticsLink: string }
 }
 
 export const ja: LandingText = {
   meta: {
     title: 'ASIST — 話しかけるだけで、予定もメールも片づく。',
-    description: 'ASIST は Mac 向けのリアルタイムアシスタントです。話すだけであなたの作業をサポートします。天気や予定やメールは会話の横のカードに出て、時間のかかる作業は Agent に任せられます。',
-    ogDescription: 'Mac 向けのリアルタイムアシスタント。話すだけであなたの作業をサポートします。'
+    description: 'ASIST は Mac と Windows で使えるリアルタイムアシスタントです。話すだけであなたの作業をサポートします。天気や予定やメールは会話の横のカードに出て、時間のかかる作業は Agent に任せられます。',
+    ogDescription: 'Mac と Windows で使えるリアルタイムアシスタント。話すだけであなたの作業をサポートします。'
   },
   nav: {
     label: 'ページ内',
@@ -36,11 +36,10 @@ export const ja: LandingText = {
   },
   hero: {
     titleHtml: '話しかけるだけで、<br />予定もメールも片づく。',
-    leadHtml: 'ASIST は Mac 向けの<span class="nw">リアルタイムアシスタントです。</span><br />話すだけであなたの作業をサポートします。',
+    leadHtml: 'ASIST は Mac と Windows で使える<span class="nw">リアルタイムアシスタントです。</span><br />話すだけであなたの作業をサポートします。',
     start: 'はじめる',
-    macos: 'macOS 14 以降',
+    platforms: 'macOS 14 以降・Windows 11',
     free: '無料・オープンソース',
-    silicon: 'Apple Silicon',
     artAlt: 'クレイのジオラマ。机で Mac に向かう ASIST と、となりのロボット',
     youHtml: 'ねぇ ASIST、<br />今日の予定は?',
     meHtml: '今日の予定は<br />こんな感じだよ',
@@ -104,12 +103,14 @@ export const ja: LandingText = {
   },
   start: {
     title: 'さあ、はじめましょう。',
-    sub: 'あなたの Mac に、ASIST を。',
+    sub: 'あなたのコンピュータに、ASIST を。',
     download: 'ダウンロード',
     setup: 'セットアップの手順',
+    mac: 'macOS 14 以降・Apple Silicon',
+    windows: 'Windows 11・x64',
     bubble: 'はじめよう!',
-    step1: 'Apple Silicon の Mac と、会話のモデルの API キーを 1 つ用意します。',
-    step2: 'dmg をダウンロードして開き、ASIST を「アプリケーション」フォルダに入れます。新しいバージョンは自動で届きます。',
+    step1: 'Apple Silicon の Mac か Windows 11 の PC と、会話のモデルの API キーを 1 つ用意します。',
+    step2: 'Mac では dmg を開いて、ASIST を「アプリケーション」フォルダに入れます。Windows ではインストーラーを開き、警告が出たら「詳細情報」→「実行」を押します。',
     step3: '初回セットアップで、言語、モデル、声、マイクを選べば話しかけられます。'
   },
   footer: {

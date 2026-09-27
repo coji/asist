@@ -10,7 +10,7 @@ import { connect, launchChrome, sleep } from '../../scripts/cdp/cdp.mjs'
 
 /** The heading and the line below it in each language other than og.html's Japanese. */
 const TEXT = {
-  en: { heading: 'Just talk, and<br /><mark>your schedule and mail</mark><br />get handled.', sub: 'A realtime assistant for the Mac' }
+  en: { heading: 'Just talk, and<br /><mark>your schedule and mail</mark><br />get handled.', sub: 'A realtime assistant for Mac and Windows' }
 }
 const language = process.argv[2]
 if (language && !TEXT[language]) throw new Error(`og/render.mjs has no text for ${language}`)

@@ -1,0 +1,40 @@
+---
+title: インストール
+description: ASIST を入れて、最初に開くまで。
+sidebar:
+  order: 3
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+1. [Releases](https://github.com/nyosegawa/asist/releases/latest) から `ASIST-arm64.dmg` をダウンロードします。
+2. dmg を開き、ASIST を「アプリケーション」フォルダにドラッグします。
+3. 「アプリケーション」から ASIST を開きます。
+
+ASIST は Apple の公証を受けているので、そのまま開けます。「インターネットからダウンロードされたアプリケーションです」と確かめられたら「開く」を押します。
+
+新しいバージョンは、ASIST が自分で取得して、次に終了したときに入れ替えます。くわしくは[更新とアンインストール](/docs/start/update/)にあります。
+
+</TabItem>
+<TabItem label="Windows">
+
+1. [Releases](https://github.com/nyosegawa/asist/releases/latest) から `ASIST Setup <バージョン>.exe` をダウンロードします。
+2. ダウンロードしたファイルを開きます。
+3. 「Windows によって PC が保護されました」と出たら、「詳細情報」を押し、そのあと「実行」を押します。
+4. インストーラーが ASIST を入れて開きます。次からは、スタートメニューの ASIST から開きます。
+
+ASIST のインストーラーには、まだ署名がありません。そのため Windows の SmartScreen が警告を出し、新しいバージョンを入れるたびに同じ警告が出ます。
+
+インストーラーは管理者の権限を求めません。ASIST は、いま使っている Windows のユーザーだけのために、`%LOCALAPPDATA%\Programs\asist` に入ります。新しいバージョンの入れ方は、[更新とアンインストール](/docs/start/update/)にあります。
+
+<Aside type="caution">
+Smart App Control(スマート アプリ コントロール)がオンの Windows には、署名の無い ASIST を入れられません。状態は、「Windows セキュリティ」の「アプリとブラウザーの制御」で確かめられます。
+</Aside>
+
+</TabItem>
+</Tabs>
+
+開くと、[初回セットアップ](/docs/start/setup/)が始まります。

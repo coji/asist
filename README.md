@@ -5,7 +5,7 @@
 <h1 align="center">ASIST</h1>
 
 <p align="center">
-  A realtime assistant for the Mac
+  A realtime assistant for Mac and Windows
 </p>
 
 <p align="center">
@@ -19,12 +19,13 @@
   <a href="https://github.com/nyosegawa/asist/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/nyosegawa/asist/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
   <a href="https://github.com/nyosegawa/asist/releases/latest"><img src="https://img.shields.io/github/v/release/nyosegawa/asist?style=flat-square" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/macOS-14%2B%20%C2%B7%20Apple%20Silicon-lightgrey?style=flat-square" alt="macOS 14 or later, Apple Silicon" />
+  <img src="https://img.shields.io/badge/Windows-11%20%C2%B7%20x64-lightgrey?style=flat-square" alt="Windows 11, x64" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" /></a>
 </p>
 
 ASIST is an assistant you talk to, and it answers in its own voice. Weather, events and mail appear as cards beside the conversation, and research or file edits that take time go to an agent (the codex or claude CLI) once you approve them. The conversation runs on a model you choose from Anthropic, OpenAI, Google or Cerebras.
 
-**Your data stays on your Mac.** Listening, memory, notes and the conversation history live on this Mac. The text of the conversation goes only to the model provider you chose, and cards ask only the weather or news service they need. ASIST sends nothing to its developer.
+**Your data stays on your computer.** Listening, memory, notes and the conversation history live on this computer. The text of the conversation goes only to the model provider you chose, and cards ask only the weather or news service they need. ASIST sends nothing to its developer.
 
 <p align="center">
   <img src="website/public/screens/en/home.webp" alt="The home screen of ASIST: the conversation in the middle, an exchange rate card on the left, a weather card on the right and the Dock below" width="860" />
@@ -32,7 +33,7 @@ ASIST is an assistant you talk to, and it answers in its own voice. Weather, eve
 
 <table>
   <tr>
-    <td width="50%"><img src="website/public/screens/en/calendar.webp" alt="The Calendar mini app, showing a week of events" /><br /><sub>Calendar. Ask “Show me next week’s schedule” to open it.</sub></td>
+    <td width="50%"><img src="website/public/screens/en/calendar.webp" alt="The Calendar mini app, showing a week of events" /><br /><sub>Calendar, on the Mac for now. Ask “Show me next week’s schedule” to open it.</sub></td>
     <td width="50%"><img src="website/public/screens/en/agent.webp" alt="The agent jobs screen, with the list of jobs and the log of one" /><br /><sub>Agent jobs. Follow the progress and open what they produce.</sub></td>
   </tr>
   <tr>
@@ -52,11 +53,11 @@ ASIST is an assistant you talk to, and it answers in its own voice. Weather, eve
 
 ## Get started
 
-You need an Apple Silicon Mac with macOS 14 or later, and an API key for a conversation model from one of Anthropic, OpenAI, Google or Cerebras.
+You need an Apple Silicon Mac with macOS 14 or later, or an x64 PC with Windows 11, and an API key for a conversation model from one of Anthropic, OpenAI, Google or Cerebras. On Windows, speech recognition on your computer needs an NVIDIA GPU (GeForce RTX 20 or GTX 16 generation or later, driver 580 or later); without one, talk through Whisper in the browser or a Live API voice engine, or type. The calendar and Qwen3-TTS are not in the Windows version yet.
 
-1. Download `ASIST-arm64.dmg` from [Releases](https://github.com/nyosegawa/asist/releases/latest) and drag ASIST into Applications.
+1. Download from [Releases](https://github.com/nyosegawa/asist/releases/latest). On a Mac, download `ASIST-arm64.dmg` and drag ASIST into Applications. On Windows, download `ASIST Setup <version>.exe` and open it; the installer is not signed yet, so click “More info”, then “Run anyway” when SmartScreen warns you.
 2. Open ASIST and pick the language, model, voice and microphone in the first-run setup.
-3. Start talking. New versions arrive on their own and install the next time you quit.
+3. Start talking. New versions arrive on their own and install the next time you quit. On Windows, install a new version over the old one with its installer; your data stays.
 
 Step-by-step pages with screenshots, the microphone and calendar permissions, and setting up the agent CLI are in [Getting started](https://asist-agent.com/en/docs/start/).
 
@@ -68,12 +69,12 @@ ASIST's answers and cards come from language models and can be wrong, so check a
 
 | Where | What |
 |---|---|
-| Only on this Mac | Listening, voice activity detection, backchannel classification, memory search. Settings, memory, notes, tasks, conversation history and fetched mail |
+| Only on this computer | Listening, voice activity detection, backchannel classification, memory search. Settings, memory, notes, tasks, conversation history and fetched mail |
 | The model provider you chose | The text of the conversation and the memory that relates to it. With a Live API voice engine, the microphone audio |
 | The sources of card data | Only the words a card needs, such as a place for the weather, a news topic or a currency |
 | The service behind the codex or claude CLI | The prompt of a job you approved, and the files the CLI reads |
 
-API keys and mail passwords are stored encrypted with a key from the macOS keychain, and are never passed to a child process, the agent CLI included. The full list of destinations is in [Privacy and data](https://asist-agent.com/en/docs/privacy/).
+API keys and mail passwords are stored encrypted, with a key from the keychain on macOS and with DPAPI on Windows, and are never passed to a child process, the agent CLI included. On Windows, any program running as your user can decrypt them. The full list of destinations is in [Privacy and data](https://asist-agent.com/en/docs/privacy/).
 
 ## Documentation
 
@@ -98,7 +99,7 @@ npm run dev      # runs ASIST from source
 npm test
 ```
 
-You need Node.js, npm and the Xcode Command Line Tools. Building, CI, checking screens and releasing are described in [docs/development.md](docs/development.md), and the rules for developing with an agent in [AGENTS.md](AGENTS.md).
+You need Node.js and npm, with the Xcode Command Line Tools on a Mac, or the C++ desktop development workload of Visual Studio on Windows. Building, CI, checking screens and releasing are described in [docs/development.md](docs/development.md), and the rules for developing with an agent in [AGENTS.md](AGENTS.md).
 
 Bug reports and requests are welcome in [Issues](https://github.com/nyosegawa/asist/issues). Please report vulnerabilities through [SECURITY.md](SECURITY.md), not in a public issue.
 

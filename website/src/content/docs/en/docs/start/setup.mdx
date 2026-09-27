@@ -39,24 +39,24 @@ The first time you open ASIST, you go through nine screens in order. Screens tha
 
 5. **Prepare the speech recognition model** (with "Talk by voice")
 
-   Depending on how much memory your Mac has, ASIST recommends Qwen3-ASR or Whisper running on MLX. Click "Prepare the model" to download the model and run it on your Mac. You can also choose Whisper running inside the browser.
+   On a Mac, ASIST recommends Qwen3-ASR or Whisper running on MLX, depending on how much memory the Mac has. On Windows, it recommends Qwen3-ASR 1.7B or 0.6B, depending on the memory of the NVIDIA GPU, and the first preparation also downloads the CUDA build of PyTorch (about 2 GB) with the model. Click "Prepare the model" to download the model and run it on your computer. You can also choose Whisper running inside the browser. On Windows without a usable NVIDIA GPU, the reason appears in place of the model, so choose Whisper running inside the browser.
 
    ![The screen after the recommended model is ready](/screens/en/setup-4-listening.webp)
 
 6. **Choose a voice for reading aloud** (with "Talk by voice" or "Type, and hear the replies")
 
-   Only the options that can speak the conversation language appear. For Japanese, these are the macOS voices, Qwen3-TTS, VOICEVOX and AivisSpeech. You can choose Qwen3-TTS with 16 GB of memory or more; it downloads a model (about 1.9 GB) and runs it on your Mac. If you choose a macOS voice, ASIST checks whether a voice for that language is installed, and if not, shows you where in System Settings to add one.
+   Only the options that can speak the conversation language appear. For Japanese, these are "macOS voice", Qwen3-TTS, VOICEVOX and AivisSpeech on a Mac, and "Windows voice", VOICEVOX and AivisSpeech on Windows. Qwen3-TTS is on the Mac only, and you can choose it with 16 GB of memory or more; it downloads a model (about 1.9 GB) and runs it on your Mac. If you choose the system's voice, ASIST checks whether a voice for that language is installed, and if not, shows you where in System Settings or Windows Settings to add one.
 
    ![The screen with reading aloud ready](/screens/en/setup-5-speech.webp)
 
 7. **Allow the microphone** (with "Talk by voice" or "Talk in real time with a voice model")
 
-   Click "Check the microphone", and macOS asks for permission to use the microphone. Click "Allow", and ASIST checks that it actually receives sound.
+   Click "Check the microphone", and ASIST checks that it actually receives sound. On a Mac, macOS first asks for permission to use the microphone; click "Allow". Windows does not ask.
 
    ![The screen after the microphone was checked](/screens/en/setup-6-microphone.webp)
 
    <Aside type="tip">
-   If you did not allow it, you can open System Settings from this screen, or switch to typing. To allow it later, see [Microphone permission](/en/docs/start/microphone/).
+   If you did not allow it, you can open System Settings or Windows Settings from this screen, or switch to typing. To allow it later, see [Microphone permission](/en/docs/start/microphone/).
    </Aside>
 
 8. **Wait for the other models**

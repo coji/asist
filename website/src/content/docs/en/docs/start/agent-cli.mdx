@@ -7,7 +7,7 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
-For Agent jobs and the daily memory curation, ASIST starts the `codex` or `claude` CLI installed on your Mac as a child process. Install the one you want to use and sign in to it first. You choose which one to use under "Agent" in the settings. The default is codex.
+For Agent jobs and the daily memory curation, ASIST starts the `codex` or `claude` CLI installed on your computer as a child process. Install the one you want to use and sign in to it first. You choose which one to use under "Agent" in the settings. The default is codex.
 
 ASIST does not touch the CLI's credentials. It does not pass any API key saved in ASIST to the CLI, including keys in environment variables. Set up the CLI's authentication in the CLI itself. Costs and usage limits apply to the account you signed in with in the CLI.
 
@@ -31,5 +31,13 @@ ASIST does not touch the CLI's credentials. It does not pass any API key saved i
 </Tabs>
 
 Terms change. Check the pages above before you use ASIST for work.
+
+## On Windows
+
+On Windows, install each CLI with its official installer. A CLI installed with npm has only a `.cmd` file, which ASIST cannot start. If you start a job with a CLI installed with npm, ASIST tells you to reinstall it with the official installer.
+
+On Windows, codex runs only inside codex's own Windows sandbox. Without the sandbox, a job that writes could also write outside its working folder and reach the network. The sandbox needs a one-time setup with administrator rights: start `codex` once in a terminal and set up the Windows sandbox as it asks. Until the setup is done, ASIST does not start codex jobs and says why.
+
+claude works the same as on a Mac.
 
 How jobs work and what the confirmation screen shows is covered in [Agent jobs](/en/docs/apps/agent/).

@@ -7,7 +7,7 @@ sidebar:
 
 Under "Conversation", choose the conversation model and the model for the bridge phrase. The bridge phrase is a short phrase that ASIST prepares while you are still talking and says before the main answer.
 
-Save an API key for each provider under "API keys" in "Integrations". Before saving a key, ASIST checks that it can get the list of models from that provider's API. You can't choose a model from a provider that has no key. Keys are stored encrypted with a key from the macOS keychain.
+Save an API key for each provider under "API keys" in "Integrations". Before saving a key, ASIST checks that it can get the list of models from that provider's API. You can't choose a model from a provider that has no key. Keys are stored encrypted, with a key from the keychain on a Mac and with a key tied to your Windows user account (DPAPI) on Windows.
 
 Next to the model, you can choose the depth of thinking. The default is the shallowest setting, so that a voice conversation doesn't keep you waiting. With a deeper setting, it can take more than ten seconds before the answer starts.
 

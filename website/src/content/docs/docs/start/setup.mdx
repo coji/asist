@@ -39,24 +39,24 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
 5. **聞き取りのモデルを準備する**(「声で話す」のとき)
 
-   搭載しているメモリに合わせて、Qwen3-ASR か、MLX で動く Whisper を勧めます。「モデルを準備する」を押すと、モデルを取得してこの Mac で動かします。ブラウザの中で動く Whisper も選べます。
+   Mac では、搭載しているメモリに合わせて、Qwen3-ASR か、MLX で動く Whisper を勧めます。Windows では、NVIDIA の GPU のメモリに合わせて Qwen3-ASR 1.7B か 0.6B を勧め、初めての準備では CUDA 版 PyTorch の実行環境(約 2GB)もモデルと一緒に取得します。「モデルを準備する」を押すと、モデルを取得してこのコンピュータで動かします。ブラウザの中で動く Whisper も選べます。使える NVIDIA の GPU が無い Windows では、理由が出てモデルを選べないので、ブラウザの中で動く Whisper を選びます。
 
    ![おすすめのモデルの準備が終わった画面](/screens/ja/setup-4-listening.webp)
 
 6. **読み上げを選ぶ**(「声で話す」か「文字で打ち、返事は声で聞く」のとき)
 
-   会話の言語を話せるものだけが出ます。日本語なら、macOS の声、Qwen3-TTS、VOICEVOX、AivisSpeech です。Qwen3-TTS は 16GB 以上のメモリで選べ、モデル(約 1.9GB)を取得してこの Mac で動かします。macOS の声を選んだときは、その言語の声が入っているかを調べ、無ければシステム設定のどこで足すかを案内します。
+   会話の言語を話せるものだけが出ます。日本語なら、Mac では「macOS の音声合成」、Qwen3-TTS、VOICEVOX、AivisSpeech、Windows では「Windows の音声合成」、VOICEVOX、AivisSpeech です。Qwen3-TTS は Mac だけで、16GB 以上のメモリがあるときに選べます。モデル(約 1.9GB)を取得して、この Mac で動かします。OS の音声合成を選んだときは、その言語の声が入っているかを調べ、無ければシステム設定か Windows の設定のどこで足すかを案内します。
 
    ![読み上げの準備ができた画面](/screens/ja/setup-5-speech.webp)
 
 7. **マイクを許可する**(「声で話す」か「音声モデルとリアルタイムで話す」のとき)
 
-   「マイクを検証する」を押すと、macOS がマイクの許可を求めます。「許可」を押すと、実際に音を受け取れるかを確かめます。
+   「マイクを検証する」を押すと、実際に音を受け取れるかを確かめます。Mac では、その前に macOS が許可を求めるので「許可」を押します。Windows は許可を求めません。
 
    ![マイクを確かめた画面](/screens/ja/setup-6-microphone.webp)
 
    <Aside type="tip">
-   許可しなかったときは、この画面からシステム設定を開くか、文字で打つ使い方に切り替えられます。あとから許可するには、[マイクの許可](/docs/start/microphone/)を見てください。
+   許可しなかったときは、この画面からシステム設定か Windows の設定を開くか、文字で打つ使い方に切り替えられます。あとから許可するには、[マイクの許可](/docs/start/microphone/)を見てください。
    </Aside>
 
 8. **ほかの準備を待つ**

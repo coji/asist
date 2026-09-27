@@ -18,7 +18,7 @@ npm run website:build          # website/dist, then checks every internal link, 
 The landing page is `website/src/components/Landing.astro`, its style `website/src/styles/landing.css`.
 
 - Look at the page at desktop width and at phone width (about 390 px). Sections appear on scroll (`data-in`), so scroll to what you changed before judging it.
-- The dev server listens on this Mac only. To open it from a phone, start it with `npm run website -- --host` for the check alone: that serves it on every network the Mac is on, including shared Wi-Fi.
+- The dev server listens on this computer only. To open it from a phone, start it with `npm run website -- --host` for the check alone: that serves it on every network the computer is on, including shared Wi-Fi.
 - Pictures in `website/public/` are also used by the promotional video (`promotions/launch-video/`), and `website/og/art.png` by its YouTube thumbnail. When one changes, say so in the report, since the next video or thumbnail changes with it.
 - A change reaches main through a pull request like any other (`pull-request`). Publish from main, never from a branch.
 
@@ -28,6 +28,30 @@ The landing page is `website/src/components/Landing.astro`, its style `website/s
 - The sidebar lists each chapter folder in `astro.config.mjs` and orders pages by `sidebar.order` in their frontmatter.
 - Quote a button, page or setting exactly as the app shows it: the `ja-JP` and `en-US` values of its key in `src/shared/i18n/messages/`.
 - A heading another page links to keeps its text; changing it breaks the `#anchor`, which the build then reports.
+- ASIST runs on macOS and Windows, and every page is written for both. Where a sentence or two differ, name each system in the sentence ("… on a Mac, and … on Windows"). Where the steps differ, put them in Starlight's tabs with `syncKey="os"`, so that the system a reader picks stays picked on every page:
+
+  ```mdx
+  import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+  <Tabs syncKey="os">
+  <TabItem label="macOS">
+
+  1. …
+
+  </TabItem>
+  <TabItem label="Windows">
+
+  1. …
+
+  </TabItem>
+  </Tabs>
+  ```
+
+  - The labels are `macOS` and `Windows`, in that order and spelled the same in both languages, since the tabs of every page are matched by label. A page with tabs is `.mdx`.
+  - Write `<TabItem>` and `</TabItem>` at the start of the line with a blank line inside. satteri 0.10.5, Astro's MDX parser, panics with "byte index … is not a char boundary" or "out of bounds" when an indented closing tag follows a list (2026-09-27).
+  - Keep headings outside the tabs: a heading inside one still appears in the table of contents when the other tab is shown.
+  - Say plainly what one system does not have (on Windows, the calendar and Qwen3-TTS) on the page of that feature, rather than leaving it out.
+  - The app words some screens differently on each system; quote the `.macos` or `.windows` key of the dictionary in its tab.
 - Screens of the app come from the demo: `npm run demo:docs-shots` writes them to `public/screens/{ja,en}/`. Pages refer to `/screens/ja/…` and `/screens/en/…`. Write the Japanese in plain words (see the `ui-text` skill's writing guide).
 - The languages of the site, and which of them have a landing page or documentation, are listed once in `src/i18n/languages.mjs`.
 - The landing page is `src/components/Landing.astro`, and its text in each language is `src/i18n/landing/<code>.ts` (Japanese first, with the `LandingText` shape). A language appears once it is marked `landing: true` in `languages.mjs` and registered in `src/i18n/landing/index.ts`; its header menu, hreflang links and page follow from that. A language without documentation links to the English documentation. Social sites get `public/img/og.png` for Japanese and `og-en.png` for the rest (`node website/og/render.mjs [en]`).
@@ -35,7 +59,7 @@ The landing page is `website/src/components/Landing.astro`, its style `website/s
 
 ## 3. Log in (once per checkout)
 
-Always run wrangler as `npm run cf -- <command>`, never `npx wrangler`. `scripts/wrangler.mjs` points wrangler at a login stored in `.wrangler/config` of this checkout, so the account wrangler uses elsewhere on this Mac is never touched. It removes `CLOUDFLARE_API_TOKEN` and the other `CLOUDFLARE_*` variables, which would take precedence over the login, and it stops when `~/.wrangler` exists, since wrangler would then read that login instead.
+Always run wrangler as `npm run cf -- <command>`, never `npx wrangler`. `scripts/wrangler.mjs` points wrangler at a login stored in `.wrangler/config` of this checkout, so the account wrangler uses elsewhere on this computer is never touched. It removes `CLOUDFLARE_API_TOKEN` and the other `CLOUDFLARE_*` variables, which would take precedence over the login, and it stops when `~/.wrangler` exists, since wrangler would then read that login instead.
 
 ```bash
 npm run cf -- whoami

@@ -3,8 +3,8 @@ import type { LandingText } from './ja'
 export const en: LandingText = {
   meta: {
     title: 'ASIST — just talk, and your schedule and mail get handled.',
-    description: 'ASIST is a realtime assistant for the Mac. Just talk, and it helps with your work. Weather, events and mail appear as cards beside the conversation, and work that takes time goes to an agent.',
-    ogDescription: 'A realtime assistant for the Mac. Just talk, and it helps with your work.'
+    description: 'ASIST is a realtime assistant for Mac and Windows. Just talk, and it helps with your work. Weather, events and mail appear as cards beside the conversation, and work that takes time goes to an agent.',
+    ogDescription: 'A realtime assistant for Mac and Windows. Just talk, and it helps with your work.'
   },
   nav: {
     label: 'On this page',
@@ -21,11 +21,10 @@ export const en: LandingText = {
   },
   hero: {
     titleHtml: 'Just talk, and<br />your schedule and mail<br />get handled.',
-    leadHtml: 'ASIST is a <span class="nw">realtime assistant for the Mac.</span><br />Just talk, and it helps with your work.',
+    leadHtml: 'ASIST is a realtime assistant <span class="nw">for Mac and Windows.</span><br />Just talk, and it helps with your work.',
     start: 'Get started',
-    macos: 'macOS 14 or later',
+    platforms: 'macOS 14 or later · Windows 11',
     free: 'Free and open source',
-    silicon: 'Apple Silicon',
     artAlt: 'A clay diorama: ASIST at a desk facing a Mac, with a robot beside it',
     youHtml: 'Hey ASIST,<br />what’s on today?',
     meHtml: 'Here’s your<br />day',
@@ -89,12 +88,14 @@ export const en: LandingText = {
   },
   start: {
     title: 'Let’s get started.',
-    sub: 'ASIST, on your Mac.',
+    sub: 'ASIST, on your computer.',
     download: 'Download',
     setup: 'Setup guide',
+    mac: 'macOS 14 or later · Apple Silicon',
+    windows: 'Windows 11 · x64',
     bubble: 'Let’s go!',
-    step1: 'Get an Apple Silicon Mac and an API key for one conversation model.',
-    step2: 'Download the dmg, open it and drag ASIST into Applications. New versions arrive on their own.',
+    step1: 'Get an Apple Silicon Mac or a Windows 11 PC, and an API key for one conversation model.',
+    step2: 'On a Mac, open the dmg and drag ASIST into Applications. On Windows, open the installer, and if a warning appears, click “More info”, then “Run anyway”.',
     step3: 'Choose the language, model, voice and microphone in the first-run setup, and start talking.'
   },
   footer: {

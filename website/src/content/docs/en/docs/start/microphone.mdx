@@ -1,0 +1,71 @@
+---
+title: Microphone permission
+description: Let ASIST use the microphone, or allow it again later.
+sidebar:
+  order: 5
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+ASIST uses the microphone when you talk by voice.
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+macOS asks for permission when you click "Check the microphone" during the first-time setup. Click "Allow".
+
+</TabItem>
+<TabItem label="Windows">
+
+Windows does not ask for permission app by app. If Windows Settings allow desktop apps to use the microphone, "Check the microphone" during the first-time setup checks that sound actually arrives, and you move on.
+
+When Windows has echo cancellation on for the default microphone, ASIST captures the microphone through it, so sound from the speakers is less likely to get into the microphone. ASIST checks this when it starts, so after you change the default microphone, open ASIST again.
+
+</TabItem>
+</Tabs>
+
+## Allowing it later
+
+If you did not allow it, or want to allow it later, do the following:
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+1. Open System Settings > Privacy & Security > Microphone.
+2. Turn on ASIST in the list.
+3. Quit ASIST and open it again.
+
+</TabItem>
+<TabItem label="Windows">
+
+1. Open Settings > Privacy & security > Microphone. "Open Windows Settings" in the first-time setup opens it too.
+2. Turn on both "Microphone access" and "Let desktop apps access your microphone".
+3. Quit ASIST and open it again.
+
+</TabItem>
+</Tabs>
+
+![The setup screen when the microphone was not allowed](/screens/en/setup-mic-denied.webp)
+
+## Resetting the permission
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+If ASIST does not appear in the list, or the permission seems wrong, remove it in Terminal, then open ASIST again and allow it again.
+
+```bash
+tccutil reset Microphone com.nyosegawa.asist
+```
+
+macOS ties this permission to the app's signature. If you reinstall ASIST from anywhere other than the official Releases, you have to give the permission again.
+
+</TabItem>
+<TabItem label="Windows">
+
+On Windows, the permission for desktop apps covers all of them at once rather than one app. There is nothing to reset; check that both switches above are on.
+
+</TabItem>
+</Tabs>
+
+The Mac's calendar permission is covered in [Connecting your calendar](/en/docs/start/calendar/).

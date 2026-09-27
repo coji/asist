@@ -11,7 +11,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'ASIST',
-      description: 'Mac 向けのリアルタイムアシスタント',
+      description: 'Mac と Windows で使えるリアルタイムアシスタント',
       logo: { src: './src/assets/asist.png' },
       favicon: '/icons/asist.png',
       routeMiddleware: './src/route-middleware.ts',

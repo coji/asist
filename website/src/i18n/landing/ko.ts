@@ -3,8 +3,8 @@ import type { LandingText } from './ja'
 export const ko: LandingText = {
   meta: {
     title: 'ASIST — 말만 하면 일정도 메일도 해결돼요.',
-    description: 'ASIST는 Mac용 실시간 어시스턴트예요. 말하기만 하면 작업을 도와줘요. 날씨, 일정, 메일은 대화 옆에 카드로 나타나고, 시간이 걸리는 작업은 Agent에게 맡길 수 있어요.',
-    ogDescription: 'Mac용 실시간 어시스턴트. 말하기만 하면 작업을 도와줘요.'
+    description: 'ASIST는 Mac과 Windows용 실시간 어시스턴트예요. 말하기만 하면 작업을 도와줘요. 날씨, 일정, 메일은 대화 옆에 카드로 나타나고, 시간이 걸리는 작업은 Agent에게 맡길 수 있어요.',
+    ogDescription: 'Mac과 Windows용 실시간 어시스턴트. 말하기만 하면 작업을 도와줘요.'
   },
   nav: {
     label: '이 페이지',
@@ -21,11 +21,10 @@ export const ko: LandingText = {
   },
   hero: {
     titleHtml: '말만 하면<br />일정도 메일도<br />해결돼요.',
-    leadHtml: 'ASIST는 <span class="nw">Mac용 실시간 어시스턴트예요.</span><br />말하기만 하면 작업을 도와줘요.',
+    leadHtml: 'ASIST는 <span class="nw">Mac과 Windows용</span> <span class="nw">실시간 어시스턴트예요.</span><br />말하기만 하면 작업을 도와줘요.',
     start: '시작하기',
-    macos: 'macOS 14 이상',
+    platforms: 'macOS 14 이상 · Windows 11',
     free: '무료 · 오픈 소스',
-    silicon: 'Apple Silicon',
     artAlt: '점토 디오라마: 책상에서 Mac을 마주한 ASIST와 그 옆의 로봇',
     youHtml: '저기 ASIST,<br />오늘 일정은?',
     meHtml: '오늘 일정은<br />이렇게 돼요',
@@ -89,12 +88,14 @@ export const ko: LandingText = {
   },
   start: {
     title: '이제 시작해 볼까요?',
-    sub: 'ASIST를 내 Mac에.',
+    sub: 'ASIST를 내 컴퓨터에.',
     download: '다운로드',
     setup: '설정 가이드',
+    mac: 'macOS 14 이상 · Apple Silicon',
+    windows: 'Windows 11 · x64',
     bubble: '시작하자!',
-    step1: 'Apple Silicon Mac과 대화 모델 하나의 API 키를 준비하세요.',
-    step2: 'dmg를 내려받아 열고 ASIST를 응용 프로그램 폴더로 옮기세요. 새 버전은 자동으로 받아져요.',
+    step1: 'Apple Silicon Mac이나 Windows 11 PC, 그리고 대화 모델 하나의 API 키를 준비하세요.',
+    step2: 'Mac에서는 dmg를 열고 ASIST를 응용 프로그램 폴더로 옮기세요. Windows에서는 설치 프로그램을 열고, SmartScreen 경고가 나오면 그래도 실행하도록 선택하세요.',
     step3: '처음 설정에서 언어, 모델, 목소리, 마이크를 고르면 바로 대화할 수 있어요.'
   },
   footer: {

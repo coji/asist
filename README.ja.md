@@ -5,7 +5,7 @@
 <h1 align="center">ASIST</h1>
 
 <p align="center">
-  Mac 向けのリアルタイムアシスタント
+  Mac と Windows で使えるリアルタイムアシスタント
 </p>
 
 <p align="center">
@@ -19,12 +19,13 @@
   <a href="https://github.com/nyosegawa/asist/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/nyosegawa/asist/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
   <a href="https://github.com/nyosegawa/asist/releases/latest"><img src="https://img.shields.io/github/v/release/nyosegawa/asist?style=flat-square" alt="最新のバージョン" /></a>
   <img src="https://img.shields.io/badge/macOS-14%2B%20%C2%B7%20Apple%20Silicon-lightgrey?style=flat-square" alt="macOS 14 以降、Apple Silicon" />
+  <img src="https://img.shields.io/badge/Windows-11%20%C2%B7%20x64-lightgrey?style=flat-square" alt="Windows 11、x64" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" /></a>
 </p>
 
 ASIST は、話しかけると声で答えるアシスタントです。天気や予定やメールは会話の横のカードに出し、時間のかかる調べものやファイルの編集は、あなたが承認したあとに Agent(codex か claude の CLI)へ任せます。会話には Anthropic、OpenAI、Google、Cerebras のモデルから選んだものを使います。
 
-**あなたのデータは、あなたの Mac に。** 声の聞き取り、記憶、メモ、会話の履歴はこの Mac の中にあります。会話の文はあなたが選んだモデルの提供元に、カードのデータを取るときは天気やニュースのサービスにだけ問い合わせます。ASIST から開発者へ送るデータはありません。
+**あなたのデータは、あなたのコンピュータに。** 声の聞き取り、記憶、メモ、会話の履歴はこのコンピュータの中にあります。会話の文はあなたが選んだモデルの提供元に、カードのデータを取るときは天気やニュースのサービスにだけ問い合わせます。ASIST から開発者へ送るデータはありません。
 
 <p align="center">
   <img src="website/public/img/home.jpg" alt="ASIST のホーム画面。中央に会話、左に為替のカード、右に天気のカード、下に Dock が並んでいる" width="860" />
@@ -32,7 +33,7 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 <table>
   <tr>
-    <td width="50%"><img src="website/public/screens/ja/calendar.webp" alt="カレンダーのミニアプリ。週の表示に予定が並んでいる" /><br /><sub>カレンダー。「来週の予定を見せて」で開きます。</sub></td>
+    <td width="50%"><img src="website/public/screens/ja/calendar.webp" alt="カレンダーのミニアプリ。週の表示に予定が並んでいる" /><br /><sub>カレンダー(いまは Mac だけ)。「来週の予定を見せて」で開きます。</sub></td>
     <td width="50%"><img src="website/public/screens/ja/agent.webp" alt="Agent のジョブの画面。ログの下に成果物が並んでいる" /><br /><sub>Agent のジョブ。進み具合と成果物を見られます。</sub></td>
   </tr>
   <tr>
@@ -52,11 +53,11 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 ## はじめる
 
-必要なのは、Apple Silicon の Mac(macOS 14 以降)と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。
+必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りをこのコンピュータの中で動かすには、NVIDIA の GPU(GeForce RTX 20 か GTX 16 以降の世代、ドライバー 580 以降)が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。Windows 版には、カレンダーと Qwen3-TTS はまだありません。
 
-1. [Releases](https://github.com/nyosegawa/asist/releases/latest) から `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。
+1. [Releases](https://github.com/nyosegawa/asist/releases/latest) からダウンロードします。Mac では `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。Windows では `ASIST Setup <バージョン>.exe` をダウンロードして開きます。インストーラーにはまだ署名が無いので、SmartScreen の警告が出たら「詳細情報」を押し、そのあと「実行」を押します。
 2. ASIST を開き、初回セットアップで言語、モデル、声、マイクを選びます。
-3. 話しかけます。新しいバージョンは自動で届き、次に終了したときに入れ替わります。
+3. 話しかけます。新しいバージョンは自動で届き、次に終了したときに入れ替わります。Windows では、新しいバージョンのインストーラーを前のバージョンの上から入れます。データはそのまま残ります。
 
 画面つきの手順、マイクとカレンダーの許可、Agent の CLI の準備は、ドキュメントの[はじめる](https://asist-agent.com/docs/start/)にあります。
 
@@ -68,12 +69,12 @@ ASIST の返事とカードは言語モデルが作るので、間違ってい�
 
 | どこで | 何を |
 |---|---|
-| この Mac の中だけ | 声の聞き取り、声の区間の検出、相槌の判定、記憶の検索。設定、記憶、メモ、タスク、会話の履歴、取り込んだメール |
+| このコンピュータの中だけ | 声の聞き取り、声の区間の検出、相槌の判定、記憶の検索。設定、記憶、メモ、タスク、会話の履歴、取り込んだメール |
 | 選んだモデルの提供元 | 会話の文と、その会話に関係する記憶。声のエンジンに Live API を選んだときは、マイクの音声 |
 | カードのデータの取得元 | 天気の場所、ニュースの話題、為替の通貨など、カードに要る語だけ |
 | codex か claude の CLI の先 | あなたが承認したジョブのプロンプトと、CLI が読んだファイル |
 
-API キーとメールのパスワードは macOS のキーチェーンの鍵で暗号化して保存し、Agent の CLI を含むどの子プロセスにも渡しません。送り先の一覧は、ドキュメントの[プライバシーとデータ](https://asist-agent.com/docs/privacy/)にあります。
+API キーとメールのパスワードは、macOS ではキーチェーンの鍵で、Windows では DPAPI で暗号化して保存し、Agent の CLI を含むどの子プロセスにも渡しません。Windows では、あなたのユーザーで動くプログラムならその暗号を解けます。送り先の一覧は、ドキュメントの[プライバシーとデータ](https://asist-agent.com/docs/privacy/)にあります。
 
 ## ドキュメント
 
@@ -98,7 +99,7 @@ npm run dev      # ソースから起動します
 npm test
 ```
 
-Node.js、npm、Xcode Command Line Tools が要ります。ビルド、CI、画面の確かめ方、リリースの手順は [docs/development.md](docs/development.md) に、Agent で開発するときの決まりは [AGENTS.md](AGENTS.md) にあります。
+Node.js と npm に加えて、Mac では Xcode Command Line Tools が、Windows では Visual Studio の「C++ によるデスクトップ開発」が要ります。ビルド、CI、画面の確かめ方、リリースの手順は [docs/development.md](docs/development.md) に、Agent で開発するときの決まりは [AGENTS.md](AGENTS.md) にあります。
 
 不具合の報告と要望は [Issues](https://github.com/nyosegawa/asist/issues) へどうぞ。脆弱性は公開の Issue ではなく、[SECURITY.md](SECURITY.md) の手順で知らせてください。
 

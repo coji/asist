@@ -1,0 +1,71 @@
+---
+title: マイクの許可
+description: ASIST にマイクを使わせる、あとから許可し直す。
+sidebar:
+  order: 5
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+声で話すときは、ASIST がマイクを使います。
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+初回セットアップの「マイクを検証する」で、macOS が許可を求めるので、「許可」を押します。
+
+</TabItem>
+<TabItem label="Windows">
+
+Windows は、アプリごとには許可を求めません。Windows の設定でデスクトップ アプリにマイクが許可されていれば、初回セットアップの「マイクを検証する」で、実際に音を受け取れるかを確かめて進みます。
+
+Windows が既定のマイクでエコーキャンセルを有効にしているときは、ASIST はそのエコーキャンセルを通してマイクの音を取り込むので、スピーカーから出る音がマイクに入りにくくなります。有効かどうかは ASIST を起動したときに確かめるので、既定のマイクを替えたときは ASIST を開き直します。
+
+</TabItem>
+</Tabs>
+
+## あとから許可する
+
+許可しなかったときや、あとから許可するときは、次のようにします。
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+1. 「システム設定」→「プライバシーとセキュリティ」→「マイク」を開きます。
+2. 一覧の ASIST をオンにします。
+3. ASIST を終了して、開き直します。
+
+</TabItem>
+<TabItem label="Windows">
+
+1. 「設定」→「プライバシーとセキュリティ」→「マイク」を開きます。初回セットアップの「Windows の設定を開く」からも開けます。
+2. 「マイクへのアクセス」と「デスクトップ アプリがマイクにアクセスできるようにする」を、両方ともオンにします。
+3. ASIST を終了して、開き直します。
+
+</TabItem>
+</Tabs>
+
+![マイクを許可しなかったときのセットアップの画面](/screens/ja/setup-mic-denied.webp)
+
+## 許可をやり直す
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
+
+一覧に ASIST が出てこないときや、許可の状態がおかしいときは、ターミナルで許可を消してから、ASIST を開き直して許可し直します。
+
+```bash
+tccutil reset Microphone com.nyosegawa.asist
+```
+
+macOS は、この許可をアプリの署名に結び付けています。ASIST を配布元の Release 以外から入れ直すと、許可をやり直すことになります。
+
+</TabItem>
+<TabItem label="Windows">
+
+Windows のデスクトップ アプリへの許可は、アプリごとではなく、すべてのデスクトップ アプリにまとめてかかります。やり直す操作は無いので、上の 2 つのスイッチがオンになっているかを確かめます。
+
+</TabItem>
+</Tabs>
+
+Mac のカレンダーの許可は、[カレンダーの接続](/docs/start/calendar/)にあります。

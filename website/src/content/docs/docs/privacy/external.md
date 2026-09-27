@@ -16,7 +16,7 @@ ASIST が外へ送るものと、外から受け取るものの一覧です。�
 | OpenAI か Google の Live API(声のエンジンに選んだときだけ) | マイクの音声、直近の履歴、ツールの結果 | 音声、転写 |
 | codex か claude の CLI の先のサービス | ジョブのプロンプト、作業フォルダの中身のうち CLI が読んだもの、記憶の整理では会話ログ | 作業の結果 |
 
-音声認識、声の区間の検出、相槌の判定、記憶の検索は、この Mac の中だけで動き、音声も文も外へ送りません。
+音声認識、声の区間の検出、相槌の判定、記憶の検索は、このコンピュータの中だけで動き、音声も文も外へ送りません。
 
 ## カードのデータ
 
@@ -37,14 +37,14 @@ ASIST が外へ送るものと、外から受け取るものの一覧です。�
 
 | データ | つなぐ先 | 備考 |
 |---|---|---|
-| メール | 設定したアカウントの IMAP と SMTP のサーバー | 取り込んだメールはこの Mac に置きます。 |
-| カレンダー | macOS のカレンダー | Google や iCloud との同期は macOS が行います。ASIST はそれらのサービスに直接つなぎません。 |
+| メール | 設定したアカウントの IMAP と SMTP のサーバー | 取り込んだメールはこのコンピュータに置きます。 |
+| カレンダー(macOS だけ) | macOS のカレンダー | Google や iCloud との同期は macOS が行います。ASIST はそれらのサービスに直接つなぎません。 |
 
 ## モデル、実行環境、更新の取得
 
 | 取得するもの | 取得元 |
 |---|---|
-| この Mac で動かすモデル | Hugging Face(`huggingface.co`)。CPC の重みだけ `dl.fbaipublicfiles.com` |
+| このコンピュータで動かすモデル | Hugging Face(`huggingface.co`)。CPC の重みだけ `dl.fbaipublicfiles.com` |
 | Python | 同梱の uv が、GitHub の python-build-standalone から取得し、ハッシュで確かめます。 |
-| Python のパッケージ | 同梱の uv が PyPI から取得し、固定したハッシュで確かめます。 |
-| 新しいバージョンの ASIST | GitHub の Release(`github.com/nyosegawa/asist`) |
+| Python のパッケージ | 同梱の uv が PyPI から取得し、固定したハッシュで確かめます。Windows の音声認識に使う CUDA 版 PyTorch だけは `download.pytorch.org` から取得します。 |
+| 新しいバージョンの ASIST(macOS) | GitHub の Release(`github.com/nyosegawa/asist`) |

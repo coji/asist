@@ -53,7 +53,7 @@ Outlook.com and Microsoft 365 do not accept IMAP connections with a password, so
 |---|---|
 | Period | "Days to fetch" in the settings (30 days by default). Older mail does not appear in the list. |
 | Folders | Inbox, Sent and Archive. Trash and spam are not fetched. |
-| New mail | ASIST waits on the inbox with IMAP IDLE and fetches new mail as soon as it arrives. Everything is fetched again every 5 minutes and when your Mac wakes from sleep. |
+| New mail | ASIST waits on the inbox with IMAP IDLE and fetches new mail as soon as it arrives. Everything is fetched again every 5 minutes and when your computer wakes from sleep. |
 | Attachments | Only the file name and size are shown; the contents are not fetched. |
 
 ## If it does not connect
@@ -65,6 +65,6 @@ Outlook.com and Microsoft 365 do not accept IMAP connections with a password, so
 
 ## How ASIST handles your mail
 
-The password is encrypted with a key from the macOS keychain before it is saved, and the settings file holds only the server details and folder names. Fetched mail is kept on your Mac and can be rebuilt from the server. Removing an account removes that account's fetched mail and its password. The mail on the server stays as it is.
+The password is encrypted before it is saved, with a key from the keychain on a Mac and with a key tied to your Windows user account (DPAPI) on Windows, and the settings file holds only the server details and folder names. Fetched mail is kept on your computer and can be rebuilt from the server. Removing an account removes that account's fetched mail and its password. The mail on the server stays as it is.
 
 Mail read in the conversation is sent to the provider of the conversation model you chose, so that it can write a reply. It may also stay in the conversation history and be used in memory curation.

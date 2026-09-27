@@ -1,11 +1,18 @@
 ---
 title: データの置き場所
-description: ASIST がこの Mac のどこに何を置くか。
+description: ASIST がこのコンピュータのどこに何を置くか。
 sidebar:
   order: 1
 ---
 
-ASIST から開発者へ送るデータはありません。設定とデータは、この Mac の `~/Library/Application Support/asist/` にあります。アプリを入れ直しても消えません。
+ASIST から開発者へ送るデータはありません。設定とデータは、次のフォルダにあります。アプリを入れ直しても消えません。
+
+| OS | 設定とデータ | 動作ログ |
+|---|---|---|
+| macOS | `~/Library/Application Support/asist/` | `~/Library/Logs/asist/` |
+| Windows | `%APPDATA%\asist\` | `%APPDATA%\asist\logs\` |
+
+設定とデータのフォルダには、次のものがあります。
 
 | 場所 | 中身 |
 |---|---|
@@ -19,13 +26,18 @@ ASIST から開発者へ送るデータはありません。設定とデータ�
 | `api-usage.json` | 有料の API の使用量と料金(日ごとの合計) |
 | `joblogs/` | Agent のジョブのログ |
 | `python/`、`uv-cache/` | uv が取得した Python と、パッケージのキャッシュ |
-| `mlx-audio-runtime/`、`embedding-runtime/`、`vap-runtime/` | この Mac で動かすモデルの Python の環境 |
+| `mlx-audio-runtime/`(macOS)、`cuda-speech-runtime/`(Windows)、`embedding-runtime/`、`vap-runtime/` | このコンピュータで動かすモデルの Python の環境 |
 
-動作ログは `~/Library/Logs/asist/` に日ごとに残ります。
+動作ログは、上の表の動作ログのフォルダに日ごとに残ります。
+
+声の聞き取りと読み上げのモデルは、Hugging Face の標準のキャッシュに取得します。macOS では `~/.cache/huggingface/hub/`、Windows では `%USERPROFILE%\.cache\huggingface\hub\` です。ほかのアプリも同じ場所を使うので、ASIST をアンインストールしても消えません。
 
 ## API キーとパスワード
 
-設定で保存した API キーとメールのパスワードは、Electron の safeStorage で macOS のキーチェーンの鍵を使って暗号化し、平文では書きません。暗号化が使えないときは保存せず、エラーにします。
+設定で保存した API キーとメールのパスワードは、Electron の safeStorage で暗号化し、平文では書きません。暗号化が使えないときは保存せず、エラーにします。暗号化の鍵の守り方は、OS によって違います。
+
+- macOS では、鍵をキーチェーンに置きます。ASIST 以外のアプリがその鍵を読もうとすると、macOS が確認を求めます。
+- Windows では、鍵を Windows のユーザーに結び付けて DPAPI で暗号化し、設定とデータのフォルダの `Local State` に置きます。同じ Windows のユーザーで動くプログラムなら、どれでもこの鍵を解いて、保存したキーを取り出せます。この暗号化で防げるのは、ファイルだけがほかのユーザーやほかのコンピュータに渡った場合です。
 
 Agent の CLI、Python のワーカー、音声のエンジンなどの子プロセスには、どの提供元の API キーも渡しません。
 

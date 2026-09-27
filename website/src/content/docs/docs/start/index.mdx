@@ -5,11 +5,32 @@ sidebar:
   order: 1
 ---
 
-## Mac
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+## コンピュータ
+
+ASIST は Mac と Windows で動きます。
+
+<Tabs syncKey="os">
+<TabItem label="macOS">
 
 Apple Silicon の Mac と、macOS 14 以降が要ります。Intel の Mac では動きません。
 
 声の聞き取りなどのモデルは、この Mac の中で動きます。すべてを使うと、合わせて約 4.1GB のメモリを使い、読み上げに Qwen3-TTS を選ぶとさらに約 2GB を使います。Qwen3-TTS は 16GB 以上のメモリの Mac で選べます。内訳は[メモリの目安](/docs/reference/memory/)にあります。
+
+</TabItem>
+<TabItem label="Windows">
+
+x64 の CPU の PC と、Windows 11 が要ります。Arm の CPU の Windows には対応していません。
+
+声の聞き取りをこのコンピュータの中で動かすには、NVIDIA の GPU が要ります。GPU は GeForce RTX 20 か GTX 16 以降の世代のもので、ドライバーはバージョン 580 以降が要ります。GPU のメモリが 6GB 以上なら Qwen3-ASR 1.7B を、それより少なければ Qwen3-ASR 0.6B を勧めます。初回の準備で、実行環境とモデルを合わせて約 3.6〜6.1GB 取得します。
+
+使える GPU が無くても、ASIST は使えます。聞き取りにブラウザの中で動く Whisper を使うか、声のエンジンに GPT-Live か Gemini Live を選ぶか、文字で話しかけます。
+
+Windows 版では、カレンダーと、読み上げの Qwen3-TTS はまだ使えません。
+
+</TabItem>
+</Tabs>
 
 ## 会話のモデルの API キー
 
@@ -27,9 +48,9 @@ Apple Silicon の Mac と、macOS 14 以降が要ります。Intel の Mac で�
 | もの | 使うところ |
 |---|---|
 | `codex` か `claude` の CLI | Agent のジョブと、記憶の整理。使うほうをインストールして、認証を済ませておきます。準備は [Agent の CLI](/docs/start/agent-cli/) にあります。 |
-| VOICEVOX か AivisSpeech | 日本語の読み上げ。「アプリケーション」に入れておくと、ASIST が裏で起動してつなぎます。 |
+| VOICEVOX か AivisSpeech | 日本語の読み上げ。Mac では「アプリケーション」に、Windows ではインストール先を変えずに入れておくと、ASIST が裏で起動してつなぎます。 |
 
-この Mac で動かすモデルの Python の環境は、アプリに同梱した uv が作ります。Python もそのときに uv が取得するので、あらかじめ入れておくものはありません。
+このコンピュータで動かすモデルの Python の環境は、アプリに同梱した uv が作ります。Python もそのときに uv が取得するので、あらかじめ入れておくものはありません。
 
 ## 使い始める前に
 

@@ -28,6 +28,6 @@ You can also open a mini app from the conversation by asking, for example, "Open
 
 ## ASIST stays after you close the window
 
-When you close the window, ASIST stays in the menu bar, and you can bring it back with ⌥Space. It also uses macOS notifications to tell you when a timer ends, a job finishes or new mail arrives.
+When you close the window, ASIST stays in the menu bar on a Mac, and in the notification area of the taskbar on Windows. You can bring it back from any app with ⌥Space on a Mac, and with Alt+Shift+Space on Windows. It also uses the system's notifications to tell you when a timer ends, a job finishes or new mail arrives.
 
 The HUD at the top shows how long speech recognition, generating the reply and reading it aloud took.

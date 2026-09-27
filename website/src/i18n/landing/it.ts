@@ -3,8 +3,8 @@ import type { LandingText } from './ja'
 export const it: LandingText = {
   meta: {
     title: 'ASIST — basta parlare, e impegni e mail sono sistemati.',
-    description: 'ASIST è un assistente in tempo reale per Mac. Basta parlare e ti aiuta nel tuo lavoro. Meteo, impegni e mail compaiono come schede accanto alla conversazione, e i lavori che richiedono tempo passano a un agente.',
-    ogDescription: 'Un assistente in tempo reale per Mac. Basta parlare e ti aiuta nel tuo lavoro.'
+    description: 'ASIST è un assistente in tempo reale per Mac e Windows. Basta parlare e ti aiuta nel tuo lavoro. Meteo, impegni e mail compaiono come schede accanto alla conversazione, e i lavori che richiedono tempo passano a un agente.',
+    ogDescription: 'Un assistente in tempo reale per Mac e Windows. Basta parlare e ti aiuta nel tuo lavoro.'
   },
   nav: {
     label: 'In questa pagina',
@@ -21,11 +21,10 @@ export const it: LandingText = {
   },
   hero: {
     titleHtml: 'Basta parlare,<br />e impegni e mail<br />sono sistemati.',
-    leadHtml: 'ASIST è un <span class="nw">assistente in tempo reale per Mac.</span><br />Basta parlare e ti aiuta nel tuo lavoro.',
+    leadHtml: 'ASIST è un <span class="nw">assistente in tempo reale</span> <span class="nw">per Mac e Windows.</span><br />Basta parlare e ti aiuta nel tuo lavoro.',
     start: 'Inizia',
-    macos: 'macOS 14 o successivo',
+    platforms: 'macOS 14 o successivo · Windows 11',
     free: 'Gratuito e open source',
-    silicon: 'Apple Silicon',
     artAlt: 'Un diorama in plastilina: ASIST alla scrivania davanti a un Mac, con un robot accanto',
     youHtml: 'Ehi ASIST,<br />cosa c’è oggi?',
     meHtml: 'Ecco la tua<br />giornata',
@@ -89,12 +88,14 @@ export const it: LandingText = {
   },
   start: {
     title: 'Cominciamo.',
-    sub: 'ASIST, sul tuo Mac.',
+    sub: 'ASIST, sul tuo computer.',
     download: 'Scarica',
     setup: 'Guida alla configurazione',
+    mac: 'macOS 14 o successivo · Apple Silicon',
+    windows: 'Windows 11 · x64',
     bubble: 'Andiamo!',
-    step1: 'Procurati un Mac con Apple Silicon e una chiave API per un modello di conversazione.',
-    step2: 'Scarica il dmg, aprilo e trascina ASIST in Applicazioni. Le nuove versioni arrivano da sole.',
+    step1: 'Procurati un Mac con Apple Silicon o un PC con Windows 11, e una chiave API per un modello di conversazione.',
+    step2: 'Su Mac, apri il dmg e trascina ASIST in Applicazioni. Su Windows, apri il programma di installazione; se SmartScreen mostra un avviso, scegli di eseguirlo comunque.',
     step3: 'Nella configurazione iniziale scegli lingua, modello, voce e microfono, e inizia a parlare.'
   },
   footer: {

@@ -36,14 +36,14 @@ You answer a confirmation screen with its buttons. Speaking while it is open nei
 
 ## An agent changes files with your permissions
 
-An Agent job you approve is handed to the `codex` or `claude` CLI installed on your Mac. The CLI runs in the job's working directory with the permissions that CLI has. A job whose confirmation screen says "It can write files and run commands." can change or delete the files in that folder, and it runs commands.
+An Agent job you approve is handed to the `codex` or `claude` CLI installed on your computer. The CLI runs in the job's working directory with the permissions that CLI has. A job whose confirmation screen says "It can write files and run commands." can change or delete the files in that folder, and it runs commands.
 
 The working directory does not lock the CLI inside it. A job that can write runs with your user's permissions, so it can also write to files outside the working directory. Edits inside a Git repository are made in a separate worktree, and you can review the diff before merging them, but a folder that is not under Git is written to directly.
 
 So:
 
 - Don't approve a job whose content you have not read. Read the instructions for the agent and the working directory, and cancel if anything is unclear.
-- Keep the folders an agent works in under Git, or back them up with Time Machine or similar.
+- Keep the folders an agent works in under Git, or back them up with Time Machine, File History on Windows, or similar.
 - Don't choose a folder with many important files, such as your whole home folder, as the working directory.
 
 How jobs work is described in [Agent jobs](/en/docs/apps/agent/), and the CLI modes in the [Agent](/en/docs/settings/agent/) settings.
@@ -72,9 +72,9 @@ The text of the conversation, and the parts of memory that relate to it, go to t
 
 How long a provider keeps that data, and whether it uses it to train models, is set by that provider's terms. Before you talk about work secrets or other people's personal information, check the provider's terms and your employer's rules.
 
-## Memory and conversation logs are plain files on your Mac
+## Memory and conversation logs are plain files on your computer
 
-Memory, the diary, notes, conversation logs and fetched mail are kept in `~/Library/Application Support/asist/` as files that are not encrypted. Anyone who can use your account on this Mac, or read its backups, can read them. Only API keys and mail passwords are stored encrypted.
+Memory, the diary, notes, conversation logs and fetched mail are kept as files that are not encrypted, in `~/Library/Application Support/asist/` on a Mac and in `%APPDATA%\asist\` on Windows. Anyone who can use your account on this computer, or read its backups, can read them. Only API keys and mail passwords are stored encrypted. On Windows, any program running as your user, Agent jobs included, can decrypt them ([API keys and passwords](/en/docs/privacy/#api-keys-and-passwords)).
 
 Memory keeps its history in Git, so text you delete on the screen stays in that history. To remove everything, delete the folders as described in [Uninstalling](/en/docs/start/update/#uninstalling). The list of files is in [Where your data is kept](/en/docs/privacy/).
 

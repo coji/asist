@@ -16,7 +16,7 @@ This is a list of what ASIST sends out and what it receives from outside. When y
 | The OpenAI or Google Live API (only when you choose it as the voice engine) | Microphone audio, the recent history, and tool results | Audio and transcripts |
 | The service behind the codex or claude CLI | The job's prompt, the contents of the working folder that the CLI reads, and for memory curation, the conversation logs | The results of the work |
 
-Speech recognition, voice activity detection, backchannel decisions and memory search run only on this Mac, and send out neither audio nor text.
+Speech recognition, voice activity detection, backchannel decisions and memory search run only on this computer, and send out neither audio nor text.
 
 ## Data for the cards
 
@@ -37,14 +37,14 @@ When fetching card data and models, ASIST sends `ASIST/<version> (https://github
 
 | Data | Connects to | Notes |
 |---|---|---|
-| Mail | The IMAP and SMTP servers of the accounts you set up | Fetched mail is kept on this Mac. |
-| Calendar | The macOS calendar | macOS does the syncing with Google and iCloud. ASIST doesn't connect to those services directly. |
+| Mail | The IMAP and SMTP servers of the accounts you set up | Fetched mail is kept on this computer. |
+| Calendar (macOS only) | The macOS calendar | macOS does the syncing with Google and iCloud. ASIST doesn't connect to those services directly. |
 
 ## Models, runtimes and updates
 
 | What is downloaded | Source |
 |---|---|
-| Models that run on this Mac | Hugging Face (`huggingface.co`). Only the CPC weights come from `dl.fbaipublicfiles.com` |
+| Models that run on this computer | Hugging Face (`huggingface.co`). Only the CPC weights come from `dl.fbaipublicfiles.com` |
 | Python | The bundled uv downloads it from python-build-standalone on GitHub and checks it by hash. |
-| Python packages | The bundled uv downloads them from PyPI and checks them against pinned hashes. |
-| New versions of ASIST | GitHub Releases (`github.com/nyosegawa/asist`) |
+| Python packages | The bundled uv downloads them from PyPI and checks them against pinned hashes. Only the CUDA build of PyTorch, which speech recognition uses on Windows, comes from `download.pytorch.org`. |
+| New versions of ASIST (macOS) | GitHub Releases (`github.com/nyosegawa/asist`) |

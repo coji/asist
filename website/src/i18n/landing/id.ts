@@ -3,8 +3,8 @@ import type { LandingText } from './ja'
 export const id: LandingText = {
   meta: {
     title: 'ASIST — cukup bicara, jadwal dan email pun beres.',
-    description: 'ASIST adalah asisten realtime untuk Mac. Cukup bicara, dan ASIST membantu pekerjaan Anda. Cuaca, acara, dan email muncul sebagai kartu di samping percakapan, dan pekerjaan yang makan waktu bisa diserahkan ke Agent.',
-    ogDescription: 'Asisten realtime untuk Mac. Cukup bicara, dan ASIST membantu pekerjaan Anda.'
+    description: 'ASIST adalah asisten realtime untuk Mac dan Windows. Cukup bicara, dan ASIST membantu pekerjaan Anda. Cuaca, acara, dan email muncul sebagai kartu di samping percakapan, dan pekerjaan yang makan waktu bisa diserahkan ke Agent.',
+    ogDescription: 'Asisten realtime untuk Mac dan Windows. Cukup bicara, dan ASIST membantu pekerjaan Anda.'
   },
   nav: {
     label: 'Di halaman ini',
@@ -21,11 +21,10 @@ export const id: LandingText = {
   },
   hero: {
     titleHtml: 'Cukup bicara,<br />jadwal dan email<br />pun beres.',
-    leadHtml: 'ASIST adalah <span class="nw">asisten realtime untuk Mac.</span><br />Cukup bicara, dan ASIST membantu pekerjaan Anda.',
+    leadHtml: 'ASIST adalah <span class="nw">asisten realtime</span> <span class="nw">untuk Mac dan Windows.</span><br />Cukup bicara, dan ASIST membantu pekerjaan Anda.',
     start: 'Mulai',
-    macos: 'macOS 14 atau lebih baru',
+    platforms: 'macOS 14 atau lebih baru · Windows 11',
     free: 'Gratis dan open source',
-    silicon: 'Apple Silicon',
     artAlt: 'Diorama tanah liat: ASIST di meja menghadap Mac, dengan robot di sebelahnya',
     youHtml: 'Hai ASIST,<br />ada apa saja hari ini?',
     meHtml: 'Ini jadwal<br />hari ini',
@@ -89,12 +88,14 @@ export const id: LandingText = {
   },
   start: {
     title: 'Ayo mulai.',
-    sub: 'ASIST, di Mac Anda.',
+    sub: 'ASIST, di komputer Anda.',
     download: 'Unduh',
     setup: 'Panduan penyiapan',
+    mac: 'macOS 14 atau lebih baru · Apple Silicon',
+    windows: 'Windows 11 · x64',
     bubble: 'Ayo!',
-    step1: 'Siapkan Mac dengan Apple Silicon dan kunci API untuk satu model percakapan.',
-    step2: 'Unduh dmg, buka, lalu seret ASIST ke folder Aplikasi. Versi baru datang dengan sendirinya.',
+    step1: 'Siapkan Mac dengan Apple Silicon atau PC dengan Windows 11, dan kunci API untuk satu model percakapan.',
+    step2: 'Di Mac, buka dmg lalu seret ASIST ke folder Aplikasi. Di Windows, buka penginstal; jika SmartScreen menampilkan peringatan, pilih untuk tetap menjalankannya.',
     step3: 'Pilih bahasa, model, suara, dan mikrofon di penyiapan awal, lalu mulailah berbicara.'
   },
   footer: {

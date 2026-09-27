@@ -200,6 +200,9 @@ h1, h2, h3 { margin: 0; }
   .hero-art .me::after { left: 18%; top: auto; bottom: -6px; }
   .bubble.hand { font-size: 14px; }
   .bubble { font-size: 12.5px; padding: 8px 12px; }
+  .meta { flex-direction: column; gap: 4px; }
+  .meta span + span::before { content: none; }
+  .start-inner .meta { align-items: center; }
   .start-band { min-height: 380px; }
   .start-bg { object-position: 30% center; opacity: 0.55; }
   .robot { display: none; }

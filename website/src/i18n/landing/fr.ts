@@ -3,8 +3,8 @@ import type { LandingText } from './ja'
 export const fr: LandingText = {
   meta: {
     title: 'ASIST — parlez-lui, il s’occupe de votre agenda et de vos mails.',
-    description: 'ASIST est un assistant en temps réel pour Mac. Il suffit de lui parler pour qu’il vous aide dans votre travail. La météo, les rendez-vous et les mails s’affichent en cartes à côté de la conversation, et les tâches qui prennent du temps sont confiées à un agent.',
-    ogDescription: 'Un assistant en temps réel pour Mac. Il suffit de lui parler pour qu’il vous aide dans votre travail.'
+    description: 'ASIST est un assistant en temps réel pour Mac et Windows. Il suffit de lui parler pour qu’il vous aide dans votre travail. La météo, les rendez-vous et les mails s’affichent en cartes à côté de la conversation, et les tâches qui prennent du temps sont confiées à un agent.',
+    ogDescription: 'Un assistant en temps réel pour Mac et Windows. Il suffit de lui parler pour qu’il vous aide dans votre travail.'
   },
   nav: {
     label: 'Sur cette page',
@@ -21,11 +21,10 @@ export const fr: LandingText = {
   },
   hero: {
     titleHtml: 'Parlez-lui,<br />il s’occupe de votre agenda<br />et de vos mails.',
-    leadHtml: 'ASIST est un <span class="nw">assistant en temps réel pour Mac.</span><br />Parlez-lui, et il vous aide dans votre travail.',
+    leadHtml: 'ASIST est un <span class="nw">assistant en temps réel</span> <span class="nw">pour Mac et Windows.</span><br />Parlez-lui, et il vous aide dans votre travail.',
     start: 'Commencer',
-    macos: 'macOS 14 ou plus récent',
+    platforms: 'macOS 14 ou plus récent · Windows 11',
     free: 'Gratuit et open source',
-    silicon: 'Apple Silicon',
     artAlt: 'Un diorama en pâte à modeler : ASIST à son bureau devant un Mac, avec un robot à côté',
     youHtml: 'Dis, ASIST,<br />j’ai quoi aujourd’hui ?',
     meHtml: 'Voici votre<br />journée',
@@ -89,12 +88,14 @@ export const fr: LandingText = {
   },
   start: {
     title: 'Lancez-vous.',
-    sub: 'ASIST, sur votre Mac.',
+    sub: 'ASIST, sur votre ordinateur.',
     download: 'Télécharger',
     setup: 'Guide d’installation',
+    mac: 'macOS 14 ou plus récent · Apple Silicon',
+    windows: 'Windows 11 · x64',
     bubble: 'C’est parti !',
-    step1: 'Munissez-vous d’un Mac Apple Silicon et d’une clé API pour un modèle de conversation.',
-    step2: 'Téléchargez le dmg, ouvrez-le et faites glisser ASIST dans Applications. Les nouvelles versions arrivent d’elles-mêmes.',
+    step1: 'Munissez-vous d’un Mac Apple Silicon ou d’un PC sous Windows 11, et d’une clé API pour un modèle de conversation.',
+    step2: 'Sur Mac, ouvrez le dmg et faites glisser ASIST dans Applications. Sur Windows, ouvrez le programme d’installation ; si SmartScreen affiche un avertissement, choisissez de l’exécuter quand même.',
     step3: 'Choisissez la langue, le modèle, la voix et le micro lors de la première configuration, puis commencez à parler.'
   },
   footer: {

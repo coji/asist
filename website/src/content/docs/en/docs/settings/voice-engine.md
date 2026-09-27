@@ -1,13 +1,13 @@
 ---
 title: Voice engine
-description: Listen and speak on this Mac, or leave it to GPT-Live or Gemini Live.
+description: Listen and speak on this computer, or leave it to GPT-Live or Gemini Live.
 sidebar:
   order: 5
 ---
 
-Under "Voice engine" in "Conversation", choose what listens and speaks. The default combines speech recognition on this Mac, the conversation model, and reading aloud on this Mac.
+Under "Voice engine" in "Conversation", choose what listens and speaks. The default combines speech recognition on this computer, the conversation model, and reading aloud on this computer.
 
-When you choose GPT-Live or Gemini Live, the microphone audio goes straight to the provider, and ASIST speaks in the provider's voice. The model handles backchannels, listening, and deciding when you have finished speaking or interrupted. Speech recognition and reading aloud on this Mac, the bridge phrase and MaAI are not used. Changing the engine, "Model", "Voice" or "Close the session after" turns the microphone off, so turn it on again.
+When you choose GPT-Live or Gemini Live, the microphone audio goes straight to the provider, and ASIST speaks in the provider's voice. The model handles backchannels, listening, and deciding when you have finished speaking or interrupted. Speech recognition and reading aloud on this computer, the bridge phrase and MaAI are not used, so you can talk by voice even on Windows without a usable NVIDIA GPU. Changing the engine, "Model", "Voice" or "Close the session after" turns the microphone off, so turn it on again.
 
 | Engine | Decisions and tools | Estimated cost | Key needed |
 |---|---|---|---|
