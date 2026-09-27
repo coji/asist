@@ -26,7 +26,21 @@ function fakeChild() {
   const input: string[] = []
   const child = Object.assign(new EventEmitter(), {
     stdout: new PassThrough(), stderr: new PassThrough(), stdin: new PassThrough(),
-    killed: false, exitCode: null as number | null, kill: vi.fn(), input
+    killed: false, exitCode: null as number | null, kill: vi.fn(), input,
+    /**
+     * Resolves once the worker has been sent this many requests. A request goes out only after its WAV is
+     * really written, which beside the other test files on Windows took longer than vi.waitFor's 1 s, and
+     * polling would also move the fake clock past the waits the service keeps.
+     */
+    received: (count: number) => new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (input.length < count) return
+        child.stdin.off('data', check)
+        resolve()
+      }
+      child.stdin.on('data', check)
+      check()
+    })
   })
   child.kill.mockImplementation(() => { child.killed = true; return true })
   child.stdin.on('data', (data) => input.push(String(data)))
@@ -74,6 +88,11 @@ async function ready(model: AsrModelSpec = MODEL) {
 function observe(promise: Promise<string>) {
   return promise.then(text => ({ text, error: undefined }), (error: Error) => ({ text: undefined, error }))
 }
+/**
+ * Waits for a check on the real temporary folder, whose files the service writes and removes without
+ * anyone awaiting it. It is given the time a file operation takes beside the other test files on Windows.
+ */
+const onDisk = (check: () => void): Promise<void> => vi.waitFor(check, { timeout: 10_000 })
 function wavFiles(): string[] {
   try {
     return fs.readdirSync(path.join(mocks.directory, 'asr-temp'))
@@ -108,12 +127,12 @@ describe('local transcription lifecycle', () => {
       return (original as (...values: unknown[]) => Promise<unknown>)(...args)
     }) as never)
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), stage))
-    await vi.waitFor(() => expect(operation).toHaveBeenCalledOnce())
+    await onDisk(() => expect(operation).toHaveBeenCalledOnce())
     expect(asr.cancelTranscription(stage)).toBe(true)
     expect((await response).error?.name).toBe('AbortError')
     held.resolve()
     await operation.mock.results[0].value
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
     expect(child.input).toEqual([])
     expect(child.kill).not.toHaveBeenCalled()
   })
@@ -127,14 +146,14 @@ describe('local transcription lifecycle', () => {
       return writeFile(...args)
     })
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'old'))
-    await vi.waitFor(() => expect(writing).toHaveBeenCalledOnce())
+    await onDisk(() => expect(writing).toHaveBeenCalledOnce())
     if (action === 'restart') asr.stop()
     const replacement = await ready(action === 'switch' ? OTHER_MODEL : MODEL)
     held.resolve()
     await writing.mock.results[0].value
     const result = await response
     expect(result.error?.name).toBe('AbortError')
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
     expect(oldChild.input).toEqual([])
     expect(replacement.input).toEqual([])
     expect(replacement.kill).not.toHaveBeenCalled()
@@ -159,25 +178,25 @@ describe('local transcription lifecycle', () => {
   it('returns successful output and removes its WAV after the worker result', async () => {
     const child = await ready()
     const response = asr.transcribe(MODEL, new Float32Array([0.2, -0.2]), 'complete')
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     const request = JSON.parse(child.input[0]) as { id: string; wavPath: string; language: string }
     expect(fs.readFileSync(request.wavPath).toString('ascii', 0, 4)).toBe('RIFF')
     expect(request.language).toBe('Japanese')
     child.stdout.write('ASIST_JSON:{"type":"result","id":"complete","text":"認識しました"}\n')
     expect(await response).toBe('認識しました')
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
   })
 
   it('sends the conversation language in the form each model takes', async () => {
     mocks.systemLanguages = ['de-DE']
     const qwen = await ready(MODEL)
     const german = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'qwen-de'))
-    await vi.waitFor(() => expect(qwen.input).toHaveLength(1))
+    await qwen.received(1)
     expect(JSON.parse(qwen.input[0]).language).toBe('German')
 
     const whisper = await ready(OTHER_MODEL)
     const second = observe(asr.transcribe(OTHER_MODEL, new Float32Array([0.2]), 'whisper-de'))
-    await vi.waitFor(() => expect(whisper.input).toHaveLength(1))
+    await whisper.received(1)
     expect(JSON.parse(whisper.input[0]).language).toBe('de')
     asr.stop()
     expect((await german).error?.name).toBe('AbortError')
@@ -187,31 +206,31 @@ describe('local transcription lifecycle', () => {
   it('stops sent inference on cancellation and releases its file', async () => {
     const child = await ready()
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'sent'))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     expect(asr.cancelTranscription('sent')).toBe(true)
     expect((await response).error?.name).toBe('AbortError')
     expect(child.kill).toHaveBeenCalledWith('SIGTERM')
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
     expect(asr.cancelTranscription('sent')).toBe(false)
   })
 
   it('times out sent inference and can start a new worker afterward', async () => {
     const child = await ready()
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'timeout'))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     await vi.advanceTimersByTimeAsync(60_000)
     expect((await response).error?.name).toBe('TimeoutError')
     expect(child.kill).toHaveBeenCalledOnce()
     expect(await ready()).not.toBe(child)
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
   })
 
   it('keeps the worker and the final transcription queued behind a partial that runs past its wait', async () => {
     const child = await ready()
     const partial = asr.transcribePartial(MODEL, new Float32Array(16_000 * 5))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     const final = observe(asr.transcribe(MODEL, new Float32Array(16_000 * 8), 'final'))
-    await vi.waitFor(() => expect(child.input).toHaveLength(2))
+    await child.received(2)
     await vi.advanceTimersByTimeAsync(4_000)
     expect(await partial).toBe('')
 
@@ -220,13 +239,13 @@ describe('local transcription lifecycle', () => {
     child.stdout.write('ASIST_JSON:{"type":"result","id":"final","text":"最後まで話しました"}\n')
     expect(await final).toEqual({ text: '最後まで話しました', error: undefined })
     expect(child.kill).not.toHaveBeenCalled()
-    await vi.waitFor(() => expect(wavFiles()).toEqual([]))
+    await onDisk(() => expect(wavFiles()).toEqual([]))
   })
 
   it('sends no further partial while the worker still computes one its caller stopped waiting for', async () => {
     const child = await ready()
     const first = asr.transcribePartial(MODEL, new Float32Array([0.2]))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     await vi.advanceTimersByTimeAsync(4_000)
     expect(await first).toBe('')
     expect(await asr.transcribePartial(MODEL, new Float32Array([0.2]))).toBe('')
@@ -235,7 +254,7 @@ describe('local transcription lifecycle', () => {
     child.stdout.write(`ASIST_JSON:${JSON.stringify({ type: 'result', id: JSON.parse(child.input[0]).id, text: '遅れた' })}\n`)
     await vi.advanceTimersByTimeAsync(10)
     const next = asr.transcribePartial(MODEL, new Float32Array([0.2]))
-    await vi.waitFor(() => expect(child.input).toHaveLength(2))
+    await child.received(2)
     child.stdout.write(`ASIST_JSON:${JSON.stringify({ type: 'result', id: JSON.parse(child.input[1]).id, text: '次の途中' })}\n`)
     expect(await next).toBe('次の途中')
   })
@@ -257,7 +276,7 @@ describe('local transcription lifecycle', () => {
 
     const child = await ready()
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'in-use'))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     expect(() => asr.clearTemporaryAudio()).toThrow()
     expect(wavFiles()).toHaveLength(1)
     child.stdout.write('ASIST_JSON:{"type":"result","id":"in-use","text":"残っています"}\n')
@@ -267,7 +286,7 @@ describe('local transcription lifecycle', () => {
   it('fails the requests of a worker whose input pipe breaks, and stops it without an uncaught error', async () => {
     const child = await ready()
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'broken-pipe'))
-    await vi.waitFor(() => expect(child.input).toHaveLength(1))
+    await child.received(1)
     const uncaught: Error[] = []
     const onUncaught = (error: Error): void => { uncaught.push(error) }
     process.prependListener('uncaughtException', onUncaught)
@@ -302,7 +321,7 @@ describe('starting the ASR worker from a preparation and from elsewhere at once'
     await vi.advanceTimersByTimeAsync(10)
     children[0].stdout.write('ASIST_JSON:{"type":"ready"}\n')
     expect((await preparing).ok).toBe(true)
-    await vi.waitFor(() => expect(children[0].input).toHaveLength(1))
+    await children[0].received(1)
     children[0].stdout.write('ASIST_JSON:{"type":"result","id":"while-loading","text":"聞こえました"}\n')
     expect((await response).text).toBe('聞こえました')
     expect(children).toHaveLength(1)
