@@ -11,10 +11,10 @@ ASIST(nyosegawa/asist)は、いまは Apple Silicon の macOS でしか動きま
   - 最初に Windows で出すものに、ローカルの音声認識を入れます。
   - NVIDIA の GPU(RTX 20 以降、ドライバー 580 以降)がある前提で、Qwen3-ASR を CUDA の torch で動かします。
   - GPU が無いマシンでは、ブラウザの中の聞き取りと live のエンジンを使えます。
-- **カレンダー。** 保留にします。Windows では最初は出しません。
-- **署名。**
-  - 当分は署名しません。署名が無いと、SmartScreen の警告が最初に一度出るだけで、使えます。
-  - Smart App Control が有効な少数のマシンでは動きません。これは配布のときに扱います。
+- **カレンダー。** Windows では最初は出しません。Google Calendar API で作り、Mac も揃えます(#81)。
+- **署名と配布。** GitHub の Release から NSIS のインストーラーで配り、Microsoft Store では配りません(ADR 0022)。
+  - 最初は署名しません。SmartScreen の警告の画面を、「詳細情報」から「実行」で進めて入れてもらいます。
+  - SignPath Foundation のオープンソース向けの署名を申請します。
 - **進め方。** Mac でできる準備(M0〜M2 と M5 の一部)を PR に分けて先に進め、そのあと Windows の Claude Code のセッションで続けます。
 
 ## 進め方

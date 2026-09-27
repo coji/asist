@@ -172,6 +172,8 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 | M5-9 | 記憶の検索、相槌の分類器、MaAI を Windows の CPU で動かす。MaAI の1フレームあたりの時間を測る | Win | 追加の準備が Windows で終わり、MaAI の CPU の時間が 80ms のフレームに収まる |
 | M5-10 | VOICEVOX と AivisSpeech の Windows のインストール先を、自動起動の候補に足す。Windows 用の文言は、いまは「自分で起動してもらう」形なので、`setup.tts.engines.voicevox.detail`、`setup.tts.engines.aivisspeech.detail`、`setup.tts.howtoInstall`、`setup.tts.howtoVerify`、`setup.tts.connectFailed`、`setup.guide.tts.notConnected` の Windows 用を書き直す | Win | 入れてあれば自動で起動する |
 | M5-11 | ADR「Windows では x64 と NVIDIA の GPU を前提にし、CUDA の torch で動かす」を実測の値とともに入れる | Win | |
+| M5-12 | Windows のネイティブのエコーキャンセルの補助プログラム(`asist-mic.exe`)を作る。Windows の通信用の取り込み(WASAPI の Communications)で、Mac の `asist-mic` と同じやりとり(48kHz、モノラル、float32)にする。エコーキャンセルが効いていないときにどうするかを決める | Win | M5-7 で、`echoCancellation: "all"` といまの `true` と比べられる |
+| M5-13 | live のエンジン(GPT-Live、Gemini Live)を初回セットアップで選べるようにする。先に見本の画面で形を決める | Mac と Win | 初回セットアップから live のエンジンで会話を始められる |
 
 **PR:**
 - M5-1 で1つにします(リファクタリング)。
@@ -180,6 +182,8 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 - M5-7 と M5-8 で1つにします。
 - M5-9 で1つにします。
 - M5-10 で1つにします。
+- M5-12 は、M5-7 の前に1つの PR にします。
+- M5-13 で1つにします。
 
 ---
 
@@ -208,8 +212,6 @@ Windows で `npm ci`、`npm test`、`npm run dist:win:dir` が動く状態を、
 
 ## 第2段階(このマイルストーンの外)
 
-- Qwen3-TTS を CUDA で動かします(`resources/qwen_tts_worker.py` と同じやりとりの worker を足します)。
-- 必要なら、ネイティブのエコーキャンセルの補助プログラムを作ります(M5-7 の結果しだい)。
-- カレンダーの方法を決めて作ります。
-- 署名と配布を整えます(証明書か Microsoft Store か)。
-- live のエンジンを初回セットアップで選べるようにします。これは Mac でも同じです。
+- Qwen3-TTS を Windows でも動かします。qwentts.cpp で動かすかを #80 で検討します。聞き取りを llama.cpp に揃えるかは #79 で検討します。
+- カレンダーを Google Calendar API で作り、Mac も揃えます(#81)。
+- SignPath Foundation の署名が通ったら、Windows のインストーラーに署名します(ADR 0022)。
