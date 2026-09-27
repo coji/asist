@@ -14,7 +14,7 @@ This privacy policy explains how ASIST, a desktop app for Mac and Windows, and t
 
 ASIST is developed by Sakasegawa as an individual and published for free as open source under the MIT License.
 
-Questions about this policy or about how your data is handled are welcome in the repository's [GitHub Issues](https://github.com/nyosegawa/asist/issues). Issues are public, so please do not write personal information or the contents of your calendar there.
+Questions about this policy or about how your data is handled are welcome by email at [nyosegawa@gmail.com](mailto:nyosegawa@gmail.com) or in the repository's [GitHub Issues](https://github.com/nyosegawa/asist/issues). Issues are public, so please send questions that include personal information or the contents of your calendar by email.
 
 ## ASIST has no server of its own
 
@@ -77,7 +77,7 @@ Your events are read directly from Google by ASIST running on your computer, and
 
 ### When the data is passed to another service
 
-When you ask about your schedule in conversation, or ask ASIST to add or change an event, the events needed to answer are sent, as part of that conversation, to the provider of the conversation model you chose. If you chose GPT-Live or Gemini Live as the voice engine, they are also sent to that Live API. They are sent only to answer you.
+When you ask about your schedule in conversation, or ask ASIST to add or change an event, the events needed to answer are sent, as part of that conversation, to the provider of the conversation model you chose. If you chose GPT-Live or Gemini Live as the voice engine, they are also sent to that Live API. They are sent only to answer you. Whether that provider uses them to train its models depends on its terms and on the plan and settings of the API key you use.
 
 What you said about your schedule stays in the conversation log on your computer, like any other conversation. For the daily memory curation, the conversations up to the previous day (what you said, ASIST's replies, and tool names and inputs) are given to the codex or claude CLI you use, and the result is written to the memory on your computer.
 
