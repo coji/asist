@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
+import { ASR_MODEL_NAMES, asrModelSpec } from '@shared/asr-models'
 import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
 
 const mocks = vi.hoisted(() => ({
-  settings: { asrModel: 'qwen3-asr-1.7b-mlx', uiLocale: 'ja-JP' },
+  settings: { asrModel: 'qwen3-asr-1.7b', uiLocale: 'ja-JP' },
   localAvailable: vi.fn(),
   localEnsure: vi.fn(),
   localTranscribe: vi.fn(),
@@ -29,7 +30,7 @@ vi.mock('../src/main/services/local-asr', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.settings.asrModel = 'qwen3-asr-1.7b-mlx'
+  mocks.settings.asrModel = 'qwen3-asr-1.7b'
 })
 
 describe('ASR service routing', () => {
@@ -42,18 +43,18 @@ describe('ASR service routing', () => {
     await expect(asr.ensureServer()).resolves.toBe(true)
     await expect(asr.transcribe(samples, 'request-1')).resolves.toBe('音声認識のテストです。')
 
-    expect(mocks.localEnsure).toHaveBeenCalledWith('qwen3-asr-1.7b-mlx')
-    expect(mocks.localTranscribe).toHaveBeenCalledWith('qwen3-asr-1.7b-mlx', samples, 'request-1')
+    expect(mocks.localEnsure).toHaveBeenCalledWith(asrModelSpec('mlx', 'qwen3-asr-1.7b'))
+    expect(mocks.localTranscribe).toHaveBeenCalledWith(asrModelSpec('mlx', 'qwen3-asr-1.7b'), samples, 'request-1')
   })
 
   it('stops the running worker before starting the newly selected model', async () => {
     const asr = await import('../src/main/services/asr')
-    mocks.settings.asrModel = 'whisper-large-v3-turbo-mlx'
+    mocks.settings.asrModel = 'whisper-large-v3-turbo'
     mocks.localEnsure.mockResolvedValue(true)
 
     await expect(asr.switchModel()).resolves.toBe(true)
 
-    expect(mocks.localEnsure).toHaveBeenCalledWith('whisper-large-v3-turbo-mlx')
+    expect(mocks.localEnsure).toHaveBeenCalledWith(asrModelSpec('mlx', 'whisper-large-v3-turbo'))
     expect(mocks.localStop.mock.invocationCallOrder[0]).toBeLessThan(mocks.localEnsure.mock.invocationCallOrder[0])
   })
 
@@ -64,6 +65,36 @@ describe('ASR service routing', () => {
 
     expect(result.ok).toBe(false)
     expect(mocks.localPrepare).not.toHaveBeenCalled()
+  })
+})
+
+describe('a selected model the runtime does not offer', () => {
+  beforeEach(() => {
+    mocks.settings.asrModel = 'qwen3-asr-0.6b'
+  })
+
+  it('is reported under its own name as not ready rather than replaced by another model', async () => {
+    const asr = await import('../src/main/services/asr')
+    const status = await asr.installationStatus()
+    expect(status).toMatchObject({ selectedModel: 'qwen3-asr-0.6b', resolvedModel: 'qwen3-asr-0.6b', label: ASR_MODEL_NAMES['qwen3-asr-0.6b'], ready: false })
+    await expect(asr.ensureServer()).resolves.toBe(false)
+    await expect(asr.available()).resolves.toBe(false)
+    expect(mocks.localEnsure).not.toHaveBeenCalled()
+  })
+
+  it('refuses a transcription and a preparation, asking for another model', async () => {
+    const asr = await import('../src/main/services/asr')
+    await expect(asr.transcribe(new Float32Array([0.1]))).rejects.toThrow(errorText('speechRecognition.errors.unknownModel'))
+    expect((await asr.prepareModel('qwen3-asr-0.6b', vi.fn())).ok).toBe(false)
+    expect(mocks.localTranscribe).not.toHaveBeenCalled()
+    expect(mocks.localPrepare).not.toHaveBeenCalled()
+  })
+
+  it('resolves auto to a model the runtime offers', async () => {
+    const asr = await import('../src/main/services/asr')
+    mocks.localPrepare.mockResolvedValue({ ok: true, message: '' })
+    await asr.prepareModel('auto', vi.fn())
+    expect(mocks.localPrepare).toHaveBeenCalledWith(asrModelSpec('mlx', 'qwen3-asr-1.7b'), expect.any(Function))
   })
 })
 

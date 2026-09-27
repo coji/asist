@@ -57,6 +57,7 @@ import { demoPanelProps, respondTo } from './sayings'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { mergeSettings } from '@shared/settings'
 import { recommendQwenTts } from '@shared/tts-models'
+import { asrModelSpec } from '@shared/asr-models'
 import { demoCapabilities, demoOs } from './platform'
 
 /**
@@ -558,9 +559,9 @@ export const mockApi: RendererApi = {
         ? null
         : {
             selectedModel: 'auto',
-            resolvedModel: 'qwen3-asr-1.7b-mlx',
-            recommendedModel: 'qwen3-asr-1.7b-mlx',
-            label: 'Qwen3-ASR 1.7B 8-bit MLX',
+            resolvedModel: 'qwen3-asr-1.7b',
+            recommendedModel: 'qwen3-asr-1.7b',
+            label: asrModelSpec(capabilities.speechRuntime.kind, 'qwen3-asr-1.7b')!.label,
             totalMemoryGb: capabilities.speechRuntime.memoryGb,
             runtimeInstalled: false,
             modelInstalled: false,

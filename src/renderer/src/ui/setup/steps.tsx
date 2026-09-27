@@ -5,7 +5,7 @@ import { progressLabel } from '../progress-label'
 import type { ReactNode } from 'react'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, PROVIDER_DEFAULT_MODELS, modelName, type LlmProvider } from '@shared/llm-catalog'
 import type { SetupProgress, SetupStatus, TtsEngine } from '@shared/ipc'
-import type { AsrModel } from '@shared/asr-models'
+import { asrModelChoices, type AsrModel } from '@shared/asr-models'
 import { ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
@@ -170,12 +170,6 @@ export function SpeakingStep({ mode, onMode }: { mode: SpeakingMode | null; onMo
   )
 }
 
-/** The models that can be chosen by hand. 'auto' is not listed here because its name comes from the dictionary. */
-const ASR_MODELS: Array<{ id: AsrModel; label: string }> = [
-  { id: 'qwen3-asr-1.7b-mlx', label: 'Qwen3-ASR 1.7B 8-bit MLX' },
-  { id: 'whisper-large-v3-turbo-mlx', label: 'Whisper large-v3-turbo MLX' }
-]
-
 export function ListeningStep({
   speechRuntime,
   choice,
@@ -258,7 +252,7 @@ export function ListeningStep({
             <div className="su-details">
               <select className="st-select" value={asrModel} disabled={downloadBusy} onChange={(event) => onAsrModel(event.target.value as AsrModel)}>
                 <option value="auto">{t('setup.listening.automaticModel')}</option>
-                {ASR_MODELS.map((model) => (
+                {asrModelChoices(speechRuntime.kind, asrModel).map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}
                   </option>

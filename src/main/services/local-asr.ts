@@ -1,14 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { app } from 'electron'
-import { QWEN_MLX_MODEL, WHISPER_MLX_MODEL, mlxAsrLanguage, type ResolvedAsrModel } from '@shared/asr-models'
+import { asrLanguage, type AsrModelSpec } from '@shared/asr-models'
 import type { SetupProgress } from '@shared/ipc'
 import { conversationLocale } from './conversation-locale'
 import { Transcriptions } from './asr-transcriptions'
 import { t } from './i18n'
 import * as runtime from './speech-runtime'
-
-type MlxAsrModel = Extract<ResolvedAsrModel, `${string}-mlx`>
 
 /**
  * How long a caller waits for a partial transcription. The worker still finishes a partial that took
@@ -17,10 +15,10 @@ type MlxAsrModel = Extract<ResolvedAsrModel, `${string}-mlx`>
 const PARTIAL_WAIT_MS = 4_000
 
 let worker: runtime.SpeechWorker | null = null
-let workerModel: MlxAsrModel | null = null
+let workerModel: AsrModelSpec | null = null
 let workerReady = false
 let ensureInFlight: Promise<boolean> | null = null
-let ensureModel: MlxAsrModel | null = null
+let ensureModel: AsrModelSpec | null = null
 let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
 const transcriptions = new Transcriptions(() => path.join(app.getPath('userData'), 'asr-temp'))
 
@@ -29,27 +27,24 @@ export function clearTemporaryAudio(): void {
   transcriptions.clearLeftovers()
 }
 
-function specFor(model: MlxAsrModel): runtime.PinnedModel {
-  return model === 'qwen3-asr-1.7b-mlx' ? QWEN_MLX_MODEL : WHISPER_MLX_MODEL
-}
-
-export function installationStatus(model: MlxAsrModel): {
+/** A model the runtime does not offer, passed as null, is never installed. */
+export function installationStatus(model: AsrModelSpec | null): {
   runtimeInstalled: boolean
   modelInstalled: boolean
 } {
-  return { runtimeInstalled: runtime.runtimeInstalled(), modelInstalled: runtime.modelInstalled(specFor(model)) }
+  return { runtimeInstalled: runtime.runtimeInstalled(), modelInstalled: model !== null && runtime.modelInstalled(model) }
 }
 
-function running(model: MlxAsrModel): boolean {
+function running(model: AsrModelSpec): boolean {
   return Boolean(worker && workerModel === model && workerReady && worker.alive)
 }
 
-async function startWorker(model: MlxAsrModel): Promise<boolean> {
+async function startWorker(model: AsrModelSpec): Promise<boolean> {
   if (running(model)) return true
   stopWorker()
   const started = runtime.startWorker({
     worker: 'asr',
-    model: specFor(model),
+    model,
     onMessage: (message) => {
       if (worker !== started || typeof message.id !== 'string') return
       transcriptions.complete(message.id, message.type === 'result'
@@ -70,7 +65,7 @@ async function startWorker(model: MlxAsrModel): Promise<boolean> {
   return ready
 }
 
-export function ensureServer(model: MlxAsrModel): Promise<boolean> {
+export function ensureServer(model: AsrModelSpec): Promise<boolean> {
   if (running(model)) return Promise.resolve(true)
   if (ensureInFlight && ensureModel === model) return ensureInFlight
   const operation = startWorker(model).finally(() => {
@@ -84,7 +79,7 @@ export function ensureServer(model: MlxAsrModel): Promise<boolean> {
   return operation
 }
 
-export async function available(model: MlxAsrModel): Promise<boolean> {
+export async function available(model: AsrModelSpec): Promise<boolean> {
   return running(model)
 }
 
@@ -106,10 +101,10 @@ function stopWorker(error: Error = new DOMException('MLX ASR worker stopped', 'A
   transcriptions.failWorker(stale.child, error)
 }
 
-function sendRequest(model: MlxAsrModel, samples: Float32Array, id: string): Promise<string> {
+function sendRequest(model: AsrModelSpec, samples: Float32Array, id: string): Promise<string> {
   // The language is read here, per request, so that a change of the setting applies to the next
   // utterance without reloading the model.
-  return transcriptions.start(samples, id, mlxAsrLanguage(model, conversationLocale()), () => {
+  return transcriptions.start(samples, id, asrLanguage(model, conversationLocale()), () => {
     // ensureServer waits for ready after the spawn, so the child is captured here, before any await, and
     // this request stays bound to that one child.
     const ready = ensureServer(model)
@@ -124,7 +119,7 @@ function sendRequest(model: MlxAsrModel, samples: Float32Array, id: string): Pro
 }
 
 export function transcribe(
-  model: MlxAsrModel,
+  model: AsrModelSpec,
   samples: Float32Array,
   requestId?: string
 ): Promise<string> {
@@ -132,7 +127,7 @@ export function transcribe(
 }
 
 export async function transcribePartial(
-  model: MlxAsrModel,
+  model: AsrModelSpec,
   samples: Float32Array
 ): Promise<string> {
   // The worker answers in arrival order, so a partial sent while it still works on another request,
@@ -164,14 +159,14 @@ export function cancelPreparation(): boolean {
 }
 
 export function prepare(
-  model: MlxAsrModel,
+  model: AsrModelSpec,
   onProgress: (progress: SetupProgress) => void
 ): Promise<{ ok: boolean; message: string }> {
   if (prepareInFlight) return prepareInFlight
   const controller = new AbortController()
   prepareController = controller
   const operation = runtime.prepareModel({
-    model: specFor(model),
+    model,
     feature: t('settingsModels.features.mlxAsr'),
     signal: controller.signal,
     onProgress,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Play } from 'lucide-react'
 import type { HotkeyStatus, TtsEngine } from '@shared/ipc'
-import type { AsrModel } from '@shared/asr-models'
+import { asrModelChoices, type AsrModel } from '@shared/asr-models'
 import { HoloSwitch } from '@/components/ui/switch'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
@@ -60,6 +60,8 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const engineUsable = engines.includes(engine)
   const speakers = useSpeakerOptions(engineUsable, engine)
   const asrReady = setup?.asr?.ready === true
+  const asrChoices = speechRuntime.kind === null ? [] : asrModelChoices(speechRuntime.kind, settings.asrModel)
+  const selectionOffered = asrChoices.every((choice) => choice.offered)
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
   // True when the selected engine cannot be reached or its model is not prepared; the OS's own speech
   // synthesis needs no preparation and never counts as missing.
@@ -203,9 +205,11 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
             <Row
               label={t('settingsVoice.recognition.model')}
               hint={
-                setup?.asr
-                  ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, setup.asr) })
-                  : t('settingsVoice.recognition.checking')
+                !selectionOffered
+                  ? t('speechRecognition.errors.unknownModel')
+                  : setup?.asr
+                    ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, setup.asr) })
+                    : t('settingsVoice.recognition.checking')
               }
             >
               <Chip tone={asrReady ? 'ok' : 'warn'}>{asrReady ? t('common.ready') : t('common.notReady')}</Chip>
@@ -222,8 +226,11 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                 }}
               >
                 <option value="auto">{t('settingsVoice.recognition.automatic')}</option>
-                <option value="qwen3-asr-1.7b-mlx">Qwen3-ASR 1.7B 8-bit MLX</option>
-                <option value="whisper-large-v3-turbo-mlx">Whisper large-v3-turbo MLX</option>
+                {asrChoices.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.label}
+                  </option>
+                ))}
               </select>
             </Row>
             {!asrReady && (

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { calendarSettingsSchema } from './calendar'
 import { mailSettingsSchema } from './mail'
-import { ASR_MODELS } from './asr-models'
+import { ASR_MODELS, type AsrModel } from './asr-models'
 import { dockOrderSchema } from './dock'
 import { conversationModelSchema } from './llm-catalog'
 import { QWEN_TTS_VOICE_IDS } from './tts-models'
@@ -135,15 +135,28 @@ export const mergeSettings = (current: AppSettings, patch: SettingsPatch): AppSe
 export const safetyNoticePending = (settings: Pick<AppSettings, 'onboardingVersion' | 'safetyNoticeVersion'>): boolean =>
   settings.onboardingVersion >= 1 && settings.safetyNoticeVersion < 1
 
+/** The speech recognition models of version 3, which named the macOS runtime, by the names of version 4. */
+const V3_ASR_MODELS: Record<string, AsrModel> = {
+  auto: 'auto',
+  'qwen3-asr-1.7b-mlx': 'qwen3-asr-1.7b',
+  'whisper-large-v3-turbo-mlx': 'whisper-large-v3-turbo'
+}
+
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 3,
+  version: 4,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
     // Version 3 adds the acknowledgement of the risks. Nobody has seen them before it, so everyone,
     // including someone who finished the setup, is asked once.
-    2: (content) => ({ ...(content as Record<string, unknown>), safetyNoticeVersion: 0 })
+    2: (content) => ({ ...(content as Record<string, unknown>), safetyNoticeVersion: 0 }),
+    // Version 4 names the speech recognition model without the runtime. A value version 3 did not allow
+    // is kept, for the parse to refuse.
+    3: (content) => {
+      const { asrModel, ...rest } = content as Record<string, unknown>
+      return { ...rest, asrModel: typeof asrModel === 'string' && Object.hasOwn(V3_ASR_MODELS, asrModel) ? V3_ASR_MODELS[asrModel] : asrModel }
+    }
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })

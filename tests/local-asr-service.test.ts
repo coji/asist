@@ -5,6 +5,7 @@ import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
+import { asrModelSpec, type AsrModelSpec } from '@shared/asr-models'
 
 const mocks = vi.hoisted(() => ({ directory: '', spawn: vi.fn(), systemLanguages: ['ja-JP'] }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -14,8 +15,8 @@ vi.mock('electron', () => ({ app: {
   getPreferredSystemLanguages: () => mocks.systemLanguages
 } }))
 
-const MODEL = 'qwen3-asr-1.7b-mlx' as const
-const OTHER_MODEL = 'whisper-large-v3-turbo-mlx' as const
+const MODEL = asrModelSpec('mlx', 'qwen3-asr-1.7b')!
+const OTHER_MODEL = asrModelSpec('mlx', 'whisper-large-v3-turbo')!
 function deferred() {
   let resolve!: () => void
   const promise = new Promise<void>((done) => { resolve = done })
@@ -62,7 +63,7 @@ afterEach(() => {
   fs.rmSync(mocks.directory, { recursive: true, force: true })
 })
 
-async function ready(model: typeof MODEL | typeof OTHER_MODEL = MODEL) {
+async function ready(model: AsrModelSpec = MODEL) {
   const starting = asr.ensureServer(model)
   const child = children.at(-1)!
   child.stdout.write('ASIST_JSON:{"type":"ready"}\n')

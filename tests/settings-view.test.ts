@@ -93,8 +93,8 @@ const api = {
     services: useStatusStore.getState().status!,
     asr: {
       selectedModel: 'auto',
-      resolvedModel: 'qwen3-asr-1.7b-mlx',
-      recommendedModel: 'qwen3-asr-1.7b-mlx',
+      resolvedModel: 'qwen3-asr-1.7b',
+      recommendedModel: 'qwen3-asr-1.7b',
       label: 'Qwen3-ASR 1.7B 8-bit MLX',
       recommendationReason: '32GBメモリではQwen3-ASRを推奨します。',
       totalMemoryGb: 32,

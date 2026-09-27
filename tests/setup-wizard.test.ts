@@ -35,7 +35,7 @@ const setupStatus = (): SetupStatus =>
     asr:
       platformCapabilities().speechRuntime.kind === null
         ? null
-        : { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b-mlx', recommendedModel: 'qwen3-asr-1.7b-mlx', label: 'Qwen3-ASR', recommendationReason: '', totalMemoryGb: 32, runtimeInstalled: false, modelInstalled: false, ready: false },
+        : { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b', recommendedModel: 'qwen3-asr-1.7b', label: 'Qwen3-ASR', recommendationReason: '', totalMemoryGb: 32, runtimeInstalled: false, modelInstalled: false, ready: false },
     // This Mac has too little memory for the local speech model, so the setup does not offer it.
     qwenTts: { label: 'Qwen3-TTS', recommended: qwenTtsRecommended, runtimeInstalled: false, modelInstalled: false, ready: false }
   }) as SetupStatus
