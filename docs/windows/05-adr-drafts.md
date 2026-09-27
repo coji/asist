@@ -4,25 +4,6 @@
 
 ## 新しい記録
 
-### Windows では x64 と NVIDIA の GPU を前提にし、ローカルの音声認識は CUDA の torch で動かす
-
-- **入れる PR。** M5 の CUDA の実行環境の PR。
-- **決めたこと。**
-  - Windows で対象にするのは x64 だけです。
-  - ローカルの音声認識は、NVIDIA の GPU がある場合にだけ提供し、Qwen3-ASR を torch と CUDA で動かします。
-  - GPU が無いマシンでは、ローカルの音声認識の選択肢を出さず、理由を表示します。ブラウザの中の Whisper と live のエンジンは使えます。
-- **理由。**
-  - macOS で使っている Qwen3-ASR を同じモデルで使えば、日本語の聞き取りの質が OS で変わりません。
-  - Qwen3-ASR の公式の実装は、torch の上で動きます。
-  - CPU では、話している途中の結果が間に合わないと見込んでいます(M5 で実測して、この記録に数字を書きます)。
-- **見送った案。**
-  - sherpa-onnx の日本語のモデル(ReazonSpeech の zipformer)で、CPU で動かす。GPU が要らない利点はありますが、macOS と違うモデルになり、聞き取りの質を別に調整することになります。
-  - faster-whisper(CTranslate2)。Whisper は、macOS でも Qwen3-ASR より下の選択肢として置いています。
-  - Arm64 の Windows も対象にする。CUDA の torch と CTranslate2 の wheel がありません。
-- **分かっている制約。**
-  - 実行環境(CUDA の torch)のダウンロードは数 GB になります(M5 で実測して書きます)。
-  - GPU のドライバーが古いと動きません。
-
 ## 今ある記録への追記
 
 ### 0010、0014、0016(ジョブのコミットと取り込み)

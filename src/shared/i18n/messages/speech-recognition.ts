@@ -2,31 +2,61 @@ import { defineMessages } from '../message'
 
 export const speechRecognition = defineMessages({
   recommendation: {
-    enoughMemory: {
-      'ja-JP': 'メモリが {memoryGb}GB あるので、認識の精度が高く多言語に強い Qwen3-ASR を勧めます。',
-      'en-US': 'With {memoryGb} GB of memory, Qwen3-ASR is recommended for its accuracy and its range of languages.',
-      'fr-FR': "Avec {memoryGb} Go de mémoire, Qwen3-ASR est recommandé pour sa précision et le nombre de langues qu'il reconnaît.",
-      'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Qwen3-ASR zu empfehlen: es erkennt genauer und beherrscht mehr Sprachen.',
-      'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR ठीक रहेगा। यह ज़्यादा सटीक है और कई भाषाएँ पहचानता है।',
-      'id-ID': 'Dengan memori {memoryGb} GB, Qwen3-ASR disarankan karena akurasinya tinggi dan kuat di banyak bahasa.',
-      'it-IT': 'Con {memoryGb} GB di memoria conviene Qwen3-ASR, preciso e adatto a molte lingue.',
-      'ko-KR': '메모리가 {memoryGb}GB이므로 인식 정확도가 높고 여러 언어에 강한 Qwen3-ASR을 권장합니다.',
-      'pt-BR': 'Com {memoryGb} GB de memória, o Qwen3-ASR é recomendado pela precisão e pela variedade de idiomas.',
-      'es-419': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.',
-      'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.'
+    mlx: {
+      larger: {
+        'ja-JP': 'メモリが {memoryGb}GB あるので、認識の精度が高く多言語に強い Qwen3-ASR を勧めます。',
+        'en-US': 'With {memoryGb} GB of memory, Qwen3-ASR is recommended for its accuracy and its range of languages.',
+        'fr-FR': "Avec {memoryGb} Go de mémoire, Qwen3-ASR est recommandé pour sa précision et le nombre de langues qu'il reconnaît.",
+        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Qwen3-ASR zu empfehlen: es erkennt genauer und beherrscht mehr Sprachen.',
+        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR ठीक रहेगा। यह ज़्यादा सटीक है और कई भाषाएँ पहचानता है।',
+        'id-ID': 'Dengan memori {memoryGb} GB, Qwen3-ASR disarankan karena akurasinya tinggi dan kuat di banyak bahasa.',
+        'it-IT': 'Con {memoryGb} GB di memoria conviene Qwen3-ASR, preciso e adatto a molte lingue.',
+        'ko-KR': '메모리가 {memoryGb}GB이므로 인식 정확도가 높고 여러 언어에 강한 Qwen3-ASR을 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória, o Qwen3-ASR é recomendado pela precisão e pela variedade de idiomas.',
+        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.',
+        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.'
+      },
+      smaller: {
+        'ja-JP': 'メモリが {memoryGb}GB なので、約 2.3GB で動く Whisper MLX を勧めます。',
+        'en-US': 'With {memoryGb} GB of memory, Whisper MLX is recommended; it runs in about 2.3 GB.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire, Whisper MLX est recommandé : il tient dans environ 2,3 Go.',
+        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Whisper MLX zu empfehlen; es läuft mit etwa 2,3 GB.',
+        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Whisper MLX ठीक रहेगा। यह करीब 2.3 GB में चलता है।',
+        'id-ID': 'Karena memori {memoryGb} GB, Whisper MLX disarankan; model ini jalan dengan sekitar 2,3 GB.',
+        'it-IT': 'Con {memoryGb} GB di memoria conviene Whisper MLX, che occupa circa 2,3 GB.',
+        'ko-KR': '메모리가 {memoryGb}GB이므로 약 2.3GB로 동작하는 Whisper MLX를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória, o Whisper MLX é recomendado: ele roda em cerca de 2,3 GB.',
+        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2.3 GB.',
+        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2,3 GB.'
+      }
     },
-    limitedMemory: {
-      'ja-JP': 'メモリが {memoryGb}GB なので、約 2.3GB で動く Whisper MLX を勧めます。',
-      'en-US': 'With {memoryGb} GB of memory, Whisper MLX is recommended; it runs in about 2.3 GB.',
-      'fr-FR': 'Avec {memoryGb} Go de mémoire, Whisper MLX est recommandé : il tient dans environ 2,3 Go.',
-      'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Whisper MLX zu empfehlen; es läuft mit etwa 2,3 GB.',
-      'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Whisper MLX ठीक रहेगा। यह करीब 2.3 GB में चलता है।',
-      'id-ID': 'Karena memori {memoryGb} GB, Whisper MLX disarankan; model ini jalan dengan sekitar 2,3 GB.',
-      'it-IT': 'Con {memoryGb} GB di memoria conviene Whisper MLX, che occupa circa 2,3 GB.',
-      'ko-KR': '메모리가 {memoryGb}GB이므로 약 2.3GB로 동작하는 Whisper MLX를 권장합니다.',
-      'pt-BR': 'Com {memoryGb} GB de memória, o Whisper MLX é recomendado: ele roda em cerca de 2,3 GB.',
-      'es-419': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2.3 GB.',
-      'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2,3 GB.'
+    cuda: {
+      larger: {
+        'ja-JP': 'GPU のメモリが {memoryGb}GB あるので、精度の高い Qwen3-ASR 1.7B を勧めます。',
+        'en-US': 'With {memoryGb} GB of GPU memory, Qwen3-ASR 1.7B is recommended for its accuracy.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire GPU, Qwen3-ASR 1.7B est recommandé pour sa précision.',
+        'de-DE': 'Mit {memoryGb} GB GPU-Speicher ist Qwen3-ASR 1.7B zu empfehlen, weil es genauer erkennt.',
+        'hi-IN': 'GPU की मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 1.7B ठीक रहेगा। यह ज़्यादा सटीक है।',
+        'id-ID': 'Dengan memori GPU {memoryGb} GB, Qwen3-ASR 1.7B disarankan karena akurasinya tinggi.',
+        'it-IT': 'Con {memoryGb} GB di memoria della GPU conviene Qwen3-ASR 1.7B, il più preciso.',
+        'ko-KR': 'GPU 메모리가 {memoryGb}GB이므로 인식 정확도가 높은 Qwen3-ASR 1.7B를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória na GPU, o Qwen3-ASR 1.7B é recomendado pela precisão.',
+        'es-419': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 1.7B por su precisión.',
+        'es-ES': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 1.7B por su precisión.'
+      },
+      smaller: {
+        'ja-JP': 'GPU のメモリが {memoryGb}GB なので、約 1.6GB で動く Qwen3-ASR 0.6B を勧めます。',
+        'en-US': 'With {memoryGb} GB of GPU memory, Qwen3-ASR 0.6B is recommended; it runs in about 1.6 GB.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire GPU, Qwen3-ASR 0.6B est recommandé : il tient dans environ 1,6 Go.',
+        'de-DE': 'Mit {memoryGb} GB GPU-Speicher ist Qwen3-ASR 0.6B zu empfehlen; es läuft mit etwa 1,6 GB.',
+        'hi-IN': 'GPU की मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 0.6B ठीक रहेगा। यह करीब 1.6 GB में चलता है।',
+        'id-ID': 'Karena memori GPU {memoryGb} GB, Qwen3-ASR 0.6B disarankan; model ini jalan dengan sekitar 1,6 GB.',
+        'it-IT': 'Con {memoryGb} GB di memoria della GPU conviene Qwen3-ASR 0.6B, che occupa circa 1,6 GB.',
+        'ko-KR': 'GPU 메모리가 {memoryGb}GB이므로 약 1.6GB로 동작하는 Qwen3-ASR 0.6B를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória na GPU, o Qwen3-ASR 0.6B é recomendado: ele roda em cerca de 1,6 GB.',
+        'es-419': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1.6 GB.',
+        'es-ES': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1,6 GB.'
+      }
     }
   },
   errors: {
@@ -81,19 +111,6 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O reconhecimento de fala não terminou a tempo.',
       'es-419': 'El reconocimiento de voz no terminó a tiempo.',
       'es-ES': 'El reconocimiento de voz no ha terminado a tiempo.'
-    },
-    mlxNotReady: {
-      'ja-JP': 'MLX の音声認識を使えません。「モデル」でモデルを準備してください。',
-      'en-US': 'MLX speech recognition is not available. Prepare its model on the Models page.',
-      'fr-FR': 'La reconnaissance vocale MLX est indisponible. Préparez son modèle sur la page Modèles.',
-      'de-DE': 'Die MLX-Spracherkennung steht nicht bereit. Bereiten Sie ihr Modell auf der Seite „Modelle“ vor.',
-      'hi-IN': 'MLX का स्पीच रिकग्निशन उपलब्ध नहीं है। "मॉडल" पेज पर इसका मॉडल तैयार करें।',
-      'id-ID': 'Pengenalan suara MLX tidak tersedia. Siapkan modelnya di halaman Model.',
-      'it-IT': 'Il riconoscimento vocale MLX non è disponibile. Prepara il suo modello nella pagina «Modelli».',
-      'ko-KR': "MLX 음성 인식을 쓸 수 없습니다. '모델'에서 모델을 준비하십시오.",
-      'pt-BR': 'O reconhecimento de fala do MLX não está disponível. Prepare o modelo dele na página Modelos.',
-      'es-419': 'El reconocimiento de voz con MLX no está disponible. Prepara su modelo en la página Modelos.',
-      'es-ES': 'El reconocimiento de voz de MLX no está disponible. Prepara su modelo en la página “Modelos”.'
     },
     workerStartFailed: {
       'ja-JP': 'ブラウザ内 Whisper を起動できませんでした。',
@@ -289,21 +306,60 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O Whisper no navegador não conseguiu transcrever. Prepare-o de novo na página Voz dos ajustes.',
       'es-419': 'Whisper en el navegador no pudo transcribir. Vuelve a prepararlo en la página Voz de Configuración.',
       'es-ES': 'Whisper en el navegador no ha podido transcribir. Vuelve a prepararlo en la página “Voz” de Ajustes.'
+    },
+    notReady: {
+      'ja-JP': '音声認識を使えません。「モデル」でモデルを準備してください。',
+      'en-US': 'Speech recognition is not available. Prepare its model on the Models page.',
+      'fr-FR': 'La reconnaissance vocale est indisponible. Préparez son modèle sur la page Modèles.',
+      'de-DE': 'Die Spracherkennung steht nicht bereit. Bereiten Sie ihr Modell auf der Seite „Modelle“ vor.',
+      'hi-IN': 'स्पीच रिकग्निशन उपलब्ध नहीं है। "मॉडल" पेज पर इसका मॉडल तैयार करें।',
+      'id-ID': 'Pengenalan suara tidak tersedia. Siapkan modelnya di halaman Model.',
+      'it-IT': 'Il riconoscimento vocale non è disponibile. Prepara il suo modello nella pagina «Modelli».',
+      'ko-KR': "음성 인식을 쓸 수 없습니다. '모델'에서 모델을 준비하십시오.",
+      'pt-BR': 'O reconhecimento de fala não está disponível. Prepare o modelo dele na página Modelos.',
+      'es-419': 'El reconocimiento de voz no está disponible. Prepara su modelo en la página Modelos.',
+      'es-ES': 'El reconocimiento de voz no está disponible. Prepara su modelo en la página “Modelos”.'
     }
   },
   unavailable: {
-    unsupportedOs: {
-      'ja-JP': 'MLX 音声認識は、この OS では動きません。',
-      'en-US': 'MLX speech recognition does not run on this OS.',
-      'fr-FR': "La reconnaissance vocale MLX ne fonctionne pas sur ce système d'exploitation.",
-      'de-DE': 'Die MLX-Spracherkennung läuft unter diesem Betriebssystem nicht.',
-      'hi-IN': 'MLX स्पीच रिकग्निशन इस ऑपरेटिंग सिस्टम पर नहीं चलता।',
-      'id-ID': 'Pengenalan suara MLX tidak berjalan di sistem operasi ini.',
-      'it-IT': 'Il riconoscimento vocale MLX non funziona su questo sistema operativo.',
-      'ko-KR': 'MLX 음성 인식은 이 OS에서 실행되지 않습니다.',
-      'pt-BR': 'O reconhecimento de fala MLX não funciona neste sistema operacional.',
-      'es-419': 'El reconocimiento de voz con MLX no funciona en este sistema operativo.',
-      'es-ES': 'El reconocimiento de voz MLX no funciona en este sistema operativo.'
+    noNvidiaGpu: {
+      'ja-JP': 'この音声認識には NVIDIA の GPU が要りますが、このコンピュータには見つかりませんでした。ブラウザ内 Whisper を使ってください。',
+      'en-US': 'This speech recognition needs an NVIDIA GPU, and none was found on this computer. Use in-browser Whisper instead.',
+      'fr-FR': "Cette reconnaissance vocale demande un GPU NVIDIA, et aucun n'a été trouvé sur cet ordinateur. Utilisez Whisper dans le navigateur à la place.",
+      'de-DE': 'Diese Spracherkennung braucht eine NVIDIA-GPU, und auf diesem Computer wurde keine gefunden. Verwenden Sie stattdessen Whisper im Browser.',
+      'hi-IN': 'इस स्पीच रिकग्निशन के लिए NVIDIA का GPU चाहिए, पर इस कंप्यूटर में नहीं मिला। इसकी जगह ब्राउज़र वाला Whisper इस्तेमाल करें।',
+      'id-ID': 'Pengenalan suara ini butuh GPU NVIDIA, dan tidak ada yang ditemukan di komputer ini. Pakai Whisper dalam browser sebagai gantinya.',
+      'it-IT': 'Questo riconoscimento vocale richiede una GPU NVIDIA, e su questo computer non ne è stata trovata nessuna. Usa invece Whisper nel browser.',
+      'ko-KR': '이 음성 인식에는 NVIDIA GPU가 필요하지만 이 컴퓨터에서 찾지 못했습니다. 대신 브라우저 내 Whisper를 사용하십시오.',
+      'pt-BR': 'Este reconhecimento de fala precisa de uma GPU NVIDIA, e nenhuma foi encontrada neste computador. Use o Whisper no navegador.',
+      'es-419': 'Este reconocimiento de voz necesita una GPU NVIDIA y no se encontró ninguna en esta computadora. Usa Whisper en el navegador en su lugar.',
+      'es-ES': 'Este reconocimiento de voz necesita una GPU NVIDIA y no se ha encontrado ninguna en este ordenador. Usa Whisper en el navegador en su lugar.'
+    },
+    gpuTooOld: {
+      'ja-JP': 'このコンピュータの GPU は古いため、この音声認識を動かせません。GeForce RTX 20 か GTX 16 以降の世代が要ります。ブラウザ内 Whisper を使ってください。',
+      'en-US': 'The GPU in this computer is too old for this speech recognition, which needs the GeForce RTX 20 or GTX 16 generation or later. Use in-browser Whisper instead.',
+      'fr-FR': 'Le GPU de cet ordinateur est trop ancien pour cette reconnaissance vocale, qui demande la génération GeForce RTX 20 ou GTX 16 ou plus récente. Utilisez Whisper dans le navigateur à la place.',
+      'de-DE': 'Die GPU dieses Computers ist für diese Spracherkennung zu alt; nötig ist die Generation GeForce RTX 20 oder GTX 16 oder neuer. Verwenden Sie stattdessen Whisper im Browser.',
+      'hi-IN': 'इस कंप्यूटर का GPU इस स्पीच रिकग्निशन के लिए पुराना है। इसके लिए GeForce RTX 20 या GTX 16 या उसके बाद की पीढ़ी चाहिए। इसकी जगह ब्राउज़र वाला Whisper इस्तेमाल करें।',
+      'id-ID': 'GPU di komputer ini terlalu lama untuk pengenalan suara ini, yang butuh generasi GeForce RTX 20 atau GTX 16 atau yang lebih baru. Pakai Whisper dalam browser sebagai gantinya.',
+      'it-IT': 'La GPU di questo computer è troppo vecchia per questo riconoscimento vocale, che richiede la generazione GeForce RTX 20 o GTX 16 o successiva. Usa invece Whisper nel browser.',
+      'ko-KR': '이 컴퓨터의 GPU는 오래되어 이 음성 인식을 실행할 수 없습니다. GeForce RTX 20 또는 GTX 16 세대 이후가 필요합니다. 대신 브라우저 내 Whisper를 사용하십시오.',
+      'pt-BR': 'A GPU deste computador é antiga demais para este reconhecimento de fala, que precisa da geração GeForce RTX 20 ou GTX 16 ou mais recente. Use o Whisper no navegador.',
+      'es-419': 'La GPU de esta computadora es demasiado antigua para este reconocimiento de voz, que necesita la generación GeForce RTX 20 o GTX 16 o una posterior. Usa Whisper en el navegador en su lugar.',
+      'es-ES': 'La GPU de este ordenador es demasiado antigua para este reconocimiento de voz, que necesita la generación GeForce RTX 20 o GTX 16 o una posterior. Usa Whisper en el navegador en su lugar.'
+    },
+    driverTooOld: {
+      'ja-JP': 'NVIDIA のドライバーが古いため、この音声認識を動かせません。バージョン 580 以降に更新して、ASIST を起動し直してください。',
+      'en-US': 'The NVIDIA driver is too old for this speech recognition. Update it to version 580 or later, then start ASIST again.',
+      'fr-FR': 'Le pilote NVIDIA est trop ancien pour cette reconnaissance vocale. Mettez-le à jour vers la version 580 ou ultérieure, puis relancez ASIST.',
+      'de-DE': 'Der NVIDIA-Treiber ist für diese Spracherkennung zu alt. Aktualisieren Sie ihn auf Version 580 oder neuer und starten Sie ASIST dann neu.',
+      'hi-IN': 'इस स्पीच रिकग्निशन के लिए NVIDIA ड्राइवर पुराना है। इसे वर्ज़न 580 या उसके बाद वाले पर अपडेट करें, फिर ASIST दोबारा शुरू करें।',
+      'id-ID': 'Driver NVIDIA terlalu lama untuk pengenalan suara ini. Perbarui ke versi 580 atau yang lebih baru, lalu jalankan ulang ASIST.',
+      'it-IT': 'Il driver NVIDIA è troppo vecchio per questo riconoscimento vocale. Aggiornalo alla versione 580 o successiva, poi riavvia ASIST.',
+      'ko-KR': 'NVIDIA 드라이버가 오래되어 이 음성 인식을 실행할 수 없습니다. 버전 580 이상으로 업데이트한 뒤 ASIST를 다시 시작하십시오.',
+      'pt-BR': 'O driver da NVIDIA é antigo demais para este reconhecimento de fala. Atualize-o para a versão 580 ou mais recente e inicie o ASIST de novo.',
+      'es-419': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.',
+      'es-ES': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.'
     }
   }
 })

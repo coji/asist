@@ -537,19 +537,6 @@ export const settingsModels = defineMessages({
     }
   },
   features: {
-    mlxAsr: {
-      'ja-JP': 'MLX 音声認識',
-      'en-US': 'MLX speech recognition',
-      'fr-FR': 'Reconnaissance vocale MLX',
-      'de-DE': 'MLX-Spracherkennung',
-      'hi-IN': 'MLX स्पीच रिकग्निशन',
-      'id-ID': 'Pengenalan suara MLX',
-      'it-IT': 'Riconoscimento vocale MLX',
-      'ko-KR': 'MLX 음성 인식',
-      'pt-BR': 'Reconhecimento de fala MLX',
-      'es-419': 'Reconocimiento de voz con MLX',
-      'es-ES': 'Reconocimiento de voz MLX'
-    },
     turnTaking: {
       'ja-JP': 'ターンテイキング',
       'en-US': 'Turn-taking',
@@ -588,6 +575,19 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Busca por significado',
       'es-419': 'Búsqueda por significado',
       'es-ES': 'Búsqueda semántica'
+    },
+    speechRecognition: {
+      'ja-JP': '音声認識',
+      'en-US': 'Speech recognition',
+      'fr-FR': 'Reconnaissance vocale',
+      'de-DE': 'Spracherkennung',
+      'hi-IN': 'स्पीच रिकग्निशन',
+      'id-ID': 'Pengenalan suara',
+      'it-IT': 'Riconoscimento vocale',
+      'ko-KR': '음성 인식',
+      'pt-BR': 'Reconhecimento de fala',
+      'es-419': 'Reconocimiento de voz',
+      'es-ES': 'Reconocimiento de voz'
     }
   },
   preparation: {
@@ -603,19 +603,6 @@ export const settingsModels = defineMessages({
       'pt-BR': '{feature} não funciona neste computador.',
       'es-419': '{feature} no funciona en esta computadora.',
       'es-ES': '{feature} no funciona en este ordenador.'
-    },
-    runtime: {
-      'ja-JP': 'MLX Audio {version} の実行環境を準備しています',
-      'en-US': 'Preparing the MLX Audio {version} runtime',
-      'fr-FR': "Préparation de l'environnement d'exécution MLX Audio {version}",
-      'de-DE': 'Die Laufzeitumgebung MLX Audio {version} wird vorbereitet',
-      'hi-IN': 'MLX Audio {version} का रनटाइम तैयार हो रहा है',
-      'id-ID': 'Menyiapkan runtime MLX Audio {version}',
-      'it-IT': "Preparazione dell'ambiente di esecuzione MLX Audio {version} in corso",
-      'ko-KR': 'MLX Audio {version} 실행 환경을 준비하고 있습니다',
-      'pt-BR': 'Preparando o ambiente de execução do MLX Audio {version}',
-      'es-419': 'Preparando el entorno de ejecución de MLX Audio {version}',
-      'es-ES': 'Preparando el entorno de ejecución de MLX Audio {version}'
     },
     done: {
       'ja-JP': '{model} を準備しました。',
@@ -811,6 +798,32 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Não foi possível baixar {model}: {detail}',
       'es-419': 'No se pudo descargar {model}: {detail}',
       'es-ES': 'No se ha podido descargar {model}: {detail}'
+    },
+    mlxRuntime: {
+      'ja-JP': 'MLX Audio {version} の実行環境を準備しています',
+      'en-US': 'Preparing the MLX Audio {version} runtime',
+      'fr-FR': "Préparation de l'environnement d'exécution MLX Audio {version}",
+      'de-DE': 'Die Laufzeitumgebung MLX Audio {version} wird vorbereitet',
+      'hi-IN': 'MLX Audio {version} का रनटाइम तैयार हो रहा है',
+      'id-ID': 'Menyiapkan runtime MLX Audio {version}',
+      'it-IT': "Preparazione dell'ambiente di esecuzione MLX Audio {version} in corso",
+      'ko-KR': 'MLX Audio {version} 실행 환경을 준비하고 있습니다',
+      'pt-BR': 'Preparando o ambiente de execução do MLX Audio {version}',
+      'es-419': 'Preparando el entorno de ejecución de MLX Audio {version}',
+      'es-ES': 'Preparando el entorno de ejecución de MLX Audio {version}'
+    },
+    cudaRuntime: {
+      'ja-JP': 'CUDA 版 PyTorch {version} の実行環境を準備しています',
+      'en-US': 'Preparing the PyTorch {version} runtime for CUDA',
+      'fr-FR': "Préparation de l'environnement d'exécution PyTorch {version} pour CUDA",
+      'de-DE': 'Die Laufzeitumgebung PyTorch {version} für CUDA wird vorbereitet',
+      'hi-IN': 'CUDA के लिए PyTorch {version} का रनटाइम तैयार हो रहा है',
+      'id-ID': 'Menyiapkan runtime PyTorch {version} untuk CUDA',
+      'it-IT': "Preparazione dell'ambiente di esecuzione PyTorch {version} per CUDA in corso",
+      'ko-KR': 'CUDA용 PyTorch {version} 실행 환경을 준비하고 있습니다',
+      'pt-BR': 'Preparando o ambiente de execução do PyTorch {version} para CUDA',
+      'es-419': 'Preparando el entorno de ejecución de PyTorch {version} para CUDA',
+      'es-ES': 'Preparando el entorno de ejecución de PyTorch {version} para CUDA'
     }
   }
 })

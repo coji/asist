@@ -110,6 +110,10 @@ win:
     # Starts an agent CLI inside a job object, compiled by scripts/prepare-resources.mjs.
     - from: resources/native/windows/asist-agent-launcher.exe
       to: asist-agent-launcher.exe
+    - from: resources/cuda_asr_worker.py
+      to: cuda_asr_worker.py
+    - from: resources/cuda-speech-requirements.txt
+      to: cuda-speech-requirements.txt
 
 # One click installs the app for the current user into %LOCALAPPDATA%\Programs\asist, without asking for
 # administrator rights.

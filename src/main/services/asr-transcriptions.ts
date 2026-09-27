@@ -113,7 +113,7 @@ export class Transcriptions {
     try {
       const ready = await worker.ready
       if (!ready || !worker.child?.stdin.writable) {
-        throw new Error(errorText('speechRecognition.errors.mlxNotReady'))
+        throw new Error(errorText('speechRecognition.errors.notReady'))
       }
       this.ensureCurrent(request)
       const directory = this.directory()
@@ -157,7 +157,7 @@ export class Transcriptions {
     try {
       await fs.promises.rm(wavPath, { force: true })
     } catch (error) {
-      console.error('failed to delete the temporary MLX ASR audio:', error)
+      console.error('failed to delete the temporary speech recognition audio:', error)
     }
   }
 }

@@ -243,7 +243,7 @@ describe('local transcription lifecycle', () => {
   it('reports unavailable installation without leaving a cancellable request', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false)
     const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'unavailable'))
-    expect((await response).error?.message).toBe(errorText('speechRecognition.errors.mlxNotReady'))
+    expect((await response).error?.message).toBe(errorText('speechRecognition.errors.notReady'))
     expect(asr.cancelTranscription('unavailable')).toBe(false)
     expect(wavFiles()).toEqual([])
   })

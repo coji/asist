@@ -208,7 +208,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                 !selectionOffered
                   ? t('speechRecognition.errors.unknownModel')
                   : setup?.asr
-                    ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, setup.asr) })
+                    ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, speechRuntime.kind, setup.asr) })
                     : t('settingsVoice.recognition.checking')
               }
             >
@@ -225,7 +225,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                     .catch((err: unknown) => toast({ kind: 'error', title: t('settingsVoice.recognition.changeFailed'), body: displayError(err) }))
                 }}
               >
-                <option value="auto">{t('settingsVoice.recognition.automatic')}</option>
+                <option value="auto">{t(`settingsVoice.recognition.automatic.${speechRuntime.kind}`)}</option>
                 {asrChoices.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}

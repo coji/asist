@@ -66,10 +66,12 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 - **起動時の確かめ。** `ready` を出す前に、次のことを確かめます。
   - `torch.cuda.is_available()`
   - `get_device_capability` が 7.5 以上であること
-  - VRAM の空き
   - 満たさなければ、理由を付けて `fatal` を出します。
-- **型の選び方。** compute capability が 8.0 以上なら bf16 を、7.5(RTX 20)なら fp16 を使います。fp16 で精度が崩れないかは未確認なので、RTX 20 の結果を M5-5 で見て、崩れるなら RTX 20 を対象から外します。
-- **Mac での確かめ方。** Mac の CPU(と MPS)でも同じ worker が動きます。そのため、M5-3 で、やりとりの形と日本語の結果を Mac で確かめられます。
+  - VRAM の空きは先に確かめません。足りなければモデルを読むところで失敗し、`fatal` になります。先に確かめるなら、しきい値を M5-5 の実測で決めます。
+- **型の選び方。** compute capability が 8.0 以上なら bf16 を、7.5(RTX 20)なら fp16 を使います。RTX 2080 の fp16 は fp32 と同じ文字を返したので、RTX 20 も対象にします(実測は ADR 0021)。
+- **Mac での確かめ方。** 開発のときだけ、同じ worker を Mac の CPU(float32)で動かせます。MPS では動かしません。
+  - 2026-09-27 に、Apple M5 の Mac の CPU で 0.6B を動かしました。4.0 秒の音声に約 1.0 秒、2.5 秒の音声に約 0.5 秒かかり、起動は約 2 秒でした。
+  - `say -v Kyoko` の「今日の東京の天気を教えて。」はそのまま書き起こせました。「歯医者の予約」は「配車の予約」になりました。
 
 ### lock ファイル
 
@@ -84,13 +86,17 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 
 - **コンパイル。** `uv pip compile --only-binary :all: --generate-hashes --python-version 3.12 --python-platform x86_64-pc-windows-msvc` でコンパイルします。できたファイルは、いまの `installRequirements`(`--require-hashes -r`)でそのままインストールできます。Mac の上で、`--dry-run` で確かめました。
 - **使わない書き方。** `--extra-index-url` をファイルに書くのはやめます。uv が numpy や jinja2 まで PyTorch の入手先から取ってしまうためです。
-- **ダウンロードの大きさ。** 合わせて約 2.05 GB(torch が 1.99 GB)です。これにモデルの 1.6〜4.1 GB が加わります。セットアップの画面に大きさを出します。
+- **ダウンロードの大きさ。** 合わせて約 2.04 GB(torch が 1.99 GB、ほかの 34 個が 46 MB)です。これにモデルの 1.58 GB(0.6B)か 4.09 GB(1.7B)が加わります。
+  - セットアップの聞き取りの手順は、実行環境とモデルのうちまだ無い分の大きさを出します(M5-6)。何も無いときは、1.7B で約 6.1 GB、0.6B で約 3.6 GB です。
+  - Mac の MLX の lock は約 0.13 GB なので、Mac の同じ表示は、Qwen3-ASR で約 2.6 GB、Whisper で約 1.8 GB です(それまでは固定の「2GB ほど」でした)。
+  - 大きさは 2026-09-27 に、PyPI と download.pytorch.org が lock の wheel について返す大きさと、Hugging Face の API が固定したリビジョンについて返す大きさを足して求めました。uv が一度だけ取得する Python は含みません。
 
 ### 実行環境(`speech-runtime.ts`)
 
 - **環境を作る場所と中身。**
   - `speech-runtime.ts` は、capabilities が示す実行環境の値を読み、その環境を作って worker を動かします。
   - macOS では `userData/mlx-audio-runtime` に環境を作り、その環境で ASR の worker と Qwen3-TTS の worker を動かします。
+  - Windows では `userData/cuda-speech-runtime` に環境を作り、ASR の worker だけを動かします。`cuda` の表を足し、Windows のアプリに worker と lock を入れました(M5-6)。Windows の実機ではまだ動かしていません。
 
   | | `mlx` | `cuda` |
   |---|---|---|
@@ -103,7 +109,7 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 
 - **共通のまま使える処理。** Hugging Face の固定したリビジョンの取得(`hf_snapshot.py`)と、「全部のファイルがそろったら入ったとみなす」判定(`modelInstalled`)は、そのまま使えます。
   - Windows の huggingface_hub は、シンボリックリンクを作れないとき、`snapshots` にファイルを写します。そのため、この判定は動きます。
-  - ダウンロードの進み具合の数え方は、M5-6 で確かめます。
+  - ダウンロードの進み具合は、`blobs` のファイルに加えて、`snapshots` の中のリンクでない普通のファイルも数えます。huggingface_hub は、リンクを作れないときにダウンロードを終えたファイルを `blobs` から `snapshots` へ移すので(1.29 の `_create_symlink` で確かめました)、`blobs` だけを数えると、ファイルが1つ終わるたびに進み具合が戻るためです。
 - **モデルの置き場所。**
   - main が `~/.cache/huggingface/hub` に決め、ダウンロードと worker の Python に `HF_HUB_CACHE` で渡します(M5-1)。
   - この場所は huggingface_hub の既定と同じです。Windows の既定も `%USERPROFILE%\.cache\huggingface\hub` なので、同じ組み立てで合います。
@@ -113,18 +119,16 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 ### GPU を調べる(`gpu.ts`)
 
 - **調べ方。** `nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv,noheader,nounits` を起動します。
+- **調べる時。** main が起動したときに1回だけ、capabilities を決めるところで起動します(M5-6)。そのため、ドライバーや GPU を替えたときは、ASIST を起動し直すと反映されます。「ドライバーが古い」の文も、更新してから起動し直すように書いています。
 - **場所。** `nvidia-smi.exe` は、いまのドライバーでは `C:\Windows\System32` にあります。
-- **無いときや失敗したとき。** 見つからないときや失敗したときは、capabilities の `speechRuntime` を「NVIDIA の GPU が無い」にします。
+- **無いときや失敗したとき。** 見つからないときや失敗したときは、capabilities の `speechRuntime` を「NVIDIA の GPU が無い」にします。理由は、セットアップの聞き取りの手順、設定の「声」のモデルの行、「モデル」の音声認識のカードに出ます。
 - **使えないときの理由。** ドライバーのバージョンが 580 より前なら「ドライバーが古い」、compute capability が 7.5 より前なら「GPU が古い」にします。
 - **モデルの推奨。** VRAM が 6 GB 以上なら 1.7B を、それより少なければ 0.6B を勧めます。1.7B は、上の実測の 4.1 GB と CUDA のコンテキストの 0.5 GB を合わせると、対象で最も小さい 4 GB の GPU(GTX 1650 など)に収まりません。6 GB の GPU なら、デスクトップとほかのアプリに約 1.4 GB が残ります。
 - **2回目の確かめ。** worker も起動時に同じことを確かめ、違えば `fatal` にします。ドライバーを入れ替えた直後などに、2つの結果が食い違うことがあるためです。
 
-### 先に一度だけ試すこと
+### MLX の CUDA を試した結果
 
-- **MLX の CUDA。** MLX には Windows 向けの CUDA の wheel があります(`mlx-cuda-13` 0.32.2)。`mlx-audio==0.4.7` と一緒に Windows 向けに解決できることも確かめました。
-- **動いた場合。** Mac と同じ worker とモデル(MLX の 8bit)をそのまま使えます。そうなれば、実行環境の違いは lock ファイルだけになります。
-- **不安な点。** ただし、MLX の公式の説明では、CUDA のバックエンドは Linux だけとなっています。
-- **確かめ方。** M5-5 の最初に1時間だけ試します。動き、速さも十分なら、transformers の案と比べて ADR で選びます。
+MLX の Windows 向けの CUDA の wheel(`mlx-cuda-13` 0.32.2)と `mlx-audio==0.4.7` は入り、GPU も見えました。しかし、最初の GPU の計算で 0xC06D007E(遅延読み込みの DLL が見つからない)で落ち、CUDA の DLL のフォルダを足しても同じでした(2026-09-27)。そのため、transformers の案にしました(ADR 0021)。
 
 ## マイクとエコーキャンセル
 

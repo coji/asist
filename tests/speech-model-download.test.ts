@@ -18,8 +18,10 @@ const MODEL = { id: 'test-org/test-model', revision: 'abc123', label: 'Test Mode
 
 /**
  * A stand-in for the environment's python. For hf_snapshot.py it prints the repository's size, writes
- * the weights into the cache HF_HUB_CACHE names, as huggingface_hub does, in three steps like a download, links every file into the snapshot, and
- * records its pid; for a worker script it reports ready. With FAKE_DOWNLOAD_HANG set the download never ends.
+ * the weights into the cache HF_HUB_CACHE names, as huggingface_hub does, in three steps like a download,
+ * links the weights into the snapshot, or moves them there with FAKE_NO_SYMLINKS set as huggingface_hub
+ * does where it cannot create a link, and records its pid; for a worker script it reports ready. With
+ * FAKE_DOWNLOAD_HANG set the download never ends.
  * The pid file appears by a rename: a redirection creates the file before it writes, and a test that saw it
  * empty read pid 0, which names the test's own process group and never stops existing.
  * It exits at once unless it was started in Python's UTF-8 mode, which Python on Windows needs to read the
@@ -40,7 +42,12 @@ case "$1" in
       [ -n "$FAKE_DOWNLOAD_HANG" ] && sleep 60
     done
     mv "$cache/blobs/weights.incomplete" "$cache/blobs/weights"
-    cp "$cache/blobs/weights" "$cache/snapshots/$3/model.safetensors"
+    if [ -n "$FAKE_NO_SYMLINKS" ]; then
+      mv "$cache/blobs/weights" "$cache/snapshots/$3/model.safetensors"
+    else
+      ln -s ../../blobs/weights "$cache/snapshots/$3/model.safetensors"
+    fi
+    sleep 0.6
     echo '{}' > "$cache/snapshots/$3/config.json"
     echo '{}' > "$cache/snapshots/$3/tokenizer.json"
     ;;
@@ -76,6 +83,7 @@ afterEach(() => {
     else process.env[name] = value
   }
   delete process.env.FAKE_DOWNLOAD_HANG
+  delete process.env.FAKE_NO_SYMLINKS
   fs.rmSync(root, { recursive: true, force: true })
 })
 
@@ -100,6 +108,22 @@ describe.runIf(process.platform === 'darwin' && process.arch === 'arm64')('prepa
     expect(measured.every((event) => event.totalMb === 3)).toBe(true)
     expect(measured.map((event) => event.downloadedMb)).toEqual([...measured.map((event) => event.downloadedMb)].sort((a, b) => a - b))
     expect(progress.at(-1)?.status).toBe('done')
+  })
+
+  it('keeps counting a finished file that could not be linked and was moved into the snapshot instead', async () => {
+    process.env.FAKE_NO_SYMLINKS = '1'
+    const progress: SetupProgress[] = []
+    const result = await prepareModel({
+      model: MODEL,
+      feature: 'Test',
+      signal: new AbortController().signal,
+      onProgress: (event) => progress.push(event),
+      start: async () => true
+    })
+    expect(result.ok).toBe(true)
+    const downloaded = progress.filter((event) => event.totalMb > 0).map((event) => event.downloadedMb)
+    expect(downloaded).toEqual([...downloaded].sort((a, b) => a - b))
+    expect(downloaded.at(-1)).toBe(3)
   })
 
   it('stops the download when cancelled, reports it as cancelled, and starts no worker', async () => {

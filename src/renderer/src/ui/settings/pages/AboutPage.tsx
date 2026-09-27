@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ASIST_LICENSE, creditsOf, type Credit, type CreditGroup } from '@shared/credits'
 import { Btn, Chip, Group, Page, Row } from '../primitives'
 import { useT } from '@/i18n'
+import { platformCapabilities } from '@/platform'
 import type { Translate } from '@shared/i18n'
 
 /** The about page: the version of the app and every model and data source it uses, with its license. */
@@ -38,8 +39,8 @@ export function AboutPage(): React.JSX.Element {
 function Credits({ group, t }: { group: CreditGroup; t: Translate }): React.JSX.Element {
   return (
     <Group title={t(`settingsAbout.${group}.title`)} description={t(`settingsAbout.${group}.description`)}>
-      {creditsOf(group).map((credit) => (
-        <Row key={credit.id} label={credit.name} hint={t(`settingsAbout.use.${credit.id}`)}>
+      {creditsOf(group, platformCapabilities().speechRuntime.kind).map((credit) => (
+        <Row key={credit.id} label={credit.name} hint={t(credit.use)}>
           <Chip tone="dim">{credit.license ?? t('settingsAbout.providerTerms')}</Chip>
           <Source credit={credit} />
         </Row>

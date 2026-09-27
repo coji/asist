@@ -15,11 +15,11 @@ import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
 /**
- * The Python environment that the local speech recognition and the Qwen3-TTS speech synthesis share,
- * and the JSON-lines workers that run in it. The environment is one uv-managed venv under userData,
- * installed from the runtime's pinned requirements file, and each service starts its own worker script
- * in it. Which runtime that is comes from the capabilities; what differs between runtimes is in
- * `RUNTIMES`, and the rest of this module is the same for all of them.
+ * The Python environment of the local speech models, which the speech recognition and, on a runtime that
+ * has it, the Qwen3-TTS speech synthesis share, and the JSON-lines workers that run in it. The environment
+ * is one uv-managed venv under userData, installed from the runtime's pinned requirements file, and each
+ * service starts its own worker script in it. Which runtime that is comes from the capabilities; what
+ * differs between runtimes is in `SPEECH_RUNTIMES`, and the rest of this module is the same for all of them.
  */
 
 /** A Hugging Face model pinned to one revision. */
@@ -54,15 +54,31 @@ interface RuntimeSpec {
   tts: WorkerScript | null
 }
 
-const RUNTIMES: Record<SpeechRuntime, RuntimeSpec> = {
+/** The torch the CUDA runtime's requirements file pins, built for CUDA 13.0. */
+const CUDA_TORCH_VERSION = '2.14.0'
+
+/**
+ * Every runtime, with the files it needs under resources, which electron-builder.yml ships in the app of
+ * the OS the runtime runs on.
+ */
+export const SPEECH_RUNTIMES: Readonly<Record<SpeechRuntime, RuntimeSpec>> = {
   mlx: {
     directory: 'mlx-audio-runtime',
     requirements: 'mlx-audio-requirements.txt',
     stamp: { version: MLX_AUDIO_VERSION, lockVersion: 1 },
-    preparing: () => t('settingsModels.preparation.runtime', { version: MLX_AUDIO_VERSION }),
+    preparing: () => t('settingsModels.preparation.mlxRuntime', { version: MLX_AUDIO_VERSION }),
     pythonOverride: 'ASIST_MLX_PYTHON',
     asr: { file: 'mlx_asr_worker.py', logName: 'mlx-asr' },
     tts: { file: 'qwen_tts_worker.py', logName: 'qwen-tts' }
+  },
+  cuda: {
+    directory: 'cuda-speech-runtime',
+    requirements: 'cuda-speech-requirements.txt',
+    stamp: { version: CUDA_TORCH_VERSION, lockVersion: 1 },
+    preparing: () => t('settingsModels.preparation.cudaRuntime', { version: CUDA_TORCH_VERSION }),
+    pythonOverride: 'ASIST_CUDA_PYTHON',
+    asr: { file: 'cuda_asr_worker.py', logName: 'cuda-asr' },
+    tts: null
   }
 }
 
@@ -76,7 +92,7 @@ const DOWNLOAD_PROGRESS_INTERVAL_MS = 500
 /** The runtime the capabilities name for this machine, or null where the local speech models do not run. */
 function currentRuntime(): RuntimeSpec | null {
   const { kind } = platformCapabilities().speechRuntime
-  return kind === null ? null : RUNTIMES[kind]
+  return kind === null ? null : SPEECH_RUNTIMES[kind]
 }
 
 function runtimeDir(runtime: RuntimeSpec): string {
@@ -250,14 +266,19 @@ const downloads = new Set<ChildProcess>()
 /**
  * The bytes written to the repository's cache since `since`: the files being downloaded and the ones
  * finished meanwhile. Files an earlier, interrupted download left behind are older and not counted.
+ * huggingface_hub downloads into `blobs` and links a finished file into the snapshot, but where it cannot
+ * create a symbolic link, as on Windows without Developer Mode, it moves the file into the snapshot
+ * instead, so the snapshot's plain files count as well and its links do not.
  */
 async function bytesWrittenSince(model: PinnedModel, since: number): Promise<number> {
-  const blobs = path.join(repositoryCache(model), 'blobs')
-  const names = await fs.promises.readdir(blobs).catch(() => [] as string[])
+  const folders = [path.join(repositoryCache(model), 'blobs'), snapshotPath(model)]
   let total = 0
-  for (const name of names) {
-    const stat = await fs.promises.stat(path.join(blobs, name)).catch(() => null)
-    if (stat && stat.mtimeMs >= since) total += stat.size
+  for (const folder of folders) {
+    const entries = await fs.promises.readdir(folder, { recursive: true }).catch(() => [] as string[])
+    for (const entry of entries) {
+      const stat = await fs.promises.lstat(path.join(folder, entry)).catch(() => null)
+      if (stat?.isFile() && stat.mtimeMs >= since) total += stat.size
+    }
   }
   return total
 }

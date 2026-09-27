@@ -9,13 +9,13 @@ import {
   offeredAsrModels,
   recommendAsrModel,
   resolveAsrModel,
-  whisperLanguageName,
-  type AsrRuntime
+  whisperLanguageName
 } from '../src/shared/asr-models'
+import type { SpeechRuntime } from '../src/shared/platform'
 import { SETTINGS_FORMAT } from '../src/shared/settings'
 import { openStoredContent } from '../src/shared/stored-format'
 
-const RUNTIMES: AsrRuntime[] = ['mlx', 'cuda']
+const RUNTIMES: SpeechRuntime[] = ['mlx', 'cuda']
 
 describe('the recommended model on a Mac', () => {
   it('recommends Whisper on 8 GB, where free memory matters more', () => {

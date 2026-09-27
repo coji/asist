@@ -6,6 +6,7 @@ import type {
   JobEvent,
   PanelEvent,
   RendererApi,
+  SetupStatus,
   TimerEvent,
   TurnEvent
 } from '@shared/ipc'
@@ -57,8 +58,8 @@ import { demoPanelProps, respondTo } from './sayings'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { mergeSettings } from '@shared/settings'
 import { recommendQwenTts } from '@shared/tts-models'
-import { asrModelSpec } from '@shared/asr-models'
-import { demoCapabilities, demoOs } from './platform'
+import { asrDownloadGb, asrModelSpec, recommendAsrModel } from '@shared/asr-models'
+import { demoCapabilities } from './platform'
 
 /**
  * Demo mode: the mock used where window.api (preload) does not exist, that is, in a plain browser. Only
@@ -85,7 +86,26 @@ const demoLocale = UI_LOCALES.find((locale) => locale === requestedLocale) ?? 'j
 /** `?theme=pop` opens the demo in that theme. index.tsx refuses a name that is not a theme. */
 const requestedTheme = new URLSearchParams(location.search).get('theme')
 
-const capabilities = demoCapabilities(demoOs(location.search))
+const capabilities = demoCapabilities(location.search)
+
+/** The local speech recognition as main reports it on a machine that has neither its environment nor its model yet. */
+function demoAsrStatus(): SetupStatus['asr'] {
+  const runtime = capabilities.speechRuntime
+  if (runtime.kind === null) return null
+  const { recommendedModel } = recommendAsrModel(runtime.kind, runtime.memoryGb)
+  const spec = asrModelSpec(runtime.kind, recommendedModel)!
+  const installed = { runtimeInstalled: false, modelInstalled: false }
+  return {
+    selectedModel: 'auto',
+    resolvedModel: recommendedModel,
+    recommendedModel,
+    label: spec.label,
+    totalMemoryGb: runtime.memoryGb,
+    ...installed,
+    downloadGb: asrDownloadGb(runtime.kind, spec, installed),
+    ready: false
+  }
+}
 
 /** `?hotkey=failed` turns the global hotkey on and has the OS refuse it, as when another application holds the keys. */
 const hotkeyRefused = new URLSearchParams(location.search).get('hotkey') === 'failed'
@@ -554,19 +574,7 @@ export const mockApi: RendererApi = {
   onHotkeyMic: () => () => {},
   getSetupStatus: async () => ({
     services: await mockApi.getStatus(),
-    asr:
-      capabilities.speechRuntime.kind === null
-        ? null
-        : {
-            selectedModel: 'auto',
-            resolvedModel: 'qwen3-asr-1.7b',
-            recommendedModel: 'qwen3-asr-1.7b',
-            label: asrModelSpec(capabilities.speechRuntime.kind, 'qwen3-asr-1.7b')!.label,
-            totalMemoryGb: capabilities.speechRuntime.memoryGb,
-            runtimeInstalled: false,
-            modelInstalled: false,
-            ready: false
-          },
+    asr: demoAsrStatus(),
     qwenTts: {
       label: 'Qwen3-TTS 0.6B 8-bit MLX',
       recommended: recommendQwenTts(capabilities.speechRuntime),

@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
 import { ASR_MODEL_NAMES, asrModelSpec } from '@shared/asr-models'
-import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
+import { nvidiaGpuSupport } from '@shared/nvidia-gpu'
+import { deriveCapabilities } from '@shared/platform'
+import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, setCapabilities } from './helpers/platform'
 
 const mocks = vi.hoisted(() => ({
   settings: { asrModel: 'qwen3-asr-1.7b', uiLocale: 'ja-JP' },
@@ -10,7 +12,8 @@ const mocks = vi.hoisted(() => ({
   localTranscribe: vi.fn(),
   localPartial: vi.fn(),
   localStop: vi.fn(),
-  localPrepare: vi.fn()
+  localPrepare: vi.fn(),
+  installed: { runtimeInstalled: true, modelInstalled: true }
 }))
 
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -25,12 +28,13 @@ vi.mock('../src/main/services/local-asr', () => ({
   stop: mocks.localStop,
   prepare: mocks.localPrepare,
   cancelPreparation: vi.fn(),
-  installationStatus: vi.fn(() => ({ runtimeInstalled: true, modelInstalled: true }))
+  installationStatus: vi.fn(() => mocks.installed)
 }))
 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.settings.asrModel = 'qwen3-asr-1.7b'
+  mocks.installed = { runtimeInstalled: true, modelInstalled: true }
 })
 
 describe('ASR service routing', () => {
@@ -98,8 +102,62 @@ describe('a selected model the runtime does not offer', () => {
   })
 })
 
+describe('Windows with an NVIDIA GPU the CUDA runtime runs on', () => {
+  beforeEach(() => {
+    setCapabilities(WINDOWS)
+    mocks.settings.asrModel = 'auto'
+  })
+  afterEach(() => setCapabilities(MACOS))
+
+  it('recommends Qwen3-ASR 1.7B on CUDA for the 8 GB of the GPU, and counts the torch environment and the model it has to download', async () => {
+    const asr = await import('../src/main/services/asr')
+    mocks.installed = { runtimeInstalled: false, modelInstalled: false }
+    const status = await asr.installationStatus()
+    expect(status).toMatchObject({
+      resolvedModel: 'qwen3-asr-1.7b',
+      recommendedModel: 'qwen3-asr-1.7b',
+      label: asrModelSpec('cuda', 'qwen3-asr-1.7b')!.label,
+      totalMemoryGb: 8
+    })
+    expect(status!.downloadGb).toBeCloseTo(6.13)
+    mocks.installed = { runtimeInstalled: true, modelInstalled: false }
+    expect((await asr.installationStatus())!.downloadGb).toBeCloseTo(asrModelSpec('cuda', 'qwen3-asr-1.7b')!.downloadGb)
+    mocks.installed = { runtimeInstalled: true, modelInstalled: true }
+    expect((await asr.installationStatus())!.downloadGb).toBe(0)
+  })
+
+  it('prepares and starts the CUDA build of the model auto stands for', async () => {
+    const asr = await import('../src/main/services/asr')
+    mocks.localPrepare.mockResolvedValue({ ok: true, message: '' })
+    mocks.localEnsure.mockResolvedValue(true)
+    await asr.prepareModel('auto', vi.fn())
+    await asr.ensureServer()
+    expect(mocks.localPrepare).toHaveBeenCalledWith(asrModelSpec('cuda', 'qwen3-asr-1.7b'), expect.any(Function))
+    expect(mocks.localEnsure).toHaveBeenCalledWith(asrModelSpec('cuda', 'qwen3-asr-1.7b'))
+  })
+
+  it('recommends Qwen3-ASR 0.6B on a 4 GB GPU, where 1.7B does not fit', async () => {
+    setCapabilities(deriveCapabilities({
+      platform: 'win32',
+      arch: 'x64',
+      totalMemoryBytes: 16 * 1024 ** 3,
+      nvidiaGpu: () => nvidiaGpuSupport('NVIDIA GeForce GTX 1650, 4096, 581.57, 7.5')
+    }))
+    const asr = await import('../src/main/services/asr')
+    expect(await asr.installationStatus()).toMatchObject({ resolvedModel: 'qwen3-asr-0.6b', label: asrModelSpec('cuda', 'qwen3-asr-0.6b')!.label, totalMemoryGb: 4 })
+  })
+
+  it('reports Whisper brought from a Mac under its own name, and never prepares it on CUDA', async () => {
+    const asr = await import('../src/main/services/asr')
+    mocks.settings.asrModel = 'whisper-large-v3-turbo'
+    expect(await asr.installationStatus()).toMatchObject({ resolvedModel: 'whisper-large-v3-turbo', label: ASR_MODEL_NAMES['whisper-large-v3-turbo'], downloadGb: 0, ready: false })
+    expect((await asr.prepareModel('whisper-large-v3-turbo', vi.fn())).ok).toBe(false)
+    expect(mocks.localPrepare).not.toHaveBeenCalled()
+  })
+})
+
 describe('a machine without a runtime for the local speech recognition', () => {
-  beforeEach(() => setCapabilities(WINDOWS))
+  beforeEach(() => setCapabilities(WINDOWS_WITHOUT_GPU))
   afterEach(() => setCapabilities(MACOS))
 
   it('reports no model and never starts a worker', async () => {
@@ -112,7 +170,7 @@ describe('a machine without a runtime for the local speech recognition', () => {
 
   it('refuses a transcription and a preparation with the reason', async () => {
     const asr = await import('../src/main/services/asr')
-    await expect(asr.transcribe(new Float32Array([0.1]))).rejects.toThrow(errorText('speechRecognition.unavailable.unsupportedOs'))
+    await expect(asr.transcribe(new Float32Array([0.1]))).rejects.toThrow(errorText('speechRecognition.unavailable.noNvidiaGpu'))
     expect((await asr.prepareModel('auto', vi.fn())).ok).toBe(false)
     expect(mocks.localTranscribe).not.toHaveBeenCalled()
     expect(mocks.localPrepare).not.toHaveBeenCalled()

@@ -665,7 +665,7 @@ export interface AppStatus {
   tts: boolean
   ttsEngine: TtsEngine
   ttsLabel: string
-  /** Whether the speech recognition model on this Mac answers. */
+  /** Whether the local speech recognition model answers. */
   asr: boolean
   /** Whether the CLI of the selected agent engine was found. */
   agent: AgentCliState
@@ -684,9 +684,12 @@ export interface SetupStatus {
     resolvedModel: ResolvedAsrModel
     recommendedModel: ResolvedAsrModel
     label: string
+    /** The memory the recommendation is decided from: the Mac's own on mlx, the GPU's on cuda. */
     totalMemoryGb: number
     runtimeInstalled: boolean
     modelInstalled: boolean
+    /** What preparing the resolved model downloads: the environment and the model, less what is installed. */
+    downloadGb: number
     ready: boolean
   } | null
   /** The local Qwen3-TTS model. `recommended` is whether this Mac has the memory to run it beside the speech recognition. */

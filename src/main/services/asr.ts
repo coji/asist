@@ -1,5 +1,6 @@
 import {
   ASR_MODEL_NAMES,
+  asrDownloadGb,
   asrModelSpec,
   isAsrModel,
   recommendAsrModel,
@@ -11,7 +12,7 @@ import {
 } from '@shared/asr-models'
 import type { SetupProgress, SetupStatus } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type SpeechRuntimeUnavailable } from '@shared/platform'
+import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type SpeechRuntime, type SpeechRuntimeUnavailable } from '@shared/platform'
 import { t } from './i18n'
 import { platformCapabilities } from './platform'
 import { getSettings } from './settings'
@@ -22,7 +23,7 @@ import * as local from './local-asr'
  * the runtime does not offer that model; or why this machine has no runtime to run one.
  */
 type Resolution =
-  | { model: ResolvedAsrModel; spec: AsrModelSpec | null; recommendation: AsrHardwareRecommendation }
+  | { runtime: SpeechRuntime; model: ResolvedAsrModel; spec: AsrModelSpec | null; recommendation: AsrHardwareRecommendation }
   | { model: null; reason: SpeechRuntimeUnavailable }
 
 function resolve(selected: AsrModel = getSettings().asrModel): Resolution {
@@ -30,7 +31,7 @@ function resolve(selected: AsrModel = getSettings().asrModel): Resolution {
   if (runtime.kind === null) return { model: null, reason: runtime.reason }
   const recommendation = recommendAsrModel(runtime.kind, runtime.memoryGb)
   const model = resolveAsrModel(selected, recommendation)
-  return { model, spec: asrModelSpec(runtime.kind, model), recommendation }
+  return { runtime: runtime.kind, model, spec: asrModelSpec(runtime.kind, model), recommendation }
 }
 
 /** The model to transcribe with; on a machine that cannot run it the reason is thrown for the user. */
@@ -50,14 +51,16 @@ function startable(): AsrModelSpec | null {
 export async function installationStatus(selected: AsrModel = getSettings().asrModel): Promise<SetupStatus['asr']> {
   const resolution = resolve(selected)
   if (resolution.model === null) return null
-  const { model, spec, recommendation } = resolution
+  const { runtime, model, spec, recommendation } = resolution
+  const installed = local.installationStatus(spec)
   return {
     selectedModel: selected,
     resolvedModel: model,
     recommendedModel: recommendation.recommendedModel,
     label: spec === null ? ASR_MODEL_NAMES[model] : spec.label,
     totalMemoryGb: recommendation.totalMemoryGb,
-    ...local.installationStatus(spec),
+    ...installed,
+    downloadGb: asrDownloadGb(runtime, spec, installed),
     ready: spec !== null && (await local.available(spec))
   }
 }

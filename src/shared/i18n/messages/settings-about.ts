@@ -212,32 +212,6 @@ export const settingsAbout = defineMessages({
     }
   },
   use: {
-    asrQwen: {
-      'ja-JP': '音声認識の既定のモデル',
-      'en-US': 'The default speech recognition model',
-      'fr-FR': 'Modèle de reconnaissance vocale par défaut',
-      'de-DE': 'Standardmodell der Spracherkennung',
-      'hi-IN': 'वाक् पहचान का डिफ़ॉल्ट मॉडल',
-      'id-ID': 'Model pengenalan suara bawaan',
-      'it-IT': 'Modello di riconoscimento vocale predefinito',
-      'ko-KR': '기본 음성 인식 모델',
-      'pt-BR': 'Modelo padrão de reconhecimento de fala',
-      'es-419': 'Modelo predeterminado de reconocimiento de voz',
-      'es-ES': 'Modelo predeterminado de reconocimiento de voz'
-    },
-    asrWhisperMlx: {
-      'ja-JP': 'MLX で動かす音声認識',
-      'en-US': 'Speech recognition run through MLX',
-      'fr-FR': 'Reconnaissance vocale exécutée par MLX',
-      'de-DE': 'Spracherkennung über MLX',
-      'hi-IN': 'MLX से चलने वाली वाक् पहचान',
-      'id-ID': 'Pengenalan suara lewat MLX',
-      'it-IT': 'Riconoscimento vocale eseguito con MLX',
-      'ko-KR': 'MLX로 도는 음성 인식',
-      'pt-BR': 'Reconhecimento de fala executado por MLX',
-      'es-419': 'Reconocimiento de voz ejecutado con MLX',
-      'es-ES': 'Reconocimiento de voz ejecutado con MLX'
-    },
     asrWhisperOnnx: {
       'ja-JP': '画面の中で動かす予備の音声認識',
       'en-US': 'The spare speech recognition that runs inside the window',
@@ -575,6 +549,34 @@ export const settingsAbout = defineMessages({
       'pt-BR': 'O histórico da memória e os worktrees das tarefas de edição',
       'es-419': 'El historial de la memoria y los worktrees de las tareas de edición',
       'es-ES': 'El historial de la memoria y los worktrees de las tareas de edición'
+    },
+    asr: {
+      mlx: {
+        'ja-JP': 'MLX で動かす音声認識',
+        'en-US': 'Speech recognition run through MLX',
+        'fr-FR': 'Reconnaissance vocale exécutée par MLX',
+        'de-DE': 'Spracherkennung über MLX',
+        'hi-IN': 'MLX से चलने वाली वाक् पहचान',
+        'id-ID': 'Pengenalan suara lewat MLX',
+        'it-IT': 'Riconoscimento vocale eseguito con MLX',
+        'ko-KR': 'MLX로 도는 음성 인식',
+        'pt-BR': 'Reconhecimento de fala executado por MLX',
+        'es-419': 'Reconocimiento de voz ejecutado con MLX',
+        'es-ES': 'Reconocimiento de voz ejecutado con MLX'
+      },
+      cuda: {
+        'ja-JP': 'NVIDIA の GPU で動かす音声認識',
+        'en-US': 'Speech recognition run on the NVIDIA GPU',
+        'fr-FR': 'Reconnaissance vocale exécutée sur le GPU NVIDIA',
+        'de-DE': 'Spracherkennung auf der NVIDIA-GPU',
+        'hi-IN': 'NVIDIA GPU पर चलने वाली वाक् पहचान',
+        'id-ID': 'Pengenalan suara di GPU NVIDIA',
+        'it-IT': 'Riconoscimento vocale eseguito sulla GPU NVIDIA',
+        'ko-KR': 'NVIDIA GPU에서 도는 음성 인식',
+        'pt-BR': 'Reconhecimento de fala executado na GPU NVIDIA',
+        'es-419': 'Reconocimiento de voz ejecutado en la GPU NVIDIA',
+        'es-ES': 'Reconocimiento de voz ejecutado en la GPU NVIDIA'
+      }
     }
   },
   notices: {

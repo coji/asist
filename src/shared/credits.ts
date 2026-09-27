@@ -1,10 +1,14 @@
+import { offeredAsrBuilds, type ResolvedAsrModel } from './asr-models'
+import type { MessageKey } from './i18n'
+import type { SpeechRuntime } from './platform'
+
 /** The groups of the credits, in the order the about page shows them. */
 export type CreditGroup = 'local' | 'api' | 'data' | 'bundled' | 'software'
 
 /**
  * One model, service or data source ASIST uses. The name, the provider, the license and the address
  * are written as their owners write them, so they stay the same in every language; what ASIST uses it
- * for is a sentence of the dictionary, under `settingsAbout.use.<id>`.
+ * for is a sentence of the dictionary.
  */
 export interface Credit {
   readonly id: string
@@ -25,22 +29,6 @@ export interface Credit {
  * source.
  */
 export const CREDITS = [
-  {
-    id: 'asrQwen',
-    group: 'local',
-    name: 'Qwen3-ASR 1.7B 8bit (MLX)',
-    provider: 'Alibaba Qwen',
-    license: 'Apache-2.0',
-    url: 'https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit'
-  },
-  {
-    id: 'asrWhisperMlx',
-    group: 'local',
-    name: 'Whisper large-v3-turbo (MLX)',
-    provider: 'OpenAI',
-    license: 'MIT',
-    url: 'https://huggingface.co/mlx-community/whisper-large-v3-turbo-asr-fp16'
-  },
   {
     id: 'asrWhisperOnnx',
     group: 'local',
@@ -252,10 +240,43 @@ export const CREDITS = [
   }
 ] as const satisfies readonly Credit[]
 
-/** One entry with its own id, from which the key of its sentence in the dictionary is built. */
-export type CreditEntry = (typeof CREDITS)[number]
+/** A credit as the about page lists it, with the key of the sentence that says what ASIST uses it for. */
+export interface ListedCredit extends Credit {
+  readonly use: Extract<MessageKey, `settingsAbout.use.${string}`>
+}
+
+/** The owner of each speech recognition model and its license, which every runtime's build of it keeps. */
+const ASR_MODEL_OWNERS: Record<ResolvedAsrModel, Pick<Credit, 'provider' | 'license'>> = {
+  'qwen3-asr-1.7b': { provider: 'Alibaba Qwen', license: 'Apache-2.0' },
+  'qwen3-asr-0.6b': { provider: 'Alibaba Qwen', license: 'Apache-2.0' },
+  'whisper-large-v3-turbo': { provider: 'OpenAI', license: 'MIT' }
+}
+
+/**
+ * The local speech recognition models are the builds the runtime's table offers, so a machine credits
+ * the models it can run and no other runtime's. Each is named by the label the voice page gives it, and
+ * one sentence per runtime says what they are for, because that label already tells them apart.
+ */
+function speechRecognitionCredits(runtime: SpeechRuntime | null): ListedCredit[] {
+  if (runtime === null) return []
+  return offeredAsrBuilds(runtime).map(([model, build]) => ({
+    id: build.id,
+    group: 'local',
+    name: build.label,
+    ...ASR_MODEL_OWNERS[model],
+    url: `https://huggingface.co/${build.id}`,
+    use: `settingsAbout.use.asr.${runtime}`
+  }))
+}
 
 /** The license ASIST itself is published under, as the LICENSE file at the root of the repository states it. */
 export const ASIST_LICENSE = { name: 'MIT', url: 'https://opensource.org/license/mit' } as const
 
-export const creditsOf = (group: CreditGroup): CreditEntry[] => CREDITS.filter((credit) => credit.group === group)
+/** The credits of a group on a machine whose local speech models run on this runtime, or on none. */
+export function creditsOf(group: CreditGroup, speechRuntime: SpeechRuntime | null): ListedCredit[] {
+  const listed = CREDITS.filter((credit) => credit.group === group).map((credit) => ({
+    ...credit,
+    use: `settingsAbout.use.${credit.id}` as const
+  }))
+  return group === 'local' ? [...speechRecognitionCredits(speechRuntime), ...listed] : listed
+}

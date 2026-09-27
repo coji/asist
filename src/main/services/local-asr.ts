@@ -49,7 +49,7 @@ async function startWorker(model: AsrModelSpec): Promise<boolean> {
       if (worker !== started || typeof message.id !== 'string') return
       transcriptions.complete(message.id, message.type === 'result'
         ? { text: String(message.text ?? '').trim() }
-        : { error: new Error(typeof message.error === 'string' && message.error ? message.error : 'MLX ASR inference failed') })
+        : { error: new Error(typeof message.error === 'string' && message.error ? message.error : 'the speech recognition worker failed') })
     },
     onFailure: (error) => {
       if (worker === started) stopWorker(error)
@@ -85,11 +85,11 @@ export async function available(model: AsrModelSpec): Promise<boolean> {
 
 export function stop(): void {
   stopWorker()
-  transcriptions.failAll(new DOMException('MLX ASR worker stopped', 'AbortError'))
+  transcriptions.failAll(new DOMException('the speech recognition worker stopped', 'AbortError'))
 }
 
 /** Fails only the requests bound to the old worker, leaving the ones that are still acquiring the next worker alone. */
-function stopWorker(error: Error = new DOMException('MLX ASR worker stopped', 'AbortError')): void {
+function stopWorker(error: Error = new DOMException('the speech recognition worker stopped', 'AbortError')): void {
   const stale = worker
   worker = null
   workerModel = null
@@ -167,7 +167,7 @@ export function prepare(
   prepareController = controller
   const operation = runtime.prepareModel({
     model,
-    feature: t('settingsModels.features.mlxAsr'),
+    feature: t('settingsModels.features.speechRecognition'),
     signal: controller.signal,
     onProgress,
     start: () => ensureServer(model)

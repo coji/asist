@@ -1,5 +1,5 @@
 import { ExternalLink } from 'lucide-react'
-import { useT } from '@/i18n'
+import { useFormatLocale, useT } from '@/i18n'
 import { asrRecommendationReason } from '../asr-recommendation'
 import { progressLabel } from '../progress-label'
 import type { ReactNode } from 'react'
@@ -205,6 +205,7 @@ export function ListeningStep({
   onCancelLocal: () => void
 }): React.JSX.Element {
   const t = useT()
+  const formatLocale = useFormatLocale()
   const asr = setup?.asr ?? null
   const serverReady = setup?.services.asr === true
   const serverChip = serverReady
@@ -225,7 +226,7 @@ export function ListeningStep({
         <Option
           active={choice === 'server'}
           title={t('setup.listening.recommended', { model: asr?.label ?? t('setup.listening.unknownModel') })}
-          detail={asr ? asrRecommendationReason(t, asr) : t('setup.listening.unknownReason')}
+          detail={asr ? asrRecommendationReason(t, speechRuntime.kind, asr) : t(`setup.listening.unknownReason.${speechRuntime.kind}`)}
           chip={serverChip}
           onClick={() => onChoice('server')}
         >
@@ -244,14 +245,18 @@ export function ListeningStep({
                 <Btn tone="primary" onClick={onPrepareServer}>
                   {asr?.runtimeInstalled && asr.modelInstalled ? t('setup.listening.startModel') : t('setup.listening.prepareModel')}
                 </Btn>
-                <span className="su-hint">{t('setup.listening.downloadNote')}</span>
+                {asr && asr.downloadGb > 0 && (
+                  <span className="su-hint">
+                    {t('setup.listening.downloadNote', { sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(asr.downloadGb) })}
+                  </span>
+                )}
               </div>
             ))}
           {downloadMessage && <p className="su-hint">{downloadMessage}</p>}
           <Advanced title={t('setup.listening.details.title')} note={t('setup.listening.details.note')}>
             <div className="su-details">
               <select className="st-select" value={asrModel} disabled={downloadBusy} onChange={(event) => onAsrModel(event.target.value as AsrModel)}>
-                <option value="auto">{t('setup.listening.automaticModel')}</option>
+                <option value="auto">{t(`setup.listening.automaticModel.${speechRuntime.kind}`)}</option>
                 {asrModelChoices(speechRuntime.kind, asrModel).map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}
@@ -260,7 +265,7 @@ export function ListeningStep({
               </select>
               <dl>
                 <div>
-                  <dt>{t('setup.listening.details.memory')}</dt>
+                  <dt>{t(`setup.listening.details.memory.${speechRuntime.kind}`)}</dt>
                   <dd>{asr?.totalMemoryGb ?? '—'} GB</dd>
                 </div>
                 <div>

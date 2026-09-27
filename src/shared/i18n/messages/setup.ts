@@ -1153,19 +1153,6 @@ export const setup = defineMessages({
       'es-419': 'Reconocimiento de voz adecuado para esta computadora',
       'es-ES': 'Reconocimiento de voz adecuado a este ordenador'
     },
-    unknownReason: {
-      'ja-JP': '搭載メモリを見て、合うモデルを選びます。',
-      'en-US': 'The model is chosen to fit the installed memory.',
-      'fr-FR': 'Le modèle est choisi en fonction de la mémoire installée.',
-      'de-DE': 'Das Modell wird nach dem eingebauten Speicher gewählt.',
-      'hi-IN': 'लगी हुई मेमोरी देखकर उसके हिसाब का मॉडल चुना जाता है।',
-      'id-ID': 'Modelnya dipilih sesuai memori yang terpasang.',
-      'it-IT': 'Il modello viene scelto in base alla memoria installata.',
-      'ko-KR': '설치된 메모리를 보고 맞는 모델을 선택합니다.',
-      'pt-BR': 'O modelo é escolhido conforme a memória instalada.',
-      'es-419': 'El modelo se elige según la memoria instalada.',
-      'es-ES': 'El modelo se elige según la memoria instalada.'
-    },
     prepareModel: {
       'ja-JP': 'モデルを準備する',
       'en-US': 'Prepare the model',
@@ -1193,30 +1180,17 @@ export const setup = defineMessages({
       'es-ES': 'Iniciar el modelo'
     },
     downloadNote: {
-      'ja-JP': '初回は 2GB ほどを取得します。数分かかります。',
-      'en-US': 'The first run downloads about 2 GB, which takes a few minutes.',
-      'fr-FR': 'Le premier lancement télécharge environ 2 Go, ce qui prend quelques minutes.',
-      'de-DE': 'Beim ersten Mal werden rund 2 GB geladen, das dauert einige Minuten.',
-      'hi-IN': 'पहली बार करीब 2 GB डाउनलोड होता है, जिसमें कुछ मिनट लगते हैं।',
-      'id-ID': 'Jalan pertama mengunduh sekitar 2 GB, yang makan beberapa menit.',
-      'it-IT': 'Al primo avvio scarica circa 2 GB e ci vogliono alcuni minuti.',
-      'ko-KR': '처음에는 2GB 정도를 내려받습니다. 몇 분 걸립니다.',
-      'pt-BR': 'Na primeira vez, baixa cerca de 2 GB, o que leva alguns minutos.',
-      'es-419': 'La primera vez descarga unos 2 GB, lo que tarda algunos minutos.',
-      'es-ES': 'La primera vez se descargan unos 2 GB, lo que tarda unos minutos.'
-    },
-    automaticModel: {
-      'ja-JP': '自動(搭載メモリに合わせる)',
-      'en-US': 'Automatic (by installed memory)',
-      'fr-FR': 'Automatique (selon la mémoire installée)',
-      'de-DE': 'Automatisch (nach eingebautem Speicher)',
-      'hi-IN': 'अपने आप (लगी हुई मेमोरी के हिसाब से)',
-      'id-ID': 'Otomatis (menyesuaikan memori terpasang)',
-      'it-IT': 'Automatico (in base alla memoria installata)',
-      'ko-KR': '자동(설치된 메모리에 맞춤)',
-      'pt-BR': 'Automático (conforme a memória instalada)',
-      'es-419': 'Automático (según la memoria instalada)',
-      'es-ES': 'Automático (según la memoria instalada)'
+      'ja-JP': '約 {sizeGb}GB を取得します。',
+      'en-US': 'Downloads about {sizeGb} GB.',
+      'fr-FR': 'Télécharge environ {sizeGb} Go.',
+      'de-DE': 'Lädt rund {sizeGb} GB herunter.',
+      'hi-IN': 'करीब {sizeGb} GB डाउनलोड होगा।',
+      'id-ID': 'Mengunduh sekitar {sizeGb} GB.',
+      'it-IT': 'Scarica circa {sizeGb} GB.',
+      'ko-KR': '약 {sizeGb}GB를 내려받습니다.',
+      'pt-BR': 'Baixa cerca de {sizeGb} GB.',
+      'es-419': 'Descarga unos {sizeGb} GB.',
+      'es-ES': 'Se descargan unos {sizeGb} GB.'
     },
     details: {
       title: {
@@ -1244,19 +1218,6 @@ export const setup = defineMessages({
         'pt-BR': 'Escolha o modelo e veja o que está preparado',
         'es-419': 'Elige el modelo y mira qué está preparado',
         'es-ES': 'Elige el modelo y mira qué está preparado'
-      },
-      memory: {
-        'ja-JP': '搭載メモリ',
-        'en-US': 'Installed memory',
-        'fr-FR': 'Mémoire installée',
-        'de-DE': 'Eingebauter Speicher',
-        'hi-IN': 'लगी हुई मेमोरी',
-        'id-ID': 'Memori terpasang',
-        'it-IT': 'Memoria installata',
-        'ko-KR': '설치된 메모리',
-        'pt-BR': 'Memória instalada',
-        'es-419': 'Memoria instalada',
-        'es-ES': 'Memoria instalada'
       },
       runtime: {
         'ja-JP': '実行環境',
@@ -1335,6 +1296,34 @@ export const setup = defineMessages({
         'pt-BR': 'Não baixados',
         'es-419': 'Sin descargar',
         'es-ES': 'Sin descargar'
+      },
+      memory: {
+        mlx: {
+          'ja-JP': '搭載メモリ',
+          'en-US': 'Installed memory',
+          'fr-FR': 'Mémoire installée',
+          'de-DE': 'Eingebauter Speicher',
+          'hi-IN': 'लगी हुई मेमोरी',
+          'id-ID': 'Memori terpasang',
+          'it-IT': 'Memoria installata',
+          'ko-KR': '설치된 메모리',
+          'pt-BR': 'Memória instalada',
+          'es-419': 'Memoria instalada',
+          'es-ES': 'Memoria instalada'
+        },
+        cuda: {
+          'ja-JP': 'GPU のメモリ',
+          'en-US': 'GPU memory',
+          'fr-FR': 'Mémoire du GPU',
+          'de-DE': 'GPU-Speicher',
+          'hi-IN': 'GPU की मेमोरी',
+          'id-ID': 'Memori GPU',
+          'it-IT': 'Memoria della GPU',
+          'ko-KR': 'GPU 메모리',
+          'pt-BR': 'Memória da GPU',
+          'es-419': 'Memoria de la GPU',
+          'es-ES': 'Memoria de la GPU'
+        }
       }
     },
     local: {
@@ -1363,6 +1352,62 @@ export const setup = defineMessages({
         'pt-BR': 'Reconhece a fala sem um processo separado. Na primeira vez, baixa algumas centenas de MB. Não transcreve enquanto você ainda está falando.',
         'es-419': 'Reconoce el habla sin un proceso aparte. La primera vez descarga unos cientos de MB. No transcribe mientras todavía hablas.',
         'es-ES': 'Reconoce el habla sin un proceso aparte. La primera vez se descargan unos cientos de MB. No transcribe mientras todavía hablas.'
+      }
+    },
+    automaticModel: {
+      mlx: {
+        'ja-JP': '自動(搭載メモリに合わせる)',
+        'en-US': 'Automatic (by installed memory)',
+        'fr-FR': 'Automatique (selon la mémoire installée)',
+        'de-DE': 'Automatisch (nach eingebautem Speicher)',
+        'hi-IN': 'अपने आप (लगी हुई मेमोरी के हिसाब से)',
+        'id-ID': 'Otomatis (menyesuaikan memori terpasang)',
+        'it-IT': 'Automatico (in base alla memoria installata)',
+        'ko-KR': '자동(설치된 메모리에 맞춤)',
+        'pt-BR': 'Automático (conforme a memória instalada)',
+        'es-419': 'Automático (según la memoria instalada)',
+        'es-ES': 'Automático (según la memoria instalada)'
+      },
+      cuda: {
+        'ja-JP': '自動(GPU のメモリに合わせる)',
+        'en-US': 'Automatic (by GPU memory)',
+        'fr-FR': 'Automatique (selon la mémoire du GPU)',
+        'de-DE': 'Automatisch (nach GPU-Speicher)',
+        'hi-IN': 'अपने आप (GPU की मेमोरी के हिसाब से)',
+        'id-ID': 'Otomatis (menyesuaikan memori GPU)',
+        'it-IT': 'Automatico (in base alla memoria della GPU)',
+        'ko-KR': '자동(GPU 메모리에 맞춤)',
+        'pt-BR': 'Automático (conforme a memória da GPU)',
+        'es-419': 'Automático (según la memoria de la GPU)',
+        'es-ES': 'Automático (según la memoria de la GPU)'
+      }
+    },
+    unknownReason: {
+      mlx: {
+        'ja-JP': '搭載メモリを見て、合うモデルを選びます。',
+        'en-US': 'The model is chosen to fit the installed memory.',
+        'fr-FR': 'Le modèle est choisi en fonction de la mémoire installée.',
+        'de-DE': 'Das Modell wird nach dem eingebauten Speicher gewählt.',
+        'hi-IN': 'लगी हुई मेमोरी देखकर उसके हिसाब का मॉडल चुना जाता है।',
+        'id-ID': 'Modelnya dipilih sesuai memori yang terpasang.',
+        'it-IT': 'Il modello viene scelto in base alla memoria installata.',
+        'ko-KR': '설치된 메모리를 보고 맞는 모델을 선택합니다.',
+        'pt-BR': 'O modelo é escolhido conforme a memória instalada.',
+        'es-419': 'El modelo se elige según la memoria instalada.',
+        'es-ES': 'El modelo se elige según la memoria instalada.'
+      },
+      cuda: {
+        'ja-JP': 'GPU のメモリを見て、合うモデルを選びます。',
+        'en-US': 'The model is chosen to fit the GPU memory.',
+        'fr-FR': 'Le modèle est choisi en fonction de la mémoire du GPU.',
+        'de-DE': 'Das Modell wird nach dem GPU-Speicher gewählt.',
+        'hi-IN': 'GPU की मेमोरी देखकर उसके हिसाब का मॉडल चुना जाता है।',
+        'id-ID': 'Modelnya dipilih sesuai memori GPU.',
+        'it-IT': 'Il modello viene scelto in base alla memoria della GPU.',
+        'ko-KR': 'GPU 메모리를 보고 맞는 모델을 선택합니다.',
+        'pt-BR': 'O modelo é escolhido conforme a memória da GPU.',
+        'es-419': 'El modelo se elige según la memoria de la GPU.',
+        'es-ES': 'El modelo se elige según la memoria de la GPU.'
       }
     }
   },

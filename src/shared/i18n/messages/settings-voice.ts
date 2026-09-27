@@ -416,19 +416,6 @@ export const settingsVoice = defineMessages({
       'es-419': 'Verificando esta computadora.',
       'es-ES': 'Comprobando este ordenador.'
     },
-    automatic: {
-      'ja-JP': '自動(搭載メモリに合わせる)',
-      'en-US': 'Automatic (by installed memory)',
-      'fr-FR': 'Automatique (selon la mémoire installée)',
-      'de-DE': 'Automatisch (nach eingebautem Speicher)',
-      'hi-IN': 'अपने आप (लगी हुई मेमोरी के हिसाब से)',
-      'id-ID': 'Otomatis (menyesuaikan memori terpasang)',
-      'it-IT': 'Automatico (in base alla memoria installata)',
-      'ko-KR': '자동(설치된 메모리에 맞춤)',
-      'pt-BR': 'Automático (conforme a memória instalada)',
-      'es-419': 'Automático (según la memoria instalada)',
-      'es-ES': 'Automático (según la memoria instalada)'
-    },
     changeFailed: {
       'ja-JP': 'モデルを変更できませんでした',
       'en-US': "Couldn't change the model",
@@ -506,6 +493,34 @@ export const settingsVoice = defineMessages({
       'pt-BR': 'Depois de preparado, ele assume quando o reconhecimento de fala deste computador para.',
       'es-419': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de esta computadora se detiene.',
       'es-ES': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de este ordenador se detiene.'
+    },
+    automatic: {
+      mlx: {
+        'ja-JP': '自動(搭載メモリに合わせる)',
+        'en-US': 'Automatic (by installed memory)',
+        'fr-FR': 'Automatique (selon la mémoire installée)',
+        'de-DE': 'Automatisch (nach eingebautem Speicher)',
+        'hi-IN': 'अपने आप (लगी हुई मेमोरी के हिसाब से)',
+        'id-ID': 'Otomatis (menyesuaikan memori terpasang)',
+        'it-IT': 'Automatico (in base alla memoria installata)',
+        'ko-KR': '자동(설치된 메모리에 맞춤)',
+        'pt-BR': 'Automático (conforme a memória instalada)',
+        'es-419': 'Automático (según la memoria instalada)',
+        'es-ES': 'Automático (según la memoria instalada)'
+      },
+      cuda: {
+        'ja-JP': '自動(GPU のメモリに合わせる)',
+        'en-US': 'Automatic (by GPU memory)',
+        'fr-FR': 'Automatique (selon la mémoire du GPU)',
+        'de-DE': 'Automatisch (nach GPU-Speicher)',
+        'hi-IN': 'अपने आप (GPU की मेमोरी के हिसाब से)',
+        'id-ID': 'Otomatis (menyesuaikan memori GPU)',
+        'it-IT': 'Automatico (in base alla memoria della GPU)',
+        'ko-KR': '자동(GPU 메모리에 맞춤)',
+        'pt-BR': 'Automático (conforme a memória da GPU)',
+        'es-419': 'Automático (según la memoria de la GPU)',
+        'es-ES': 'Automático (según la memoria de la GPU)'
+      }
     }
   },
   response: {

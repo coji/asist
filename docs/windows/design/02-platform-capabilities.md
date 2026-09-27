@@ -26,7 +26,7 @@ export interface PlatformCapabilities {
   /** null when this machine cannot run the local models; the reason is shown instead of the choice. */
   speechRuntime:
     | { kind: SpeechRuntime; memoryGb: number }
-    | { kind: null; reason: 'unsupported-os' | 'no-nvidia-gpu' | 'driver-too-old' | 'gpu-too-old' }
+    | { kind: null; reason: 'no-nvidia-gpu' | 'driver-too-old' | 'gpu-too-old' }
   /** The echo-cancelling native microphone helper (macOS voice processing). */
   nativeMic: boolean
   calendar: boolean
@@ -40,7 +40,10 @@ export interface PlatformCapabilities {
 - renderer へは、新しい IPC の `GetPlatformCapabilities` で渡します。`SetupStatus` に足さないのは、次の理由からです。
   - セットアップ以外の画面(設定、カード、ツールの一覧)も同じ値を使います。
   - 値が起動中に変わりません。
-- **`memoryGb` の中身。** MLX では Mac の総メモリー、CUDA では GPU の VRAM です。モデルの推奨(いまの `recommendAsrModel(os.totalmem())` と `recommendQwenTts(...)`)はこの値から決めます。
+- **`memoryGb` の中身。** MLX では Mac の総メモリー、CUDA では GPU の VRAM です。モデルの推奨(`recommendAsrModel` と `recommendQwenTts`)はこの値から決めます。
+  - 2つの実行環境で同じ名前の1つの値にしたのは、どちらも「モデルを載せるメモリー」で、推奨も画面の「8GB · モデル名」も同じ読み方をするからです。名前を分けると、値を読むところがどこも実行環境で分岐することになります。何のメモリーかを言う文(「搭載メモリ」と「GPU のメモリ」、推奨の理由)は、`kind` から選びます。
+- **Windows で決まる値(M5-6 で作りました)。** Windows では、起動時に `gpu.ts` が nvidia-smi を1回起動し、その結果で `speechRuntime` が `{ kind: 'cuda', memoryGb }` か、理由の付いた `{ kind: null }` になります。macOS では nvidia-smi を起動しません。
+  - 最初に置いた `unsupported-os` の理由は無くしました。macOS は常に `mlx` になり、Windows は GPU で決まり、それ以外の OS と CPU では起動を止めるので、この理由を使う場面が残らないためです。
 
 ## 使う側
 
@@ -48,7 +51,7 @@ export interface PlatformCapabilities {
 |---|---|---|
 | `brain/tools.ts:261` のカレンダーのツール、`brain/mini-app-tools.ts` の calendar | `calendar` | 登録しない |
 | `panels/registry.tsx` のカレンダーのカード、`CalendarSettings`、セットアップと設定の要約、`prompt.ts:190-199` の朝の要約 | `calendar` | 出さない。プロンプトは「カレンダーは未接続」のときと同じにする |
-| セットアップの聞き取りの手順、設定のモデル(`ModelsPage`) | `speechRuntime` | CUDA の Qwen3-ASR を出す。GPU が無いマシンでは理由を出し、ブラウザの中の Whisper だけを選べる |
+| セットアップの聞き取りの手順、設定のモデル(`ModelsPage`) | `speechRuntime` | CUDA の Qwen3-ASR を出す。GPU が無いマシンでは理由を出し、ブラウザの中の Whisper だけを選べる(M5-6 で作りました) |
 | TTS の選択肢の Qwen3-TTS | `speechRuntime` | 第2段階までは出さない(CUDA の Qwen3-TTS を作ったら出す) |
 | 設定の「声」のエコーキャンセル | `nativeMic` | 出さない |
 | 設定のショートカットの行と文言 | `hotkey` | Windows のショートカットと、その表記を出す |
