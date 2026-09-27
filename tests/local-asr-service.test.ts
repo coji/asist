@@ -32,14 +32,14 @@ function fakeChild() {
   return child
 }
 let children: ReturnType<typeof fakeChild>[] = []
-type Mlx = typeof import('../src/main/services/mlx-asr')
-let mlx: Mlx
+type LocalAsr = typeof import('../src/main/services/local-asr')
+let asr: LocalAsr
 beforeEach(async () => {
   vi.resetModules()
   vi.useFakeTimers()
   vi.stubEnv('ASIST_MLX_PYTHON', '/unused/python')
   mocks.systemLanguages = ['ja-JP']
-  mocks.directory = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-mlx-service-'))
+  mocks.directory = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-local-asr-'))
   // Only the presence of the worker and the model is faked; the WAV files are really written to and removed from a temporary directory.
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
   children = []
@@ -48,10 +48,10 @@ beforeEach(async () => {
     children.push(child)
     return child
   })
-  mlx = await import('../src/main/services/mlx-asr')
+  asr = await import('../src/main/services/local-asr')
 })
 afterEach(() => {
-  mlx.stop()
+  asr.stop()
   vi.clearAllTimers()
   vi.useRealTimers()
   vi.restoreAllMocks()
@@ -63,7 +63,7 @@ afterEach(() => {
 })
 
 async function ready(model: typeof MODEL | typeof OTHER_MODEL = MODEL) {
-  const starting = mlx.ensureServer(model)
+  const starting = asr.ensureServer(model)
   const child = children.at(-1)!
   child.stdout.write('ASIST_JSON:{"type":"ready"}\n')
   await vi.advanceTimersByTimeAsync(100)
@@ -82,15 +82,15 @@ function wavFiles(): string[] {
   }
 }
 
-describe('MLX transcription lifecycle', () => {
+describe('local transcription lifecycle', () => {
   it('starts the worker with Python in UTF-8 mode, so that the transcript it prints is UTF-8 on Windows too', async () => {
     await ready()
     expect(mocks.spawn.mock.calls.at(-1)![2].env).toMatchObject({ PYTHONUTF8: '1' })
   })
 
   it('accepts cancellation while the worker is loading without dispatching the request', async () => {
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'loading'))
-    expect(mlx.cancelTranscription('loading')).toBe(true)
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'loading'))
+    expect(asr.cancelTranscription('loading')).toBe(true)
     expect((await response).error?.name).toBe('AbortError')
     children[0].stdout.write('ASIST_JSON:{"type":"ready"}\n')
     await vi.advanceTimersByTimeAsync(100)
@@ -106,9 +106,9 @@ describe('MLX transcription lifecycle', () => {
       await held.promise
       return (original as (...values: unknown[]) => Promise<unknown>)(...args)
     }) as never)
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), stage))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), stage))
     await vi.waitFor(() => expect(operation).toHaveBeenCalledOnce())
-    expect(mlx.cancelTranscription(stage)).toBe(true)
+    expect(asr.cancelTranscription(stage)).toBe(true)
     expect((await response).error?.name).toBe('AbortError')
     held.resolve()
     await operation.mock.results[0].value
@@ -125,9 +125,9 @@ describe('MLX transcription lifecycle', () => {
       await held.promise
       return writeFile(...args)
     })
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'old'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'old'))
     await vi.waitFor(() => expect(writing).toHaveBeenCalledOnce())
-    if (action === 'restart') mlx.stop()
+    if (action === 'restart') asr.stop()
     const replacement = await ready(action === 'switch' ? OTHER_MODEL : MODEL)
     held.resolve()
     await writing.mock.results[0].value
@@ -140,13 +140,13 @@ describe('MLX transcription lifecycle', () => {
   })
 
   it('ignores readiness and fatal messages from a replaced worker', async () => {
-    const oldStart = mlx.ensureServer(MODEL)
+    const oldStart = asr.ensureServer(MODEL)
     const oldChild = children[0]
-    mlx.stop()
-    const nextStart = mlx.ensureServer(MODEL)
+    asr.stop()
+    const nextStart = asr.ensureServer(MODEL)
     const nextChild = children[1]
     oldChild.stdout.write('ASIST_JSON:{"type":"ready"}\n')
-    expect(await mlx.available(MODEL)).toBe(false)
+    expect(await asr.available(MODEL)).toBe(false)
     oldChild.stdout.write('ASIST_JSON:{"type":"fatal","error":"old failure"}\n')
     nextChild.stdout.write('ASIST_JSON:{"type":"ready"}\n')
     await vi.advanceTimersByTimeAsync(100)
@@ -157,7 +157,7 @@ describe('MLX transcription lifecycle', () => {
 
   it('returns successful output and removes its WAV after the worker result', async () => {
     const child = await ready()
-    const response = mlx.transcribe(MODEL, new Float32Array([0.2, -0.2]), 'complete')
+    const response = asr.transcribe(MODEL, new Float32Array([0.2, -0.2]), 'complete')
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
     const request = JSON.parse(child.input[0]) as { id: string; wavPath: string; language: string }
     expect(fs.readFileSync(request.wavPath).toString('ascii', 0, 4)).toBe('RIFF')
@@ -170,33 +170,33 @@ describe('MLX transcription lifecycle', () => {
   it('sends the conversation language in the form each model takes', async () => {
     mocks.systemLanguages = ['de-DE']
     const qwen = await ready(MODEL)
-    const german = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'qwen-de'))
+    const german = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'qwen-de'))
     await vi.waitFor(() => expect(qwen.input).toHaveLength(1))
     expect(JSON.parse(qwen.input[0]).language).toBe('German')
 
     const whisper = await ready(OTHER_MODEL)
-    const second = observe(mlx.transcribe(OTHER_MODEL, new Float32Array([0.2]), 'whisper-de'))
+    const second = observe(asr.transcribe(OTHER_MODEL, new Float32Array([0.2]), 'whisper-de'))
     await vi.waitFor(() => expect(whisper.input).toHaveLength(1))
     expect(JSON.parse(whisper.input[0]).language).toBe('de')
-    mlx.stop()
+    asr.stop()
     expect((await german).error?.name).toBe('AbortError')
     expect((await second).error?.name).toBe('AbortError')
   })
 
   it('stops sent inference on cancellation and releases its file', async () => {
     const child = await ready()
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'sent'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'sent'))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
-    expect(mlx.cancelTranscription('sent')).toBe(true)
+    expect(asr.cancelTranscription('sent')).toBe(true)
     expect((await response).error?.name).toBe('AbortError')
     expect(child.kill).toHaveBeenCalledWith('SIGTERM')
     await vi.waitFor(() => expect(wavFiles()).toEqual([]))
-    expect(mlx.cancelTranscription('sent')).toBe(false)
+    expect(asr.cancelTranscription('sent')).toBe(false)
   })
 
   it('times out sent inference and can start a new worker afterward', async () => {
     const child = await ready()
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'timeout'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'timeout'))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
     await vi.advanceTimersByTimeAsync(60_000)
     expect((await response).error?.name).toBe('TimeoutError')
@@ -207,9 +207,9 @@ describe('MLX transcription lifecycle', () => {
 
   it('keeps the worker and the final transcription queued behind a partial that runs past its wait', async () => {
     const child = await ready()
-    const partial = mlx.transcribePartial(MODEL, new Float32Array(16_000 * 5))
+    const partial = asr.transcribePartial(MODEL, new Float32Array(16_000 * 5))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
-    const final = observe(mlx.transcribe(MODEL, new Float32Array(16_000 * 8), 'final'))
+    const final = observe(asr.transcribe(MODEL, new Float32Array(16_000 * 8), 'final'))
     await vi.waitFor(() => expect(child.input).toHaveLength(2))
     await vi.advanceTimersByTimeAsync(4_000)
     expect(await partial).toBe('')
@@ -224,16 +224,16 @@ describe('MLX transcription lifecycle', () => {
 
   it('sends no further partial while the worker still computes one its caller stopped waiting for', async () => {
     const child = await ready()
-    const first = mlx.transcribePartial(MODEL, new Float32Array([0.2]))
+    const first = asr.transcribePartial(MODEL, new Float32Array([0.2]))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
     await vi.advanceTimersByTimeAsync(4_000)
     expect(await first).toBe('')
-    expect(await mlx.transcribePartial(MODEL, new Float32Array([0.2]))).toBe('')
+    expect(await asr.transcribePartial(MODEL, new Float32Array([0.2]))).toBe('')
     expect(child.input).toHaveLength(1)
 
     child.stdout.write(`ASIST_JSON:${JSON.stringify({ type: 'result', id: JSON.parse(child.input[0]).id, text: '遅れた' })}\n`)
     await vi.advanceTimersByTimeAsync(10)
-    const next = mlx.transcribePartial(MODEL, new Float32Array([0.2]))
+    const next = asr.transcribePartial(MODEL, new Float32Array([0.2]))
     await vi.waitFor(() => expect(child.input).toHaveLength(2))
     child.stdout.write(`ASIST_JSON:${JSON.stringify({ type: 'result', id: JSON.parse(child.input[1]).id, text: '次の途中' })}\n`)
     expect(await next).toBe('次の途中')
@@ -241,9 +241,9 @@ describe('MLX transcription lifecycle', () => {
 
   it('reports unavailable installation without leaving a cancellable request', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false)
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'unavailable'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'unavailable'))
     expect((await response).error?.message).toBe(errorText('speechRecognition.errors.mlxNotReady'))
-    expect(mlx.cancelTranscription('unavailable')).toBe(false)
+    expect(asr.cancelTranscription('unavailable')).toBe(false)
     expect(wavFiles()).toEqual([])
   })
 
@@ -251,13 +251,13 @@ describe('MLX transcription lifecycle', () => {
     const folder = path.join(mocks.directory, 'asr-temp')
     fs.mkdirSync(folder, { recursive: true })
     fs.writeFileSync(path.join(folder, 'left-by-a-crash.wav'), 'RIFF')
-    mlx.clearTemporaryAudio()
+    asr.clearTemporaryAudio()
     expect(wavFiles()).toEqual([])
 
     const child = await ready()
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'in-use'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'in-use'))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
-    expect(() => mlx.clearTemporaryAudio()).toThrow()
+    expect(() => asr.clearTemporaryAudio()).toThrow()
     expect(wavFiles()).toHaveLength(1)
     child.stdout.write('ASIST_JSON:{"type":"result","id":"in-use","text":"残っています"}\n')
     expect((await response).text).toBe('残っています')
@@ -265,7 +265,7 @@ describe('MLX transcription lifecycle', () => {
 
   it('fails the requests of a worker whose input pipe breaks, and stops it without an uncaught error', async () => {
     const child = await ready()
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'broken-pipe'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'broken-pipe'))
     await vi.waitFor(() => expect(child.input).toHaveLength(1))
     const uncaught: Error[] = []
     const onUncaught = (error: Error): void => { uncaught.push(error) }
@@ -278,15 +278,15 @@ describe('MLX transcription lifecycle', () => {
     }
     expect(uncaught).toEqual([])
     expect(child.kill).toHaveBeenCalled()
-    expect(await mlx.available(MODEL)).toBe(false)
+    expect(await asr.available(MODEL)).toBe(false)
   })
 })
 
-describe('starting the MLX worker from a preparation and from elsewhere at once', () => {
+describe('starting the ASR worker from a preparation and from elsewhere at once', () => {
   it('lets a start from the watchdog wait for the worker a preparation is loading', async () => {
-    const preparing = mlx.prepare(MODEL, () => {})
+    const preparing = asr.prepare(MODEL, () => {})
     await vi.waitFor(() => expect(children).toHaveLength(1))
-    const revived = mlx.ensureServer(MODEL)
+    const revived = asr.ensureServer(MODEL)
     children[0].stdout.write('ASIST_JSON:{"type":"ready"}\n')
     expect(await revived).toBe(true)
     expect((await preparing).ok).toBe(true)
@@ -295,9 +295,9 @@ describe('starting the MLX worker from a preparation and from elsewhere at once'
   })
 
   it('lets a preparation wait for the worker a transcription is already loading', async () => {
-    const response = observe(mlx.transcribe(MODEL, new Float32Array([0.2]), 'while-loading'))
+    const response = observe(asr.transcribe(MODEL, new Float32Array([0.2]), 'while-loading'))
     expect(children).toHaveLength(1)
-    const preparing = mlx.prepare(MODEL, () => {})
+    const preparing = asr.prepare(MODEL, () => {})
     await vi.advanceTimersByTimeAsync(10)
     children[0].stdout.write('ASIST_JSON:{"type":"ready"}\n')
     expect((await preparing).ok).toBe(true)

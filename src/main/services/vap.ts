@@ -16,7 +16,7 @@ import { createEnvironment, environmentCurrent, installRequirements, recordEnvir
 /**
  * The lifecycle of the MaAI turn-taking worker, vap_worker.py.
  *
- * It is built like mlx-asr: uv creates a dedicated Python environment, the models are fetched at a
+ * It is built like local-asr: uv creates a dedicated Python environment, the models are fetched at a
  * pinned revision and verified by sha256, and audio is streamed to a worker that stays resident. The
  * worker takes 16 kHz stereo, with the user on channel 0 and the assistant's TTS on channel 1, and
  * returns, for every 80 ms frame, the probabilities of holding the turn, of an aizuchi being due, of the

@@ -4,9 +4,9 @@ import { app } from 'electron'
 import { QWEN_MLX_MODEL, WHISPER_MLX_MODEL, mlxAsrLanguage, type ResolvedAsrModel } from '@shared/asr-models'
 import type { SetupProgress } from '@shared/ipc'
 import { conversationLocale } from './conversation-locale'
-import { MlxTranscriptions } from './mlx-asr-transcriptions'
+import { Transcriptions } from './asr-transcriptions'
 import { t } from './i18n'
-import * as runtime from './mlx-runtime'
+import * as runtime from './speech-runtime'
 
 type MlxAsrModel = Extract<ResolvedAsrModel, `${string}-mlx`>
 
@@ -16,13 +16,13 @@ type MlxAsrModel = Extract<ResolvedAsrModel, `${string}-mlx`>
  */
 const PARTIAL_WAIT_MS = 4_000
 
-let worker: runtime.MlxWorker | null = null
+let worker: runtime.SpeechWorker | null = null
 let workerModel: MlxAsrModel | null = null
 let workerReady = false
 let ensureInFlight: Promise<boolean> | null = null
 let ensureModel: MlxAsrModel | null = null
 let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
-const transcriptions = new MlxTranscriptions(() => path.join(app.getPath('userData'), 'asr-temp'))
+const transcriptions = new Transcriptions(() => path.join(app.getPath('userData'), 'asr-temp'))
 
 /** Called once at startup, before the first transcription, to remove the recordings an earlier run left behind. */
 export function clearTemporaryAudio(): void {
@@ -48,9 +48,8 @@ async function startWorker(model: MlxAsrModel): Promise<boolean> {
   if (running(model)) return true
   stopWorker()
   const started = runtime.startWorker({
-    script: 'mlx_asr_worker.py',
+    worker: 'asr',
     model: specFor(model),
-    logName: 'mlx-asr',
     onMessage: (message) => {
       if (worker !== started || typeof message.id !== 'string') return
       transcriptions.complete(message.id, message.type === 'result'

@@ -84,9 +84,8 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 ### 実行環境(`speech-runtime.ts`)
 
 - **環境を作る場所と中身。**
-  - いまの `mlx-runtime.ts` は、`userData/mlx-audio-runtime` に環境を作ります。
-  - その環境で、ASR の worker と Qwen3-TTS の worker を動かします。
-  - これを、実行環境の値を受け取る形にします。
+  - `speech-runtime.ts` は、capabilities が示す実行環境の値を読み、その環境を作って worker を動かします。
+  - macOS では `userData/mlx-audio-runtime` に環境を作り、その環境で ASR の worker と Qwen3-TTS の worker を動かします。
 
   | | `mlx` | `cuda` |
   |---|---|---|
@@ -101,9 +100,10 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
   - Windows の huggingface_hub は、シンボリックリンクを作れないとき、`snapshots` にファイルを写します。そのため、この判定は動きます。
   - ダウンロードの進み具合の数え方は、M5-6 で確かめます。
 - **モデルの置き場所。**
-  - `mlx-runtime.ts:51` は、モデルの置き場所を `~/.cache/huggingface/hub` と決め打ちしています。
-  - Windows の huggingface_hub の既定も `%USERPROFILE%\.cache\huggingface\hub` なので、同じ組み立てで合います。
-  - それでも、`HF_HOME` を worker に渡して場所を決めるほうが確実です。どちらにするかは M5-1 で決めます。
+  - main が `~/.cache/huggingface/hub` に決め、ダウンロードと worker の Python に `HF_HUB_CACHE` で渡します(M5-1)。
+  - この場所は huggingface_hub の既定と同じです。Windows の既定も `%USERPROFILE%\.cache\huggingface\hub` なので、同じ組み立てで合います。
+  - 渡す理由は、ASIST を起動した環境に `HF_HOME` や `HF_HUB_CACHE` があると、Python がそちらにダウンロードし、main が見に行く場所と食い違うためです。
+  - `HF_HOME` は渡しません。渡すと、`hf auth login` で保存したトークンの場所まで変わるためです。
 
 ### GPU を調べる(`gpu.ts`)
 

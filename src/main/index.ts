@@ -13,7 +13,7 @@ dns.setDefaultResultOrder('ipv4first')
 import { registerIpc } from './ipc'
 import { setupOsIntegration } from './os-integration'
 import * as asr from './services/asr'
-import { clearTemporaryAudio } from './services/mlx-asr'
+import { clearTemporaryAudio } from './services/local-asr'
 import * as tts from './services/tts'
 import * as aizuchi from './services/aizuchi'
 import * as aizuchiClassifier from './services/aizuchi-classifier'

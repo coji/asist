@@ -13,7 +13,7 @@ import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type SpeechRuntimeUnavailable } from '
 import { t } from './i18n'
 import { platformCapabilities } from './platform'
 import { getSettings } from './settings'
-import * as mlx from './mlx-asr'
+import * as local from './local-asr'
 
 type Resolution =
   | { model: ResolvedAsrModel; recommendation: AsrHardwareRecommendation }
@@ -44,39 +44,39 @@ export async function installationStatus(selected: AsrModel = getSettings().asrM
     recommendedModel: recommendation.recommendedModel,
     label: asrModelLabel(model),
     totalMemoryGb: recommendation.totalMemoryGb,
-    ...mlx.installationStatus(model),
-    ready: await mlx.available(model)
+    ...local.installationStatus(model),
+    ready: await local.available(model)
   }
 }
 
 export async function available(): Promise<boolean> {
   const { model } = resolve()
-  return model !== null && (await mlx.available(model))
+  return model !== null && (await local.available(model))
 }
 
 export async function ensureServer(): Promise<boolean> {
   const { model } = resolve()
-  return model !== null && (await mlx.ensureServer(model))
+  return model !== null && (await local.ensureServer(model))
 }
 
 export async function revive(): Promise<boolean> {
   const { model } = resolve()
   if (model === null) return false
-  return (await mlx.available(model)) || mlx.ensureServer(model)
+  return (await local.available(model)) || local.ensureServer(model)
 }
 
 export async function transcribe(samples: Float32Array, requestId?: string): Promise<string> {
-  return mlx.transcribe(modelOrThrow(), samples, requestId)
+  return local.transcribe(modelOrThrow(), samples, requestId)
 }
 
 export async function transcribePartial(samples: Float32Array): Promise<string> {
-  return mlx.transcribePartial(modelOrThrow(), samples)
+  return local.transcribePartial(modelOrThrow(), samples)
 }
 
-export const cancelTranscription = mlx.cancelTranscription
+export const cancelTranscription = local.cancelTranscription
 
 export function switchModel(): Promise<boolean> {
-  mlx.stop()
+  local.stop()
   return ensureServer()
 }
 
@@ -87,7 +87,7 @@ export async function prepareModel(
   if (!isAsrModel(selected)) return { ok: false, message: t('speechRecognition.errors.unknownModel') }
   const resolution = resolve(selected)
   if (resolution.model === null) return { ok: false, message: t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[resolution.reason]) }
-  return mlx.prepare(resolution.model, onProgress)
+  return local.prepare(resolution.model, onProgress)
 }
 
-export const cancelPreparation = mlx.cancelPreparation
+export const cancelPreparation = local.cancelPreparation

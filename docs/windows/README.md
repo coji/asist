@@ -79,7 +79,7 @@ Windows のセッションを始めるときは、まず [04-windows-dev-setup.m
   - 音声の worker は、JSON lines のやりとりに揃っています。
   - そのため、Windows の実装は「同じ口に別の中身を入れる」形で足せます。
 - **音声の実行環境がきれいに2つに分かれる。**
-  - MLX の実行環境(`mlx-runtime.ts`)の仕事のうち、MLX に固有なのは、動く条件、lock ファイル、worker のスクリプトだけです。
+  - 音声の実行環境(`speech-runtime.ts`、もとの `mlx-runtime.ts`)の仕事のうち、MLX に固有なのは、動く条件、lock ファイル、worker のスクリプトだけです。
   - CUDA の実行環境を足すと、同じ責務の実装が2つになります。AGENTS.md の条件どおりに共通化できます。
   - 聞き取りの worker は、Mac と同じやりとりをそのまま使えます。
 - **ビルドも Mac から確かめられる。**

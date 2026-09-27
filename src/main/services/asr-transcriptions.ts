@@ -5,7 +5,7 @@ import path from 'node:path'
 import { errorText } from '@shared/i18n/error-text'
 
 /** The worker one request uses. A worker that is replaced while the request is being prepared does not change where it is sent. */
-export interface MlxTranscriptionWorker {
+export interface TranscriptionWorker {
   child: ChildProcessWithoutNullStreams | null
   ready: Promise<boolean>
   isCurrent: () => boolean
@@ -25,15 +25,15 @@ interface Request {
   language: string
   resolve: (text: string) => void
   reject: (error: Error) => void
-  worker: MlxTranscriptionWorker | null
+  worker: TranscriptionWorker | null
   wavPath: string | null
   preparing: boolean
   sent: boolean
   timer: NodeJS.Timeout | null
 }
 
-/** Owns an MLX transcription from its arrival to its completion, including the temporary WAV the request writes. */
-export class MlxTranscriptions {
+/** Owns a local transcription from its arrival to its completion, including the temporary WAV the request writes. */
+export class Transcriptions {
   private readonly pending = new Map<string, Request>()
 
   constructor(private readonly directory: () => string) {}
@@ -56,7 +56,7 @@ export class MlxTranscriptions {
     samples: Float32Array,
     id: string,
     language: string,
-    acquireWorker: () => MlxTranscriptionWorker
+    acquireWorker: () => TranscriptionWorker
   ): Promise<string> {
     if (this.pending.has(id)) return Promise.reject(new Error(`duplicate transcription request: ${id}`))
     return new Promise<string>((resolve, reject) => {

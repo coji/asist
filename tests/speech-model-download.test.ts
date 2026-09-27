@@ -12,13 +12,13 @@ vi.mock('electron', () => ({
 }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ uiLocale: 'en-US' }) }))
 
-import { prepareModel, snapshotPath } from '../src/main/services/mlx-runtime'
+import { prepareModel, snapshotPath } from '../src/main/services/speech-runtime'
 
 const MODEL = { id: 'test-org/test-model', revision: 'abc123', label: 'Test Model', files: ['config.json', 'model.safetensors', 'tokenizer.json'] }
 
 /**
  * A stand-in for the environment's python. For hf_snapshot.py it prints the repository's size, writes
- * the weights into the cache in three steps like a download, links every file into the snapshot, and
+ * the weights into the cache HF_HUB_CACHE names, as huggingface_hub does, in three steps like a download, links every file into the snapshot, and
  * records its pid; for a worker script it reports ready. With FAKE_DOWNLOAD_HANG set the download never ends.
  * The pid file appears by a rename: a redirection creates the file before it writes, and a test that saw it
  * empty read pid 0, which names the test's own process group and never stops existing.
@@ -31,7 +31,7 @@ case "$1" in
   *hf_snapshot.py)
     echo $$ > "$FAKE_PID_FILE.tmp"
     mv "$FAKE_PID_FILE.tmp" "$FAKE_PID_FILE"
-    cache="$HOME/.cache/huggingface/hub/models--$(echo "$2" | sed 's#/#--#')"
+    cache="$HF_HUB_CACHE/models--$(echo "$2" | sed 's#/#--#')"
     mkdir -p "$cache/blobs" "$cache/snapshots/$3"
     echo 'ASIST_JSON:{"type":"total","bytes":3000000}'
     for step in 1 2 3; do
@@ -53,10 +53,15 @@ esac
 `
 
 let root = ''
-const saved = { HOME: process.env.HOME, ASIST_MLX_PYTHON: process.env.ASIST_MLX_PYTHON, FAKE_PID_FILE: process.env.FAKE_PID_FILE }
+const saved = {
+  HOME: process.env.HOME,
+  HF_HUB_CACHE: process.env.HF_HUB_CACHE,
+  ASIST_MLX_PYTHON: process.env.ASIST_MLX_PYTHON,
+  FAKE_PID_FILE: process.env.FAKE_PID_FILE
+}
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-mlx-download-'))
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-speech-download-'))
   mocks.userData = path.join(root, 'userData')
   const python = path.join(root, 'python')
   fs.writeFileSync(python, FAKE_PYTHON, { mode: 0o755 })
@@ -74,7 +79,7 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true })
 })
 
-describe.runIf(process.platform === 'darwin' && process.arch === 'arm64')('preparing an MLX model', { timeout: 20_000 }, () => {
+describe.runIf(process.platform === 'darwin' && process.arch === 'arm64')('preparing a speech model', { timeout: 20_000 }, () => {
   it('downloads the whole model before it starts the worker, and reports the bytes against the size', async () => {
     const progress: SetupProgress[] = []
     let installedWhenStarted = false
@@ -126,6 +131,18 @@ describe.runIf(process.platform === 'darwin' && process.arch === 'arm64')('prepa
     })
     expect(result.ok).toBe(true)
     expect(fs.existsSync(process.env.FAKE_PID_FILE!)).toBe(true)
+  })
+
+  it('downloads into the cache it looks in, whatever cache the app was started with', async () => {
+    process.env.HF_HUB_CACHE = path.join(root, 'elsewhere')
+    const result = await prepareModel({
+      model: MODEL,
+      feature: 'Test',
+      signal: new AbortController().signal,
+      onProgress: () => {},
+      start: async () => fs.existsSync(path.join(snapshotPath(MODEL), 'model.safetensors'))
+    })
+    expect(result.ok).toBe(true)
   })
 
   it('fails a download whose python cannot be started, and leaves nothing listening on the signal', async () => {

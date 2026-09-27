@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { QWEN_TTS_MODEL, type QwenTtsVoice } from '@shared/tts-models'
 import type { SetupProgress } from '@shared/ipc'
-import * as runtime from './mlx-runtime'
+import * as runtime from './speech-runtime'
 import { SpeechShaper, encodeWav } from './speech-shaper'
 
 /**
- * Speech synthesis with the pinned Qwen3-TTS model, which runs in a worker on the MLX runtime. The
+ * Speech synthesis with the pinned Qwen3-TTS model, which runs in a worker on the speech runtime. The
  * worker serves one request at a time in arrival order and returns the audio in pieces while the
  * sentence is still being generated, so a caller can start playback after the first piece.
  */
@@ -58,7 +58,7 @@ class PieceQueue {
   }
 }
 
-let worker: runtime.MlxWorker | null = null
+let worker: runtime.SpeechWorker | null = null
 let workerReady = false
 let starting: Promise<boolean> | null = null
 let silenceTimer: NodeJS.Timeout | null = null
@@ -111,9 +111,8 @@ function startWorker(): Promise<boolean> {
   if (starting) return starting
   stopWorker()
   const started = runtime.startWorker({
-    script: 'qwen_tts_worker.py',
+    worker: 'tts',
     model: QWEN_TTS_MODEL,
-    logName: 'qwen-tts',
     onMessage: (message) => {
       if (worker === started) handleMessage(message)
     },

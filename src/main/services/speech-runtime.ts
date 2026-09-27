@@ -7,6 +7,7 @@ import { app } from 'electron'
 import { MLX_AUDIO_VERSION } from '@shared/asr-models'
 import type { SetupProgress } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
+import type { SpeechRuntime } from '@shared/platform'
 import { errorMessage, t } from './i18n'
 import { pythonEnv } from './child-env'
 import { platformCapabilities } from './platform'
@@ -14,10 +15,11 @@ import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
 /**
- * The Python environment with mlx-audio that the MLX speech recognition and the Qwen3-TTS speech
- * synthesis share, and the JSON-lines workers that run in it. The environment is one uv-managed venv
- * under userData, installed from the pinned requirements file, and each service starts its own worker
- * script in it.
+ * The Python environment that the local speech recognition and the Qwen3-TTS speech synthesis share,
+ * and the JSON-lines workers that run in it. The environment is one uv-managed venv under userData,
+ * installed from the runtime's pinned requirements file, and each service starts its own worker script
+ * in it. Which runtime that is comes from the capabilities; what differs between runtimes is in
+ * `RUNTIMES`, and the rest of this module is the same for all of them.
  */
 
 /** A Hugging Face model pinned to one revision. */
@@ -29,27 +31,76 @@ export interface PinnedModel {
   files: readonly string[]
 }
 
+/** A worker script under resources, and the prefix of its stderr lines in the app log. */
+interface WorkerScript {
+  file: string
+  logName: string
+}
+
+/** What one speech runtime has of its own. */
+interface RuntimeSpec {
+  /** The folder of the environment under userData. */
+  directory: string
+  /** The pinned requirements file under resources that the environment is installed from. */
+  requirements: string
+  /** The environment is built again when either value differs from the one it was recorded with. */
+  stamp: { version: string; lockVersion: number }
+  /** The progress message while the environment is being built. */
+  preparing: () => string
+  /** The variable that names a Python to use in place of the environment's, for development and tests. */
+  pythonOverride: string
+  asr: WorkerScript
+  /** The Qwen3-TTS worker, on a runtime that has one. */
+  tts: WorkerScript | null
+}
+
+const RUNTIMES: Record<SpeechRuntime, RuntimeSpec> = {
+  mlx: {
+    directory: 'mlx-audio-runtime',
+    requirements: 'mlx-audio-requirements.txt',
+    stamp: { version: MLX_AUDIO_VERSION, lockVersion: 1 },
+    preparing: () => t('settingsModels.preparation.runtime', { version: MLX_AUDIO_VERSION }),
+    pythonOverride: 'ASIST_MLX_PYTHON',
+    asr: { file: 'mlx_asr_worker.py', logName: 'mlx-asr' },
+    tts: { file: 'qwen_tts_worker.py', logName: 'qwen-tts' }
+  }
+}
+
+/** The worker a service starts: the speech recognition or the Qwen3-TTS speech synthesis. */
+export type WorkerKind = 'asr' | 'tts'
+
 const PROTOCOL_PREFIX = 'ASIST_JSON:'
 const WORKER_READY_TIMEOUT_MS = 180_000
 const DOWNLOAD_PROGRESS_INTERVAL_MS = 500
-const RUNTIME_LOCK_VERSION = 1
-const STAMP = { version: MLX_AUDIO_VERSION, lockVersion: RUNTIME_LOCK_VERSION }
 
-export function supported(): boolean {
-  return platformCapabilities().speechRuntime.kind === 'mlx'
+/** The runtime the capabilities name for this machine, or null where the local speech models do not run. */
+function currentRuntime(): RuntimeSpec | null {
+  const { kind } = platformCapabilities().speechRuntime
+  return kind === null ? null : RUNTIMES[kind]
 }
 
-function runtimeDir(): string {
-  return path.join(app.getPath('userData'), 'mlx-audio-runtime')
+function runtimeDir(runtime: RuntimeSpec): string {
+  return path.join(app.getPath('userData'), runtime.directory)
 }
 
-function pythonPath(): string {
-  const configured = process.env.ASIST_MLX_PYTHON?.trim()
-  return configured || venvPython(runtimeDir())
+function pythonPath(runtime: RuntimeSpec): string {
+  const configured = process.env[runtime.pythonOverride]?.trim()
+  return configured || venvPython(runtimeDir(runtime))
+}
+
+/**
+ * The Hugging Face cache the models are downloaded into and loaded from, which is huggingface_hub's own
+ * default on macOS and on Windows. It is decided here and handed to every Python process as HF_HUB_CACHE,
+ * because an HF_HOME or HF_HUB_CACHE in the environment the app was started from would otherwise send a
+ * download to a folder this module never looks in. HF_HOME is left alone: it would also move the token
+ * that `hf auth login` saved.
+ */
+function modelCache(): string {
+  return path.join(homedir(), '.cache', 'huggingface', 'hub')
 }
 
 function repositoryCache(model: PinnedModel): string {
-  return path.join(homedir(), '.cache', 'huggingface', 'hub', `models--${model.id.replace('/', '--')}`)
+  return path.join(modelCache(), `models--${model.id.replace('/', '--')}`)
 }
 
 export function snapshotPath(model: PinnedModel): string {
@@ -67,13 +118,17 @@ export function modelInstalled(model: PinnedModel): boolean {
 }
 
 export function runtimeInstalled(): boolean {
-  if (!supported()) return false
-  if (!fs.existsSync(pythonPath())) return false
-  if (process.env.ASIST_MLX_PYTHON?.trim()) return true
-  return environmentCurrent(runtimeDir(), STAMP)
+  const runtime = currentRuntime()
+  return runtime !== null && installed(runtime)
 }
 
-const workers = new Set<MlxWorker>()
+function installed(runtime: RuntimeSpec): boolean {
+  if (!fs.existsSync(pythonPath(runtime))) return false
+  if (process.env[runtime.pythonOverride]?.trim()) return true
+  return environmentCurrent(runtimeDir(runtime), runtime.stamp)
+}
+
+const workers = new Set<SpeechWorker>()
 let quitHookRegistered = false
 
 function registerQuitHook(): void {
@@ -86,11 +141,8 @@ function registerQuitHook(): void {
 }
 
 export interface WorkerOptions {
-  /** The file name of the worker script under resources. */
-  script: string
+  worker: WorkerKind
   model: PinnedModel
-  /** The prefix of the worker's stderr lines in the app log. */
-  logName: string
   /** Every protocol message except `ready` and `fatal`. */
   onMessage: (message: Record<string, unknown>) => void
   /** The worker failed to load, crashed or exited on its own. It is not called after `stop()`. */
@@ -98,23 +150,27 @@ export interface WorkerOptions {
 }
 
 /** One running worker script. `ready` settles once: true on the worker's `ready` message, false when it fails or is stopped first. */
-export class MlxWorker {
+export class SpeechWorker {
   readonly ready: Promise<boolean>
   /** The fields of the `ready` message, available once `ready` resolved true. */
   info: Record<string, unknown> = {}
   private stopped = false
   private settleReady!: (ready: boolean) => void
 
-  constructor(readonly child: ChildProcessWithoutNullStreams, private readonly options: WorkerOptions) {
+  constructor(
+    readonly child: ChildProcessWithoutNullStreams,
+    private readonly logName: string,
+    private readonly options: WorkerOptions
+  ) {
     this.ready = new Promise<boolean>((resolve) => { this.settleReady = resolve })
-    const timeout = setTimeout(() => this.fail(new Error(`${options.logName} worker did not become ready`)), WORKER_READY_TIMEOUT_MS)
+    const timeout = setTimeout(() => this.fail(new Error(`${logName} worker did not become ready`)), WORKER_READY_TIMEOUT_MS)
     void this.ready.then(() => clearTimeout(timeout))
     readline.createInterface({ input: child.stdout }).on('line', (line) => this.handleLine(line))
     readline.createInterface({ input: child.stderr }).on('line', (line) => {
-      if (line.trim()) console.error(`${options.logName}: ${line}`)
+      if (line.trim()) console.error(`${logName}: ${line}`)
     })
     child.on('error', (error) => this.fail(error))
-    child.on('exit', (code) => this.fail(new Error(`${options.logName} worker exited (${code ?? 'signal'})`)))
+    child.on('exit', (code) => this.fail(new Error(`${logName} worker exited (${code ?? 'signal'})`)))
     // A write between the worker's death and its exit event fails with EPIPE, which becomes an uncaught
     // exception unless the stream has a listener.
     child.stdin.on('error', (error) => this.fail(error))
@@ -156,29 +212,37 @@ export class MlxWorker {
       this.info = message
       this.settleReady(true)
     } else if (message.type === 'fatal') {
-      this.fail(new Error(typeof message.error === 'string' && message.error ? message.error : `${this.options.logName} worker failed to load`))
+      this.fail(new Error(typeof message.error === 'string' && message.error ? message.error : `${this.logName} worker failed to load`))
     } else {
       this.options.onMessage(message)
     }
   }
 }
 
-/** Starts a worker on the downloaded snapshot, or returns null when the environment, the script or the model is missing. */
-export function startWorker(options: WorkerOptions): MlxWorker | null {
-  if (!runtimeInstalled()) return null
+/**
+ * Starts a worker on the downloaded snapshot, or returns null when the environment, the script or the
+ * model is missing. Asking for a worker the runtime does not have is a caller's mistake and throws: the
+ * capabilities leave such a feature out before it is started.
+ */
+export function startWorker(options: WorkerOptions): SpeechWorker | null {
+  const runtime = currentRuntime()
+  if (runtime === null || !installed(runtime)) return null
+  const worker = runtime[options.worker]
+  if (worker === null) throw new Error(`the speech runtime has no ${options.worker} worker`)
   if (!modelInstalled(options.model)) return null
-  const script = resourcePath(options.script)
+  const script = resourcePath(worker.file)
   if (!fs.existsSync(script)) return null
-  const child = spawn(pythonPath(), [script, snapshotPath(options.model), '-'], {
+  const child = spawn(pythonPath(runtime), [script, snapshotPath(options.model), '-'], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: pythonEnv({ HF_HUB_OFFLINE: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
+    env: pythonEnv({ HF_HUB_CACHE: modelCache(), HF_HUB_OFFLINE: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
     windowsHide: true
   })
-  const worker = new MlxWorker(child, options)
-  workers.add(worker)
+  const started = new SpeechWorker(child, worker.logName, options)
+  workers.add(started)
   registerQuitHook()
-  return worker
+  return started
 }
+
 
 /** The downloads running now, which quitting the app stops. */
 const downloads = new Set<ChildProcess>()
@@ -203,14 +267,14 @@ async function bytesWrittenSince(model: PinnedModel, since: number): Promise<num
  * written against the repository's size. hf-xet is turned off: it held the whole 2.5 GB file in memory and
  * wrote it only at the end (measured 2026-09-24), which leaves nothing to report while it runs.
  */
-function downloadModel(model: PinnedModel, signal: AbortSignal, onBytes: (done: number, total: number) => void): Promise<void> {
+function downloadModel(runtime: RuntimeSpec, model: PinnedModel, signal: AbortSignal, onBytes: (done: number, total: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const stopped = (): DOMException => new DOMException(errorText('settingsModels.preparation.stopped'), 'AbortError')
     if (signal.aborted) return reject(stopped())
     const started = Date.now()
-    const child = spawn(pythonPath(), [resourcePath('hf_snapshot.py'), model.id, model.revision], {
+    const child = spawn(pythonPath(runtime), [resourcePath('hf_snapshot.py'), model.id, model.revision], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: pythonEnv({ HF_HUB_DISABLE_XET: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
+      env: pythonEnv({ HF_HUB_CACHE: modelCache(), HF_HUB_DISABLE_XET: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }),
       windowsHide: true
     })
     downloads.add(child)
@@ -256,21 +320,21 @@ let installInFlight: Promise<void> | null = null
  * Creates the environment unless it is already installed. Two services preparing at once share one
  * installation, which the first caller's signal cancels.
  */
-export function installRuntime(signal: AbortSignal, onStart: (message: string) => void): Promise<void> {
-  if (runtimeInstalled()) return Promise.resolve()
-  onStart(t('settingsModels.preparation.runtime', { version: MLX_AUDIO_VERSION }))
+function installRuntime(runtime: RuntimeSpec, signal: AbortSignal, onStart: (message: string) => void): Promise<void> {
+  if (installed(runtime)) return Promise.resolve()
+  onStart(runtime.preparing())
   if (installInFlight) return installInFlight
-  const operation = install(signal).finally(() => {
+  const operation = install(runtime, signal).finally(() => {
     if (installInFlight === operation) installInFlight = null
   })
   installInFlight = operation
   return operation
 }
 
-async function install(signal: AbortSignal): Promise<void> {
-  await createEnvironment(runtimeDir(), signal)
-  await installRequirements(pythonPath(), 'mlx-audio-requirements.txt', signal)
-  await recordEnvironment(runtimeDir(), STAMP)
+async function install(runtime: RuntimeSpec, signal: AbortSignal): Promise<void> {
+  await createEnvironment(runtimeDir(runtime), signal)
+  await installRequirements(pythonPath(runtime), runtime.requirements, signal)
+  await recordEnvironment(runtimeDir(runtime), runtime.stamp)
 }
 
 export interface PrepareOptions {
@@ -291,13 +355,14 @@ export interface PrepareOptions {
 export async function prepareModel(options: PrepareOptions): Promise<{ ok: boolean; message: string }> {
   const { model, feature, signal, onProgress, start } = options
   const progress = (message: string): void => onProgress({ status: 'downloading', pct: 0, downloadedMb: 0, totalMb: 0, message })
-  if (!supported()) return { ok: false, message: t('settingsModels.preparation.unsupported', { feature }) }
+  const runtime = currentRuntime()
+  if (runtime === null) return { ok: false, message: t('settingsModels.preparation.unsupported', { feature }) }
   try {
-    await installRuntime(signal, progress)
+    await installRuntime(runtime, signal, progress)
     if (!modelInstalled(model)) {
       const message = t('settingsModels.preparation.downloading', { model: model.label })
       progress(message)
-      await downloadModel(model, signal, (done, total) => onProgress({
+      await downloadModel(runtime, model, signal, (done, total) => onProgress({
         status: 'downloading',
         pct: Math.min(99, Math.round((done / total) * 100)),
         downloadedMb: Math.round(done / 1e5) / 10,
