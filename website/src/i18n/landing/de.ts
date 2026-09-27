@@ -99,6 +99,7 @@ export const de: LandingText = {
     step3: 'Wählen Sie bei der ersten Einrichtung Sprache, Modell, Stimme und Mikrofon, und schon können Sie lossprechen.'
   },
   footer: {
+    privacy: 'Datenschutzerklärung',
     analytics: 'Diese Website verwendet Google Analytics, das Cookies setzt, um Besuche zu zählen.',
     analyticsLink: 'Wie Google Daten verwendet'
   }

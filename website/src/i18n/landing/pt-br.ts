@@ -99,6 +99,7 @@ export const ptBr: LandingText = {
     step3: 'Na configuração inicial, escolha o idioma, o modelo, a voz e o microfone, e comece a falar.'
   },
   footer: {
+    privacy: 'Política de Privacidade',
     analytics: 'Este site usa o Google Analytics, que define cookies, para contar as visitas.',
     analyticsLink: 'Como o Google usa os dados'
   }

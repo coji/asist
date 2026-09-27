@@ -99,6 +99,7 @@ export const en: LandingText = {
     step3: 'Choose the language, model, voice and microphone in the first-run setup, and start talking.'
   },
   footer: {
+    privacy: 'Privacy Policy',
     analytics: 'This site uses Google Analytics, which sets cookies, to count visits.',
     analyticsLink: 'How Google uses data'
   }

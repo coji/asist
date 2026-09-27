@@ -99,6 +99,7 @@ export const ko: LandingText = {
     step3: '처음 설정에서 언어, 모델, 목소리, 마이크를 고르면 바로 대화할 수 있어요.'
   },
   footer: {
+    privacy: '개인정보 처리방침',
     analytics: '이 사이트는 방문 수를 세기 위해 쿠키를 설정하는 Google Analytics를 사용해요.',
     analyticsLink: 'Google의 데이터 사용 방식'
   }

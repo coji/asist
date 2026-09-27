@@ -99,6 +99,7 @@ export const id: LandingText = {
     step3: 'Pilih bahasa, model, suara, dan mikrofon di penyiapan awal, lalu mulailah berbicara.'
   },
   footer: {
+    privacy: 'Kebijakan Privasi',
     analytics: 'Situs ini memakai Google Analytics, yang memasang cookie, untuk menghitung kunjungan.',
     analyticsLink: 'Cara Google menggunakan data'
   }

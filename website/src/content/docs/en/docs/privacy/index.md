@@ -50,3 +50,5 @@ The app log holds the app's output and the warnings and errors from the screen. 
 JSON files such as the settings, tasks, timers and jobs carry the version of their format. When a newer ASIST opens a file in an older version, it first keeps the original file in the same place as `<name>.v<version>.json`, then moves the file to the current format. If a file was written by a newer ASIST than the one you are running, or is damaged and can't be read, ASIST shows the file's location and the reason and stops, leaving the original file untouched.
 
 What ASIST sends out is listed in [What ASIST sends out](/en/docs/privacy/external/).
+
+How ASIST and this site handle your data is summarized in the [Privacy Policy](/en/privacy/).

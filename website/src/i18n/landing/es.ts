@@ -99,6 +99,7 @@ export const es: LandingText = {
     step3: 'Elige el idioma, el modelo, la voz y el micrófono en la configuración inicial, y empieza a hablar.'
   },
   footer: {
+    privacy: 'Política de privacidad',
     analytics: 'Este sitio usa Google Analytics, que instala cookies, para contar las visitas.',
     analyticsLink: 'Cómo usa Google los datos'
   }

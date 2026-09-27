@@ -12,7 +12,7 @@ export interface LandingText {
   agent: { title: string; headline: string; body: string; artAlt: string; askHtml: string; confirm: string; confirmMeta: string; cancel: string; startJob: string }
   memory: { title: string; headline: string; body: string; artAlt: string; diaryDate: string; diaryTitle: string; diaryBody: string; noteHtml: string }
   start: { title: string; sub: string; download: string; setup: string; mac: string; windows: string; bubble: string; step1: string; step2: string; step3: string }
-  footer: { analytics: string; analyticsLink: string }
+  footer: { privacy: string; analytics: string; analyticsLink: string }
 }
 
 export const ja: LandingText = {
@@ -114,6 +114,7 @@ export const ja: LandingText = {
     step3: '初回セットアップで、言語、モデル、声、マイクを選べば話しかけられます。'
   },
   footer: {
+    privacy: 'プライバシーポリシー',
     analytics: 'このサイトは、アクセス解析に Cookie を使う Google Analytics を使っています。',
     analyticsLink: 'Google によるデータの使用'
   }
