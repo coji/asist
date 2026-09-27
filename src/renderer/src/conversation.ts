@@ -1,7 +1,7 @@
 import { isJobTerminal } from '@shared/job-status'
 import type { HangoverMode, LiveEvent, TurnEvent, TurnTimings } from '@shared/ipc'
 import { isSelfEcho, PlaybackLog, stripClipEcho } from '@shared/self-echo'
-import { openingAizuchiRuns } from '@shared/platform'
+import { conversationFeatures } from '@shared/conversation-locale'
 import { isLiveEngine, type VoiceEngine } from '@shared/voice-engine'
 import { stopsLiveEngine } from '@shared/live-session-policy'
 import { safetyNoticePending } from '@shared/settings'
@@ -43,7 +43,7 @@ const turnMetrics = new TurnMetrics((payload) => window.api.metricsLog(payload))
 function openingPolicy(): { aizuchi: boolean; bridge: boolean } {
   const settings = useSettingsStore.getState().settings
   if (!settings || !settings.aizuchi || settings.ttsEngine === 'none') return { aizuchi: false, bridge: false }
-  return { aizuchi: openingAizuchiRuns(settings.conversationLocale, platformCapabilities()), bridge: true }
+  return { aizuchi: conversationFeatures(settings.conversationLocale).aizuchi, bridge: true }
 }
 /** Reloads the clips for the conversation language, which drops them where that language has no aizuchi. */
 function reloadAizuchiBank(): void {
@@ -546,7 +546,7 @@ function applySettings(): void {
   voiceController.conversationLocale = s.conversationLocale
   voiceController.listeningAizuchi = s.listeningAizuchi && s.ttsEngine !== 'none'
   voiceController.holdProvider =
-    s.aizuchi && openingAizuchiRuns(s.conversationLocale, platformCapabilities()) ? () => classifier.holding() : null
+    s.aizuchi && conversationFeatures(s.conversationLocale).aizuchi ? () => classifier.holding() : null
   voiceController.localFallbackEnabled = s.localAsrEnabled
   voiceController.nativeMicPreferred = nativeMic
   voiceController.noiseSuppression = s.noiseSuppression

@@ -20,7 +20,7 @@ import { osMessageKey } from '@shared/i18n/os-message'
 export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, status, setup, vap, embedding, aizuchiClassifier, prep, prepare, set, go } = ctx
   const t = useT()
-  const { speechRuntime, cpuSidecars, os } = platformCapabilities()
+  const { speechRuntime, os } = platformCapabilities()
   const asr = setup?.asr ?? null
   const asrReady = asr?.ready === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
@@ -187,7 +187,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
           <Link onClick={() => go('agent')}>{t('settingsModels.agent.chooseEngine')}</Link>
         </Card>
 
-        {cpuSidecars && features.maai && (
+        {features.maai && (
           <Card
             title={t('settingsModels.turnTaking.title')}
             state={vap ? (vapReady ? 'ready' : 'missing') : 'unknown'}
@@ -202,7 +202,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
           </Card>
         )}
 
-        {cpuSidecars && features.aizuchi && (
+        {features.aizuchi && (
           <Card
             title={t('settingsModels.backchannel.title')}
             state={aizuchiClassifier ? (classifierReady ? 'ready' : 'missing') : 'unknown'}
@@ -217,20 +217,18 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
           </Card>
         )}
 
-        {cpuSidecars && (
-          <Card
-            title={t('settingsModels.semanticSearch.title')}
-            state={embedding ? (embeddingReady ? 'ready' : 'missing') : 'unknown'}
-            stateLabel={embedding ? (embeddingReady ? t('common.ready') : t('common.notReady')) : t('settingsModels.checking')}
-            description={t('settingsModels.semanticSearch.description')}
-          >
-            {embeddingReady ? (
-              <Link onClick={() => go('memory')}>{t('settingsModels.semanticSearch.enable')}</Link>
-            ) : (
-              prepareButton('embedding', prepare.embedding)
-            )}
-          </Card>
-        )}
+        <Card
+          title={t('settingsModels.semanticSearch.title')}
+          state={embedding ? (embeddingReady ? 'ready' : 'missing') : 'unknown'}
+          stateLabel={embedding ? (embeddingReady ? t('common.ready') : t('common.notReady')) : t('settingsModels.checking')}
+          description={t('settingsModels.semanticSearch.description')}
+        >
+          {embeddingReady ? (
+            <Link onClick={() => go('memory')}>{t('settingsModels.semanticSearch.enable')}</Link>
+          ) : (
+            prepareButton('embedding', prepare.embedding)
+          )}
+        </Card>
       </div>
     </Page>
   )

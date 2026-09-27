@@ -1,4 +1,3 @@
-import { conversationFeatures, type ConversationLocale } from './conversation-locale'
 import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
 
@@ -31,8 +30,6 @@ export interface PlatformCapabilities {
   speechRuntime: { kind: SpeechRuntime; memoryGb: number } | { kind: null; reason: SpeechRuntimeUnavailable }
   /** The echo-cancelling native microphone helper (macOS voice processing). */
   nativeMic: boolean
-  /** The Python workers that run on the CPU: the memory search, the aizuchi classifier and MaAI. */
-  cpuSidecars: boolean
   calendar: boolean
   /** The Electron accelerator of the global hotkey; the label on the screen is derived from it. */
   hotkey: string
@@ -54,7 +51,6 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes }: Machine
       os: 'macos',
       speechRuntime: { kind: 'mlx', memoryGb: Math.max(1, Math.round(totalMemoryBytes / 1024 ** 3)) },
       nativeMic: true,
-      cpuSidecars: true,
       calendar: true,
       hotkey: 'Alt+Space'
     }
@@ -64,7 +60,6 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes }: Machine
       os: 'windows',
       speechRuntime: { kind: null, reason: 'unsupported-os' },
       nativeMic: false,
-      cpuSidecars: false,
       calendar: false,
       // On a Windows 11 machine with PowerToys, Copilot and Claude running (2026-09-27), Alt+Space and
       // Ctrl+Alt+Space were already taken, as were Ctrl+Win+Space and Win+Shift+Space, which switch the
@@ -86,10 +81,3 @@ export function hotkeyLabel({ os, hotkey }: Pick<PlatformCapabilities, 'os' | 'h
     .map((part) => MAC_MODIFIERS[part] ?? part)
     .join('')
 }
-
-/**
- * Whether an aizuchi can open a turn: the language has them, and the classifier that picks one, a
- * Python worker, runs here. The aizuchi while the user is still speaking are clips and need no worker.
- */
-export const openingAizuchiRuns = (locale: ConversationLocale, capabilities: Pick<PlatformCapabilities, 'cpuSidecars'>): boolean =>
-  conversationFeatures(locale).aizuchi && capabilities.cpuSidecars

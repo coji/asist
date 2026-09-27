@@ -1,5 +1,5 @@
 import type { AizuchiClassifierStatus, AppSettings, SetupProgress } from '@shared/ipc'
-import { openingAizuchiRuns } from '@shared/platform'
+import { conversationFeatures } from '@shared/conversation-locale'
 import { isLiveEngine } from '@shared/voice-engine'
 import {
   AIZUCHI_MODEL,
@@ -8,7 +8,6 @@ import {
   type AizuchiClassification
 } from '@shared/aizuchi-classifier'
 import { OnnxWorker } from './onnx-worker'
-import { platformCapabilities } from './platform'
 
 /**
  * The aizuchi classifier worker (resources/aizuchi_worker.py, a fine-tune of ModernBERT-ja 70m as ONNX
@@ -49,7 +48,7 @@ export function modelInstalled(): boolean {
 export function wanted(settings: AppSettings): boolean {
   return (
     settings.aizuchi &&
-    openingAizuchiRuns(settings.conversationLocale, platformCapabilities()) &&
+    conversationFeatures(settings.conversationLocale).aizuchi &&
     !isLiveEngine(settings.voiceEngine)
   )
 }

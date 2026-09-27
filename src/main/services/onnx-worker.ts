@@ -14,7 +14,6 @@ import {
   ensureRuntime,
   pythonPath,
   runtimeInstalled,
-  supportedPlatform,
   type PinnedFile
 } from './onnx-runtime'
 import { resourcePath } from './resource-path'
@@ -282,7 +281,6 @@ export class OnnxWorker<Answer> {
   private async prepareOnce(onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
     const feature = t(this.options.feature)
     const model = this.options.modelLabel
-    if (!supportedPlatform()) return { ok: false, message: t('settingsModels.preparation.unsupported', { feature }) }
     const controller = new AbortController()
     this.prepareController = controller
     const progress = (message: string): void =>

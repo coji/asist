@@ -19,7 +19,7 @@
 | Qwen3-ASR の VRAM と遅延(1.7B と 0.6B) | M5-5 | モデルの推奨のしきい値 |
 | RTX 20(fp16)で Qwen3-ASR の精度が崩れないか | M5-5 | 対象の GPU を RTX 30 以降に絞るか |
 | transformers の `apply_transcription_request` が、`sampling_rate` なしの配列を 16kHz として扱うか | M5-3(Mac でも確かめられる) | worker の書き方 |
-| MaAI が x64 の CPU で 80ms のフレームに間に合うか | M5-9 | MaAI を Windows で出すか |
+| MaAI が x64 の CPU で 80ms のフレームに間に合うか。Windows 11 の Core i9-9900K で、フレームあたりの推論は中央値 59.8ms、最大 66.7ms で、間に合いました(2026-09-27、[design/05-speech.md](design/05-speech.md))。MaAI は Windows でも出します | M5-9 | MaAI を Windows で出すか |
 | huggingface_hub がシンボリックリンクを作れないときの、ダウンロードの進み具合の数え方 | M5-6 | 進み具合の表示 |
 | VOICEVOX と AivisSpeech の Windows のインストール先。公式の配布の設定(electron-builder の NSIS)と electron-builder の既定から、利用者ごとに入れると `%LOCALAPPDATA%\Programs\<アプリ名>`、全員に入れると `%ProgramFiles%\<アプリ名>` に入り、エンジンはその下の `vv-engine\run.exe` と `AivisSpeech-Engine\run.exe` だと読み取って、自動起動の候補にしました(M5-10)。実際に入れたマシンではまだ確かめていません | M6-2 | 候補の場所 |
 | claude の記憶の整理で、PowerShell のツールのときに許すコマンドをどう書くか | M4-6 | 整理のジョブの引数 |

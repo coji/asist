@@ -70,8 +70,6 @@ export function SetupWizard(): React.JSX.Element | null {
   const locale = settings?.conversationLocale ?? 'ja-JP'
   const extras = useExtraModels(step === 'extras', mode, locale)
   const capabilities = platformCapabilities()
-  // The extra preparations are all Python workers, so a machine that cannot run them has no such step.
-  const steps = STEPS.filter((id) => id !== 'extras' || capabilities.cpuSidecars)
 
   const refresh = async (): Promise<SetupStatus | null> => {
     const generation = ++refreshGeneration.current
@@ -145,12 +143,12 @@ export function SetupWizard(): React.JSX.Element | null {
     extras: extras.settled,
     summary: true
   }
-  const index = steps.indexOf(step)
+  const index = STEPS.indexOf(step)
   const move = (direction: 1 | -1, from = index): void => {
     setError('')
-    for (let i = from + direction; i >= 0 && i < steps.length; i += direction) {
-      if (needed(steps[i])) {
-        setStep(steps[i])
+    for (let i = from + direction; i >= 0 && i < STEPS.length; i += direction) {
+      if (needed(STEPS[i])) {
+        setStep(STEPS[i])
         return
       }
     }
@@ -355,7 +353,7 @@ export function SetupWizard(): React.JSX.Element | null {
         <header className="su-head">
           <div className="su-kicker">{t('setup.kicker')}</div>
           <ol className="su-steps">
-            {steps.map((id, i) => (
+            {STEPS.map((id, i) => (
               <li key={id} data-state={!needed(id) ? 'skipped' : id === step ? 'current' : i < index ? 'done' : 'todo'}>
                 <span>{i + 1}</span>
                 {t(`setup.steps.${id}.label`)}
@@ -448,7 +446,7 @@ export function SetupWizard(): React.JSX.Element | null {
               onSwitchToTyping={() => {
                 setMode('type-and-listen')
                 // The mic screen is no longer needed, so the wizard moves on to the next one that is.
-                move(1, steps.indexOf('mic'))
+                move(1, STEPS.indexOf('mic'))
               }}
               autoMic={autoMic}
               onAutoMic={setAutoMic}

@@ -26,7 +26,6 @@ import { UsagePage } from './settings/pages/UsagePage'
 import { usdFormatter } from './settings/usage-format'
 import { displayError } from '@/display-error'
 import { platformCapabilities } from '@/platform'
-import { openingAizuchiRuns } from '@shared/platform'
 import { ttsEngineRuns } from '@shared/tts-models'
 import { AGENT_MODE_NAME } from '@shared/agent-cli'
 
@@ -222,16 +221,15 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   // needs preparing without opening the page. Speech can only be missing when a separate engine is
   // selected, since the macOS speech synthesis needs no preparation.
   const features = conversationFeatures(settings.conversationLocale)
-  const { cpuSidecars, calendar, speechRuntime } = platformCapabilities()
+  const { calendar, speechRuntime } = platformCapabilities()
   const engineRuns = ttsEngineRuns(settings.ttsEngine, speechRuntime)
-  const openingAizuchi = openingAizuchiRuns(settings.conversationLocale, { cpuSidecars })
   const missing = [
     speechRecognitionReady(settings, setup, speechRuntime) === false,
     status !== null && engineRuns && ttsNeedsPreparation(settings.ttsEngine) && !status.tts,
     status !== null && status.agent !== 'found',
-    cpuSidecars && features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),
-    cpuSidecars && embedding !== null && !(embedding.runtimeInstalled && embedding.modelInstalled),
-    openingAizuchi &&
+    features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),
+    embedding !== null && !(embedding.runtimeInstalled && embedding.modelInstalled),
+    features.aizuchi &&
       aizuchiClassifier !== null &&
       !(aizuchiClassifier.runtimeInstalled && aizuchiClassifier.modelInstalled)
   ].filter(Boolean).length
@@ -261,19 +259,14 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       : !engineRuns
         ? { text: t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, settings.ttsEngine) }), tone: 'warn' }
         : {
-            text: !openingAizuchi
+            text: !features.aizuchi
               ? ttsEngineLabel(t, settings.ttsEngine)
               : t(settings.aizuchi ? 'settings.summary.voiceBackchannelOn' : 'settings.summary.voiceBackchannelOff', {
                   engine: ttsEngineLabel(t, settings.ttsEngine)
                 })
           },
     appearance: { text: t(`settingsAppearance.themes.${settings.theme}.name`) },
-    // Without the Python workers the page holds the curation alone, which the line then names.
-    memory: {
-      text: cpuSidecars
-        ? t(settings.memoryEmbeddingEnabled ? 'settings.summary.memorySemanticOn' : 'settings.summary.memorySemanticOff')
-        : t('settingsMemory.curation.title')
-    },
+    memory: { text: t(settings.memoryEmbeddingEnabled ? 'settings.summary.memorySemanticOn' : 'settings.summary.memorySemanticOff') },
     agent: { text: `${agentEngine} · ${AGENT_MODE_NAME[settings.agentEngine][settings.agentMode]}` },
     integrations: {
       text: !calendar

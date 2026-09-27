@@ -272,7 +272,7 @@ describe('the native microphone', () => {
 })
 
 describe('the aizuchi classifier', () => {
-  it('is asked about each partial recognition only on a machine that runs it', async () => {
+  it('is asked about each partial recognition on Windows as on a Mac', async () => {
     const classifiedOn = async (windows: boolean): Promise<number> => {
       mocks.windows = windows
       vi.resetModules()
@@ -285,7 +285,7 @@ describe('the aizuchi classifier', () => {
     }
     try {
       expect(await classifiedOn(false)).toBeGreaterThan(0)
-      expect(await classifiedOn(true)).toBe(0)
+      expect(await classifiedOn(true)).toBeGreaterThan(0)
     } finally {
       mocks.windows = false
     }

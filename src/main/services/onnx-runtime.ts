@@ -7,7 +7,6 @@ import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
 import { replaceFileAtomic } from './atomic-json'
 import { t } from './i18n'
-import { platformCapabilities } from './platform'
 import { userAgent } from './user-agent'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 
@@ -43,12 +42,7 @@ export function pythonPath(): string {
   return configured || venvPython(runtimeDir())
 }
 
-export function supportedPlatform(): boolean {
-  return platformCapabilities().cpuSidecars
-}
-
 export function runtimeInstalled(): boolean {
-  if (!supportedPlatform()) return false
   if (!fs.existsSync(pythonPath())) return false
   if (process.env.ASIST_EMBEDDING_PYTHON?.trim()) return true
   return environmentCurrent(runtimeDir(), STAMP)

@@ -7,7 +7,6 @@ import type { SettingsContext } from '../context'
 import { Btn, Chip, Group, Link, Page, Row } from '../primitives'
 import { displayError, errorMessageOf } from '@/display-error'
 import { useFormatLocale, useT } from '@/i18n'
-import { platformCapabilities } from '@/platform'
 
 /** The memory page: semantic search, curation of memories, and a link to the memory view. */
 export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
@@ -66,31 +65,29 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
 
   return (
     <Page title={t('settingsMemory.title')} lead={t('settingsMemory.lead')}>
-      {platformCapabilities().cpuSidecars && (
-        <Group title={t('settingsMemory.search.title')} description={t('settingsMemory.search.description')}>
-          <Row
-            label={t('settingsMemory.search.use')}
-            hint={
-              embeddingReady
-                ? t(
-                    embedding.converting
-                      ? 'settingsMemory.search.converting'
-                      : embedding.running
-                        ? 'settingsMemory.search.convertedRunning'
-                        : 'settingsMemory.search.converted',
-                    { embedded: embedding.embedded, total: embedding.total }
-                  )
-                : t('settingsMemory.search.notPrepared')
-            }
-          >
-            {embeddingReady ? (
-              <HoloSwitch checked={settings.memoryEmbeddingEnabled} onCheckedChange={(v) => set({ memoryEmbeddingEnabled: v })} />
-            ) : (
-              <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
-            )}
-          </Row>
-        </Group>
-      )}
+      <Group title={t('settingsMemory.search.title')} description={t('settingsMemory.search.description')}>
+        <Row
+          label={t('settingsMemory.search.use')}
+          hint={
+            embeddingReady
+              ? t(
+                  embedding.converting
+                    ? 'settingsMemory.search.converting'
+                    : embedding.running
+                      ? 'settingsMemory.search.convertedRunning'
+                      : 'settingsMemory.search.converted',
+                  { embedded: embedding.embedded, total: embedding.total }
+                )
+              : t('settingsMemory.search.notPrepared')
+          }
+        >
+          {embeddingReady ? (
+            <HoloSwitch checked={settings.memoryEmbeddingEnabled} onCheckedChange={(v) => set({ memoryEmbeddingEnabled: v })} />
+          ) : (
+            <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
+          )}
+        </Row>
+      </Group>
 
       <Group
         title={t('settingsMemory.curation.title')}

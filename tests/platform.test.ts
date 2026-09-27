@@ -5,12 +5,11 @@ import { deriveCapabilities, hotkeyLabel } from '@shared/platform'
 const GIB = 1024 ** 3
 
 describe('what a machine can run', () => {
-  it('gives an Apple Silicon Mac the MLX runtime with its memory, the native microphone, the Python workers, the calendar and Alt+Space', () => {
+  it('gives an Apple Silicon Mac the MLX runtime with its memory, the native microphone, the calendar and Alt+Space', () => {
     expect(deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 16 * GIB })).toEqual({
       os: 'macos',
       speechRuntime: { kind: 'mlx', memoryGb: 16 },
       nativeMic: true,
-      cpuSidecars: true,
       calendar: true,
       hotkey: 'Alt+Space'
     })
@@ -27,7 +26,6 @@ describe('what a machine can run', () => {
       os: 'windows',
       speechRuntime: { kind: null, reason: 'unsupported-os' },
       nativeMic: false,
-      cpuSidecars: false,
       calendar: false,
       hotkey: expect.any(String)
     })

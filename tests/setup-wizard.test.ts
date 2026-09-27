@@ -346,15 +346,14 @@ describe('first-run setup', () => {
   })
 })
 
-describe('first-run setup on a machine without the local models, the Python workers or a calendar', () => {
+describe('first-run setup on a machine without the local models or a calendar', () => {
   beforeEach(() => setCapabilities(WINDOWS))
   afterEach(() => setCapabilities(MACOS))
 
-  it('gives the reason in place of the local speech recognition, offers no Qwen3-TTS, skips the extras and names no calendar', async () => {
+  it('gives the reason in place of the local speech recognition, offers no Qwen3-TTS, offers the extras and names no calendar', async () => {
     // Qwen3-TTS left in the settings is still not offered on a machine that cannot run it.
     settings = { ...settings, ttsEngine: 'qwen3tts' } as AppSettings
     await render()
-    expect(stepStates()).not.toHaveProperty(ja('setup.steps.extras.label'))
     await toModel(ja)
     await verifyKey(ja)
     await press(ja('setup.next'))
@@ -374,6 +373,8 @@ describe('first-run setup on a machine without the local models, the Python work
     await press(ja('settings.ttsEngine.system.windows'))
     await press(ja('setup.next'))
     await press(ja('setup.mic.check'))
+    await press(ja('setup.next'))
+    expect(extraNames()).toEqual([ja('setup.extras.models.embedding.label'), ja('setup.extras.models.modernbert.label'), ja('setup.extras.models.maai.label')])
     await press(ja('setup.next'))
     expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.summary.title'))
     expect(container.querySelector('.su-summary.is-quiet')?.textContent).not.toContain(ja('setup.summary.calendar'))

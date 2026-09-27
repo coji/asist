@@ -29,8 +29,6 @@ export interface PlatformCapabilities {
     | { kind: null; reason: 'unsupported-os' | 'no-nvidia-gpu' | 'driver-too-old' | 'gpu-too-old' }
   /** The echo-cancelling native microphone helper (macOS voice processing). */
   nativeMic: boolean
-  /** The Python workers that run on the CPU: the memory search, the aizuchi classifier and MaAI. */
-  cpuSidecars: boolean
   calendar: boolean
   /** The accelerator the global hotkey registers; the label is derived from it. */
   hotkey: string
@@ -52,14 +50,15 @@ export interface PlatformCapabilities {
 | `panels/registry.tsx` のカレンダーのカード、`CalendarSettings`、セットアップと設定の要約、`prompt.ts:190-199` の朝の要約 | `calendar` | 出さない。プロンプトは「カレンダーは未接続」のときと同じにする |
 | セットアップの聞き取りの手順、設定のモデル(`ModelsPage`) | `speechRuntime` | CUDA の Qwen3-ASR を出す。GPU が無いマシンでは理由を出し、ブラウザの中の Whisper だけを選べる |
 | TTS の選択肢の Qwen3-TTS | `speechRuntime` | 第2段階までは出さない(CUDA の Qwen3-TTS を作ったら出す) |
-| 追加の準備(`setup/extras.ts`) | `cpuSidecars` | 記憶の検索、相槌の分類器、MaAI を準備する |
 | 設定の「声」のエコーキャンセル | `nativeMic` | 出さない |
 | 設定のショートカットの行と文言 | `hotkey` | Windows のショートカットと、その表記を出す |
 | ファイルの「Finder で表示」、ログの「Finder で開く」など | `os` | 「エクスプローラーで表示」など |
 
+CPU で動く Python の worker(記憶の検索、相槌の分類器、MaAI)は、Windows の CPU でも動きます([05-speech.md](05-speech.md) の実測)。どの OS でも同じ値になるので値にせず、追加の準備(`setup/extras.ts`)とその設定は、どの OS でも出します。
+
 main の中で OS を判定していた7か所は、`platform.ts` の値を読む形に替えます。
 
-- `mlx-runtime.supported()`、`onnx-runtime` と `vap` の判定、`native-mic.available()`、`calendar.ts` の拒否は、それぞれ `speechRuntime`、`cpuSidecars`、`nativeMic`、`calendar` を読みます。
+- `mlx-runtime.supported()`、`native-mic.available()`、`calendar.ts` の拒否は、それぞれ `speechRuntime`、`nativeMic`、`calendar` を読みます。`onnx-runtime` と `vap` の判定は無くしました。
 - `ipc.ts:226` のマイクの許可は、OS ごとの実装に分けます。詳しくは [06-os-integration.md](06-os-integration.md) にあります。
 
 ## 保存している設定の移行

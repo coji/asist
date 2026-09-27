@@ -9,7 +9,7 @@
 | 聞き取り(ブラウザの中) | Whisper small(Transformers.js) | 同じ |
 | live のエンジン | GPT-Live、Gemini Live | 同じ |
 | 読み上げ | VOICEVOX、AivisSpeech、Qwen3-TTS(MLX)、システムの声 | VOICEVOX、AivisSpeech、システムの声。Qwen3-TTS は第2段階 |
-| 相槌の分類器、記憶の検索、MaAI | CPU の Python worker | 同じ(CPU) |
+| 相槌の分類器、記憶の検索、MaAI | CPU の Python worker | 同じ(CPU)。Core i9-9900K で準備と実行を確かめました(下の実測) |
 
 ## 聞き取り: Windows の Qwen3-ASR
 
@@ -167,9 +167,8 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 
 ## CPU の Python worker(記憶の検索、相槌の分類器、MaAI)
 
-- **いまの作り。** どれも CPU で動く作りで、macOS に固有なのは次の3つだけです。
-  - 動く条件の判定
-  - venv の Python の場所
-  - lock ファイル
-- **Windows で要る手当て。** [04-bundled-tools.md](04-bundled-tools.md) の手当て(`venvPython`、`PYTHONUTF8`、`os.nice`、lock ファイル)をすれば動く見込みです。
-- **MaAI の時間。** MaAI は、Apple Silicon で 80ms のフレームあたり 31ms です(`vap.ts:59-65`)。Windows の x64 の CPU では測り直します(M5-9)。
+- **作り。** どれも CPU で動く作りで、macOS に固有だったのは、動く条件の判定、venv の Python の場所、lock ファイルの3つでした。[04-bundled-tools.md](04-bundled-tools.md) の手当て(`venvPython`、`PYTHONUTF8`、`os.nice`、lock ファイル)をして、3つとも Windows で動きました。動く条件の判定は、どの OS でも動くので無くしました。
+- **MaAI の時間。** MaAI の推論は、80ms のフレームあたり、Apple Silicon で 31ms、Windows の Core i9-9900K で中央値 59.8ms です。どちらも 80ms に収まります。
+- **Windows での実測(2026-09-27)。** Windows 11、Core i9-9900K(8スレッド)で、ASIST のコード(`npm run dev`)から、アプリの IPC を通して準備しました。準備の時間は、約 1.5MB/s の回線でのダウンロードを含みます。
+  - 準備の時間は、相槌の分類器が58秒、記憶の検索が59秒、MaAI が171秒でした。
+  - MaAI の worker は CPU で起動しました(`worker ready (cpu, 12.5Hz)`)。12秒の音声を実時間で流すと、80ms のフレームあたりの推論は、中央値 59.8ms、90パーセンタイル 63.8ms、最大 66.7ms でした。
