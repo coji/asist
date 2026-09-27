@@ -412,7 +412,7 @@ export function TtsStep({
                   <>
                     <ol className="su-howto">
                       <li>{t(osMessageKey('setup.tts.howtoInstall', os), { engine: title })}</li>
-                      <li>{t(osMessageKey('setup.tts.howtoVerify', os), { engine: title })}</li>
+                      <li>{t('setup.tts.howtoVerify', { engine: title })}</li>
                     </ol>
                     <div className="su-inline">
                       <Btn tone="primary" onClick={() => void window.api.openExternal(engine.site!)}>

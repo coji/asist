@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs'
 import type { AppSettings, PhonemeEvent, SpeakerOption, TtsEngine } from '@shared/ipc'
+import type { OsFamily } from '@shared/platform'
 import { withTimeoutSignal } from '@shared/abort'
 import { CONVERSATION_LANGUAGE_NAMES, type ConversationLocale } from '@shared/conversation-locale'
 import { qwenTtsLanguage, ttsEngineRuns } from '@shared/tts-models'
@@ -28,25 +29,44 @@ export type { TtsVoice } from './tts-voice'
 interface EngineDef {
   label: string
   url: string
-  binaries: string[]
+  /** The engine's executable in the app each OS's installer puts in place, tried in order. */
+  binaries: Record<OsFamily, () => Array<string | undefined>>
+}
+
+/**
+ * The engine inside a Windows app installed with electron-builder's NSIS installer, which both apps
+ * use: it installs for the current user under %LOCALAPPDATA%\Programs by default, and under
+ * %ProgramFiles% when the user installs for all users. A folder the user picks in the installer
+ * cannot be known here, and the app started from there runs the engine itself.
+ */
+const windowsInstalls = (product: string, engineFolder: string): Array<string | undefined> => {
+  const local = process.env.LOCALAPPDATA
+  return [local && path.win32.join(local, 'Programs'), process.env.ProgramFiles]
+    .map((folder) => folder && path.win32.join(folder, product, engineFolder, 'run.exe'))
 }
 
 const ENGINES: Record<HttpTtsEngine, EngineDef> = {
   voicevox: {
     label: 'VOICEVOX',
     url: process.env.VOICEVOX_URL || 'http://127.0.0.1:50021',
-    binaries: [
-      path.join(homedir(), 'opt', 'voicevox_engine', 'run'),
-      '/Applications/VOICEVOX.app/Contents/Resources/vv-engine/run'
-    ]
+    binaries: {
+      macos: () => [
+        path.join(homedir(), 'opt', 'voicevox_engine', 'run'),
+        '/Applications/VOICEVOX.app/Contents/Resources/vv-engine/run'
+      ],
+      windows: () => windowsInstalls('VOICEVOX', 'vv-engine')
+    }
   },
   aivisspeech: {
     label: 'AivisSpeech',
     url: process.env.AIVISSPEECH_URL || 'http://127.0.0.1:10101',
-    binaries: [
-      path.join(homedir(), 'opt', 'aivisspeech_engine', 'run'),
-      '/Applications/AivisSpeech.app/Contents/Resources/AivisSpeech-Engine/run'
-    ]
+    binaries: {
+      macos: () => [
+        path.join(homedir(), 'opt', 'aivisspeech_engine', 'run'),
+        '/Applications/AivisSpeech.app/Contents/Resources/AivisSpeech-Engine/run'
+      ],
+      windows: () => windowsInstalls('AivisSpeech', 'AivisSpeech-Engine')
+    }
   }
 }
 
@@ -104,7 +124,7 @@ async function startEngine(engine: HttpTtsEngine): Promise<void> {
   // While a process we own is alive, no second one is started, including the window after spawn in which
   // its HTTP endpoint is not answering yet.
   if (children.has(engine) || (await available(engine))) return
-  const binary = ENGINES[engine].binaries.find((p) => fs.existsSync(p))
+  const binary = ENGINES[engine].binaries[platformCapabilities().os]().find((p): p is string => p !== undefined && fs.existsSync(p))
   if (!binary) return
   console.log(`starting ${ENGINES[engine].label} engine:`, binary)
   const child = spawn(binary, [], { detached: true, stdio: 'ignore', cwd: path.dirname(binary), env: childEnv(), windowsHide: true })

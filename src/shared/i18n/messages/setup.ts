@@ -660,17 +660,17 @@ export const setup = defineMessages({
           'es-ES': 'No hay conexión con {engine}. Instálalo y pulsa “Verificar”, o elige la voz de macOS.'
         },
         windows: {
-          'ja-JP': '{engine} につながっていません。入れて起動してから「検証する」を押すか、Windows の音声合成を選んでください。',
-          'en-US': '{engine} is not connected. Install and start it, then press Verify, or choose the Windows voice.',
-          'fr-FR': "{engine} n'est pas connecté. Installez-le et lancez-le, puis cliquez sur « Vérifier », ou choisissez la voix de Windows.",
-          'de-DE': 'Es besteht keine Verbindung zu {engine}. Installieren und starten Sie es, drücken Sie dann „Prüfen“, oder wählen Sie die Windows-Stimme.',
-          'hi-IN': '{engine} से कनेक्शन नहीं है। इसे इंस्टॉल करके चालू करें और "जाँचें" दबाएँ, या Windows की आवाज़ चुनें।',
-          'id-ID': '{engine} belum tersambung. Pasang dan jalankan aplikasinya lalu tekan Verifikasi, atau pilih suara Windows.',
-          'it-IT': '{engine} non è collegato. Installalo e avvialo, poi premi «Verifica», oppure scegli la sintesi vocale di Windows.',
-          'ko-KR': "{engine}에 연결되어 있지 않습니다. 설치하고 실행한 뒤에 '검증하기'를 누르거나, Windows 음성 합성을 선택하십시오.",
-          'pt-BR': '{engine} não está conectado. Instale e abra, depois clique em Verificar, ou escolha a voz do Windows.',
-          'es-419': '{engine} no está conectado. Instálalo y ábrelo, luego presiona «Verificar», o elige la voz de Windows.',
-          'es-ES': 'No hay conexión con {engine}. Instálalo y ábrelo, luego pulsa “Verificar”, o elige la voz de Windows.'
+          'ja-JP': '{engine} につながっていません。入れてから「検証する」を押すか、Windows の音声合成を選んでください。',
+          'en-US': '{engine} is not connected. Install it and press Verify, or choose the Windows voice.',
+          'fr-FR': "{engine} n'est pas connecté. Installez-le et cliquez sur « Vérifier », ou choisissez la voix de Windows.",
+          'de-DE': 'Es besteht keine Verbindung zu {engine}. Installieren Sie es und drücken Sie „Prüfen“, oder wählen Sie die Windows-Stimme.',
+          'hi-IN': '{engine} से कनेक्शन नहीं है। इसे इंस्टॉल करके "जाँचें" दबाएँ, या Windows की आवाज़ चुनें।',
+          'id-ID': '{engine} belum tersambung. Pasang aplikasinya lalu tekan Verifikasi, atau pilih suara Windows.',
+          'it-IT': '{engine} non è collegato. Installalo e premi «Verifica», oppure scegli la sintesi vocale di Windows.',
+          'ko-KR': "{engine}에 연결되어 있지 않습니다. 설치한 뒤에 '검증하기'를 누르거나, Windows 음성 합성을 선택하십시오.",
+          'pt-BR': '{engine} não está conectado. Instale e clique em Verificar, ou escolha a voz do Windows.',
+          'es-419': '{engine} no está conectado. Instálalo y presiona «Verificar», o elige la voz de Windows.',
+          'es-ES': 'No hay conexión con {engine}. Instálalo y pulsa “Verificar”, o elige la voz de Windows.'
         }
       },
       choose: {
@@ -1470,17 +1470,17 @@ export const setup = defineMessages({
             'es-ES': 'Lee las respuestas con una voz de personaje. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
           },
           windows: {
-            'ja-JP': 'キャラクターの声で読み上げます。無料のアプリを入れて起動しておくと、ASIST がつなぎます。',
-            'en-US': 'Reads replies in a character voice. Install the free app and start it, and ASIST connects to it.',
-            'fr-FR': "Lit les réponses avec une voix de personnage. Installez l'app gratuite et lancez-la : ASIST s'y connecte.",
-            'de-DE': 'Liest Antworten mit einer Charakterstimme. Installieren und starten Sie die kostenlose App, dann verbindet sich ASIST damit.',
-            'hi-IN': 'जवाब किसी किरदार की आवाज़ में पढ़ता है। मुफ़्त ऐप इंस्टॉल करके चालू रखें, ASIST उससे जुड़ जाएगा।',
-            'id-ID': 'Membacakan jawaban dengan suara karakter. Pasang aplikasi gratisnya lalu jalankan, dan ASIST akan tersambung ke sana.',
-            'it-IT': "Legge le risposte con la voce di un personaggio. Installa l'app gratuita e avviala: ASIST si collega da sé.",
-            'ko-KR': '캐릭터 목소리로 읽어줍니다. 무료 앱을 설치하고 실행해 두면 ASIST가 연결합니다.',
-            'pt-BR': 'Lê as respostas com uma voz de personagem. Instale o app gratuito e abra-o, e o ASIST se conecta a ele.',
-            'es-419': 'Lee las respuestas con una voz de personaje. Instala la app gratuita y ábrela, y ASIST se conecta a ella.',
-            'es-ES': 'Lee las respuestas con una voz de personaje. Instala la app gratuita y ábrela, y ASIST se conectará a ella.'
+            'ja-JP': 'キャラクターの声で読み上げます。無料のアプリを、インストール先を変えずに入れておくと、ASIST が自動で起動します。',
+            'en-US': 'Reads replies in a character voice. Install the free app without changing the install folder and ASIST starts it for you.',
+            'fr-FR': "Lit les réponses avec une voix de personnage. Installez l'app gratuite sans changer le dossier d'installation et ASIST la démarre pour vous.",
+            'de-DE': 'Liest Antworten mit einer Charakterstimme. Installieren Sie die kostenlose App, ohne den Installationsordner zu ändern, dann startet ASIST sie für Sie.',
+            'hi-IN': 'जवाब किसी किरदार की आवाज़ में पढ़ता है। मुफ़्त ऐप को इंस्टॉल का फ़ोल्डर बदले बिना इंस्टॉल करें, ASIST उसे खुद शुरू कर देगा।',
+            'id-ID': 'Membacakan jawaban dengan suara karakter. Pasang aplikasi gratisnya tanpa mengganti folder pemasangan, lalu ASIST yang menjalankannya untuk Anda.',
+            'it-IT': "Legge le risposte con la voce di un personaggio. Installa l'app gratuita senza cambiare la cartella di installazione e ASIST la avvia da sé.",
+            'ko-KR': '캐릭터 목소리로 읽어줍니다. 무료 앱을 설치 폴더를 바꾸지 않고 설치해 두면 ASIST가 알아서 실행합니다.',
+            'pt-BR': 'Lê as respostas com uma voz de personagem. Instale o app gratuito sem mudar a pasta de instalação e o ASIST o inicia para você.',
+            'es-419': 'Lee las respuestas con una voz de personaje. Instala la app gratuita sin cambiar la carpeta de instalación y ASIST la inicia por ti.',
+            'es-ES': 'Lee las respuestas con una voz de personaje. Instala la app gratuita sin cambiar la carpeta de instalación y ASIST la abrirá por ti.'
           }
         }
       },
@@ -1500,17 +1500,17 @@ export const setup = defineMessages({
             'es-ES': 'Lee las respuestas con una entonación natural. Pon la app gratuita en la carpeta Aplicaciones y ASIST la abrirá por ti.'
           },
           windows: {
-            'ja-JP': '抑揚のある声で読み上げます。無料のアプリを入れて起動しておくと、ASIST がつなぎます。',
-            'en-US': 'Reads replies with natural intonation. Install the free app and start it, and ASIST connects to it.',
-            'fr-FR': "Lit les réponses avec une intonation naturelle. Installez l'app gratuite et lancez-la : ASIST s'y connecte.",
-            'de-DE': 'Liest Antworten mit natürlicher Betonung. Installieren und starten Sie die kostenlose App, dann verbindet sich ASIST damit.',
-            'hi-IN': 'जवाब सहज उतार-चढ़ाव के साथ पढ़ता है। मुफ़्त ऐप इंस्टॉल करके चालू रखें, ASIST उससे जुड़ जाएगा।',
-            'id-ID': 'Membacakan jawaban dengan intonasi yang alami. Pasang aplikasi gratisnya lalu jalankan, dan ASIST akan tersambung ke sana.',
-            'it-IT': "Legge le risposte con un'intonazione naturale. Installa l'app gratuita e avviala: ASIST si collega da sé.",
-            'ko-KR': '억양이 있는 목소리로 읽어줍니다. 무료 앱을 설치하고 실행해 두면 ASIST가 연결합니다.',
-            'pt-BR': 'Lê as respostas com entonação natural. Instale o app gratuito e abra-o, e o ASIST se conecta a ele.',
-            'es-419': 'Lee las respuestas con una entonación natural. Instala la app gratuita y ábrela, y ASIST se conecta a ella.',
-            'es-ES': 'Lee las respuestas con una entonación natural. Instala la app gratuita y ábrela, y ASIST se conectará a ella.'
+            'ja-JP': '抑揚のある声で読み上げます。無料のアプリを、インストール先を変えずに入れておくと、ASIST が自動で起動します。',
+            'en-US': 'Reads replies with natural intonation. Install the free app without changing the install folder and ASIST starts it for you.',
+            'fr-FR': "Lit les réponses avec une intonation naturelle. Installez l'app gratuite sans changer le dossier d'installation et ASIST la démarre pour vous.",
+            'de-DE': 'Liest Antworten mit natürlicher Betonung. Installieren Sie die kostenlose App, ohne den Installationsordner zu ändern, dann startet ASIST sie für Sie.',
+            'hi-IN': 'जवाब सहज उतार-चढ़ाव के साथ पढ़ता है। मुफ़्त ऐप को इंस्टॉल का फ़ोल्डर बदले बिना इंस्टॉल करें, ASIST उसे खुद शुरू कर देगा।',
+            'id-ID': 'Membacakan jawaban dengan intonasi yang alami. Pasang aplikasi gratisnya tanpa mengganti folder pemasangan, lalu ASIST yang menjalankannya untuk Anda.',
+            'it-IT': "Legge le risposte con un'intonazione naturale. Installa l'app gratuita senza cambiare la cartella di installazione e ASIST la avvia da sé.",
+            'ko-KR': '억양이 있는 목소리로 읽어줍니다. 무료 앱을 설치 폴더를 바꾸지 않고 설치해 두면 ASIST가 알아서 실행합니다.',
+            'pt-BR': 'Lê as respostas com entonação natural. Instale o app gratuito sem mudar a pasta de instalação e o ASIST o inicia para você.',
+            'es-419': 'Lee las respuestas con una entonación natural. Instala la app gratuita sin cambiar la carpeta de instalación y ASIST la inicia por ti.',
+            'es-ES': 'Lee las respuestas con una entonación natural. Instala la app gratuita sin cambiar la carpeta de instalación y ASIST la abrirá por ti.'
           }
         }
       }
@@ -1582,46 +1582,31 @@ export const setup = defineMessages({
         'es-ES': 'Instala {engine} desde su sitio oficial y ponlo en la carpeta Aplicaciones.'
       },
       windows: {
-        'ja-JP': '公式サイトから {engine} をインストールして、起動します。',
-        'en-US': 'Install {engine} from its official site and start it.',
-        'fr-FR': 'Installez {engine} depuis son site officiel et lancez-le.',
-        'de-DE': 'Installieren Sie {engine} von der offiziellen Website und starten Sie es.',
-        'hi-IN': '{engine} को उसकी आधिकारिक साइट से इंस्टॉल करके चालू करें।',
-        'id-ID': 'Pasang {engine} dari situs resminya lalu jalankan.',
-        'it-IT': 'Installa {engine} dal suo sito ufficiale e avvialo.',
-        'ko-KR': '공식 사이트에서 {engine} 앱을 설치하고 실행합니다.',
-        'pt-BR': 'Instale o {engine} pelo site oficial e abra-o.',
-        'es-419': 'Instala {engine} desde su sitio oficial y ábrelo.',
-        'es-ES': 'Instala {engine} desde su sitio oficial y ábrelo.'
+        'ja-JP': '公式サイトから {engine} をインストールします。インストール先を変えたときは、先に {engine} を起動しておきます。',
+        'en-US': 'Install {engine} from its official site. If you change the install folder, start {engine} yourself first.',
+        'fr-FR': "Installez {engine} depuis son site officiel. Si vous changez le dossier d'installation, lancez d'abord {engine} vous-même.",
+        'de-DE': 'Installieren Sie {engine} von der offiziellen Website. Wenn Sie den Installationsordner ändern, starten Sie {engine} zuerst selbst.',
+        'hi-IN': '{engine} को उसकी आधिकारिक साइट से इंस्टॉल करें। अगर आप इंस्टॉल का फ़ोल्डर बदलते हैं, तो पहले {engine} को खुद चालू करें।',
+        'id-ID': 'Pasang {engine} dari situs resminya. Jika Anda mengganti folder pemasangan, jalankan {engine} sendiri terlebih dahulu.',
+        'it-IT': 'Installa {engine} dal suo sito ufficiale. Se cambi la cartella di installazione, avvia prima {engine} da te.',
+        'ko-KR': '공식 사이트에서 {engine} 앱을 설치합니다. 설치 폴더를 바꾼 경우에는 먼저 {engine} 앱을 직접 실행해 둡니다.',
+        'pt-BR': 'Instale o {engine} pelo site oficial. Se mudar a pasta de instalação, abra o {engine} você mesmo antes.',
+        'es-419': 'Instala {engine} desde su sitio oficial. Si cambias la carpeta de instalación, abre {engine} tú mismo antes.',
+        'es-ES': 'Instala {engine} desde su sitio oficial. Si cambias la carpeta de instalación, abre {engine} tú mismo antes.'
       }
     },
     howtoVerify: {
-      macos: {
-        'ja-JP': '「検証する」を押します。ASIST が {engine} を裏で起動して、つながるかを検証します。',
-        'en-US': 'Press Verify. ASIST starts {engine} in the background and checks the connection.',
-        'fr-FR': 'Cliquez sur « Vérifier ». ASIST démarre {engine} en arrière-plan et contrôle la connexion.',
-        'de-DE': 'Drücken Sie „Prüfen“. ASIST startet {engine} im Hintergrund und prüft die Verbindung.',
-        'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} को पीछे चलाकर कनेक्शन देखता है।',
-        'id-ID': 'Tekan Verifikasi. ASIST menjalankan {engine} di latar belakang dan memeriksa koneksinya.',
-        'it-IT': 'Premi «Verifica». ASIST avvia {engine} in background e controlla il collegamento.',
-        'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine} 앱을 뒤에서 실행해 연결되는지 검증합니다.",
-        'pt-BR': 'Clique em Verificar. O ASIST inicia o {engine} em segundo plano e confere a conexão.',
-        'es-419': 'Presiona «Verificar». ASIST inicia {engine} en segundo plano y verifica la conexión.',
-        'es-ES': 'Pulsa “Verificar”. ASIST abre {engine} en segundo plano y comprueba la conexión.'
-      },
-      windows: {
-        'ja-JP': '「検証する」を押します。ASIST が {engine} につながるかを検証します。',
-        'en-US': 'Press Verify. ASIST checks the connection to {engine}.',
-        'fr-FR': 'Cliquez sur « Vérifier ». ASIST contrôle la connexion à {engine}.',
-        'de-DE': 'Drücken Sie „Prüfen“. ASIST prüft die Verbindung zu {engine}.',
-        'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} से कनेक्शन देखता है।',
-        'id-ID': 'Tekan Verifikasi. ASIST memeriksa koneksi ke {engine}.',
-        'it-IT': 'Premi «Verifica». ASIST controlla il collegamento con {engine}.',
-        'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine}에 연결되는지 검증합니다.",
-        'pt-BR': 'Clique em Verificar. O ASIST confere a conexão com o {engine}.',
-        'es-419': 'Presiona «Verificar». ASIST verifica la conexión con {engine}.',
-        'es-ES': 'Pulsa “Verificar”. ASIST comprueba la conexión con {engine}.'
-      }
+      'ja-JP': '「検証する」を押します。ASIST が {engine} を裏で起動して、つながるかを検証します。',
+      'en-US': 'Press Verify. ASIST starts {engine} in the background and checks the connection.',
+      'fr-FR': 'Cliquez sur « Vérifier ». ASIST démarre {engine} en arrière-plan et contrôle la connexion.',
+      'de-DE': 'Drücken Sie „Prüfen“. ASIST startet {engine} im Hintergrund und prüft die Verbindung.',
+      'hi-IN': '"जाँचें" दबाएँ। ASIST {engine} को पीछे चलाकर कनेक्शन देखता है।',
+      'id-ID': 'Tekan Verifikasi. ASIST menjalankan {engine} di latar belakang dan memeriksa koneksinya.',
+      'it-IT': 'Premi «Verifica». ASIST avvia {engine} in background e controlla il collegamento.',
+      'ko-KR': "'검증하기'를 누릅니다. ASIST가 {engine} 앱을 뒤에서 실행해 연결되는지 검증합니다.",
+      'pt-BR': 'Clique em Verificar. O ASIST inicia o {engine} em segundo plano e confere a conexão.',
+      'es-419': 'Presiona «Verificar». ASIST inicia {engine} en segundo plano y verifica la conexión.',
+      'es-ES': 'Pulsa “Verificar”. ASIST abre {engine} en segundo plano y comprueba la conexión.'
     },
     officialSite: {
       'ja-JP': '{engine} の公式サイト',
@@ -1651,17 +1636,17 @@ export const setup = defineMessages({
         'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está en la carpeta Aplicaciones y vuelve a verificarlo.'
       },
       windows: {
-        'ja-JP': '{engine} につながりませんでした。起動しているかを確かめて、もう一度検証してください。',
-        'en-US': "Couldn't connect to {engine}. Check that it is running and verify again.",
-        'fr-FR': "Impossible de se connecter à {engine}. Vérifiez qu'il est lancé, puis recommencez la vérification.",
-        'de-DE': 'Die Verbindung zu {engine} kam nicht zustande. Prüfen Sie, ob es läuft, und prüfen Sie erneut.',
-        'hi-IN': '{engine} से कनेक्ट नहीं हो सका। देख लें कि वह चल रहा है, फिर दोबारा जाँचें।',
-        'id-ID': 'Tidak bisa menyambung ke {engine}. Pastikan aplikasinya sedang berjalan lalu verifikasi lagi.',
-        'it-IT': 'Impossibile collegarsi a {engine}. Controlla che sia avviato e verifica di nuovo.',
-        'ko-KR': '{engine}에 연결하지 못했습니다. 실행 중인지 확인하고 다시 검증하십시오.',
-        'pt-BR': 'Não foi possível conectar ao {engine}. Confira se ele está aberto e verifique de novo.',
-        'es-419': 'No se pudo conectar con {engine}. Comprueba que esté abierto y vuelve a verificarlo.',
-        'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está abierto y vuelve a verificarlo.'
+        'ja-JP': '{engine} につながりませんでした。インストールしてあるかを確かめ、自分で起動してから、もう一度検証してください。',
+        'en-US': "Couldn't connect to {engine}. Check that it is installed, start it yourself and verify again.",
+        'fr-FR': "Impossible de se connecter à {engine}. Vérifiez qu'il est installé, lancez-le vous-même, puis recommencez la vérification.",
+        'de-DE': 'Die Verbindung zu {engine} kam nicht zustande. Prüfen Sie, ob es installiert ist, starten Sie es selbst und prüfen Sie erneut.',
+        'hi-IN': '{engine} से कनेक्ट नहीं हो सका। देख लें कि वह इंस्टॉल है, उसे खुद चालू करें, फिर दोबारा जाँचें।',
+        'id-ID': 'Tidak bisa menyambung ke {engine}. Pastikan aplikasinya sudah terpasang, jalankan sendiri, lalu verifikasi lagi.',
+        'it-IT': 'Impossibile collegarsi a {engine}. Controlla che sia installato, avvialo da te e verifica di nuovo.',
+        'ko-KR': '{engine}에 연결하지 못했습니다. 설치되어 있는지 확인하고 직접 실행한 뒤 다시 검증하십시오.',
+        'pt-BR': 'Não foi possível conectar ao {engine}. Confira se ele está instalado, abra-o você mesmo e verifique de novo.',
+        'es-419': 'No se pudo conectar con {engine}. Comprueba que esté instalado, ábrelo tú mismo y vuelve a verificarlo.',
+        'es-ES': 'No se ha podido conectar con {engine}. Comprueba que está instalado, ábrelo tú mismo y vuelve a verificarlo.'
       }
     }
   },

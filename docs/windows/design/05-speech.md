@@ -150,8 +150,9 @@ text = processor.decode(out[:, inputs["input_ids"].shape[1]:], return_format="tr
 ## 読み上げ
 
 - **VOICEVOX と AivisSpeech。**
-  - いまの自動起動は、macOS のインストール先だけを探しています(`tts.ts:34-48`)。
-  - Windows のインストール先を実機で確かめて足します(M5-10)。
+  - Windows では、どちらのアプリも electron-builder の NSIS のインストーラーで入ります(VOICEVOX は `build/electronBuilderConfig.ts`、AivisSpeech は `electron-builder.config.cjs`)。インストーラーは、利用者ごとに入れるときは `%LOCALAPPDATA%\Programs\<アプリ名>`、全員に入れるときは `%ProgramFiles%\<アプリ名>` を既定にします。エンジンは、その下の `vv-engine\run.exe` と `AivisSpeech-Engine\run.exe` です。
+  - ASIST は、この2か所を自動起動の候補にしました(M5-10)。これは配布の設定と electron-builder の既定から読み取ったもので、実際に入れたマシンではまだ確かめていません([06-open-questions.md](../06-open-questions.md))。
+  - インストール先を利用者が変えたときは、ASIST にはその場所が分かりません。そのときは、利用者がアプリを起動しておけば、アプリが起動したエンジンに ASIST がつなぎます。画面の案内もそう書いています。
   - 起動は `detached: true` なので、`windowsHide: true` も付けます(M1-11)。
 - **システムの声。** Windows の音声(SAPI と OneCore)で動きます。
 - **Qwen3-TTS(第2段階)。**

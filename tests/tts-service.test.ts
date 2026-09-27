@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import type { AppSettings, TtsEngine } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -123,6 +125,74 @@ describe('TTS process startup', () => {
       expect.stringContaining('voicevox_engine'), expect.stringContaining('aivisspeech_engine')
     ])
   })
+})
+
+describe('where an engine is started from', () => {
+  const home = os.homedir()
+  const candidates = {
+    macos: {
+      voicevox: [path.join(home, 'opt', 'voicevox_engine', 'run'), '/Applications/VOICEVOX.app/Contents/Resources/vv-engine/run'],
+      aivisspeech: [path.join(home, 'opt', 'aivisspeech_engine', 'run'), '/Applications/AivisSpeech.app/Contents/Resources/AivisSpeech-Engine/run']
+    },
+    windows: {
+      voicevox: [
+        'C:\\Users\\sakura\\AppData\\Local\\Programs\\VOICEVOX\\vv-engine\\run.exe',
+        'C:\\Program Files\\VOICEVOX\\vv-engine\\run.exe'
+      ],
+      aivisspeech: [
+        'C:\\Users\\sakura\\AppData\\Local\\Programs\\AivisSpeech\\AivisSpeech-Engine\\run.exe',
+        'C:\\Program Files\\AivisSpeech\\AivisSpeech-Engine\\run.exe'
+      ]
+    }
+  } as const
+
+  beforeEach(() => {
+    vi.stubEnv('LOCALAPPDATA', 'C:\\Users\\sakura\\AppData\\Local')
+    vi.stubEnv('ProgramFiles', 'C:\\Program Files')
+  })
+
+  async function startWith(engine: 'voicevox' | 'aivisspeech', installed: readonly string[]): Promise<string[]> {
+    const tts = await import('../src/main/services/tts')
+    const looked: string[] = []
+    vi.mocked(fs.existsSync).mockImplementation((file) => {
+      looked.push(String(file))
+      return installed.includes(String(file))
+    })
+    const started = tts.ensureEngine(engine)
+    if (installed.length > 0) {
+      await vi.waitFor(() => expect(children).toHaveLength(1))
+      children[0].emit('spawn')
+    }
+    await started
+    return looked
+  }
+
+  for (const engine of ['voicevox', 'aivisspeech'] as const) {
+    it(`looks for ${engine} in the per-user and then the all-users install on Windows, and starts nothing when neither is there`, async () => {
+      mocks.windows = true
+      expect(await startWith(engine, [])).toEqual(candidates.windows[engine])
+      expect(mocks.spawn).not.toHaveBeenCalled()
+    })
+
+    it(`starts ${engine} on Windows from the all-users install when the per-user one is missing`, async () => {
+      mocks.windows = true
+      const [, allUsers] = candidates.windows[engine]
+      await startWith(engine, [allUsers])
+      expect(mocks.spawn.mock.calls.map(([binary]) => binary)).toEqual([allUsers])
+    })
+
+    it(`starts ${engine} on Windows from the per-user install when both are there`, async () => {
+      mocks.windows = true
+      const [perUser, allUsers] = candidates.windows[engine]
+      await startWith(engine, [allUsers, perUser])
+      expect(mocks.spawn.mock.calls.map(([binary]) => binary)).toEqual([perUser])
+    })
+
+    it(`keeps looking for ${engine} in the same places on macOS`, async () => {
+      expect(await startWith(engine, [])).toEqual(candidates.macos[engine])
+      expect(mocks.spawn).not.toHaveBeenCalled()
+    })
+  }
 })
 
 function mockSynthesis(speakers: Promise<Response>): void {
