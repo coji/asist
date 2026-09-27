@@ -1078,17 +1078,32 @@ export const calendar = defineMessages({
       'es-ES': 'Obtenido a las {time}'
     },
     source: {
-      'ja-JP': 'macOS カレンダー',
-      'en-US': 'macOS Calendar',
-      'fr-FR': 'Calendrier macOS',
-      'de-DE': 'Kalender von macOS',
-      'hi-IN': 'macOS कैलेंडर',
-      'id-ID': 'Kalender macOS',
-      'it-IT': 'Calendario di macOS',
-      'ko-KR': 'macOS 캘린더',
-      'pt-BR': 'Calendário do macOS',
-      'es-419': 'Calendario de macOS',
-      'es-ES': 'Calendario de macOS'
+      eventkit: {
+        'ja-JP': 'macOS カレンダー',
+        'en-US': 'macOS Calendar',
+        'fr-FR': 'Calendrier macOS',
+        'de-DE': 'Kalender von macOS',
+        'hi-IN': 'macOS कैलेंडर',
+        'id-ID': 'Kalender macOS',
+        'it-IT': 'Calendario di macOS',
+        'ko-KR': 'macOS 캘린더',
+        'pt-BR': 'Calendário do macOS',
+        'es-419': 'Calendario de macOS',
+        'es-ES': 'Calendario de macOS'
+      },
+      google: {
+        'ja-JP': 'Google カレンダー',
+        'en-US': 'Google Calendar',
+        'fr-FR': 'Google Agenda',
+        'de-DE': 'Google Kalender',
+        'hi-IN': 'Google कैलेंडर',
+        'id-ID': 'Google Kalender',
+        'it-IT': 'Google Calendar',
+        'ko-KR': 'Google 캘린더',
+        'pt-BR': 'Google Agenda',
+        'es-419': 'Google Calendar',
+        'es-ES': 'Google Calendar'
+      }
     }
   },
   confirm: {

@@ -1,6 +1,6 @@
 import { safeStorage, shell } from 'electron'
 import type { CalendarStatus } from '@shared/calendar'
-import { CALENDAR_BACKEND_VARIABLE } from '@shared/platform'
+import { CALENDAR_BACKEND_VARIABLE, type CalendarBackend as CalendarKind } from '@shared/platform'
 import { errorText } from '@shared/i18n/error-text'
 import { getSettings } from './settings'
 import { CalendarService } from './calendar-service'
@@ -41,12 +41,15 @@ function googleBackend(): GoogleCalendarBackend {
   return (google = new GoogleCalendarBackend({ auth, fetch }))
 }
 
-/** The calendar this machine uses, which the capabilities decided at startup. */
-function calendarBackend(): CalendarBackend {
-  if (backend) return backend
+/** Which calendar this machine uses, as the capabilities decided at startup. */
+export function calendarKind(): CalendarKind {
   const kind = platformCapabilities().calendar
   if (kind === null) throw new Error(errorText('calendar.errors.macOnly'))
-  return (backend = kind === 'google' ? googleBackend() : eventKitBackend(runCalendarNative))
+  return kind
+}
+
+function calendarBackend(): CalendarBackend {
+  return (backend ??= calendarKind() === 'google' ? googleBackend() : eventKitBackend(runCalendarNative))
 }
 
 let service: CalendarService | null = null

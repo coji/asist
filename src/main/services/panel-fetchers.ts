@@ -7,7 +7,7 @@ import { withTimeoutSignal } from '@shared/abort'
 import { includesNextWeek, resolveCalendarRange, summarizeCalendarEvents, type CalendarRange } from '@shared/calendar'
 import { addDays } from '@shared/calendar-layout'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
-import { searchCalendar } from './calendar'
+import { calendarKind, searchCalendar } from './calendar'
 import { getMailService } from './mail'
 import { allowedPath, readFileItem } from './file-preview'
 import { fileUrl } from '../file-protocol'
@@ -16,6 +16,8 @@ import { allowedFileRoots } from './agent'
 import { userAgent } from './user-agent'
 import { fetchFailure } from './fetch-failure'
 import { t } from './i18n'
+import type { MessageKey } from '@shared/i18n'
+import type { CalendarBackend } from '@shared/platform'
 
 /**
  * The data fetchers of the built-in panels, which run in the main process and build, from external APIs
@@ -165,6 +167,12 @@ const news: Fetcher = async (props, signal) => {
   return { props: { topic, items }, source: 'Google News' }
 }
 
+/** The name of the calendar a card's events come from. */
+const CALENDAR_CARD_SOURCE = {
+  eventkit: 'calendar.card.source.eventkit',
+  google: 'calendar.card.source.google'
+} as const satisfies Record<CalendarBackend, MessageKey>
+
 const calendar: Fetcher = async (props, signal) => {
   const now = new Date()
   const window = resolveCalendarRange(
@@ -192,7 +200,7 @@ const calendar: Fetcher = async (props, signal) => {
       ...(query ? { query } : {}),
       events: events.map((event) => ({ ...event, ongoing: event.start < window.fromMs }))
     },
-    source: t('calendar.card.source'),
+    source: t(CALENDAR_CARD_SOURCE[calendarKind()]),
     data: summarizeCalendarEvents(conversationLocale(), result.events, now, window)
   }
 }

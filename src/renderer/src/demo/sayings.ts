@@ -59,7 +59,7 @@ export function demoPanelProps(type: string, props: Record<string, unknown>): { 
       return { props: { ...props, paths, items }, source: items.length === 1 ? items[0].kind : `${items.length}件` }
     }
     case 'calendar':
-      return { props: demoCalendarCard(props), source: translate('calendar.card.source') }
+      return { props: demoCalendarCard(props), source: translate('calendar.card.source.eventkit') }
     case 'mail': {
       const unreadOnly = props.unreadOnly === true
       const query = String(props.query ?? '').trim().toLowerCase()
