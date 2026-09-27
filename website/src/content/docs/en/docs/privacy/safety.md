@@ -2,7 +2,7 @@
 title: Using ASIST safely
 description: What can go wrong when you use ASIST, and what you can do about it.
 sidebar:
-  order: 2
+  order: 1
 ---
 
 ASIST lets you talk with a language model, handle your calendar and mail, and have an agent edit files. So its answers can be wrong, it can cost more than you expected, and an agent can change your files. Before you start, read what can happen and what you can do about it.

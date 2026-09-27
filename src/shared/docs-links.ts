@@ -6,7 +6,7 @@ export type DocsPage = 'calendar' | 'mail' | 'safety'
 const PAGES: Record<DocsPage, string> = {
   calendar: 'start/calendar/',
   mail: 'start/mail/',
-  safety: 'start/safety/'
+  safety: 'privacy/safety/'
 }
 
 /**

@@ -2,7 +2,7 @@
 title: Where your data is kept
 description: What ASIST keeps on this computer, and where.
 sidebar:
-  order: 1
+  order: 2
 ---
 
 ASIST sends no data to its developer. The settings and data are in the following folders. Reinstalling the app doesn't remove them.

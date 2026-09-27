@@ -24,7 +24,8 @@ export default defineConfig({
       ),
       components: {
         LanguageSelect: './src/components/DocsLanguageSelect.astro',
-        ThemeSelect: './src/components/DocsThemeSelect.astro'
+        ThemeSelect: './src/components/DocsThemeSelect.astro',
+        PageTitle: './src/components/DocsPageTitle.astro'
       },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/nyosegawa/asist' }],
       editLink: { baseUrl: 'https://github.com/nyosegawa/asist/edit/main/website/' },
@@ -33,7 +34,7 @@ export default defineConfig({
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true } },
         {
           tag: 'link',
-          attrs: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap' }
+          attrs: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Zen+Maru+Gothic:wght@700&display=swap' }
         },
         {
           tag: 'script',
@@ -55,7 +56,7 @@ export default defineConfig({
         chapter('usage', '使い方', 'Using ASIST'),
         chapter('apps', 'ミニアプリ', 'Mini apps'),
         chapter('settings', '設定', 'Settings'),
-        chapter('privacy', 'プライバシーとデータ', 'Privacy and data'),
+        chapter('privacy', '安全とプライバシー', 'Safety and privacy'),
         { label: '困ったとき', translations: { en: 'Troubleshooting' }, link: '/docs/troubleshooting/' },
         chapter('reference', '参考', 'Reference')
       ]

@@ -142,6 +142,7 @@ ASIST_SELFTEST=1 npx electron .
 ```bash
 npm --prefix website install # サイトの依存を入れます(最初に一度だけ)
 npm run website              # http://localhost:5194 で開きます
+npm --prefix website test    # ページを Markdown に変換する処理のテストを実行します
 npm run website:build        # website/dist に書き出し、全ページのリンクと画像を確かめます
 npm run website:deploy       # asist-agent.com に公開します(main から)
 npm run promo:video          # 紹介動画を promotions/launch-video/out/asist-launch-video.mp4 に作ります

@@ -1,0 +1,83 @@
+---
+import Default from '@astrojs/starlight/components/PageTitle.astro'
+import { Icon } from '@astrojs/starlight/components'
+
+const { entry } = Astro.locals.starlightRoute
+const source = `/${entry.id}.md`
+const t = Astro.locals.t
+---
+
+<div class="page-title">
+  <Default />
+  <div class="page-actions">
+    <button
+      type="button"
+      class="page-action"
+      data-copy-page={source}
+      data-copied={t('asist.copyPageDone')}
+      data-failed={t('asist.copyPageFailed')}
+    >
+      <Icon name="document" size="1em" />
+      <span>{t('asist.copyPage')}</span>
+    </button>
+    <a class="page-action" href={source}>{t('asist.viewMarkdown')}</a>
+  </div>
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-page]')) {
+    const label = button.querySelector('span')!
+    const idle = label.textContent
+    button.addEventListener('click', async () => {
+      // Safari lets a page write to the clipboard only within the click, so the fetch goes into the
+      // ClipboardItem as a promise instead of being awaited first.
+      const text = fetch(button.dataset.copyPage!).then(async (response) => {
+        if (!response.ok) throw new Error(`${response.url} answered ${response.status}`)
+        return new Blob([await response.text()], { type: 'text/plain' })
+      })
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text })])
+        label.textContent = button.dataset.copied!
+      } catch (error) {
+        label.textContent = button.dataset.failed!
+        throw error
+      } finally {
+        setTimeout(() => (label.textContent = idle), 2000)
+      }
+    })
+  }
+</script>
+
+<style>
+  .page-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+  }
+  .page-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .page-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 999px;
+    background: none;
+    color: var(--sl-color-gray-2);
+    font: inherit;
+    font-size: var(--sl-text-xs);
+    line-height: 1.4;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .page-action:hover {
+    border-color: var(--sl-color-gray-4);
+    color: var(--sl-color-white);
+  }
+</style>

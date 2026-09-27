@@ -12,6 +12,7 @@ description: How to change, check and publish ASIST's website at asist-agent.com
 ```bash
 npm --prefix website install   # once per checkout, and after website/package.json changes
 npm run website                # http://localhost:5194
+npm --prefix website test      # the tests of website/src (node --test)
 npm run website:build          # website/dist, then checks every internal link, image and #anchor
 ```
 

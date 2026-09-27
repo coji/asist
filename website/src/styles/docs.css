@@ -1,9 +1,28 @@
-/* The documentation takes the landing page's blue and its Japanese typefaces. */
+/* The documentation takes the landing page's blue, and its headings stay near the size of the text they introduce. */
 :root {
-  --sl-font: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+  --sl-font: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
   --sl-color-accent-low: #dfeaff;
   --sl-color-accent: #3f6fe0;
   --sl-color-accent-high: #1f2a44;
+  --sl-text-h1: 1.875rem;
+  --sl-text-h2: 1.5rem;
+  --sl-text-h3: 1.25rem;
+  --sl-text-h4: 1.125rem;
+  --sl-text-h5: 1rem;
+}
+/* The name in the header is set as on the landing page, whose ink is the accent's darkest shade. */
+.site-title {
+  gap: 10px;
+  color: var(--sl-color-accent-high);
+}
+.site-title img {
+  height: 34px;
+}
+.site-title span {
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.32em;
 }
 :root[data-theme='dark'] {
   --sl-color-accent-low: #1c2b52;

@@ -177,6 +177,7 @@ jobs:
           cache: npm
           cache-dependency-path: website/package-lock.json
       - run: npm ci --prefix website
+      - run: npm --prefix website test
       - run: npm run website:build
 
   # The one job the main ruleset requires, so that it names neither each shard of fit nor the jobs a

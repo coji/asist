@@ -63,7 +63,7 @@ Step-by-step pages with screenshots, the microphone and calendar permissions, an
 
 ## Using it safely
 
-ASIST's answers and cards come from language models and can be wrong, so check anything that matters. Calendar changes, sending mail and Agent jobs happen only after you approve them. An approved job runs your own codex or claude CLI with that CLI's permissions and can change files in the folder you chose, so read a job before you approve it. The APIs are called with your own keys and each provider bills you directly, so set a spending limit with each of them. The conversation, and the audio with a Live API voice engine, goes to the providers you chose. Read [Using ASIST safely](https://asist-agent.com/en/docs/start/safety/) before you start; ASIST is provided under the MIT License, without warranty.
+ASIST's answers and cards come from language models and can be wrong, so check anything that matters. Calendar changes, sending mail and Agent jobs happen only after you approve them. An approved job runs your own codex or claude CLI with that CLI's permissions and can change files in the folder you chose, so read a job before you approve it. The APIs are called with your own keys and each provider bills you directly, so set a spending limit with each of them. The conversation, and the audio with a Live API voice engine, goes to the providers you chose. Read [Using ASIST safely](https://asist-agent.com/en/docs/privacy/safety/) before you start; ASIST is provided under the MIT License, without warranty.
 
 ## Privacy
 

@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-時間のかかる調べものやファイルの編集は、Agent のジョブとして codex か claude の CLI に任せます。先に [Agent の CLI](/docs/start/agent-cli/) を準備しておきます。
+時間のかかる調べものやファイルの編集は、Agent のジョブとして codex か claude の CLI に任せます。先に [Agent の準備](/docs/start/agent-cli/)を済ませておきます。
 
 ![Agent のジョブの画面。ジョブの一覧とログが並んでいる](/screens/ja/agent.webp)
 

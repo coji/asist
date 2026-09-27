@@ -2,7 +2,7 @@
 title: What ASIST sends out
 description: What ASIST sends out, and what it receives from outside.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 This is a list of what ASIST sends out and what it receives from outside. When you click a link in the news or in search results, it opens in your default browser.

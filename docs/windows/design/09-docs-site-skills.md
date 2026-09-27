@@ -55,7 +55,7 @@ Mac を前提にした行は、それぞれ6か所あります。
 | `start/microphone` | Windows の「設定」→「プライバシーとセキュリティ」→「マイク」での許可 |
 | `start/calendar`、`apps/calendar` | Windows では使えないこと |
 | `start/agent-cli` | claude と codex を Windows で入れる方法。ネイティブのインストーラーで入れること。npm で入れたものは使えないこと |
-| `start/safety`、`privacy/index`、`privacy/external` | キーの暗号化の違い(DPAPI)と、守れる範囲 |
+| `privacy/safety`、`privacy/index`、`privacy/external` | キーの暗号化の違い(DPAPI)と、守れる範囲 |
 | `settings/voice-engine`、`settings/models`、`reference/models` | Windows の聞き取りのモデル(`Qwen/Qwen3-ASR-1.7B-hf`、`0.6B-hf`)と、その入手先とライセンス。GPU の条件 |
 | `usage/index` | ショートカットの OS ごとの表記 |
 | `apps/notes` | ごみ箱とエクスプローラー |

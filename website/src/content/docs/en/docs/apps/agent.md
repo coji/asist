@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Research that takes a while and edits to files go to the codex or claude CLI as Agent jobs. Set up [the Agent CLI](/en/docs/start/agent-cli/) first.
+Research that takes a while and edits to files go to the codex or claude CLI as Agent jobs. Before you use them, follow [Setting up the Agent](/en/docs/start/agent-cli/).
 
 ![The Agent jobs screen, with the list of jobs and a log](/screens/en/agent.webp)
 
