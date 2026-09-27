@@ -6,7 +6,7 @@ import { HoloSwitch } from '@/components/ui/switch'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
 import { QWEN_TTS_VOICES, ttsEngineRuns, type QwenTtsVoice } from '@shared/tts-models'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, hotkeyLabel } from '@shared/platform'
+import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { ttsEngineLabel, isExternalTts, ttsNeedsPreparation, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
@@ -28,7 +28,8 @@ function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   useEffect(() => {
     void window.api.hotkeyStatus().then(setStatus)
   }, [settings.globalHotkey])
-  const hotkey = hotkeyLabel(platformCapabilities())
+  const { os, hotkey: accelerator } = platformCapabilities()
+  const hotkey = shortcutLabel(os, accelerator)
   return (
     <Row
       label={t('settingsVoice.mic.hotkey')}

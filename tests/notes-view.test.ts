@@ -118,6 +118,19 @@ describe('the notes screen', () => {
     expect(titles(view)[0]).toBe('買い物')
   })
 
+  it('shows the save key as Windows writes it on Windows, and saves on Ctrl+S there', async () => {
+    setCapabilities(WINDOWS)
+    const view = await render()
+    await act(async () => button(view, t('notes.edit')).click())
+    expect(button(view, t('common.save')).querySelector('kbd')?.textContent).toBe('Ctrl+S')
+    const editor = view.querySelector<HTMLTextAreaElement>('textarea')!
+    await act(async () => setValue(editor, '# 提案書の構成\n\n- [x] 日程の案を作る\n'))
+    await act(async () => editor.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true })))
+    await settle()
+    expect(api.noteWrite).toHaveBeenCalledWith(PLAN, '# 提案書の構成\n\n- [x] 日程の案を作る\n')
+    setCapabilities(MACOS)
+  })
+
   it('deletes a note only after the confirmation, and then shows the next one', async () => {
     const view = await render()
     await act(async () => button(view, t('common.delete')).click())

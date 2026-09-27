@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
 import { nvidiaGpuSupport } from '@shared/nvidia-gpu'
-import { deriveCapabilities, hotkeyLabel, type Machine } from '@shared/platform'
+import { deriveCapabilities, shortcutLabel, type Machine } from '@shared/platform'
 
 const GIB = 1024 ** 3
 const unasked = (): boolean => {
@@ -86,10 +86,15 @@ describe('what a machine can run', () => {
   })
 })
 
-describe('the label of the global hotkey', () => {
+describe('the label of a shortcut', () => {
   it('writes the modifiers as macOS menus do on a Mac and spells the accelerator out on Windows', () => {
-    expect(hotkeyLabel({ os: 'macos', hotkey: 'Alt+Space' })).toBe('⌥Space')
-    expect(hotkeyLabel({ os: 'macos', hotkey: 'Ctrl+Shift+Space' })).toBe('⌃⇧Space')
-    expect(hotkeyLabel({ os: 'windows', hotkey: 'Ctrl+Alt+Space' })).toBe('Ctrl+Alt+Space')
+    expect(shortcutLabel('macos', 'Alt+Space')).toBe('⌥Space')
+    expect(shortcutLabel('macos', 'Ctrl+Shift+Space')).toBe('⌃⇧Space')
+    expect(shortcutLabel('windows', 'Ctrl+Alt+Space')).toBe('Ctrl+Alt+Space')
+  })
+
+  it('writes the modifier that is ⌘ on a Mac as Ctrl on Windows', () => {
+    expect(shortcutLabel('macos', 'CommandOrControl+S')).toBe('⌘S')
+    expect(shortcutLabel('windows', 'CommandOrControl+S')).toBe('Ctrl+S')
   })
 })

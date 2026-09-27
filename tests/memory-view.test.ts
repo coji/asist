@@ -12,6 +12,8 @@ import { useConfirmStore } from '../src/renderer/src/state/confirm'
 import { answerConfirm } from './helpers/confirm'
 import { createTranslator } from '@shared/i18n'
 
+vi.mock('@/platform', () => import('./helpers/platform'))
+
 const t = createTranslator('ja-JP')
 
 const FILES: Record<string, string> = {

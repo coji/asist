@@ -7,6 +7,7 @@ import { askConfirm } from '@/state/confirm'
 import { MarkdownContent } from '@/panels/viewers/MarkdownViewer'
 import { relativeTime } from '@/panels/primitives/format'
 import { displayError } from '@/display-error'
+import { SaveShortcutKey, isSaveShortcut } from '@/ui/save-shortcut'
 import { useFormatLocale, useT } from '@/i18n'
 import '@/panels/viewers/viewers.css'
 import '@/assets/notes.css'
@@ -176,7 +177,7 @@ export function NotesView({ open }: { open: boolean }): React.JSX.Element {
       autoFocus
       onChange={(e) => setDraft(e.target.value)}
       onKeyDown={(e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        if (isSaveShortcut(e)) {
           e.preventDefault()
           save()
         }
@@ -187,7 +188,7 @@ export function NotesView({ open }: { open: boolean }): React.JSX.Element {
     <>
       <button type="button" className="my-btn" data-tone="primary" disabled={busy || !dirty} onClick={save}>
         {t('common.save')}
-        <kbd>⌘S</kbd>
+        <SaveShortcutKey />
       </button>
       <button type="button" className="my-btn" disabled={busy} onClick={() => void leaveEditing()}>
         {t('common.cancel')}

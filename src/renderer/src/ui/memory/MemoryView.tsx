@@ -3,6 +3,7 @@ import { Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import type { MemoryDocument } from '@shared/ipc'
 import type { Translate } from '@shared/i18n'
 import { JOURNAL_SELF_HEADINGS } from '@shared/memory-page'
+import { SaveShortcutKey, isSaveShortcut } from '@/ui/save-shortcut'
 import { useToastStore } from '@/state/stores'
 import { useLeaveGuard, useMiniApp, useViewStore } from '@/state/view'
 import { askConfirm } from '@/state/confirm'
@@ -351,7 +352,7 @@ export function MemoryView({ open }: { open: boolean }): React.JSX.Element {
                     <>
                       <button type="button" className="my-btn" data-tone="primary" disabled={busy || !dirty} onClick={save}>
                         {t('common.save')}
-                        <kbd>⌘S</kbd>
+                        <SaveShortcutKey />
                       </button>
                       <button type="button" className="my-btn" disabled={busy} onClick={() => void leaveEditing()}>
                         {t('common.cancel')}
@@ -386,7 +387,7 @@ export function MemoryView({ open }: { open: boolean }): React.JSX.Element {
                   spellCheck={false}
                   onChange={(e) => setMode({ ...mode, draft: e.target.value })}
                   onKeyDown={(e) => {
-                    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                    if (isSaveShortcut(e)) {
                       e.preventDefault()
                       save()
                     }

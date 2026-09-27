@@ -145,17 +145,17 @@ export const settingsMail = defineMessages({
     'es-ES': 'El correo más antiguo no aparece en la lista (de {min} a {max} días).'
   },
   notify: {
-    'ja-JP': '新着を macOS の通知で知らせる',
+    'ja-JP': '新着を通知で知らせる',
     'en-US': 'Notify about new mail',
-    'fr-FR': 'Signaler les nouveaux messages par une notification macOS',
+    'fr-FR': 'Signaler les nouveaux messages par une notification',
     'de-DE': 'Über neue E-Mails per Mitteilung informieren',
     'hi-IN': 'नई मेल की सूचना दें',
-    'id-ID': 'Beri tahu email baru lewat notifikasi macOS',
-    'it-IT': 'Avvisa dei nuovi messaggi con le notifiche di macOS',
-    'ko-KR': '새 메일을 macOS 알림으로 알리기',
+    'id-ID': 'Beri tahu email baru lewat notifikasi',
+    'it-IT': 'Avvisa dei nuovi messaggi con una notifica',
+    'ko-KR': '새 메일을 알림으로 알리기',
     'pt-BR': 'Avisar sobre novas mensagens',
     'es-419': 'Avisar de los correos nuevos',
-    'es-ES': 'Avisar del correo nuevo con notificaciones de macOS'
+    'es-ES': 'Avisar del correo nuevo con una notificación'
   },
   notifyHint: {
     'ja-JP': 'ASIST が前面にないときだけ通知します。',

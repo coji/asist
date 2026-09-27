@@ -99,11 +99,12 @@ export function deriveCapabilities({ platform, arch, totalMemoryBytes, nvidiaGpu
 /** The symbols macOS menus write the modifier keys with. */
 const MAC_MODIFIERS: Record<string, string> = { Ctrl: '⌃', Control: '⌃', Alt: '⌥', Option: '⌥', Shift: '⇧', Cmd: '⌘', Command: '⌘', CommandOrControl: '⌘', CmdOrCtrl: '⌘' }
 
-/** The hotkey as this OS writes a shortcut: ⌥Space on macOS, Alt+Shift+Space on Windows. */
-export function hotkeyLabel({ os, hotkey }: Pick<PlatformCapabilities, 'os' | 'hotkey'>): string {
-  if (os === 'windows') return hotkey
-  return hotkey
-    .split('+')
-    .map((part) => MAC_MODIFIERS[part] ?? part)
-    .join('')
+/** The modifier Electron reads as ⌘ on macOS and as Ctrl on Windows, as Windows writes it. */
+const WINDOWS_MODIFIERS: Record<string, string> = { CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl' }
+
+/** An Electron accelerator as this OS writes a shortcut: ⌥Space or ⌘S on macOS, Alt+Shift+Space or Ctrl+S on Windows. */
+export function shortcutLabel(os: OsFamily, accelerator: string): string {
+  const parts = accelerator.split('+')
+  if (os === 'windows') return parts.map((part) => WINDOWS_MODIFIERS[part] ?? part).join('+')
+  return parts.map((part) => MAC_MODIFIERS[part] ?? part).join('')
 }
