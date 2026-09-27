@@ -16,9 +16,11 @@ import {
 
 type DemoMachine = Omit<Machine, 'nvidiaGpu'>
 
+// The Windows PC's microphone has echo cancellation on, so the demo shows the settings that go with the
+// native microphone on both systems.
 const MACHINES: Record<OsFamily, DemoMachine> = {
-  macos: { platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * 1024 ** 3 },
-  windows: { platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * 1024 ** 3 }
+  macos: { platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true },
+  windows: { platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true }
 }
 
 /** What nvidia-smi prints for the GPU of the Windows machine the port was measured on. */

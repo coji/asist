@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { deriveCapabilities, type PlatformCapabilities } from '@shared/platform'
 import { detectNvidiaGpu } from './gpu'
+import { windowsMicCancelsEcho } from './mic-helper'
 
 let capabilities: PlatformCapabilities | null = null
 
@@ -14,7 +15,8 @@ export function platformCapabilities(): PlatformCapabilities {
     platform: process.platform,
     arch: process.arch,
     totalMemoryBytes: os.totalmem(),
-    nvidiaGpu: detectNvidiaGpu
+    nvidiaGpu: detectNvidiaGpu,
+    micCancelsEcho: windowsMicCancelsEcho
   })
   return capabilities
 }

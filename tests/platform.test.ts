@@ -4,17 +4,30 @@ import { nvidiaGpuSupport } from '@shared/nvidia-gpu'
 import { deriveCapabilities, hotkeyLabel, type Machine } from '@shared/platform'
 
 const GIB = 1024 ** 3
+const unasked = (): boolean => {
+  throw new Error('the microphone check runs on Windows alone')
+}
 
-/** A machine whose nvidia-smi printed this, or could not run at all for null. */
-const machine = (platform: string, arch: string, nvidiaSmi: string | null = null, totalMemoryBytes = 16 * GIB): Machine => ({
+/**
+ * A machine whose nvidia-smi printed this, or could not run at all for null. Its microphone check is
+ * given only where a test is about it.
+ */
+const machine = (
+  platform: string,
+  arch: string,
+  nvidiaSmi: string | null = null,
+  totalMemoryBytes = 16 * GIB,
+  micCancelsEcho: () => boolean = platform === 'win32' ? () => false : unasked
+): Machine => ({
   platform,
   arch,
   totalMemoryBytes,
-  nvidiaGpu: () => nvidiaGpuSupport(nvidiaSmi)
+  nvidiaGpu: () => nvidiaGpuSupport(nvidiaSmi),
+  micCancelsEcho
 })
 
 describe('what a machine can run', () => {
-  it('gives an Apple Silicon Mac the MLX runtime with its memory, the native microphone, the calendar and Alt+Space', () => {
+  it('gives an Apple Silicon Mac the MLX runtime with its memory, the native microphone without a check, the calendar and Alt+Space', () => {
     expect(deriveCapabilities(machine('darwin', 'arm64'))).toEqual({
       os: 'macos',
       speechRuntime: { kind: 'mlx', memoryGb: 16 },
@@ -32,7 +45,7 @@ describe('what a machine can run', () => {
 
   it('never runs nvidia-smi on a Mac', () => {
     const nvidiaGpu = vi.fn(() => nvidiaGpuSupport(null))
-    deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 16 * GIB, nvidiaGpu })
+    deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 16 * GIB, nvidiaGpu, micCancelsEcho: unasked })
     expect(nvidiaGpu).not.toHaveBeenCalled()
   })
 
@@ -54,6 +67,14 @@ describe('what a machine can run', () => {
     ['the driver is older than 580', 'NVIDIA GeForce RTX 3060, 12288, 572.83, 8.6', 'driver-too-old']
   ])('gives x64 Windows no local speech runtime when %s, with the reason', (_case, nvidiaSmi, reason) => {
     expect(deriveCapabilities(machine('win32', 'x64', nvidiaSmi)).speechRuntime).toEqual({ kind: null, reason })
+  })
+
+  it('gives x64 Windows the native microphone exactly when its check finds echo cancellation on, asking once', () => {
+    for (const cancelsEcho of [true, false]) {
+      const micCancelsEcho = vi.fn(() => cancelsEcho)
+      expect(deriveCapabilities(machine('win32', 'x64', null, 32 * GIB, micCancelsEcho)).nativeMic).toBe(cancelsEcho)
+      expect(micCancelsEcho).toHaveBeenCalledOnce()
+    }
   })
 
   it.each([

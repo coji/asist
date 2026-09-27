@@ -81,7 +81,7 @@ export interface SpeechSegment {
  */
 export type TtsEngine = 'voicevox' | 'aivisspeech' | 'qwen3tts' | 'system' | 'none'
 
-/** The result of starting the native microphone capture, which is macOS voice processing. */
+/** The result of starting the native microphone capture, which cancels the echo of what the machine plays. */
 export interface NativeMicStartResult {
   ok: boolean
   /** The sample rate of the frames when `ok`. It is currently always 48000. */
@@ -870,7 +870,7 @@ export interface RendererApi {
   onStatusChanged(callback: (status: AppStatus) => void): () => void
   requestMicPermission(): Promise<boolean>
   /**
-   * Starts microphone capture through the macOS voice processing that provides AEC. When it reports
+   * Starts microphone capture through the native helper that cancels the echo. When it reports
    * ok, 48 kHz mono Float32 frames arrive at onMicNativeFrame; when it does not, the caller has to
    * fall back to getUserMedia.
    */

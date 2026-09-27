@@ -5,24 +5,37 @@ import { fileURLToPath } from 'node:url'
 import { run, upToDate, withTemporaryDir } from './shared.mjs'
 
 /**
- * Builds resources/native/windows/asist-agent-launcher.exe, which starts an agent CLI inside a job object,
- * with the MSVC compiler of the Visual Studio that vswhere finds. A launcher older than its source or than
- * this module is built again.
+ * Builds the C helpers in resources/native/windows with the MSVC compiler of the Visual Studio that vswhere
+ * finds: asist-agent-launcher.exe, which starts an agent CLI inside a job object, and asist-mic.exe, which
+ * captures the microphone through the communications echo canceller of Windows. A helper older than its
+ * source or than this module is built again.
  */
+
+const HELPERS = [
+  { name: 'asist-agent-launcher', libraries: [] },
+  { name: 'asist-mic', libraries: ['ole32.lib', 'avrt.lib'] }
+]
 
 export async function prepareNativeWindows({ resources }) {
   const dir = path.join(resources, 'native', 'windows')
-  const source = path.join(dir, 'asist-agent-launcher.c')
-  const out = path.join(dir, 'asist-agent-launcher.exe')
-  if (upToDate(out, [source, fileURLToPath(import.meta.url)])) return
+  const module = fileURLToPath(import.meta.url)
+  const stale = HELPERS.filter(({ name }) => !upToDate(path.join(dir, `${name}.exe`), [path.join(dir, `${name}.c`), module]))
+  if (stale.length === 0) return
 
   const env = msvcEnvironment()
-  console.error('native: compiling asist-agent-launcher.exe')
-  await withTemporaryDir('asist-launcher-', async (work) => {
-    // /MT links the C runtime statically, so the launcher needs no Visual C++ redistributable. The object
-    // file goes to the temporary folder, the working directory of cl.exe.
-    run(findOnPath('cl.exe', env), ['/nologo', '/W4', '/WX', '/O2', '/MT', '/utf-8', `/Fe${out}`, source], { env, cwd: work })
-  })
+  const compiler = findOnPath('cl.exe', env)
+  for (const { name, libraries } of stale) {
+    console.error(`native: compiling ${name}.exe`)
+    await withTemporaryDir(`${name}-`, async (work) => {
+      // /MT links the C runtime statically, so the helper needs no Visual C++ redistributable. The object
+      // file goes to the temporary folder, the working directory of cl.exe.
+      run(
+        compiler,
+        ['/nologo', '/W4', '/WX', '/O2', '/MT', '/utf-8', `/Fe${path.join(dir, `${name}.exe`)}`, path.join(dir, `${name}.c`), ...libraries],
+        { env, cwd: work }
+      )
+    })
+  }
 }
 
 /** The environment vcvars64.bat sets up for the x64 compiler, read back from cmd.exe. */

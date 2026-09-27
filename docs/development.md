@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-Windows 11(x64)では、Node.js 22、上の「Windows で clone する」のとおりに設定した Git for Windows、Visual Studio の「C++ によるデスクトップ開発」が要ります。Visual Studio は Build Tools だけでもかまいません。準備のスクリプトは、git の代わりに MinGit を取得し、エージェントの CLI を動かす `asist-agent-launcher.exe` を、`vswhere` で見つけた Visual Studio の `cl.exe` でコンパイルします。Visual Studio Community 2017 と、CI(windows-latest)の Visual Studio 2026 で確かめました。コマンドは macOS と同じです。アプリは、設定と記憶を `%APPDATA%\asist` に、ログを `%APPDATA%\asist\logs` に書きます。Windows は、スタートメニューのショートカットと同じ AppUserModelID を持つアプリの通知しか出しません。`npm run dev` のアプリにはショートカットが無いので、通知はインストールしたアプリで確かめます。
+Windows 11(x64)では、Node.js 22、上の「Windows で clone する」のとおりに設定した Git for Windows、Visual Studio の「C++ によるデスクトップ開発」が要ります。Visual Studio は Build Tools だけでもかまいません。準備のスクリプトは、git の代わりに MinGit を取得し、エージェントの CLI を動かす `asist-agent-launcher.exe` と、マイクを Windows のエコーキャンセルを通して取り込む `asist-mic.exe` を、`vswhere` で見つけた Visual Studio の `cl.exe` でコンパイルします。Visual Studio Community 2017 と、CI(windows-latest)の Visual Studio 2026 で確かめました。コマンドは macOS と同じです。アプリは、設定と記憶を `%APPDATA%\asist` に、ログを `%APPDATA%\asist\logs` に書きます。Windows は、スタートメニューのショートカットと同じ AppUserModelID を持つアプリの通知しか出しません。`npm run dev` のアプリにはショートカットが無いので、通知はインストールしたアプリで確かめます。
 
 起動時の環境変数は、親プロセスの環境変数、実行ディレクトリの `.env` の順に優先します。Finder や Dock から開いたアプリは `/` で起動するので、実行ディレクトリの `.env` を読むのは、`npm run dev` のようにリポジトリから起動したときだけです。
 
@@ -60,7 +60,7 @@ GitHub Actions(`.github/workflows/ci.yml`)が、main への push と pull reques
 | `fit` | `npm run demo:fit`。11 の言語とすべてのテーマで、カードと画面の文字が収まっていること。テーマを 2 台に分けて(`--shard 1/2` と `2/2`)同時に調べます |
 | `build` | `npm run dist:mac:unsigned` でネイティブのヘルパー、git、uv を含めて署名なしのアプリまで作り、アプリの中の git と uv が動くこと |
 | `test-windows` | Windows で `npm run typecheck` と `npm test`。辞書は OS に依らないので、`test` だけで確かめます |
-| `build-windows` | `npm run dist:win:dir` で Windows のアプリを作り、アプリの中の git、uv、`asist-agent-launcher.exe` が動くこと、`ASIST.exe` が ASAR の検査を通って起動すること |
+| `build-windows` | `npm run dist:win:dir` で Windows のアプリを作り、アプリの中の git、uv、`asist-agent-launcher.exe`、`asist-mic.exe` が動くこと、`ASIST.exe` が ASAR の検査を通って起動すること |
 | `website` | Ubuntu でサイト(`website/`)をビルドし、全ページのリンクと画像の行き先 |
 | `result` | ほかの job に、失敗したものも取り消されたものもないこと |
 

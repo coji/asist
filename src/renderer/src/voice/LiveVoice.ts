@@ -14,7 +14,7 @@ import { platformCapabilities } from '@/platform'
  * ended. The renderer only signals the main process when it catches a voice, so that a closed
  * session opens, and reports the level the orb displays.
  *
- * Capture runs through the same chain as VoiceController: macOS voice processing, DeepFilterNet,
+ * Capture runs through the same chain as VoiceController: the native microphone, DeepFilterNet,
  * then 16 kHz. Each of the two paths owns its own capture objects, because they differ only after
  * capture and VoiceController's copy is entangled with its recovery and generation handling.
  */

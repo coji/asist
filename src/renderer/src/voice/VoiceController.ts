@@ -94,7 +94,7 @@ export class VoiceController {
   readonly events: Emitter<VoiceEvents> = mitt<VoiceEvents>()
 
   private mic = new MicCapture()
-  /** Capture through macOS voice processing, which cancels the echo. If it is unavailable, mic takes over. */
+  /** Capture through the native microphone helper, which cancels the echo. If it is unavailable, mic takes over. */
   private nativeMic = new NativeMicSource()
   /** DeepFilterNet noise suppression. Unavailable or backed up, it passes the audio through unsuppressed. */
   private dfn = new DfnDenoiser()
@@ -136,7 +136,7 @@ export class VoiceController {
   bargeInConfirmMs = 250
   /** Whether a quiet aizuchi such as "うん" plays at a break in a long utterance. Set from the settings. */
   listeningAizuchi = true
-  /** Prefers capture through macOS voice processing. Set from the settings, and takes effect when the microphone restarts. */
+  /** Prefers capture through the native microphone helper. Set from the settings, and takes effect when the microphone restarts. */
   nativeMicPreferred = true
   /** DeepFilterNet noise suppression, which applies to native capture only. Set from the settings, and takes effect when the microphone restarts. */
   noiseSuppression = true
@@ -450,7 +450,7 @@ export class VoiceController {
   }
 
   /**
-   * Tries to capture through macOS voice processing. On success the 48 kHz frames go to 16 kHz,
+   * Tries to capture through the native microphone helper. On success the 48 kHz frames go to 16 kHz,
    * through DeepFilterNet first where the settings ask for it, and on to feed. If it cannot start
    * it returns false and the caller switches to getUserMedia.
    */

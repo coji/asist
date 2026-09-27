@@ -4,7 +4,7 @@
 
 | 部分 | macOS(いま) | Windows(最初に出すもの) |
 |---|---|---|
-| マイク | ネイティブのヘルパー(voice processing)。失敗すると getUserMedia | getUserMedia(Chromium のエコーキャンセル)を正式な経路にする |
+| マイク | ネイティブのヘルパー(voice processing)。失敗すると getUserMedia | ネイティブのヘルパー(`asist-mic.exe`、Windows の通話用のエコーキャンセル)。起動時の確認でエコーキャンセルが有効でないマシンは getUserMedia |
 | 聞き取り(サーバー) | MLX の Qwen3-ASR 1.7B 8bit / Whisper large-v3-turbo | **CUDA の torch で動く Qwen3-ASR 1.7B か 0.6B**(NVIDIA の GPU があるとき) |
 | 聞き取り(ブラウザの中) | Whisper small(Transformers.js) | 同じ |
 | live のエンジン | GPT-Live、Gemini Live | 同じ |
@@ -132,29 +132,18 @@ MLX の Windows 向けの CUDA の wheel(`mlx-cuda-13` 0.32.2)と `mlx-audio==0.
 
 ## マイクとエコーキャンセル
 
-- **いまの動き。**
-  - いまは、ネイティブのヘルパーが使えないとき(Windows では常に)、renderer が getUserMedia に切り替えます(`VoiceController.ts:428-441`、`LiveVoice.ts:76-86`)。
-  - このとき、エコーキャンセル、ノイズの抑制、自動のゲインは有効です(`MicCapture.ts:134-141`)。
-  - 読み上げ中に話し始めたと判定するしきい値も、3倍に上げています(`VoiceController.ts:199-206`)。
-- **Chromium のエコーキャンセル(Electron 43 の既定)の限界。**
-  - Chromium 自身が鳴らした音しか打ち消しません。
-  - ASIST の読み上げは、VOICEVOX、Qwen3-TTS、live のエンジンのどれも、renderer の `<audio>` を通して鳴らしています(`SpeechPlayer.ts:43-50`)。そのため、これらは打ち消されるはずです。
-  - システムの声(Web Speech)は Windows の音声合成が鳴らすので、打ち消されない見込みです。
-- **ほかのプロセスの音も打ち消す方法。**
-  - Chromium 150(Electron 43)では、`echoCancellation: "all"` を指定できます。
-  - Windows 11 では、システム全体の出力を参照にして、ほかのプロセスの音も打ち消します(既定で有効、遅延が 170ms 増えます)。
-  - Electron のビルドでこれが有効かは未確認です。
-- **決め方(M5-7)。** スピーカーで次の4つを試します。
-  - VOICEVOX
-  - live のエンジン
-  - システムの声
-  - `"all"` を指定したとき
-
-  読み上げ中に自分の声を拾い直さないかを確かめ、結果から Windows の既定を決めます。システムの声だけが拾い直すなら、Windows ではシステムの声のときに `"all"` を使うか、システムの声を選べなくするかを決めます。
-- **fallback との関係。**
-  - いまの「ネイティブのヘルパーが使えないと getUserMedia に切り替える」動きは、AGENTS.md の「fallback を足さない」とぶつかります。
-  - Windows では、capabilities の `nativeMic` が `false` なので、最初から getUserMedia を使う形にします。そうすれば、切り替えを「失敗したときの代わり」ではなく「その OS の経路」として扱えます(M5-8)。
-  - macOS で、ヘルパーが動いている最中に落ちたときの切り替えを残すかどうかは、Windows の対応とは別に決めます([06-open-questions.md](../06-open-questions.md))。
+- **Windows のヘルパー(M5-12)。**
+  - `asist-mic.exe` は、既定のマイクを WASAPI の通話用の分類で開き、Windows の通話用の処理のエコーキャンセルを通して取り込みます。参照は既定のスピーカーなので、ほかのプロセスの音も打ち消します。Mac の `asist-mic` と同じやりとりにしたので、main と renderer は Mac と同じ経路で動きます。
+  - 使うかどうかは、起動時の `asist-mic.exe --check` の結果で決めます(ADR 0023)。エコーキャンセルが有効でないマシンでは、capabilities の `nativeMic` が `false` になり、最初から getUserMedia で取り込みます。
+- **getUserMedia のとき。**
+  - エコーキャンセル、ノイズの抑制、自動のゲインは有効です(`MicCapture.ts`)。読み上げ中に話し始めたと判定するしきい値は、3倍に上げています(`VoiceController.ts`)。
+  - Chromium のエコーキャンセル(Electron 43 の既定)は、Chromium 自身が鳴らした音しか打ち消しません。ASIST の読み上げは、VOICEVOX、Qwen3-TTS、live のエンジンのどれも renderer の `<audio>` を通して鳴らすので、これらは打ち消されるはずです。システムの声(Web Speech)は Windows の音声合成が鳴らすので、打ち消されない見込みです。
+  - Chromium 150(Electron 43)では `echoCancellation: "all"` を指定できます。Windows 11 では、システム全体の出力を参照にして、ほかのプロセスの音も打ち消します(既定で有効、遅延が 170ms 増えます)。Electron のビルドでこれが有効かは未確認です。
+- **決め方(M5-7)。** スピーカーで、VOICEVOX、live のエンジン、システムの声を鳴らし、次の3つで、読み上げ中に自分の声を拾い直さないかを比べます。結果から Windows の既定を決めます。
+  - `asist-mic.exe`
+  - getUserMedia の `echoCancellation: true`
+  - getUserMedia の `echoCancellation: "all"`
+- **動いている最中に落ちたとき。** ヘルパーが動いている最中に落ちると、renderer が getUserMedia に切り替えます。これは macOS と Windows で共通の動きで、残すかどうかは別に決めます([06-open-questions.md](../06-open-questions.md))。
 
 ## 読み上げ
 

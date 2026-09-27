@@ -4,6 +4,7 @@ out/
 resources/native/macos/asist-mic
 resources/native/macos/asist-calendar
 resources/native/windows/asist-agent-launcher.exe
+resources/native/windows/asist-mic.exe
 dist/
 coverage/
 # The pictures npm run demo:fit takes of what did not fit, on CI.

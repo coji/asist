@@ -114,6 +114,10 @@ win:
       to: cuda_asr_worker.py
     - from: resources/cuda-speech-requirements.txt
       to: cuda-speech-requirements.txt
+    # The microphone capture helper with the communications echo canceller of Windows, compiled by
+    # scripts/prepare-resources.mjs.
+    - from: resources/native/windows/asist-mic.exe
+      to: asist-mic.exe
 
 # One click installs the app for the current user into %LOCALAPPDATA%\Programs\asist, without asking for
 # administrator rights.

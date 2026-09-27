@@ -1,15 +1,17 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import fs from 'node:fs'
-import path from 'node:path'
 import readline from 'node:readline'
 import { app } from 'electron'
 import { Float32StreamReader } from '@shared/pcm-stream'
 import type { NativeMicStartResult } from '@shared/ipc'
 import { childEnv } from './child-env'
+import { micHelperPath } from './mic-helper'
 import { platformCapabilities } from './platform'
 
 /**
- * The lifecycle of the asist-mic helper, which captures the microphone through macOS voice processing.
+ * The lifecycle of the asist-mic helper, which captures the microphone with the echo of everything the
+ * machine plays cancelled: through voice processing on macOS, and through the communications echo
+ * canceller on Windows. Both helpers speak the same protocol and exit codes.
  *
  * The helper streams 48 kHz mono float32 to stdout continuously. It follows a change of the device's
  * format itself, but when the default device changes it exits with code 2 and is respawned here, and
@@ -67,9 +69,7 @@ let watchdogTimer: NodeJS.Timeout | null = null
 let quitHookRegistered = false
 
 function binaryPath(): string {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'asist-mic')
-    : path.join(app.getAppPath(), 'resources', 'native', 'macos', 'asist-mic')
+  return micHelperPath(platformCapabilities().os)
 }
 
 export function available(): boolean {

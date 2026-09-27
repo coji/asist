@@ -115,7 +115,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
-  # Builds the agent launcher with the MSVC of the runner's Visual Studio, the bundle and the unpacked app.
+  # Builds the agent launcher and the microphone helper with the MSVC of the runner's Visual Studio, the bundle and the unpacked app.
   build-windows:
     needs: changes
     if: needs.changes.outputs.app == 'true'
@@ -131,13 +131,14 @@ jobs:
           key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:win:dir
-      - name: Run the git, uv and agent launcher inside the app
+      - name: Run the git, uv, agent launcher and microphone helper inside the app
         shell: bash
         run: |
           resources="dist/win-unpacked/resources"
           "$resources/git/mingw64/bin/git.exe" --version
           "$resources/uv/uv.exe" --version
           "$resources/asist-agent-launcher.exe" --version
+          "$resources/asist-mic.exe" --version
       # A changed app.asar stops ASIST.exe within a second with "Integrity check failed for asar archive"
       # (measured 2026-09-27 on Electron 43.1.0), so an app still running after 20 seconds passed the check.
       - name: Start the app and stop it once it has passed the ASAR integrity check

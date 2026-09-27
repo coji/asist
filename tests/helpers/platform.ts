@@ -8,19 +8,40 @@ const noNvidiaSmi = (): never => {
   throw new Error('nvidia-smi is not run on a Mac')
 }
 
-/** The capabilities of a 32 GB Apple Silicon Mac. */
-export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, nvidiaGpu: noNvidiaSmi })
+/** The microphone check is run only on Windows, so a Mac that asked for it would be a defect. */
+const noMicCheck = (): never => {
+  throw new Error('the microphone check is not run on a Mac')
+}
 
-/** An x64 Windows PC with an 8 GB RTX 2080, the machine the CUDA runtime was measured on. */
+/** The capabilities of a 32 GB Apple Silicon Mac. */
+export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, nvidiaGpu: noNvidiaSmi, micCancelsEcho: noMicCheck })
+
+/**
+ * An x64 Windows PC with an 8 GB RTX 2080, the machine the CUDA runtime was measured on, whose microphone
+ * Windows does not cancel the echo on, so that it captures through getUserMedia.
+ */
 export const WINDOWS = deriveCapabilities({
   platform: 'win32',
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
-  nvidiaGpu: () => nvidiaGpuSupport('NVIDIA GeForce RTX 2080, 8192, 591.86, 7.5')
+  nvidiaGpu: () => nvidiaGpuSupport('NVIDIA GeForce RTX 2080, 8192, 591.86, 7.5'),
+  micCancelsEcho: () => false
 })
 
 /** An x64 Windows PC where nvidia-smi could not run, so that it has no local speech models. */
-export const WINDOWS_WITHOUT_GPU = deriveCapabilities({ platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * GIB, nvidiaGpu: () => nvidiaGpuSupport(null) })
+export const WINDOWS_WITHOUT_GPU = deriveCapabilities({
+  platform: 'win32',
+  arch: 'x64',
+  totalMemoryBytes: 32 * GIB,
+  nvidiaGpu: () => nvidiaGpuSupport(null),
+  micCancelsEcho: () => false
+})
+
+/**
+ * The fixture of the system the tests run on, for tests that run its real git or uv. Main's own
+ * capabilities would run nvidia-smi and open the real microphone on Windows.
+ */
+export const HOST = process.platform === 'win32' ? WINDOWS : MACOS
 
 let current: PlatformCapabilities = MACOS
 

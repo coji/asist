@@ -8,10 +8,9 @@ import { longTempFolder } from './helpers/temp'
 const mocks = vi.hoisted(() => ({ windows: false }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd() } }))
 // The git of the machine the tests run on, unless a test asks for what ASIST does on Windows.
-vi.mock('../src/main/services/platform', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/main/services/platform')>()
-  const { WINDOWS } = await import('./helpers/platform')
-  return { platformCapabilities: () => (mocks.windows ? WINDOWS : actual.platformCapabilities()) }
+vi.mock('../src/main/services/platform', async () => {
+  const { HOST, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.windows ? WINDOWS : HOST) }
 })
 // The null device as Node names it on Windows, which Git for Windows refuses to open as a configuration file.
 vi.mock('node:os', async (importOriginal) => {

@@ -7,10 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ appPath: process.cwd(), os: null as 'macos' | 'windows' | null }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => mocks.appPath, getPath: () => '/unused', on: vi.fn() } }))
 // The uv of the machine the tests run on, unless a test asks for what ASIST does on Windows.
-vi.mock('../src/main/services/platform', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/main/services/platform')>()
-  const { MACOS, WINDOWS } = await import('./helpers/platform')
-  return { platformCapabilities: () => ({ macos: MACOS, windows: WINDOWS })[mocks.os ?? actual.platformCapabilities().os] }
+vi.mock('../src/main/services/platform', async () => {
+  const { HOST, MACOS, WINDOWS } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.os ? { macos: MACOS, windows: WINDOWS }[mocks.os] : HOST) }
 })
 
 import { runUv, uvEnv, uvPath, venvPython } from '../src/main/services/uv'
