@@ -67,7 +67,9 @@ const RUNNERS: Record<ExtraModel['id'], { installed: () => Promise<boolean>; pre
       return status.runtimeInstalled && status.modelsInstalled
     },
     prepare: () => window.api.vapPrepare(),
-    enable: () => window.api.saveSettings({ vapEnabled: true })
+    // MaAI runs on the CPU for the whole conversation, and on a 16 GB M2 it slowed Qwen3-TTS below real
+    // time so that replies stuttered (measured 2026-09-28). It is prepared here and turned on only by the user.
+    enable: async () => undefined
   }
 }
 

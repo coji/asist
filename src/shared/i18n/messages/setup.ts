@@ -2199,17 +2199,17 @@ export const setup = defineMessages({
           'es-ES': 'Predice el final de tu turno y el momento de los asentimientos a partir del sonido de tu voz (Universidad de Kioto).'
         },
         purpose: {
-          'ja-JP': '言い終わりを早く見きわめて返事を速くし、話している途中に小さく相槌を打ち、頷きます。',
-          'en-US': 'Detects the end of speech early so replies come sooner, and adds quiet backchannels and nods.',
-          'fr-FR': 'Repère tôt la fin de la parole pour répondre plus vite, et ajoute de discrets acquiescements et des hochements de tête.',
-          'de-DE': 'Erkennt das Ende der Äußerung früh, damit Antworten schneller kommen, und fügt leise Hörersignale und Nicken hinzu.',
-          'hi-IN': 'बोलने का खत्म होना जल्दी पहचानकर जवाब जल्दी लाता है, और बीच-बीच में धीरे से हुंकारे भरता तथा सिर हिलाता है।',
-          'id-ID': 'Mendeteksi akhir bicara lebih awal supaya jawaban datang lebih cepat, lalu menambahkan gumaman pelan dan anggukan.',
-          'it-IT': 'Riconosce presto la fine del parlato, così le risposte arrivano prima, e aggiunge cenni sommessi e assensi.',
-          'ko-KR': '말이 끝나는 지점을 빨리 알아내 대답을 빠르게 하고, 말하는 도중에 작게 맞장구를 치고 고개를 끄덕입니다.',
-          'pt-BR': 'Detecta cedo o fim da fala, para as respostas virem antes, e acrescenta sinais de escuta baixinhos e acenos de cabeça.',
-          'es-419': 'Detecta pronto el fin del habla para que las respuestas lleguen antes, y agrega asentimientos bajitos y gestos de asentir.',
-          'es-ES': 'Detecta pronto el final del habla para que las respuestas lleguen antes, y añade asentimientos bajitos y gestos de asentir.'
+          'ja-JP': '言い終わりを早く見きわめて返事を速くし、話している途中に小さく相槌を打ち、頷きます。処理が重いので準備だけしておき、使うときは「声」の画面でオンにします。',
+          'en-US': 'Detects the end of speech early so replies come sooner, and adds quiet backchannels and nods. It takes a lot of processing, so it is prepared but left off; turn it on on the Voice page to use it.',
+          'fr-FR': "Repère tôt la fin de la parole pour répondre plus vite, et ajoute de discrets acquiescements et des hochements de tête. Comme il demande beaucoup de calcul, il est seulement préparé et reste désactivé ; activez-le sur la page Voix pour l'utiliser.",
+          'de-DE': 'Erkennt das Ende der Äußerung früh, damit Antworten schneller kommen, und fügt leise Hörersignale und Nicken hinzu. Da es viel Rechenleistung braucht, wird es nur vorbereitet und bleibt ausgeschaltet; schalten Sie es auf der Seite „Stimme“ ein, um es zu verwenden.',
+          'hi-IN': 'बोलने का खत्म होना जल्दी पहचानकर जवाब जल्दी लाता है, और बीच-बीच में धीरे से हुंकारे भरता तथा सिर हिलाता है। यह भारी है, इसलिए इसे सिर्फ़ तैयार करके बंद रखा जाता है; इस्तेमाल करने के लिए "आवाज़" पेज पर इसे चालू करें।',
+          'id-ID': 'Mendeteksi akhir bicara lebih awal supaya jawaban datang lebih cepat, lalu menambahkan gumaman pelan dan anggukan. Karena pemrosesannya berat, fitur ini hanya disiapkan dan tetap nonaktif; aktifkan di halaman Suara untuk memakainya.',
+          'it-IT': 'Riconosce presto la fine del parlato, così le risposte arrivano prima, e aggiunge cenni sommessi e assensi. Poiché richiede molta elaborazione, viene solo preparato e resta disattivato; attivalo nella pagina «Voce» per usarlo.',
+          'ko-KR': "말이 끝나는 지점을 빨리 알아내 대답을 빠르게 하고, 말하는 도중에 작게 맞장구를 치고 고개를 끄덕입니다. 처리가 무거워서 준비만 해 두고 꺼 둡니다. 쓰려면 '음성' 화면에서 켭니다.",
+          'pt-BR': 'Detecta cedo o fim da fala, para as respostas virem antes, e acrescenta sinais de escuta baixinhos e acenos de cabeça. Como exige muito processamento, ele só é preparado e fica desligado; ligue-o na página Voz para usar.',
+          'es-419': 'Detecta pronto el fin del habla para que las respuestas lleguen antes, y agrega asentimientos bajitos y gestos de asentir. Como requiere mucho procesamiento, solo se prepara y queda desactivado; actívalo en la página Voz para usarlo.',
+          'es-ES': 'Detecta pronto el final del habla para que las respuestas lleguen antes, y añade asentimientos bajitos y gestos de asentir. Como requiere mucho procesamiento, solo se prepara y queda desactivado; actívalo en la página “Voz” para usarlo.'
         }
       }
     },

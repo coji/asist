@@ -260,6 +260,27 @@ describe('first-run setup', () => {
     expect(extraNames()).toEqual([t('setup.extras.models.embedding.label'), t('setup.extras.models.modernbert.label'), t('setup.extras.models.maai.label')])
   })
 
+  it('prepares MaAI with the other extras but leaves it off, while the semantic search it prepared is turned on', async () => {
+    status = { ...status, asr: true }
+    await render()
+    const t = createTranslator('ja-JP')
+    await toModel(t)
+    await verifyKey(t)
+    await press(t('setup.next'))
+    await press(t('setup.speaking.voice.title'))
+    await press(t('setup.next'))
+    await press(t('setup.next'))
+    await press(t('settings.ttsEngine.system.macos'))
+    await press(t('setup.next'))
+    await press(t('setup.mic.check'))
+    await press(t('setup.next'))
+    // The next button opens once every extra has been prepared and, where it applies, turned on.
+    await vi.waitFor(() => expect(button(t('setup.next')).disabled).toBe(false))
+    expect(api.vapStatus).toHaveBeenCalled()
+    expect(api.saveSettings).toHaveBeenCalledWith({ memoryEmbeddingEnabled: true })
+    expect(api.saveSettings.mock.calls.some(([patch]) => 'vapEnabled' in patch)).toBe(false)
+  })
+
   it('offers the macOS voice alone and prepares only the search model when the conversation is not in Japanese', async () => {
     status = { ...status, asr: true }
     await render()
