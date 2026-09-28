@@ -9,15 +9,16 @@ export { DEFAULT_THEME, THEMES, isThemeName, type ThemeName } from '@shared/them
  */
 export function applyTheme(theme: ThemeName): void {
   document.documentElement.dataset.theme = theme
-  void window.api.paintWindowControls({ symbol: tokenColor('--ui-text') })
+  const [r, g, b] = tokenRgb('--ui-text')
+  void window.api.paintWindowControls({ symbol: `rgb(${r}, ${g}, ${b})` })
 }
 
 /**
- * A colour token of the theme on screen as rgb(), which the main process can parse. The computed style
- * keeps the form the theme wrote (an oklch() stays oklch()), so the colour is drawn on a pixel and read
- * back.
+ * The red, green and blue of a colour token in the theme on screen, for the main process and for a canvas,
+ * which cannot read CSS variables. The computed style keeps the form the theme wrote (an oklch() stays
+ * oklch()), so the colour is drawn on a pixel and read back.
  */
-function tokenColor(token: string): string {
+export function tokenRgb(token: string): [number, number, number] {
   const probe = document.createElement('span')
   probe.style.color = `var(${token})`
   document.body.append(probe)
@@ -28,5 +29,5 @@ function tokenColor(token: string): string {
   context.fillStyle = color
   context.fillRect(0, 0, 1, 1)
   const [r, g, b] = context.getImageData(0, 0, 1, 1).data
-  return `rgb(${r}, ${g}, ${b})`
+  return [r, g, b]
 }

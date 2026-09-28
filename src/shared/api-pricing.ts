@@ -51,10 +51,6 @@ const WEB_SEARCH_PRICE: Record<ConversationModel['provider'], number> = {
   cerebras: 0
 }
 
-/** Whether the model is in the price list, which decides whether a cost can be shown for it. */
-export const isPriced = (model: Pick<ConversationModel, 'provider' | 'id'>): boolean =>
-  `${model.provider}:${model.id}` in MODEL_PRICES
-
 /**
  * The cost in USD of one response, or null for a model the price list does not have. The tokens of
  * `usage.input` exclude the cached ones on every provider; on OpenAI they still include the cache

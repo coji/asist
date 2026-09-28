@@ -69,7 +69,7 @@ export function Starfield(): React.JSX.Element {
       const [r, g, b] = cur.map((v) => v | 0)
       const grad = ctx.createRadialGradient(width / 2, height * 0.42, 0, width / 2, height * 0.42, Math.max(width, height) * 0.7)
       grad.addColorStop(0, `rgba(${r},${g},${b},0.05)`)
-      grad.addColorStop(1, 'rgba(0,0,0,0)')
+      grad.addColorStop(1, 'transparent')
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, width, height)
       for (const s of stars) {

@@ -11,15 +11,6 @@ export const JOB_STATUS_KEY = {
   cancelled: 'jobs.status.cancelled'
 } as const satisfies Record<JobStatus, MessageKey>
 
-/** For the chip on a card, which is drawn with a border. */
-export const JOB_STATUS_CHIP: Record<JobStatus, string> = {
-  running: 'text-holo-peach border-holo-peach/40 holo-pulse',
-  stopping: 'text-holo-dim border-holo-line holo-pulse',
-  done: 'text-holo-mint border-holo-mint/45',
-  error: 'text-holo-red border-holo-red/45',
-  cancelled: 'text-holo-dim border-holo-line'
-}
-
 /** For the text color in the job list. */
 export const JOB_STATUS_TEXT: Record<JobStatus, string> = {
   running: 'text-holo-peach',

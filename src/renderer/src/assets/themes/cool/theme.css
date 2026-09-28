@@ -97,6 +97,18 @@
   --hud-idle-text: var(--ui-text-faint);
   --boot-background: radial-gradient(ellipse at 50% 40%, #1a1b1e 0%, #08090a 70%);
 
+  --orb-idle-from: var(--color-holo-cyan);
+  --orb-idle-to: var(--color-holo-violet);
+  --orb-listen-from: #dfe7ec;
+  --orb-listen-to: #b4c3cf;
+  --orb-think-from: var(--color-holo-violet);
+  --orb-think-to: #c2b9cc;
+  --orb-speak-from: var(--color-holo-peach);
+  --orb-speak-to: #e2cfae;
+  --orb-orbit: #8d8e93;
+  --orb-dot-1: var(--color-holo-cyan);
+  --orb-dot-2: var(--color-holo-violet);
+
   --ui-sheet: rgba(24, 24, 27, 0.96);
   --ui-sheet-border: #ffffff24;
   --ui-sheet-shadow: inset 0 1px 0 #ffffff12, 0 24px 60px #000a;

@@ -15,7 +15,8 @@
    - the card frame and the card headings (--card-kicker-*, title, number, hero alignment). Each card keeps
      its own hue in every theme so it stays recognisable; a theme decides how strongly the hue shows. The
      headings change heights, so npm run demo:fit checks every theme;
-   - the colours of one area: the calendars, code highlighting, the latency meters and the boot screen.
+   - the colours of one area: the calendars, code highlighting, the latency meters, the boot screen and the
+     orb, which a canvas draws.
    The pictures behind the weather and clock cards are night scenes in every theme, so .ui-on-scene, put on
    what is drawn over them, keeps the text of future there. */
 @import './themes/simple/theme.css';
@@ -132,6 +133,19 @@
   --hud-bar-4: #e884ff;
   --hud-idle-text: var(--color-holo-dim);
   --boot-background: radial-gradient(ellipse at 50% 40%, #0c1a33 0%, #05070f 70%);
+
+  /* The orb: the two ends its waveform sweeps between in each phase, its orbits and the points of light on them. */
+  --orb-idle-from: hsl(190 95% 72%);
+  --orb-idle-to: hsl(270 95% 72%);
+  --orb-listen-from: hsl(175 95% 72%);
+  --orb-listen-to: hsl(235 95% 72%);
+  --orb-think-from: hsl(240 95% 72%);
+  --orb-think-to: hsl(300 95% 72%);
+  --orb-speak-from: hsl(15 95% 72%);
+  --orb-speak-to: hsl(45 95% 72%);
+  --orb-orbit: #6292f2;
+  --orb-dot-1: #6acbff;
+  --orb-dot-2: #ad8fff;
 
   /* A sheet is a pane opened over a list: the mail reading pane, the calendar popover and the task editor. */
   --ui-sheet: linear-gradient(165deg, rgba(24, 36, 68, 0.97), rgba(9, 13, 28, 0.97));

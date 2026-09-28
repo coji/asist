@@ -58,11 +58,6 @@ export const AIZUCHI_MODEL = {
   }
 } as const satisfies { label: string; model: AizuchiModelFile; tokenizer: AizuchiModelFile }
 
-/** The Hugging Face download URL, pinned to a commit rather than to a branch. */
-export function bridgeModelFileUrl(file: AizuchiModelFile): string {
-  return `https://huggingface.co/${file.repo}/resolve/${file.revision}/${file.file}`
-}
-
 /** Applies the same normalization as training: NFKC, then punctuation, whitespace and brackets removed. */
 export function normalizeForClassifier(text: string): string {
   return text.normalize('NFKC').replace(/[\s、。,.?？!！…・「」『』()（）]/g, '')

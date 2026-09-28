@@ -58,7 +58,7 @@ The type in `src/renderer/src/panels/shell/card.ts`. It is registered in `regist
 | `backdrop` | `(context) => ReactNode` | The background laid across the whole card. It extends under the header and is drawn behind the body. Called only for ready / stale |
 | `scroll` | `boolean?` | True for a card whose content has no fixed length. What does not fit scrolls inside, and the bottom edge is faded |
 
-`context` is `{ spec, size }`. A body that can be drawn from props alone is wrapped with `fromProps` (`src/renderer/src/panels/shell/from-props.tsx`) in the card's own module.
+`context` is `{ spec, size }`.
 
 ## 3. What the shell provides
 

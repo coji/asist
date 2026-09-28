@@ -82,5 +82,3 @@ export function Field({
 
 export const inputClass =
   'rounded-lg border border-holo-line bg-holo-bg/60 px-2.5 py-1.5 text-xs text-holo-text placeholder:text-holo-dim focus:border-holo-cyan/50 focus:outline-none'
-
-export const selectClass = `${inputClass} cursor-pointer appearance-none pr-7`

@@ -149,8 +149,6 @@ export function effortFor(model: ConversationModel): Effort | null {
   return CONVERSATION_MODELS.find((m) => sameModel(m, model))?.defaultEffort ?? 'low'
 }
 
-export const DEFAULT_CONVERSATION_MODEL: ConversationModel = { provider: 'anthropic', id: 'claude-sonnet-5' }
-
 export const sameModel = (a: ConversationModel, b: ConversationModel): boolean => a.provider === b.provider && a.id === b.id
 
 export const catalogModelsOf = (provider: LlmProvider): CatalogModel[] => CONVERSATION_MODELS.filter((m) => m.provider === provider)

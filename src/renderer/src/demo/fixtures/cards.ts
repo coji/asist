@@ -118,5 +118,3 @@ export const STATE_GROUP: { command: string; label: string; cards: CardFixture[]
     { type: 'map', variant: 'crash', props: {} }
   ]
 }
-
-export const CARD_FIXTURES: CardFixture[] = CARD_GROUPS.flatMap((group) => group.cards)

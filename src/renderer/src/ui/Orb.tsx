@@ -4,23 +4,48 @@ import { voiceController } from '@/voice/VoiceController'
 import { liveVoice } from '@/voice/LiveVoice'
 import { useTurnStore, type Phase } from '@/state/stores'
 import type { NodKind } from '@shared/nod'
+import { tokenRgb } from '@/themes'
 import orbImage from '@/assets/holo/orb.png'
+import { hslCss, mixHsl, rgbToHsl, type Hsl } from './orb-colors'
 
 /**
  * The orb in the center. An image of a glass sphere forms its core, and a canvas lays a waveform,
  * orbits and points of light over it. The waveform moves with the phase and with the microphone or
- * TTS level, and the hue follows the phase as well: cyan for listen, violet for think, peach for
- * speak and blue-violet for idle.
+ * TTS level, and its colours follow the phase as well, from the theme's --orb-* tokens.
  */
 
-const MODES: Record<Phase, { energy: number; hue: [number, number]; ring: string }> = {
-  idle: { energy: 0.16, hue: [190, 270], ring: 'var(--color-holo-dim)' },
-  listen: { energy: 0.48, hue: [175, 235], ring: 'var(--color-holo-cyan)' },
-  think: { energy: 0.5, hue: [240, 300], ring: 'var(--color-holo-violet)' },
-  speak: { energy: 0.9, hue: [15, 45], ring: 'var(--color-holo-peach)' }
+const MODES: Record<Phase, { energy: number; ring: string }> = {
+  idle: { energy: 0.16, ring: 'var(--color-holo-dim)' },
+  listen: { energy: 0.48, ring: 'var(--color-holo-cyan)' },
+  think: { energy: 0.5, ring: 'var(--color-holo-violet)' },
+  speak: { energy: 0.9, ring: 'var(--color-holo-peach)' }
 }
 const BARS = 144
-const DOT_COLORS = ['#6acbff', '#ad8fff']
+
+/**
+ * The colours of the theme on screen: the two ends the waveform sweeps between in each phase, the orbits and
+ * the points of light on them.
+ */
+interface OrbPalette {
+  bars: Record<Phase, [Hsl, Hsl]>
+  orbit: [number, number, number]
+  dots: [string, string]
+}
+
+function readPalette(): OrbPalette {
+  const ends = (from: string, to: string): [Hsl, Hsl] => [rgbToHsl(tokenRgb(from)), rgbToHsl(tokenRgb(to))]
+  const solid = (token: string): string => `rgb(${tokenRgb(token).join(' ')})`
+  return {
+    bars: {
+      idle: ends('--orb-idle-from', '--orb-idle-to'),
+      listen: ends('--orb-listen-from', '--orb-listen-to'),
+      think: ends('--orb-think-from', '--orb-think-to'),
+      speak: ends('--orb-speak-from', '--orb-speak-to')
+    },
+    orbit: tokenRgb('--orb-orbit'),
+    dots: [solid('--orb-dot-1'), solid('--orb-dot-2')]
+  }
+}
 
 let micLevel = 0
 voiceController.events.on('level', (level) => (micLevel = level))
@@ -81,8 +106,16 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
     canvas.height = S
     const c = S / 2
 
+    let palette = readPalette()
+    let bars = palette.bars.idle
+    // The rest of the UI switches theme at once, so the waveform jumps too rather than fading from the
+    // old theme's colours.
+    const theme = new MutationObserver(() => {
+      palette = readPalette()
+      bars = palette.bars[phaseRef.current]
+    })
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     let energy = MODES.idle.energy
-    let hue: [number, number] = [...MODES.idle.hue]
     let lastT = performance.now()
     let lastDraw = 0
     let lastNod = 0
@@ -101,7 +134,8 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
       const t = now / 1000
       const mode = MODES[phaseRef.current]
       energy += (Math.min(1, mode.energy * liveEnergy(phaseRef.current, t)) - energy) * dt * 4
-      hue = [hue[0] + (mode.hue[0] - hue[0]) * dt * 3, hue[1] + (mode.hue[1] - hue[1]) * dt * 3]
+      const target = palette.bars[phaseRef.current]
+      bars = [mixHsl(bars[0], target[0], dt * 3), mixHsl(bars[1], target[1], dt * 3)]
 
       const nod = nodOffset(now - nodStartedAt, nodKind)
       if (nod !== lastNod && coreRef.current) {
@@ -116,7 +150,7 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
         const a = (i / BARS) * Math.PI * 2
         const wave = (0.5 + 0.5 * Math.sin(i * 0.34 + t * 4.2) * Math.sin(i * 0.17 - t * 2.7)) * energy
         const outer = inner + S * (0.018 + wave * 0.063)
-        ctx.strokeStyle = `hsla(${hue[0] + (hue[1] - hue[0]) * (0.5 + 0.5 * Math.sin(a))},95%,72%,${0.5 + wave * 0.5})`
+        ctx.strokeStyle = hslCss(mixHsl(bars[0], bars[1], 0.5 + 0.5 * Math.sin(a)), 0.5 + wave * 0.5)
         ctx.beginPath()
         ctx.moveTo(c + Math.cos(a) * inner, c + Math.sin(a) * inner)
         ctx.lineTo(c + Math.cos(a) * outer, c + Math.sin(a) * outer)
@@ -124,12 +158,12 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
       }
       for (let ring = 0; ring < 3; ring++) {
         const radius = S * (0.408 + ring * 0.035)
-        ctx.strokeStyle = `rgba(98,146,242,${0.19 - ring * 0.045})`
+        ctx.strokeStyle = `rgb(${palette.orbit.join(' ')} / ${0.19 - ring * 0.045})`
         ctx.lineWidth = S / 650
         ctx.beginPath()
         ctx.arc(c, c, radius, t * 0.07 + ring, t * 0.07 + ring + Math.PI * 1.65)
         ctx.stroke()
-        ctx.fillStyle = DOT_COLORS[ring % 2]
+        ctx.fillStyle = palette.dots[ring % 2]
         ctx.shadowColor = ctx.fillStyle
         ctx.shadowBlur = S * 0.02
         for (let j = 0; j < 4; j++) {
@@ -143,7 +177,10 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      theme.disconnect()
+    }
   }, [size])
 
   return (

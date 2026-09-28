@@ -29,16 +29,3 @@ export function summarizeTurnUsage(
     rounds: rounds.length
   }
 }
-
-/** The cache hit rate, or null when there was no input at all. */
-export function cacheHitRate(usage: {
-  inputTokens?: number
-  cacheReadTokens?: number
-  cacheCreationTokens?: number
-}): number | null {
-  const input = usage.inputTokens ?? 0
-  const read = usage.cacheReadTokens ?? 0
-  const creation = usage.cacheCreationTokens ?? 0
-  const total = input + read + creation
-  return total > 0 ? read / total : null
-}

@@ -12,10 +12,11 @@ const themeFile = (theme: string): string => path.join(ASSETS, 'themes', theme, 
 const OTHER_THEMES = THEMES.filter((theme) => theme !== DEFAULT_THEME)
 
 /**
- * The prefixes of the tokens a theme defines. Other custom properties, such as --wx-columns, belong to one
- * component. A name built in a template, such as var(--cal-event-${n}), ends in a hyphen and is left out.
+ * The prefixes of the tokens a theme defines, read through var() or, by what draws on a canvas, as a quoted
+ * name. Other custom properties, such as --wx-columns, belong to one component. A name built in a template,
+ * such as var(--cal-event-${n}), ends in a hyphen and is left out.
  */
-const THEME_TOKEN = /var\(\s*(--(?:ui|card|cal|viewer|code|hud|boot|app)-[\w-]+)/g
+const THEME_TOKEN = /(?:var\(\s*|['"])(--(?:ui|card|cal|viewer|code|hud|boot|app|orb)-[\w-]+)/g
 
 interface Block {
   selector: string
@@ -155,5 +156,13 @@ describe('the UI', () => {
       }
     }
     expect([...missing]).toEqual([])
+  })
+
+  it('writes no quoted hex colour and no functional colour notation with numbers in a renderer script', () => {
+    const literal = /['"`]#[\da-f]{3,8}['"`]|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(\s*\d/gi
+    const found = filesUnder(RENDERER, ['.ts', '.tsx']).flatMap((file) =>
+      [...readFileSync(file, 'utf8').matchAll(literal)].map((match) => `${path.relative(RENDERER, file)} ${match[0]}`)
+    )
+    expect(found).toEqual([])
   })
 })

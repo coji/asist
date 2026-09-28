@@ -193,8 +193,6 @@ export const DEMO_CODE_ITEMS: FileItem[] = [
 ]
 
 export const DEMO_CODE_PATH = `${DIR}/scripts/fetch-pricing.ts`
-export const DEMO_PYTHON_PATH = `${DIR}/scripts/summarize.py`
 export const DEMO_JSON_PATH = `${DIR}/data/results.json`
-export const DEMO_YAML_PATH = `${DIR}/config/settings.yaml`
 export const DEMO_NOTEBOOK_PATH = `${DIR}/analysis.ipynb`
 export const DEMO_HTML_PATH = `${DIR}/report/index.html`
