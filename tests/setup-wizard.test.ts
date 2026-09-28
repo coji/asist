@@ -178,6 +178,7 @@ beforeEach(async () => {
     ttsEngine: 'voicevox',
     ttsLabel: 'VOICEVOX',
     asr: false,
+    asrInstalled: false,
     agent: 'missing',
     agentEngine: 'codex',
     voiceEngine: 'cascade',

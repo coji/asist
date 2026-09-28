@@ -256,17 +256,17 @@ export const speechRecognition = defineMessages({
       'es-ES': 'Se ha detenido la transcripción de una frase anterior.'
     },
     serverUnavailable: {
-      'ja-JP': '音声認識サーバーを使えません。設定の「声」でブラウザ内 Whisper を準備してください。',
-      'en-US': 'The speech recognition server is unavailable. Prepare in-browser Whisper on the Voice page in Settings.',
-      'fr-FR': 'Le serveur de reconnaissance vocale est indisponible. Préparez Whisper dans le navigateur sur la page Voix des réglages.',
-      'de-DE': 'Der Server für die Spracherkennung ist nicht erreichbar. Bereiten Sie Whisper im Browser auf der Seite „Stimme“ in den Einstellungen vor.',
-      'hi-IN': 'स्पीच रिकग्निशन सर्वर उपलब्ध नहीं है। सेटिंग्ज़ के "आवाज़" पेज पर ब्राउज़र वाला Whisper तैयार करें।',
-      'id-ID': 'Server pengenalan suara tidak bisa dipakai. Siapkan Whisper dalam browser di halaman Suara pada Pengaturan.',
-      'it-IT': 'Il server di riconoscimento vocale non è disponibile. Prepara Whisper nel browser nella pagina «Voce» delle impostazioni.',
-      'ko-KR': "음성 인식 서버를 사용할 수 없습니다. 설정의 '음성'에서 브라우저 내 Whisper를 준비하십시오.",
-      'pt-BR': 'O servidor de reconhecimento de fala está indisponível. Prepare o Whisper no navegador na página Voz dos ajustes.',
-      'es-419': 'El servidor de reconocimiento de voz no está disponible. Prepara Whisper en el navegador en la página Voz de Configuración.',
-      'es-ES': 'El servidor de reconocimiento de voz no está disponible. Prepara Whisper en el navegador en la página “Voz” de Ajustes.'
+      'ja-JP': '音声認識サーバーを使えません。設定の「モデル」でブラウザ内 Whisper を準備してください。',
+      'en-US': 'The speech recognition server is unavailable. Prepare in-browser Whisper on the Models page in Settings.',
+      'fr-FR': 'Le serveur de reconnaissance vocale est indisponible. Préparez Whisper dans le navigateur sur la page Modèles des réglages.',
+      'de-DE': 'Der Server für die Spracherkennung ist nicht erreichbar. Bereiten Sie Whisper im Browser auf der Seite „Modelle“ in den Einstellungen vor.',
+      'hi-IN': 'स्पीच रिकग्निशन सर्वर उपलब्ध नहीं है। सेटिंग्ज़ के "मॉडल" पेज पर ब्राउज़र वाला Whisper तैयार करें।',
+      'id-ID': 'Server pengenalan suara tidak bisa dipakai. Siapkan Whisper dalam browser di halaman Model pada Pengaturan.',
+      'it-IT': 'Il server di riconoscimento vocale non è disponibile. Prepara Whisper nel browser nella pagina «Modelli» delle impostazioni.',
+      'ko-KR': "음성 인식 서버를 사용할 수 없습니다. 설정의 '모델'에서 브라우저 내 Whisper를 준비하십시오.",
+      'pt-BR': 'O servidor de reconhecimento de fala está indisponível. Prepare o Whisper no navegador na página Modelos dos ajustes.',
+      'es-419': 'El servidor de reconocimiento de voz no está disponible. Prepara Whisper en el navegador en la página Modelos de Configuración.',
+      'es-ES': 'El servidor de reconocimiento de voz no está disponible. Prepara Whisper en el navegador en la página “Modelos” de Ajustes.'
     },
     serverStopped: {
       'ja-JP': '音声認識サーバーが止まっています。設定の「声」でブラウザ内 Whisper を準備してください。',
@@ -319,6 +319,19 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O reconhecimento de fala não está disponível. Prepare o modelo dele na página Modelos.',
       'es-419': 'El reconocimiento de voz no está disponible. Prepara su modelo en la página Modelos.',
       'es-ES': 'El reconocimiento de voz no está disponible. Prepara su modelo en la página “Modelos”.'
+    },
+    notPrepared: {
+      'ja-JP': '音声認識の準備ができていません。設定の「モデル」で準備してください。',
+      'en-US': 'Speech recognition is not prepared. Prepare it on the Models page in Settings.',
+      'fr-FR': "La reconnaissance vocale n'est pas préparée. Préparez-la sur la page Modèles des réglages.",
+      'de-DE': 'Die Spracherkennung ist nicht vorbereitet. Bereiten Sie sie auf der Seite „Modelle“ in den Einstellungen vor.',
+      'hi-IN': 'स्पीच रिकग्निशन तैयार नहीं है। सेटिंग्ज़ के "मॉडल" पेज पर इसे तैयार करें।',
+      'id-ID': 'Pengenalan suara belum disiapkan. Siapkan di halaman Model pada Pengaturan.',
+      'it-IT': 'Il riconoscimento vocale non è pronto. Preparalo nella pagina «Modelli» delle impostazioni.',
+      'ko-KR': "음성 인식이 준비되지 않았습니다. 설정의 '모델'에서 준비하십시오.",
+      'pt-BR': 'O reconhecimento de fala não está preparado. Prepare-o na página Modelos dos ajustes.',
+      'es-419': 'El reconocimiento de voz no está preparado. Prepáralo en la página Modelos de Configuración.',
+      'es-ES': 'El reconocimiento de voz no está preparado. Prepáralo en la página “Modelos” de Ajustes.'
     }
   },
   unavailable: {

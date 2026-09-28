@@ -163,6 +163,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       ttsEngine: settings.ttsEngine,
       ttsLabel: tts.engineLabel(),
       asr: asrUp,
+      asrInstalled: asr.installed(),
       agent: locateCli(settings.agentEngine).state,
       agentEngine: settings.agentEngine,
       voiceEngine: settings.voiceEngine,

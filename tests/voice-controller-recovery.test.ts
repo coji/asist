@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppSettings } from '@shared/ipc'
 import { createTranslator } from '@shared/i18n'
 import { errorText, readErrorText } from '@shared/i18n/error-text'
+import { displayError } from '../src/renderer/src/display-error'
 
 class FakeAudioContext {
   currentTime = 0
@@ -307,6 +308,44 @@ describe('VoiceController ASR recovery', () => {
     expect(state.mic.start).toHaveBeenCalledOnce()
     expect(controller.current).toBe('listening')
     expect(state.backend).toBe('local')
+  })
+
+  it('says at once that speech recognition is not prepared when no model is installed, instead of waiting for a server that cannot start', async () => {
+    const controller = new VoiceController()
+    const state = internals(controller)
+    state.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    vi.mocked(window.api.getStatus).mockResolvedValue({ asr: false, asrInstalled: false } as never)
+    const errors: string[] = []
+    controller.events.on('error', (message) => errors.push(message))
+
+    await controller.enable()
+
+    expect(window.api.getStatus).toHaveBeenCalledOnce()
+    expect(errors).toEqual([displayError(new Error(errorText('speechRecognition.errors.notPrepared')))])
+    expect(state.mic.start).not.toHaveBeenCalled()
+    expect(controller.current).toBe('off')
+  })
+
+  it('waits for a server that is still starting with its model installed, and listens through it once it answers', async () => {
+    vi.useFakeTimers()
+    try {
+      const controller = new VoiceController()
+      const state = internals(controller)
+      state.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+      vi.mocked(window.api.getStatus)
+        .mockResolvedValueOnce({ asr: false, asrInstalled: true } as never)
+        .mockResolvedValue({ asr: true, asrInstalled: true } as never)
+
+      const enabling = controller.enable()
+      await vi.advanceTimersByTimeAsync(1500)
+      await enabling
+
+      expect(window.api.getStatus).toHaveBeenCalledTimes(2)
+      expect(state.mic.start).toHaveBeenCalledOnce()
+      expect(state.backend).toBe('server')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('cancels an in-flight server transcription when the mic generation is disabled', async () => {

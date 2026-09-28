@@ -394,6 +394,9 @@ export class VoiceController {
       // server. Local is chosen and prepared at once, and the move up to the server is attempted
       // after the microphone has started.
       let status = await window.api.getStatus()
+      if (!status.asr && !this.localFallbackEnabled && !status.asrInstalled) {
+        throw new Error(errorText('speechRecognition.errors.notPrepared'))
+      }
       if (!status.asr && !this.localFallbackEnabled) {
         // Only when local has not been chosen does this wait for the more accurate server to start.
         for (let i = 0; i < 10 && !status.asr; i++) {

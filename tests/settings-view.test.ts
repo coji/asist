@@ -81,6 +81,7 @@ const status: AppStatus = {
   ttsEngine: 'system',
   ttsLabel: 'macOS',
   asr: false,
+  asrInstalled: false,
   agent: 'missing',
   agentEngine: 'codex',
   voiceEngine: 'cascade',

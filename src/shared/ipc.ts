@@ -668,6 +668,11 @@ export interface AppStatus {
   ttsLabel: string
   /** Whether the local speech recognition model answers. */
   asr: boolean
+  /**
+   * Whether the selected speech recognition model and its runtime are installed, so that the server can be
+   * started. While it is true and `asr` is false, the server is still starting; while it is false, it never will.
+   */
+  asrInstalled: boolean
   /** Whether the CLI of the selected agent engine was found. */
   agent: AgentCliState
   agentEngine: AgentEngine

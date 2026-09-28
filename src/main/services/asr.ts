@@ -65,6 +65,14 @@ export async function installationStatus(selected: AsrModel = getSettings().asrM
   }
 }
 
+/** Whether the selected model and its runtime are installed, so that the server can be started at all. */
+export function installed(): boolean {
+  const spec = startable()
+  if (spec === null) return false
+  const { runtimeInstalled, modelInstalled } = local.installationStatus(spec)
+  return runtimeInstalled && modelInstalled
+}
+
 export async function available(): Promise<boolean> {
   const spec = startable()
   return spec !== null && (await local.available(spec))
