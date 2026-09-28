@@ -31,6 +31,8 @@ const THEME = 'simple'
 
 /** The in-page text of a dictionary key; `values` fills its placeholders. */
 const textOf = (key, values) => `window.demoText(${JSON.stringify(key)}, ${JSON.stringify(values ?? {})}).trim()`
+/** The in-page text of a message written once per OS (`<key>.macos`, `<key>.windows`), for the OS the demo runs as. */
+const osTextOf = (key, values) => `window.demoOsText(${JSON.stringify(key)}, ${JSON.stringify(values ?? {})}).trim()`
 
 /** Presses the enabled button whose text includes the given in-page text. A missing button fails the run. */
 const pressWhere = (text, label) => ({
@@ -46,13 +48,19 @@ const pressIfShown = (key) => ({
   op: 'eval',
   value: `(() => { const text = ${textOf(key)}; const b = [...document.querySelectorAll('button')].find((el) => el.textContent.includes(text) && !el.disabled); b?.click(); return !!b })()`
 })
-/** Waits until the condition, an in-page expression, holds. Past the timeout the run fails with the label. */
+/**
+ * Waits until the condition, an in-page expression, holds. Past the timeout the run fails with the label, and
+ * so does a condition that throws, such as a key the dictionary does not hold: thrown inside the interval, it
+ * would otherwise be dropped on every tick and the run would wait forever.
+ */
 const until = (condition, label, timeoutMs = 15_000) => ({
   op: 'eval',
-  value: `new Promise((resolve, reject) => { const started = Date.now(); const timer = setInterval(() => { if (${condition}) { clearInterval(timer); resolve(${JSON.stringify(label)}) } else if (Date.now() - started > ${timeoutMs}) { clearInterval(timer); reject(new Error('現れません: ' + ${JSON.stringify(label)})) } }, 100) })`
+  value: `new Promise((resolve, reject) => { const started = Date.now(); const timer = setInterval(() => { try { if (${condition}) { clearInterval(timer); resolve(${JSON.stringify(label)}) } else if (Date.now() - started > ${timeoutMs}) { clearInterval(timer); reject(new Error('現れません: ' + ${JSON.stringify(label)})) } } catch (error) { clearInterval(timer); reject(error) } }, 100) })`
 })
 /** Waits until the page shows the text of a dictionary key. */
 const untilText = (key, values, timeoutMs) => until(`document.body.textContent.includes(${textOf(key, values)})`, key, timeoutMs)
+/** Waits until the page shows the text of a message written once per OS. */
+const untilOsText = (key, values, timeoutMs) => until(`document.body.textContent.includes(${osTextOf(key, values)})`, key, timeoutMs)
 /** React tracks an input through its own setter, so the value goes in through the native setter and the event is dispatched afterwards. */
 const type = (selector, text) => ({
   op: 'eval',
@@ -195,7 +203,7 @@ function steps({ locale, name }) {
     view('setup/mic-denied'),
     ...toMicrophone,
     press('setup.mic.check'),
-    untilText('setup.guide.mic.denied'),
+    untilOsText('setup.guide.mic.denied'),
     wait(300),
     setupShot('setup-mic-denied'),
 

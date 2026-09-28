@@ -1,8 +1,9 @@
 import type { Root } from 'react-dom/client'
 import { defaultRegion } from '@shared/conversation-locale'
 import type { UiLocale } from '@shared/i18n'
+import { osMessageKey, type OsMessageKey } from '@shared/i18n/os-message'
 import { translate } from '@/i18n'
-import { loadPlatformCapabilities } from '@/platform'
+import { loadPlatformCapabilities, platformCapabilities } from '@/platform'
 import { useSettingsStore } from '@/state/stores'
 import { applyTheme, DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
 import { mockApi, scriptSayings } from './api'
@@ -40,7 +41,8 @@ export async function bootDemo(root: Root): Promise<boolean> {
       await mockApi.saveSettings({ theme })
       await useSettingsStore.getState().load()
     },
-    demoText
+    demoText,
+    demoOsText
   })
   console.info('ASIST: explicit development demo mode (no Electron preload)')
   const params = new URLSearchParams(location.search)
@@ -92,4 +94,9 @@ function demoText(key: string, values?: Record<string, string | number>): string
   } catch (cause) {
     throw new Error(`辞書に ${key} というキーはありません`, { cause })
   }
+}
+
+/** The text of a message written once per OS, for the OS the demo's capabilities name, as the screens pick it. */
+function demoOsText(key: string, values?: Record<string, string | number>): string {
+  return demoText(osMessageKey(key as OsMessageKey, platformCapabilities().os), values)
 }
