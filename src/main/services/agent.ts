@@ -519,7 +519,6 @@ export function merge(id: string, reviewed: ReviewedMerge): AgentJob {
   assertWorktreeReview(entry.job, reviewed.commit)
   const wt = entry.job.worktree
   assertMergeable(entry.job, reviewed)
-  if (!git.isClean(wt.repo)) throw new Error(errorText('jobs.merging.dirtyRepo'))
   const outcome = git.mergeNoFf(wt.repo, reviewed.commit, `asist: ${entry.job.title} (${id})`)
   if (outcome.ok) {
     pushLog(id, 'system', t('jobs.merging.done', { repo: wt.repo }))

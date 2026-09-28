@@ -8,6 +8,7 @@ import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
 import { errorText } from '@shared/i18n/error-text'
 import { platformCapabilities } from '../platform'
 import { childEnv } from '../child-env'
+import { windowsPathFolders } from '../windows-search-path'
 
 /**
  * Finding the CLI of an agent engine. A GUI app inherits a thin PATH, so the CLI's absolute path is
@@ -74,7 +75,7 @@ const SEARCH: Record<OsFamily, (engine: AgentEngine) => CliSearch> = {
   windows: (engine) => {
     const isFile = (file: string | undefined, extensions: string[]): file is string =>
       file !== undefined && extensions.includes(path.win32.extname(file).toLowerCase()) && fs.existsSync(file)
-    const folders = (process.env.PATH ?? '').split(';').filter((folder) => folder !== '')
+    const folders = windowsPathFolders(process.env.PATH ?? '')
     const executables = [...listed(engine, 'windows'), ...folders.map((folder) => path.win32.join(folder, `${engine}.exe`))]
     const found = executables.find((file) => isFile(file, ['.exe']))
     if (found) return engine === 'codex' && !codexSandboxSetUp() ? { state: 'sandbox-not-set-up' } : { state: 'found', path: found }

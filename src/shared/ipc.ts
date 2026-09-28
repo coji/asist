@@ -532,22 +532,26 @@ export interface AgentJob {
 
 export type JobMergeState = 'pending' | 'merged' | 'discarded' | 'unchanged' | 'conflict' | 'error'
 
-export interface JobDiff {
+/**
+ * The branch checked out in the repository, which a merge goes into, or null when HEAD is not on a branch,
+ * and why ASIST refuses to merge, as an error text, or null when it merges. A merge refuses to go on once
+ * another branch is checked out, since a branch cut from the same commit keeps the merge base.
+ */
+export type MergeVerdict = { into: string; blocked: null } | { into: string | null; blocked: string }
+
+export type JobDiff = MergeVerdict & {
   commit: string
   /**
    * The merge base with the repository's HEAD the diff counts from. The merge refuses to go on when it has
    * changed, since it would then apply changes the diff did not show.
    */
   base: string
-  /**
-   * The branch checked out in the repository when the diff was read, which the merge goes into, or null when
-   * HEAD is not on a branch, while nothing can be merged. The merge refuses to go on once another branch is
-   * checked out, since a branch cut from the same commit keeps the merge base.
-   */
-  into: string | null
   stat: string
   patch: string
-  /** The submodules the job touched, which keep ASIST from merging it (see `AgentJob.worktree.submodules`). */
+  /**
+   * The submodules the job touched and those whose folders in the worktree may hold work now, which keep
+   * ASIST from merging it (see `AgentJob.worktree.submodules`).
+   */
   submodules: string[]
 }
 

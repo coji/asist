@@ -9,6 +9,7 @@ import type { QwenTtsVoice } from '@shared/tts-models'
 import { getSettings } from './settings'
 import { features } from './conversation-locale'
 import * as qwenTts from './qwen-tts'
+import { resourcePath } from './resource-path'
 import * as tts from './tts'
 import { voiceKey } from './tts-voice'
 
@@ -95,8 +96,7 @@ interface BundledManifest {
  * defect and fails loudly.
  */
 function bundledClips(voice: QwenTtsVoice): (def: AizuchiDef) => string {
-  const root = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources')
-  const dir = path.join(root, 'aizuchi', 'qwen3tts', voice)
+  const dir = resourcePath(path.join('aizuchi', 'qwen3tts', voice))
   const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as BundledManifest
   return (def) => {
     const entry = manifest.clips.find((clip) => clip.text === def.text && clip.speedScale === def.speedScale && clip.volumeScale === def.volumeScale)

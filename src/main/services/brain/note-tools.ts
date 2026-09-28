@@ -1,7 +1,6 @@
-import type { PromptLanguage, PromptText } from '@shared/conversation-locale'
+import type { ConversationLocale, PromptText } from '@shared/conversation-locale'
 import { MAX_NOTE_CHARS, type NoteSummary } from '@shared/notes'
 import { LOCAL_TIMEOUT_MS, ToolError, bilingual, type ToolDefinition } from '@shared/tool-registry'
-import { conversationLocale } from '../conversation-locale'
 import { getNoteService } from '../user-notes'
 import type { ToolContext } from './tools'
 import { detail } from './tool-error-text'
@@ -18,14 +17,14 @@ type Def = ToolDefinition<ToolContext>
 const SEARCH_LIMIT = 10
 const READ_MAX_CHARS = 12_000
 
-const brief = (note: NoteSummary): Record<string, unknown> => ({
+const brief = (note: NoteSummary, locale: ConversationLocale): Record<string, unknown> => ({
   id: note.id,
   title: note.title,
   excerpt: note.excerpt,
-  updated: new Date(note.updatedAt).toLocaleString(conversationLocale())
+  updated: new Date(note.updatedAt).toLocaleString(locale)
 })
 
-export function noteTools(language: PromptLanguage): Def[] {
+export function noteTools(locale: ConversationLocale): Def[] {
   return [
     {
       name: 'add_note',
@@ -56,7 +55,7 @@ export function noteTools(language: PromptLanguage): Def[] {
         try {
           note = await getNoteService().create(input.markdown, signal)
         } catch (err) {
-          throw new ToolError(TEXTS.addFailed(detail(err, language)))
+          throw new ToolError(TEXTS.addFailed(detail(err, locale)))
         }
         ctx.emit({
           type: 'panel',
@@ -88,10 +87,10 @@ export function noteTools(language: PromptLanguage): Def[] {
       timeoutMs: LOCAL_TIMEOUT_MS,
       maxResultChars: 4_000,
       run: async (input, ctx, signal) => {
-        if (input.card === true) await putUpCard('notes', {}, ctx, signal, language)
+        if (input.card === true) await putUpCard('notes', {}, ctx, signal, locale)
         const query = typeof input.query === 'string' ? input.query.trim() : ''
         const notes = (await getNoteService().search(query)).slice(0, SEARCH_LIMIT)
-        return { count: notes.length, notes: notes.map(brief) }
+        return { count: notes.length, notes: notes.map((note) => brief(note, locale)) }
       }
     },
     {
@@ -114,7 +113,7 @@ export function noteTools(language: PromptLanguage): Def[] {
         try {
           return { id, markdown: await getNoteService().read(id) }
         } catch (err) {
-          throw new ToolError(TEXTS.readFailed(detail(err, language)))
+          throw new ToolError(TEXTS.readFailed(detail(err, locale)))
         }
       }
     }

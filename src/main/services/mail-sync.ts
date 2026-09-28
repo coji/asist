@@ -373,10 +373,10 @@ export class MailAccountSync {
           const before = cached.get(item.uid)
           const labels = item.labels ? [...item.labels] : []
           if (before && before.unread === flags.unread && before.starred === flags.starred && before.answered === flags.answered && sameLabels(before.labels, labels)) continue
-          updates.push({ uid: item.uid, ...flags, labels, duplicate: false })
+          updates.push({ uid: item.uid, ...flags, labels })
         }
         if (updates.length) {
-          cache.updateFlags(account.id, folder, updates.map((update) => ({ ...update, duplicate: duplicateOf(folder, update.labels) })))
+          cache.updateFlags(account.id, folder, updates)
           changed = true
         }
       }
@@ -520,9 +520,6 @@ const flagsOf = (item: Pick<FetchMessageObject, 'flags'>): { unread: boolean; st
   const flags = item.flags ?? new Set<string>()
   return { unread: !flags.has('\\Seen'), starred: flags.has('\\Flagged'), answered: flags.has('\\Answered') }
 }
-
-const duplicateOf = (folder: MailFolder, labels: readonly string[]): boolean =>
-  folder === 'archive' && labels.some((label) => ['\\Inbox', '\\Sent', '\\Draft', '\\Trash', '\\Spam'].includes(label))
 
 const addressesOf = (list: MessageAddressObject[] | undefined): MailAddress[] =>
   (list ?? []).filter((item) => item.address).map((item) => ({ name: (item.name ?? '').trim(), address: (item.address ?? '').trim() }))

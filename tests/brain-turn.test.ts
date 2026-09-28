@@ -9,6 +9,7 @@ import type { AgentJob, TurnEvent, TurnPlaybackAckStatus } from '@shared/ipc'
 import type { ConversationMessage, ConversationPart, ConversationResult, StopReason } from '@shared/conversation'
 import { marker } from '@shared/conversation-markers'
 import { createTranslator } from '@shared/i18n'
+import { errorText, readErrorText } from '@shared/i18n/error-text'
 import { lastRoundNote } from '@shared/tool-round'
 import { interruptedBeforeReply, interruptedWhileSpeaking, resumeAfterDisconnectNote } from '@shared/turn-recovery'
 import { InterjectPlaybackAcks } from '@/interject-playback'
@@ -97,7 +98,9 @@ class FakeStream {
 const mocks = vi.hoisted(() => ({
   userData: '',
   rounds: [] as RoundScript[],
-  requests: [] as Array<{ messages: ConversationMessage[]; system: Array<{ text: string }> }>,
+  requests: [] as Array<{ messages: ConversationMessage[]; system: Array<{ text: string }>; tools: unknown }>,
+  /** The language each sentence was handed to the voice in. */
+  voiceLocales: [] as string[],
   fetchPanel: vi.fn(),
   conversationLocale: 'ja-JP' as 'ja-JP' | 'en-US',
   key: 'test-key' as string | undefined,
@@ -117,8 +120,8 @@ vi.mock('../src/main/services/store', () => ({
 vi.mock('../src/main/services/llm', () => ({
   providerKey: () => mocks.key,
   completeText: vi.fn(async (): Promise<{ text: string; stop: StopReason }> => ({ text: '', stop: 'end' })),
-  streamConversation: (request: { messages: ConversationMessage[]; system: Array<{ text: string }>; signal?: AbortSignal }) => {
-    mocks.requests.push({ messages: structuredClone(request.messages), system: request.system })
+  streamConversation: (request: { messages: ConversationMessage[]; system: Array<{ text: string }>; tools: unknown; signal?: AbortSignal }) => {
+    mocks.requests.push({ messages: structuredClone(request.messages), system: request.system, tools: request.tools })
     const script = mocks.rounds.shift()
     if (!script) throw new Error('no scripted round left')
     return new FakeStream(script, request.signal)
@@ -143,7 +146,8 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => ({ isDestroyed: () => false, isVisible: () => true }), getAllWindows: () => [] }
 }))
 vi.mock('../src/main/services/tts', () => ({
-  synthesizeSentence: async (_text: string, signal?: AbortSignal) => {
+  synthesizeSentence: async (_text: string, locale: string, signal?: AbortSignal) => {
+    mocks.voiceLocales.push(locale)
     if (mocks.holdSynthesis) {
       await new Promise((_, reject) => signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true }))
     }
@@ -268,6 +272,7 @@ describe('brain turn', () => {
     mocks.userData = mkdtempSync(path.join(tmpdir(), 'asist-brain-'))
     mocks.rounds = []
     mocks.requests = []
+    mocks.voiceLocales = []
     mocks.conversationLocale = 'ja-JP'
     mocks.key = 'test-key'
     mocks.ttsEngine = 'voicevox'
@@ -1185,6 +1190,28 @@ describe('brain turn', () => {
     expect(spoken).toEqual([createTranslator('en-US')('conversation.reply.failed')])
   })
 
+  it('keeps the conversation language it started with for the tools, their errors, the spoken sentences and the voice when the setting changes during the turn', async () => {
+    const timedOut = errorText('panels.errors.timedOut')
+    mocks.fetchPanel.mockRejectedValueOnce(new Error(timedOut))
+    mocks.rounds.push(async (round) => {
+      round.text('見てみますね。')
+      mocks.conversationLocale = 'en-US'
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    mocks.rounds.push(async () => { throw Object.assign(new Error('bad request'), { status: 400 }) })
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '天気は')
+
+    expect(mocks.requests[1].tools).toEqual(mocks.requests[0].tools)
+    const [result] = lastUserParts(mocks.requests[1]) as Array<Extract<ConversationPart, { type: 'tool_result' }>>
+    expect(result.content).toContain(readErrorText(timedOut, 'ja-JP'))
+    expect(result.content).not.toContain(readErrorText(timedOut, 'en-US'))
+    const spoken = events.flatMap((e) => (e.type === 'segment' ? [e.segment.text] : []))
+    expect(spoken.at(-1)).toBe(createTranslator('ja-JP')('conversation.reply.failed'))
+    expect(new Set(mocks.voiceLocales)).toEqual(new Set(['ja-JP']))
+  })
+
   it('marks the reply as interrupted when the user barges in while its last sentences are still being synthesized', async () => {
     mocks.holdSynthesis = true
     mocks.rounds.push(async (round) => { round.text('明日は晴れです。', '傘はいりません。'); return {} })
@@ -1227,6 +1254,35 @@ describe('brain turn', () => {
     } finally {
       vi.useRealTimers()
       process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
+  it.each([
+    ['ja-JP', 'en-US', true],
+    ['en-US', 'ja-JP', false]
+  ] as const)('covers a slow tool with the work clip only when the language the turn started in (%s) has backchannels, whatever it is switched to (%s)', async (start, switched, plays) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true })
+    try {
+      mocks.conversationLocale = start
+      mocks.workClip = async () => ({ text: 'えーっと', category: 'work', weight: 1, audio: 'AAAA' })
+      let finishFetch!: () => void
+      mocks.fetchPanel.mockImplementation(() => new Promise((resolve) => { finishFetch = () => resolve(weatherPanel) }))
+      mocks.rounds.push(async (round) => {
+        mocks.conversationLocale = switched
+        round.toolUse('t1', 'show_weather', { location: '東京都' })
+        return { stop: 'tool_calls' }
+      })
+      mocks.rounds.push(async (round) => { round.text('晴天です。'); return {} })
+      const { brain, events } = await loadBrain()
+      const handle = brain.beginTurn({ text: '東京の天気' }, {}, 'user', false)!
+      await vi.waitFor(() => expect(finishFetch).toBeDefined())
+      await vi.advanceTimersByTimeAsync(3000)
+      finishFetch()
+      await handle.completion
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(events.some((e) => e.type === 'segment' && e.segment.text === 'えーっと')).toBe(plays)
+    } finally {
+      vi.useRealTimers()
     }
   })
 

@@ -38,7 +38,7 @@ describe('TTS service with Qwen3-TTS', () => {
   it('hands a sentence to the playback queue as a stream that still starts with the first piece', async () => {
     mocks.stream.mockReturnValue(piecesOf([1, 2], [3]))
     const tts = await import('../src/main/services/tts')
-    const speech = await tts.synthesizeSentence('こんにちは。')
+    const speech = await tts.synthesizeSentence('こんにちは。', 'ja-JP')
     if (speech.kind !== 'stream') throw new Error('expected a stream')
     const received: number[][] = []
     for await (const piece of speech.pieces) received.push([...piece])
@@ -50,9 +50,9 @@ describe('TTS service with Qwen3-TTS', () => {
   it('lets the renderer speak a sentence through Web Speech when the model produces nothing or fails before the first piece', async () => {
     const tts = await import('../src/main/services/tts')
     mocks.stream.mockReturnValue(piecesOf())
-    expect(await tts.synthesizeSentence('…')).toEqual({ kind: 'whole', audio: null, phonemes: null })
+    expect(await tts.synthesizeSentence('…', 'ja-JP')).toEqual({ kind: 'whole', audio: null, phonemes: null })
     mocks.stream.mockReturnValue((async function* (): AsyncGenerator<Float32Array> { throw new Error('worker exited') })())
-    expect(await tts.synthesizeSentence('こんにちは。')).toEqual({ kind: 'whole', audio: null, phonemes: null })
+    expect(await tts.synthesizeSentence('こんにちは。', 'ja-JP')).toEqual({ kind: 'whole', audio: null, phonemes: null })
   })
 
   it('rejects instead of falling back when the turn was aborted', async () => {
@@ -62,7 +62,7 @@ describe('TTS service with Qwen3-TTS', () => {
       throw new DOMException('aborted', 'AbortError')
     })())
     const tts = await import('../src/main/services/tts')
-    await expect(tts.synthesizeSentence('こんにちは。', controller.signal)).rejects.toThrow('aborted')
+    await expect(tts.synthesizeSentence('こんにちは。', 'ja-JP', controller.signal)).rejects.toThrow('aborted')
   })
 
   it('synthesizes a clip as a WAV with the clip\'s speed and volume', async () => {

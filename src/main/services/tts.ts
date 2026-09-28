@@ -190,10 +190,12 @@ const cannotSpeak = (engine: TtsEngine, locale: ConversationLocale): Error =>
     language: CONVERSATION_LANGUAGE_NAMES[locale]
   }))
 
-/** Resolves the choice up front so that synthesis and the audio cache are given the same engine and speaker. */
-export async function resolveVoice(settings: AppSettings = getSettings()): Promise<TtsVoice> {
+/**
+ * Resolves the choice up front so that synthesis and the audio cache are given the same engine and speaker.
+ * The locale is the language of the text to be read, which a reply keeps from its start.
+ */
+export async function resolveVoice(settings: AppSettings = getSettings(), locale: ConversationLocale = conversationLocale()): Promise<TtsVoice> {
   const engine = settings.ttsEngine
-  const locale = conversationLocale()
   if (engine === 'none') throw new Error(errorText('voice.speech.noSpeech'))
   if (engine === 'system') return { engine: 'system' }
   if (!ttsEngineRuns(engine, platformCapabilities().speechRuntime)) {
@@ -316,11 +318,12 @@ export type SentenceSpeech =
   | { kind: 'stream'; sampleRate: number; pieces: AsyncIterable<Float32Array> }
 
 /**
- * Synthesizes one sentence for the playback queue. A streaming engine resolves as soon as its first
- * piece exists, so a sentence that fails before any audio is handled like any other failed synthesis.
+ * Synthesizes one sentence of a reply written in the given language for the playback queue. A streaming
+ * engine resolves as soon as its first piece exists, so a sentence that fails before any audio is handled
+ * like any other failed synthesis.
  */
-export async function synthesizeSentence(text: string, signal?: AbortSignal): Promise<SentenceSpeech> {
-  const voice = await resolveVoice()
+export async function synthesizeSentence(text: string, locale: ConversationLocale, signal?: AbortSignal): Promise<SentenceSpeech> {
+  const voice = await resolveVoice(getSettings(), locale)
   if (voice.engine !== 'qwen3tts') return { kind: 'whole', ...(await synthesize(text, signal, undefined, voice)) }
   try {
     const pieces = qwenTts.stream(qwenRequest(text, voice), signal)

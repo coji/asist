@@ -1,31 +1,36 @@
-import type { PromptLanguage } from '@shared/conversation-locale'
+import { promptLanguage, type ConversationLocale } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
 import { ToolError, resolvePromptTexts } from '@shared/tool-registry'
-import { conversationLocale } from '../conversation-locale'
 import { errorMessageIn } from '../i18n'
 
 /**
- * The text of a caught error as the model reads it inside a tool result. The model converses in the
- * language of the conversation, whatever the language of the interface, so an error that carries a
- * message key is worded in that language and loses the key, which would mean nothing to the model.
+ * A reason as the clause the texts for the model put it in, as in `…: {reason}。`: without the period that
+ * closes it as a sentence of its own, which would otherwise be doubled.
  */
-export const errMessage = (err: unknown): string => errorMessageIn(conversationLocale(), err)
+const asClause = (text: string): string => text.trimEnd().replace(/[。．.]+$/u, '')
 
 /**
- * The same, for a tool that words the failure itself and needs the reason as one plain sentence: a
- * message that a ToolError packed into both prompt languages is unpacked into the one being written.
- * Any other message can carry text from outside, so it is never read as a packed pair.
+ * The reason a tool failed, as plain text the model reads inside a tool result, in the conversation
+ * language of the tool registry, whatever the language of the interface. An error that carries a message
+ * key is worded in that language and loses the key, which would mean nothing to the model, and a message
+ * that a ToolError packed into both prompt languages is unpacked into the one being written. Any other
+ * message can carry text from outside, so it is never read as a packed pair.
  */
-export const detail = (err: unknown, language: PromptLanguage): string =>
-  err instanceof ToolError ? resolvePromptTexts(err.message, language) : errMessage(err)
+export const reasonText = (err: unknown, locale: ConversationLocale): string =>
+  err instanceof ToolError ? resolvePromptTexts(err.message, promptLanguage(locale)) : errorMessageIn(locale, err)
+
+/** The same reason as a clause, for a text that words the failure around it. */
+export const detail = (err: unknown, locale: ConversationLocale): string => asClause(reasonText(err, locale))
 
 /** The reasons a schema rejected the input, as one sentence the model reads. */
-export const issueText = (issues: readonly { message: string }[], language: PromptLanguage): string =>
-  issues.map((issue) => resolvePromptTexts(errMessage(issue.message), language)).join(language === 'ja' ? '、' : ', ')
+export const issueText = (issues: readonly { message: string }[], locale: ConversationLocale): string => {
+  const language = promptLanguage(locale)
+  return issues.map((issue) => asClause(resolvePromptTexts(errorMessageIn(locale, issue.message), language))).join(language === 'ja' ? '、' : ', ')
+}
 
 /** The failure of a tool whose input its schema rejected, which sends the model back to the schema. */
-export function badInput(issues: readonly { message: string }[], language: PromptLanguage): ToolError {
-  const reasons = issueText(issues, language)
+export function badInput(issues: readonly { message: string }[], locale: ConversationLocale): ToolError {
+  const reasons = issueText(issues, locale)
   return new ToolError({
     ja: `入力が不正: ${reasons}。スキーマに合わせて呼び直すこと。`,
     en: `Invalid input: ${reasons}. Call again with input that matches the schema.`

@@ -101,7 +101,7 @@ describe('MailCache', () => {
     const cache = new MailCache(':memory:')
     cache.setUidValidity('a1', 'inbox', '10')
     cache.upsert([message('inbox', { uid: 1, unread: true }), message('inbox', { uid: 2 })])
-    cache.updateFlags('a1', 'inbox', [{ uid: 1, unread: false, starred: true, answered: true, labels: [], duplicate: false }])
+    cache.updateFlags('a1', 'inbox', [{ uid: 1, unread: false, starred: true, answered: true, labels: [] }])
     expect(cache.get(messageIdOf('a1', 'inbox', 1))).toMatchObject({ unread: false, starred: true, answered: true })
     cache.setFlags(messageIdOf('a1', 'inbox', 2), { unread: true })
     expect(cache.flagsIn('a1', 'inbox').get(2)).toEqual({ unread: true, starred: false, answered: false, labels: [] })

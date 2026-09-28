@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
-import type { AppTimer, PanelSpec } from '@shared/ipc'
+import type { AppTimer, JobDiff, PanelSpec } from '@shared/ipc'
 import type { FileItem } from '@shared/files'
 import { dayKeyOf, type Task, type TaskStatus } from '@shared/tasks'
 import { usePanelStore, useJobStore, useMailStore, useNoteStore, useSettingsStore, useTaskStore, useToastStore } from '@/state/stores'
@@ -93,7 +93,7 @@ const api = {
   taskUpdate: vi.fn(async (id: string): Promise<Task> => taskOf(id, id, 'done', 0)),
   notesList: vi.fn(async () => []),
   jobLog: vi.fn(async () => []),
-  jobDiff: vi.fn(async () => ({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [] as string[] })),
+  jobDiff: vi.fn(async (): Promise<JobDiff> => ({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], blocked: null })),
   jobMerge: vi.fn(async () => {}),
   jobDiscard: vi.fn(async () => {}),
   jobDiscardPreview: vi.fn(async () => ({ repo: '/r', dir: '/w', branch: 'asist/x', stat: '', submodules: [] as string[] })),
@@ -465,12 +465,22 @@ describe('agent job card', () => {
       jobs: [{ ...DEMO_JOB, status: 'done', endedAt: DEMO_JOB.startedAt + 65_000, mergeState: 'pending', worktree: { repo: '/r', dir: '/w', branch: 'asist/x', base: 'main', submodules: ['vendor/sub'] } }],
       logs: {}
     })
-    api.jobDiff.mockResolvedValueOnce({ commit: 'abc', base: 'a0c', into: 'main', stat: ' vendor/sub | 2 +-', patch: '', submodules: ['vendor/sub'] })
+    const touched: JobDiff = {
+      commit: 'abc',
+      base: 'a0c',
+      into: 'main',
+      stat: ' vendor/sub | 2 +-',
+      patch: '',
+      submodules: ['vendor/sub'],
+      blocked: errorText('jobs.merging.submodules', { paths: 'vendor/sub', branch: 'asist/x', dir: '/w' })
+    }
+    api.jobDiff.mockResolvedValueOnce(touched).mockResolvedValueOnce(touched)
     const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
     expect(card.querySelector('.aj-merge')?.textContent).toContain(t('jobs.merging.submodules', { paths: 'vendor/sub', branch: 'asist/x', dir: '/w' }))
     const [merge, discard] = [...card.querySelectorAll<HTMLButtonElement>('.aj-merge .card-action')]
     expect(merge.textContent).toBe(t('jobs.card.merge.merge'))
-    expect(merge.disabled).toBe(true)
+    await act(async () => merge.click())
+    expect(api.jobMerge).not.toHaveBeenCalled()
 
     api.jobDiscardPreview.mockResolvedValueOnce({ repo: '/r', dir: '/w', branch: 'asist/x', stat: '', submodules: ['vendor/sub'] })
     await act(async () => discard.click())
@@ -482,6 +492,30 @@ describe('agent job card', () => {
     useConfirmStore.setState({ queue: [] })
   })
 
+  it('merges nothing while the repository is not on a branch and says why, and offers the merge into the branch once one is checked out', async () => {
+    useJobStore.setState({
+      jobs: [{ ...DEMO_JOB, status: 'done', endedAt: DEMO_JOB.startedAt + 65_000, mergeState: 'pending', worktree: { repo: '/r', dir: '/w', branch: 'asist/x', base: 'main' } }],
+      logs: {}
+    })
+    const detached: JobDiff = { commit: 'abc', base: 'a0c', into: null, stat: '1 file changed', patch: '', submodules: [], blocked: errorText('jobs.merging.detached') }
+    api.jobDiff.mockResolvedValueOnce(detached).mockResolvedValueOnce(detached)
+    const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
+    expect(card.querySelector('.aj-merge')?.textContent).toContain(t('jobs.merging.detached'))
+    const merge = (): Promise<void> =>
+      act(async () => [...card.querySelectorAll<HTMLButtonElement>('.aj-merge .card-action')].find((el) => el.textContent === t('jobs.card.merge.merge'))!.click())
+    await merge()
+    expect(api.jobMerge).not.toHaveBeenCalled()
+    expect(card.querySelector('.aj-merge')?.textContent).toContain(t('jobs.merging.detached'))
+
+    // The user checks out a branch outside ASIST. The first press shows where the merge now goes, the next one merges.
+    await merge()
+    expect(api.jobMerge).not.toHaveBeenCalled()
+    expect(card.querySelector('.aj-path')?.textContent).toBe(t('jobs.card.merge.path', { branch: 'asist/x', into: 'main', repo: '/r' }))
+    expect(card.querySelector('.aj-merge')?.textContent).not.toContain(t('jobs.merging.detached'))
+    await merge()
+    expect(api.jobMerge).toHaveBeenCalledWith(DEMO_JOB.id, { commit: 'abc', base: 'a0c', into: 'main' })
+  })
+
   it('shows the current diff beside the reason when main refuses a merge because the repository moved to another branch', async () => {
     useJobStore.setState({
       jobs: [{ ...DEMO_JOB, status: 'done', endedAt: DEMO_JOB.startedAt + 65_000, mergeState: 'pending', worktree: { repo: '/r', dir: '/w', branch: 'asist/x', base: 'main' } }],
@@ -489,9 +523,11 @@ describe('agent job card', () => {
     })
     api.jobMerge.mockRejectedValueOnce(new Error(errorText('jobs.merging.baseChanged')))
     const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
-    api.jobDiff.mockResolvedValueOnce({ commit: 'abc', base: 'b1d', into: 'main', stat: '2 files changed', patch: '', submodules: [] })
+    api.jobDiff
+      .mockResolvedValueOnce({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], blocked: null })
+      .mockResolvedValueOnce({ commit: 'abc', base: 'b1d', into: 'main', stat: '2 files changed', patch: '', submodules: [], blocked: null })
     await act(async () => card.querySelector<HTMLButtonElement>('.aj-merge .card-action')!.click())
-    expect(api.jobDiff).toHaveBeenCalledTimes(2)
+    expect(api.jobDiff).toHaveBeenCalledTimes(3)
     expect(card.querySelector('.aj-diff')?.textContent).toContain('2 files changed')
     expect(card.querySelector('[role="alert"]')?.textContent).toBe(t('jobs.merging.baseChanged'))
   })

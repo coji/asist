@@ -1,7 +1,6 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
-import path from 'node:path'
-import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
+import { nativeHelperPath } from '../resource-path'
 import type { AgentOwner, AgentProcess } from './owner'
 
 /**
@@ -12,11 +11,7 @@ import type { AgentOwner, AgentProcess } from './owner'
  * through its name, takes the place of both.
  */
 
-function launcherPath(): string {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'asist-agent-launcher.exe')
-    : path.join(app.getAppPath(), 'resources', 'native', 'windows', 'asist-agent-launcher.exe')
-}
+const launcherPath = (): string => nativeHelperPath('windows', 'asist-agent-launcher.exe')
 
 /** Stops the job of a token and resolves once it is empty, or at once when no job has the token. */
 function stopJob(token: string): Promise<void> {

@@ -5,6 +5,7 @@ import path from 'node:path'
 import { childEnv, removeVariables } from './child-env'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
+import { windowsPathFolders } from './windows-search-path'
 
 /**
  * The settings of the user's own git that ASIST's git takes over: those that decide how a file of a
@@ -43,10 +44,7 @@ export function userGitSettings(bundledGit: string): WorkingTreeSettings {
  */
 export function userGitOnPath(searchPath: string, bundledRoot: string): string | null {
   const bundled = fs.realpathSync.native(bundledRoot)
-  for (const entry of searchPath.split(path.delimiter)) {
-    // Windows keeps a folder on PATH in quotes when its name holds the separator.
-    const folder = entry.replace(/^"(.*)"$/, '$1')
-    if (!path.isAbsolute(folder)) continue
+  for (const folder of windowsPathFolders(searchPath)) {
     const candidate = path.join(folder, 'git.exe')
     if (!fs.statSync(candidate, { throwIfNoEntry: false })?.isFile()) continue
     const relative = path.relative(bundled, fs.realpathSync.native(candidate))

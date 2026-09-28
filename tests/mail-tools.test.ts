@@ -1,6 +1,7 @@
 import { createTranslator } from '@shared/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TurnEvent } from '@shared/ipc'
+import type { ToolContext } from '../src/main/services/brain/tools'
 import { FETCHER_TIMEOUT_MS, LOCAL_TIMEOUT_MS } from '@shared/tool-registry'
 import type { MailMessage, MailStatus } from '@shared/mail'
 import { errorText } from '@shared/i18n/error-text'
@@ -55,7 +56,14 @@ vi.mock('../src/main/services/user-local-data', () => ({}))
 vi.mock('../src/main/services/user-tasks', () => ({}))
 vi.mock('../src/main/services/project-index', () => ({}))
 
-const load = () => import('../src/main/services/brain/tools')
+/** The tools module, called in the conversation language the settings hold. */
+async function load() {
+  const module = await import('../src/main/services/brain/tools')
+  return {
+    toolRegistry: () => module.toolRegistry('ja-JP'),
+    executeClientTool: (name: string, input: Record<string, unknown>, ctx: ToolContext) => module.executeClientTool(name, input, ctx, 'ja-JP')
+  }
+}
 const ctx = (): { turnId: number; signal: AbortSignal; emit: (event: TurnEvent) => void } => ({ turnId: 1, signal: new AbortController().signal, emit: () => {} })
 
 describe('mail tools', () => {

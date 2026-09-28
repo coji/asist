@@ -425,7 +425,6 @@ export function parseAddress(text: string): MailAddress {
 export const formatAddress = (address: MailAddress): string => (address.name ? `${address.name} <${address.address}>` : address.address)
 /** The short form shown to the user: the name when there is one, otherwise the address. */
 export const displayName = (address: MailAddress): string => address.name || address.address
-export const sameAddress = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase()
 
 export function replySubject(subject: string): string {
   const trimmed = subject.trim()

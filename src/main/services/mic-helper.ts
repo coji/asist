@@ -1,17 +1,16 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
-import path from 'node:path'
-import { app } from 'electron'
 import type { OsFamily } from '@shared/platform'
 import { childEnv } from './child-env'
+import { nativeHelperPath } from './resource-path'
 
 /**
  * Where the microphone helper of each OS is, and the check that decides at startup whether the Windows
  * helper can be used on this machine.
  */
 
-const HELPERS: Record<OsFamily, { folder: string; file: string }> = {
-  macos: { folder: 'macos', file: 'asist-mic' },
-  windows: { folder: 'windows', file: 'asist-mic.exe' }
+const HELPERS: Record<OsFamily, string> = {
+  macos: 'asist-mic',
+  windows: 'asist-mic.exe'
 }
 
 /**
@@ -25,11 +24,7 @@ const CHECK_TIMEOUT_MS = 5_000
 const NO_ECHO_CANCELLATION = 3
 const NO_DEVICE = 4
 
-/** The helper in the app's resources when packaged, and where scripts/prepare-resources.mjs builds it otherwise. */
-export function micHelperPath(os: OsFamily): string {
-  const { folder, file } = HELPERS[os]
-  return app.isPackaged ? path.join(process.resourcesPath, file) : path.join(app.getAppPath(), 'resources', 'native', folder, file)
-}
+export const micHelperPath = (os: OsFamily): string => nativeHelperPath(os, HELPERS[os])
 
 /**
  * What the check found. failed is true when the check itself did not work, which is a defect of the helper

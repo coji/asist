@@ -1,16 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { app } from 'electron'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { CURATION_SKILL, FORMAT_MODULE, SKILL_DIRS, curationSkillSource, worktreeAgentsMd } from '@shared/memory-curation'
 import { conversationLocale } from './conversation-locale'
+import { resourcePath } from './resource-path'
 
 /** The skill written in the prompt language of the conversation, read on every call so a change applies at once. */
 export function skillSourceDir(locale: ConversationLocale = conversationLocale()): string {
-  const name = curationSkillSource(locale)
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'skills', name)
-    : path.join(app.getAppPath(), 'resources', 'skills', name)
+  return resourcePath(path.join('skills', curationSkillSource(locale)))
 }
 
 /**

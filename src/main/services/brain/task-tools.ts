@@ -1,4 +1,4 @@
-import type { PromptLanguage, PromptText } from '@shared/conversation-locale'
+import { promptLanguage, type ConversationLocale, type PromptLanguage, type PromptText } from '@shared/conversation-locale'
 import { LOCAL_TIMEOUT_MS, ToolError, bilingual, inputJsonSchema, type ToolDefinition } from '@shared/tool-registry'
 import {
   TASK_STATUSES,
@@ -40,7 +40,8 @@ const TEXTS = {
   })
 } as const
 
-export function taskTools(language: PromptLanguage): ToolDefinition<ToolContext>[] {
+export function taskTools(locale: ConversationLocale): ToolDefinition<ToolContext>[] {
+  const language = promptLanguage(locale)
   return [
     {
       name: 'list_tasks',
@@ -61,7 +62,7 @@ export function taskTools(language: PromptLanguage): ToolDefinition<ToolContext>
       timeoutMs: LOCAL_TIMEOUT_MS,
       maxResultChars: 16_000,
       run: async (input, ctx, signal) => {
-        if (input.card === true) await putUpCard('todo', {}, ctx, signal, language)
+        if (input.card === true) await putUpCard('todo', {}, ctx, signal, locale)
         const status = typeof input.status === 'string' ? input.status : 'open'
         const all = await getTaskService().list()
         const tasks = status === 'open' ? openTasks(all) : all.filter((task) => task.status === status)
@@ -90,7 +91,7 @@ export function taskTools(language: PromptLanguage): ToolDefinition<ToolContext>
         try {
           return { duplicate: false, task: taskSummary(await getTaskService().create(input, signal), language) }
         } catch (err) {
-          throw new ToolError(TEXTS.addFailed(detail(err, language)))
+          throw new ToolError(TEXTS.addFailed(detail(err, locale)))
         }
       }
     },
@@ -127,7 +128,7 @@ export function taskTools(language: PromptLanguage): ToolDefinition<ToolContext>
         try {
           return { task: taskSummary(await getTaskService().update(String(id ?? ''), patch, signal), language) }
         } catch (err) {
-          throw new ToolError(TEXTS.updateFailed(detail(err, language)))
+          throw new ToolError(TEXTS.updateFailed(detail(err, locale)))
         }
       }
     },
@@ -154,7 +155,7 @@ export function taskTools(language: PromptLanguage): ToolDefinition<ToolContext>
         try {
           return { removed: taskSummary(await getTaskService().remove(String(input.id ?? ''), signal), language) }
         } catch (err) {
-          throw new ToolError(TEXTS.removeFailed(detail(err, language)))
+          throw new ToolError(TEXTS.removeFailed(detail(err, locale)))
         }
       }
     }

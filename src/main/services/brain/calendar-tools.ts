@@ -1,11 +1,6 @@
 import type { JsonSchema } from '@shared/conversation'
 import { calendarChangeSchema } from '@shared/calendar'
-import {
-  promptLanguage,
-  type ConversationLocale,
-  type PromptLanguage,
-  type PromptText
-} from '@shared/conversation-locale'
+import type { ConversationLocale, PromptText } from '@shared/conversation-locale'
 import { ToolError, inputJsonSchema, type ToolDefinition } from '@shared/tool-registry'
 import { changeCalendar } from '../calendar'
 import { detail } from './tool-error-text'
@@ -25,7 +20,6 @@ const TEXTS = {
 } as const
 
 export function calendarTools(locale: ConversationLocale): ToolDefinition<ToolContext>[] {
-  const language: PromptLanguage = promptLanguage(locale)
   return [
     {
       name: 'change_calendar',
@@ -55,7 +49,7 @@ export function calendarTools(locale: ConversationLocale): ToolDefinition<ToolCo
         try {
           return await changeCalendar(input, signal)
         } catch (err) {
-          throw new ToolError(TEXTS.changeFailed(detail(err, language)))
+          throw new ToolError(TEXTS.changeFailed(detail(err, locale)))
         }
       }
     }

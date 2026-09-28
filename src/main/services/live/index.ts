@@ -102,10 +102,11 @@ export function gptLiveInstructions(): string {
 
 function geminiSystemInstruction(startedAt: Date): string {
   history.ensureLoaded()
+  const locale = conversationLocale()
   return buildLiveSystemInstruction({
-    locale: conversationLocale(),
+    locale,
     persona: getSettings().persona,
-    toolGuide: toolGuide({ webSearch: false }),
+    toolGuide: toolGuide(locale, { webSearch: false }),
     memoryBlock: memory.promptBlock(),
     historySummary: history.summary,
     jobContext: agentRunner.contextBlock(),
@@ -143,9 +144,9 @@ function createEngine(): LiveEngineBase {
     apiKey: () => providerKey('google'),
     connect: (params) => connectGemini(providerKey('google') ?? '', params),
     systemInstruction: geminiSystemInstruction,
-    functionDeclarations: () => toGeminiFunctionDeclarations(tools()),
-    executeTool: (name, input, ctx) => executeClientTool(name, input, ctx),
-    isParallel: (name) => toolRegistry().find(name)?.parallel ?? false,
+    functionDeclarations: () => toGeminiFunctionDeclarations(tools(conversationLocale())),
+    executeTool: (name, input, ctx) => executeClientTool(name, input, ctx, conversationLocale()),
+    isParallel: (name) => toolRegistry(conversationLocale()).find(name)?.parallel ?? false,
     recordUser: (turnId, text) => {
       record({ kind: 'user', turnId, text })
     },

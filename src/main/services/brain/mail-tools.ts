@@ -1,5 +1,5 @@
 import type { JsonSchema } from '@shared/conversation'
-import type { PromptLanguage, PromptText } from '@shared/conversation-locale'
+import type { ConversationLocale, PromptText } from '@shared/conversation-locale'
 import {
   FETCHER_TIMEOUT_MS,
   LOCAL_TIMEOUT_MS,
@@ -49,7 +49,7 @@ const TEXTS = {
   })
 } as const
 
-export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>[] {
+export function mailTools(locale: ConversationLocale): ToolDefinition<ToolContext>[] {
   return [
     {
       name: 'list_mail',
@@ -104,12 +104,12 @@ export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>
       run: async (input, ctx, signal) => {
         const { card, ...listInput } = input
         const query = mailListQuerySchema.safeParse({ ...listInput, limit: listInput.limit ?? 20 })
-        if (!query.success) throw badInput(query.error.issues, language)
+        if (!query.success) throw badInput(query.error.issues, locale)
         const service = getMailService()
         const status = service.status()
         if (!status.enabled || status.accounts.length === 0) throw new ToolError(TEXTS.notConfigured)
         if (card === true) {
-          await putUpCard('mail', { unreadOnly: query.data.unreadOnly, view: query.data.view, query: query.data.query }, ctx, signal, language)
+          await putUpCard('mail', { unreadOnly: query.data.unreadOnly, view: query.data.view, query: query.data.query }, ctx, signal, locale)
         }
         const labels = accountLabels()
         const result = service.list(query.data)
@@ -141,7 +141,7 @@ export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>
       timeoutMs: FETCHER_TIMEOUT_MS,
       maxResultChars: READ_RESULT_MAX,
       run: async (input, ctx, signal) => {
-        if (input.card === true) await putUpCard('mail-message', { id: String(input.id ?? '') }, ctx, signal, language)
+        if (input.card === true) await putUpCard('mail-message', { id: String(input.id ?? '') }, ctx, signal, locale)
         try {
           const { message, text } = await getMailService().read(String(input.id ?? ''))
           return {
@@ -156,7 +156,7 @@ export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>
             text
           }
         } catch (err) {
-          throw new ToolError(TEXTS.readFailed(detail(err, language)))
+          throw new ToolError(TEXTS.readFailed(detail(err, locale)))
         }
       }
     },
@@ -231,12 +231,12 @@ export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>
       maxResultChars: 3_000,
       run: async (input, ctx, signal) => {
         const parsed = mailChangeSchema.safeParse(input)
-        if (!parsed.success) throw badInput(parsed.error.issues, language)
+        if (!parsed.success) throw badInput(parsed.error.issues, locale)
         let result
         try {
           result = await getMailService().change(parsed.data, signal, 'agent')
         } catch (err) {
-          throw new ToolError(TEXTS.changeFailed(detail(err, language)))
+          throw new ToolError(TEXTS.changeFailed(detail(err, locale)))
         }
         if ('drafted' in result) showDraftCard(ctx, result.draftId)
         return result
@@ -270,13 +270,13 @@ export function mailTools(language: PromptLanguage): ToolDefinition<ToolContext>
       run: (input, ctx) => {
         const { draftId, ...patch } = input
         const parsed = mailDraftPatchSchema.safeParse(patch)
-        if (!parsed.success) throw badInput(parsed.error.issues, language)
+        if (!parsed.success) throw badInput(parsed.error.issues, locale)
         try {
           const draft = getMailService().draftUpdate(String(draftId ?? ''), parsed.data)
           showDraftCard(ctx, draft.id)
           return { draftId: draft.id, subject: draft.reply ? replySubject(draft.reply.subject) : draft.subject, to: draft.reply ? draft.reply.to.map(formatAddress) : draft.to, body: draft.body }
         } catch (err) {
-          throw new ToolError(TEXTS.draftFailed(detail(err, language)))
+          throw new ToolError(TEXTS.draftFailed(detail(err, locale)))
         }
       }
     }

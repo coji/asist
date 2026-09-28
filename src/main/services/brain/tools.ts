@@ -26,7 +26,6 @@ import {
   type ToolRegistry
 } from '@shared/tool-registry'
 import { askingFrom } from '../confirm'
-import { conversationLocale } from '../conversation-locale'
 import { t } from '../i18n'
 import * as agentRunner from '../agent'
 import { completePanelProps, fetchPanel } from '../panel-fetchers'
@@ -87,7 +86,7 @@ const WEB_SEARCH_USAGE: PromptText = {
   en: 'Anything you can answer by reading and summarizing: news, what is new, checking a fact. Say one short filler sentence first, such as that you will look it up. If two or three searches are not enough, say you will look into it properly in the background, hand the work to run_agent_task, and do not keep at it in silence.'
 }
 
-function panelTool(entry: PanelCatalogEntry, language: PromptLanguage, capabilities: PlatformCapabilities): Def {
+function panelTool(entry: PanelCatalogEntry, locale: ConversationLocale, capabilities: PlatformCapabilities): Def {
   const type = entry.type
   const localWrite = LOCAL_WRITE_PANELS.has(type)
   return {
@@ -99,7 +98,7 @@ function panelTool(entry: PanelCatalogEntry, language: PromptLanguage, capabilit
     parallel: !localWrite,
     timeoutMs: entry.fetch ? FETCHER_TIMEOUT_MS : LOCAL_TIMEOUT_MS,
     maxResultChars: entry.resultChars ?? (entry.fetch || localWrite ? PANEL_RESULT_MAX : DISPLAY_ONLY_RESULT_MAX),
-    run: (input, ctx, signal) => runPanelTool(entry, input, ctx, signal, language)
+    run: (input, ctx, signal) => runPanelTool(entry, input, ctx, signal, locale)
   }
 }
 
@@ -111,11 +110,12 @@ async function runPanelTool(
   input: Record<string, unknown>,
   ctx: ToolContext,
   signal: AbortSignal,
-  language: PromptLanguage
+  locale: ConversationLocale
 ): Promise<unknown> {
   const type = entry.type
+  const language = promptLanguage(locale)
   const parsed = entry.schema.safeParse(input)
-  if (!parsed.success) throw badInput(parsed.error.issues, language)
+  if (!parsed.success) throw badInput(parsed.error.issues, locale)
   // A default the schema filled in may be a packed pair, so the fetcher and the card see one language.
   // Only a field the model left out can hold one; what it wrote may quote text from outside.
   const given = Object.fromEntries(
@@ -126,7 +126,7 @@ async function runPanelTool(
   )
   // What the model is told when the card cannot be filled, in the language of the conversation; a card
   // that is already up shows the same error in the language of the interface.
-  const failure = (err: unknown): ToolError => new ToolError(TEXTS.panelFailed(detail(err, language)))
+  const failure = (err: unknown): ToolError => new ToolError(TEXTS.panelFailed(detail(err, locale)))
   if (type === 'weather') {
     signal.throwIfAborted()
     const place = resolveWeatherCard(String(given.location))
@@ -164,7 +164,7 @@ async function runPanelTool(
   const failPanel = (err: unknown): void =>
     panelEvent({ op: 'patch', key, state: 'error', error: cardError(err) })
 
-  if (type === 'agent-job') return showAgentJob(props, panelEvent)
+  if (type === 'agent-job') return showAgentJob(props, panelEvent, locale)
 
   panelEvent({
     op: 'create',
@@ -186,7 +186,7 @@ async function runPanelTool(
       return { shown: true, panel: type, started: true, timer }
     } catch (err) {
       failPanel(err)
-      throw new ToolError(TEXTS.timerFailed(detail(err, language)))
+      throw new ToolError(TEXTS.timerFailed(detail(err, locale)))
     }
   }
   if (!entry.fetch) return { shown: true, panel: type, props }
@@ -205,25 +205,25 @@ async function runPanelTool(
  * the renderer's job store, so the props carry nothing but the id, and the status is returned for the
  * model to talk about.
  */
-function showAgentJob(props: Record<string, unknown>, panelEvent: (event: PanelEvent) => void): unknown {
+function showAgentJob(props: Record<string, unknown>, panelEvent: (event: PanelEvent) => void, locale: ConversationLocale): unknown {
   const jobId = typeof props.jobId === 'string' && props.jobId.trim() ? props.jobId : null
   if (!jobId) {
-    const jobs = agentRunner.userJobs().slice(0, 10).map(jobBrief)
+    const jobs = agentRunner.userJobs().slice(0, 10).map((job) => jobBrief(job, locale))
     panelEvent({ op: 'create', key: 'jobs', type: 'jobs', slot: 'right', props: {}, state: 'ready' })
     return { shown: true, panel: 'jobs', jobs, count: jobs.length }
   }
   const job = agentRunner.userJob(jobId)
   if (!job) throw new ToolError(TEXTS.noSuchJobCard(jobId))
   panelEvent({ op: 'create', key: `job:${job.id}`, type: 'agent-job', slot: 'right', props: { jobId: job.id }, state: 'ready' })
-  return { shown: true, panel: 'agent-job', job: jobBrief(job) }
+  return { shown: true, panel: 'agent-job', job: jobBrief(job, locale) }
 }
 
-const jobBrief = (j: AgentJob): Record<string, unknown> => ({
+const jobBrief = (j: AgentJob, locale: ConversationLocale): Record<string, unknown> => ({
   jobId: j.id,
   title: j.title,
   status: j.status,
   mergeState: j.mergeState,
-  startedAt: new Date(j.startedAt).toLocaleString(conversationLocale()),
+  startedAt: new Date(j.startedAt).toLocaleString(locale),
   summary: j.summary?.slice(0, 120),
   artifacts: j.artifacts?.length ?? 0
 })
@@ -252,20 +252,20 @@ const registryCache = new Map<ConversationLocale, ToolRegistry<ToolContext>>()
  * The registry of client tools for one conversation language, built on first use and kept per
  * language. Both the list sent to the model and the dispatch at call time read it.
  */
-export function toolRegistry(locale: ConversationLocale = conversationLocale()): ToolRegistry<ToolContext> {
+export function toolRegistry(locale: ConversationLocale): ToolRegistry<ToolContext> {
   const cached = registryCache.get(locale)
   if (cached) return cached
   const language = promptLanguage(locale)
   const capabilities = platformCapabilities()
   const registry = createToolRegistry<ToolContext>([
-    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, language, capabilities)),
+    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, locale, capabilities)),
     agentTool(locale),
-    ...taskTools(language),
-    ...noteTools(language),
+    ...taskTools(locale),
+    ...noteTools(locale),
     ...(capabilities.calendar !== null ? calendarTools(locale) : []),
-    ...mailTools(language),
+    ...mailTools(locale),
     ...jobTools(locale),
-    ...projectTools(language),
+    ...projectTools(locale),
     ...memoryTools(language),
     ...miniAppTools(language, MINI_APPS.filter((app) => miniAppAvailable(app, capabilities)))
   ])
@@ -280,10 +280,7 @@ export interface ToolOptions {
 const ALL_TOOLS: ToolOptions = { webSearch: true }
 
 /** The client tools handed to the model. Web search is not among them, because it is the provider's own. */
-export const tools = (): ToolSpec[] => {
-  const locale = conversationLocale()
-  return toolRegistry(locale).toolSpecs(promptLanguage(locale))
-}
+export const tools = (locale: ConversationLocale): ToolSpec[] => toolRegistry(locale).toolSpecs(promptLanguage(locale))
 
 const guideCache = new Map<string, string>()
 
@@ -291,8 +288,7 @@ const guideCache = new Map<string, string>()
  * The tool guide section of the system prompt, generated from the registry. The show_ tools collapse
  * into one line, and web search is listed only where it is available.
  */
-export function toolGuide({ webSearch: withSearch }: ToolOptions = ALL_TOOLS): string {
-  const locale = conversationLocale()
+export function toolGuide(locale: ConversationLocale, { webSearch: withSearch }: ToolOptions = ALL_TOOLS): string {
   const language = promptLanguage(locale)
   const cacheKey = `${locale}:${withSearch}`
   const cached = guideCache.get(cacheKey)
@@ -308,17 +304,18 @@ export function toolGuide({ webSearch: withSearch }: ToolOptions = ALL_TOOLS): s
 }
 
 /**
- * Runs a client tool. A failure or a timeout comes back as a result marked isError rather than as an
- * exception. A confirmation the tool opens calls `onAsk` (see askingFrom), and its approval tells the
- * execution that the operation has started.
+ * Runs a client tool from the registry of the conversation language the caller read, which for a turn is
+ * the language it read when it started. A failure or a timeout comes back as a result marked isError
+ * rather than as an exception. A confirmation the tool opens calls `onAsk` (see askingFrom), and its
+ * approval tells the execution that the operation has started.
  */
 export function executeClientTool(
   name: string,
   input: Record<string, unknown>,
   ctx: ToolContext,
+  locale: ConversationLocale,
   onAsk: () => boolean = () => false
 ): ToolExecutionTask {
-  const locale = conversationLocale()
   // The approval comes from the user long after this returns, so the task is there by then.
   let task: ToolExecutionTask | undefined
   task = askingFrom({ onAsk, onApprove: () => task?.operationStarted() }, () =>

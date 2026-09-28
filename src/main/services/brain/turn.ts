@@ -12,12 +12,12 @@ import { ToolRoundExecutor, buildToolResultsMessage, type ToolRoundResult } from
 import { buildResumeMessages, resumeAfterDisconnectNote } from '@shared/turn-recovery'
 import { buildMemoryInjection, memoryIdsInToolResult, type MemoryInjection } from '@shared/memory-injection'
 import { diagnoseCacheMiss, fingerprintRequest, type CacheMissReason } from '@shared/cache-diagnosis'
-import { fillPrompt, promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
+import { conversationFeatures, fillPrompt, promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
 import { marker } from '@shared/conversation-markers'
 import { providerKey, streamConversation } from '../llm'
 import { LLM_PROVIDER_INFO, type ConversationModel } from '@shared/llm-catalog'
-import { tConversation } from '../i18n'
-import { conversationLocale, features } from '../conversation-locale'
+import { translatorIn } from '../i18n'
+import { conversationLocale } from '../conversation-locale'
 import { getSettings } from '../settings'
 import * as agentRunner from '../agent'
 import { randomClip as randomAizuchiClip } from '../aizuchi'
@@ -166,8 +166,10 @@ async function runTurn(
 ): Promise<void> {
   const userText = input.text
   // The conversation language is read once at the start of the turn, so that every note, the system
-  // prompt and the tool results of this turn speak the same language even if the setting changes.
+  // prompt, the tools, the spoken lines and the voice of this turn keep one language even if the setting
+  // changes while it runs.
   const locale: ConversationLocale = conversationLocale()
+  const say = translatorIn(locale)
   // When the sentences go to a voice model, this is brain's text rather than the voice's rewording of it.
   // The voice reports no playback position, so a reply the user cuts into while it is being read is
   // recorded whole: only an abort of the turn itself marks it interrupted.
@@ -193,7 +195,7 @@ async function runTurn(
   // The aizuchi and bridge notes are needed only where the brain's own sentences are spoken; a voice
   // model already knows what it said. claude-sonnet-5 does not support prefilling the assistant
   // message, so the request to continue from there is made on the user side.
-  const aizuchiText = route.kind === 'tts' && features().aizuchi ? options.aizuchi?.trim() : undefined
+  const aizuchiText = route.kind === 'tts' && conversationFeatures(locale).aizuchi ? options.aizuchi?.trim() : undefined
   const bridgeText = route.kind === 'tts' ? options.bridge?.trim() : undefined
   const spoken: string[] = []
   if (aizuchiText) spoken.push(fillPrompt(promptText(locale, ALREADY_SPOKEN.aizuchi), { text: aizuchiText }))
@@ -280,7 +282,7 @@ async function runTurn(
     system = buildSystemLayers({
       locale,
       persona: getSettings().persona,
-      toolGuide: toolGuide(toolOptions),
+      toolGuide: toolGuide(locale, toolOptions),
       memoryBlock,
       historySummary: history.summary,
       voiceLayer: route.kind === 'live' ? 'delegated' : 'self',
@@ -342,8 +344,8 @@ async function runTurn(
     })
   }
 
-  const synth = route.open({ turnId, signal, emit })
-  const assembler = new SegmentAssembler(conversationLocale())
+  const synth = route.open({ turnId, signal, emit, locale })
+  const assembler = new SegmentAssembler(locale)
   const pushText = (delta: string): void => {
     lastTextAt = Date.now()
     if (!ttftSent) {
@@ -355,8 +357,9 @@ async function runTurn(
   }
 
   // A filler that keeps the pause alive while a search or a tool takes long. It plays a pre-synthesized
-  // aizuchi clip as is, at most once per turn. With a voice model in front, that side fills the pause.
-  let fillerPlayed = route.kind === 'live'
+  // aizuchi clip as is, at most once per turn. The clips are Japanese backchannels, so they play only in a
+  // turn whose language has them. With a voice model in front, that side fills the pause.
+  let fillerPlayed = route.kind === 'live' || !conversationFeatures(locale).aizuchi
   const playWorkFiller = (sourceSignal: AbortSignal): void => {
     if (fillerPlayed || sourceSignal.aborted) return
     fillerPlayed = true
@@ -421,12 +424,12 @@ async function runTurn(
     const round = new ToolRoundExecutor({
       signal,
       locale,
-      isParallel: (name) => toolRegistry().find(name)?.parallel ?? false,
+      isParallel: (name) => toolRegistry(locale).find(name)?.parallel ?? false,
       execute: (call, roundSignal) => executeClientTool(call.name, call.input, {
         ...ctx,
         signal: roundSignal,
         emit: (event) => { if (!roundSignal.aborted) emit(event) }
-      }, () => holdForAnswer(roundSignal)),
+      }, locale, () => holdForAnswer(roundSignal)),
       onStart: (call) => {
         toolCalls++
         slowToolTimer ??= setTimeout(() => playWorkFiller(round.signal), 2500)
@@ -454,7 +457,7 @@ async function runTurn(
           locale,
           maxTokens: MAX_OUTPUT_TOKENS,
           system,
-          tools: tools(),
+          tools: tools(locale),
           webSearch: toolOptions.webSearch,
           messages,
           signal: withTimeoutSignal(signal, API_ROUND_TIMEOUT_MS)
@@ -527,7 +530,7 @@ async function runTurn(
       // Nothing goes to the model. The sentence is the reply: the user sees and hears it as one, and
       // the history records it as said, so neither the model nor the next summary reads the request as
       // left undone.
-      visibleReply = tConversation('spoken.historyFull')
+      visibleReply = say('spoken.historyFull')
       emit({ type: 'delta', turnId, text: visibleReply })
       for (const sentence of assembler.push(visibleReply)) synth.push(sentence)
       await closeReply()
@@ -541,7 +544,7 @@ async function runTurn(
       const toolRound = newToolRound()
       try {
         // Only the first round fingerprints what is sent and compares it with the previous request, which gives the reason for a cache miss.
-        const fingerprint = round === 0 ? fingerprintRequest({ at: Date.now(), systemLayers: system, tools: tools(), messages }) : null
+        const fingerprint = round === 0 ? fingerprintRequest({ at: Date.now(), systemLayers: system, tools: tools(locale), messages }) : null
         // The clock for the text restarts each round, so time spent running tools does not count as silence during a search.
         lastTextAt = Date.now()
         let result: ConversationResult
@@ -639,7 +642,7 @@ async function runTurn(
       // Only a TurnStopError, such as hitting the round limit, and a failure of the API itself end the
       // turn with a prepared sentence, which is said aloud in the language of the conversation.
       console.error('brain error:', err)
-      const friendly = tConversation(err instanceof TurnStopError ? err.key : apiErrorKey(err))
+      const friendly = say(err instanceof TurnStopError ? err.key : apiErrorKey(err))
       recordAssistant(visibleReply, { failed: true })
       synth.push(friendly)
       await synth.drain()

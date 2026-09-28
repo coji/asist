@@ -1,12 +1,11 @@
-import { app } from 'electron'
 import { execFile } from 'node:child_process'
-import path from 'node:path'
 import { z } from 'zod'
 import { calendarEventSchema, calendarStatusSchema, type CalendarStatus } from '@shared/calendar'
 import type { MessageKey } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import type { CalendarBackend, CalendarWrite } from './calendar-backend'
 import { childEnv } from './child-env'
+import { nativeHelperPath } from './resource-path'
 
 /** The codes the calendar helper (resources/native/macos/asist-calendar.swift) fails with, and the message of each. */
 const HELPER_ERRORS = {
@@ -43,9 +42,7 @@ function helperResult(stdout: string): unknown {
 export type CalendarNative = (input: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>
 
 export const runCalendarNative: CalendarNative = (input, signal) => {
-  const executable = app.isPackaged
-    ? path.join(process.resourcesPath, 'asist-calendar')
-    : path.join(app.getAppPath(), 'resources', 'native', 'macos', 'asist-calendar')
+  const executable = nativeHelperPath('macos', 'asist-calendar')
   return new Promise((resolve, reject) => {
     const child = execFile(
       executable,

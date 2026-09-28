@@ -1,4 +1,4 @@
-import type { PromptLanguage, PromptText } from '@shared/conversation-locale'
+import type { ConversationLocale, PromptText } from '@shared/conversation-locale'
 import type { PanelEvent } from '@shared/ipc'
 import { catalogByType } from '@shared/panel-catalog'
 import { ToolError, bilingual } from '@shared/tool-registry'
@@ -39,12 +39,12 @@ export async function putUpCard(
   props: Record<string, unknown>,
   ctx: ToolContext,
   signal: AbortSignal,
-  language: PromptLanguage
+  locale: ConversationLocale
 ): Promise<void> {
   const entry = catalogByType.get(type)
   if (!entry) throw new Error(`no card of type ${type}`)
   const input = entry.schema.safeParse(props)
-  if (!input.success) throw new ToolError(TEXTS.cardFailed(issueText(input.error.issues, language)))
+  if (!input.success) throw new ToolError(TEXTS.cardFailed(issueText(input.error.issues, locale)))
   const parsed = input.data as Record<string, unknown>
   const key = entry.key(parsed)
   const emit = (event: PanelEvent): void => ctx.emit({ type: 'panel', turnId: ctx.turnId, event })
@@ -58,6 +58,6 @@ export async function putUpCard(
     emit({ op: 'patch', key, props: result.props, state: 'ready', source: result.source })
   } catch (err) {
     emit({ op: 'patch', key, state: 'error', error: cardError(err) })
-    throw new ToolError(TEXTS.cardFailed(detail(err, language)))
+    throw new ToolError(TEXTS.cardFailed(detail(err, locale)))
   }
 }

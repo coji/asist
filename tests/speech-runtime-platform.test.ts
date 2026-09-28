@@ -5,7 +5,8 @@ import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { asrModelSpec } from '@shared/asr-models'
-import type { PlatformCapabilities } from '@shared/platform'
+import type { PlatformCapabilities, SpeechRuntime } from '@shared/platform'
+import { qwenTtsRuns } from '@shared/tts-models'
 import { MACOS, WINDOWS, setCapabilities } from './helpers/platform'
 
 const mocks = vi.hoisted(() => ({ userData: '', spawn: vi.fn(), createEnvironment: vi.fn(), installRequirements: vi.fn() }))
@@ -143,6 +144,14 @@ describe('what the app of each OS ships for its speech runtime', () => {
     for (const file of files) {
       expect(shipped).toContainEqual({ from: `resources/${file}`, to: file })
       expect(fs.existsSync(path.join('resources', file))).toBe(true)
+    }
+  })
+})
+
+describe('Qwen3-TTS on each speech runtime', () => {
+  it('is offered on exactly the runtimes that have a worker to run it', () => {
+    for (const kind of Object.keys(SPEECH_RUNTIMES) as SpeechRuntime[]) {
+      expect([kind, qwenTtsRuns({ kind, memoryGb: 64 })]).toEqual([kind, SPEECH_RUNTIMES[kind].tts !== null])
     }
   })
 })

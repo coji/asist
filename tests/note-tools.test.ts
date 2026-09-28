@@ -29,7 +29,7 @@ afterEach(() => fs.rmSync(directory, { recursive: true, force: true }))
 async function call(name: string, input: Record<string, unknown>) {
   const events: TurnEvent[] = []
   const ctx = { turnId: 7, signal: new AbortController().signal, emit: (event: TurnEvent) => events.push(event) }
-  const execution = await executeClientTool(name, input, ctx)
+  const execution = await executeClientTool(name, input, ctx, 'ja-JP')
   return { execution, events, result: execution.isError ? null : JSON.parse(execution.content) }
 }
 
@@ -68,7 +68,7 @@ describe('note tools', () => {
     const { result: read } = await call('read_note', { id: saved.id })
     expect(read).toEqual({ id: saved.id, markdown: '# 旅行の持ち物\n\n充電器と傘\n' })
     expect((await call('read_note', { id: '../settings' })).execution.isError).toBe(true)
-    const noteTools = toolRegistry().definitions.map((def) => def.name).filter((name) => name.includes('note'))
+    const noteTools = toolRegistry('ja-JP').definitions.map((def) => def.name).filter((name) => name.includes('note'))
     expect(noteTools.sort()).toEqual(['add_note', 'read_note', 'search_notes'])
   })
 })

@@ -117,6 +117,17 @@ function MergeControls({ job }: { job: AgentJob }): React.JSX.Element {
         }))
       if (approved) await window.api.jobDiscard(job.id)
     })
+  // What blocks a merge can pass while the card is open, as a detached HEAD does after `git bisect reset`, and
+  // the review can be out of date, so Merge reads the diff again first. It merges only when nothing blocks it
+  // and the diff is the one shown; otherwise the card shows the current diff and its reason. main still
+  // refuses a merge whose branch or base moved after that, and the card then shows the current diff too.
+  const merge = (shown: JobDiff): void =>
+    act(async () => {
+      const current = await window.api.jobDiff(job.id)
+      setDiff(current)
+      if (current.blocked !== null || current.commit !== shown.commit || current.base !== shown.base || current.into !== shown.into) return
+      await window.api.jobMerge(job.id, { commit: current.commit, base: current.base, into: current.into })
+    }, loadDiff)
   return (
     <Box
       title={t(conflict ? 'jobs.merge.conflict' : 'jobs.card.merge.title')}
@@ -129,12 +140,7 @@ function MergeControls({ job }: { job: AgentJob }): React.JSX.Element {
           ? t('jobs.card.merge.path', { branch: worktree.branch, into: diff.into, repo: worktree.repo })
           : `${worktree.branch} → ${worktree.repo}`}
       </p>
-      {diff && diff.into === null && <p className="aj-text">{t('jobs.merging.detached')}</p>}
-      {diff && diff.submodules.length > 0 && (
-        <p className="aj-text">
-          {t('jobs.merging.submodules', { paths: diff.submodules.join(', '), branch: worktree.branch, dir: worktree.dir })}
-        </p>
-      )}
+      {diff?.blocked && <p className="aj-text">{displayError(diff.blocked)}</p>}
       {diff && (
         <pre className="aj-diff">
           {diff.stat || t('jobs.card.merge.noDiff')}
@@ -150,10 +156,8 @@ function MergeControls({ job }: { job: AgentJob }): React.JSX.Element {
         {!conflict && (
           <Action
             tone="primary"
-            disabled={busy || !diff?.stat || diff.submodules.length > 0}
-            // The diff on the card is out of date once another branch is checked out or the merge base has
-            // moved, and main refuses the merge then, so the card shows the current one beside the reason.
-            onClick={() => diff && act(() => window.api.jobMerge(job.id, { commit: diff.commit, base: diff.base, into: diff.into }), loadDiff)}
+            disabled={busy || !diff}
+            onClick={() => diff && merge(diff)}
           >
             {t('jobs.card.merge.merge')}
           </Action>

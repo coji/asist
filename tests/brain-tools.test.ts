@@ -1,5 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { TurnEvent } from '@shared/ipc'
+import type { ConversationLocale } from '@shared/conversation-locale'
+import type { JobDiff, TurnEvent } from '@shared/ipc'
+import type { ToolContext, ToolOptions } from '../src/main/services/brain/tools'
 import { PANEL_CATALOG } from '@shared/panel-catalog'
 import { taskSummary } from '@shared/tasks'
 import { FETCHER_TIMEOUT_MS, LOCAL_TIMEOUT_MS, resolvePromptTexts } from '@shared/tool-registry'
@@ -26,7 +28,7 @@ const mocks = vi.hoisted(() => ({
     isGitRepo: vi.fn(() => false),
     startIsolated: vi.fn(() => ({ id: 'w1', title: 'fix', cwd: '/ws/wt', worktree: { repo: '/repo', branch: 'asist/x', base: 'abc' } })),
     merge: vi.fn(() => ({ id: 'w1', mergeState: 'merged', worktree: { repo: '/repo' } })),
-    diff: vi.fn(() => ({ commit: 'reviewed', base: 'merge-base', into: 'hotfix', stat: 'README.md | 2 +-', patch: '', submodules: [] as string[] })),
+    diff: vi.fn((): JobDiff => ({ commit: 'reviewed', base: 'merge-base', into: 'hotfix', stat: 'README.md | 2 +-', patch: '', submodules: [], blocked: null })),
     discard: vi.fn(() => ({ id: 'w1', mergeState: 'discarded' })),
     discardPreview: vi.fn(() => ({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'README.md | 2 +-', submodules: [] as string[] }))
   },
@@ -59,7 +61,22 @@ vi.mock('../src/main/services/user-local-data', () => ({ getLocalDataService: ()
 vi.mock('../src/main/services/user-tasks', () => ({ getTaskService: () => mocks.tasks }))
 vi.mock('../src/main/services/project-index', () => mocks.projects)
 
-const load = () => import('../src/main/services/brain/tools')
+/**
+ * The tools module, with every call given the conversation language a turn would read from the settings
+ * at the moment of the call.
+ */
+async function load() {
+  const module = await import('../src/main/services/brain/tools')
+  const locale = (): ConversationLocale => mocks.settings.conversationLocale as ConversationLocale
+  return {
+    ...module,
+    tools: () => module.tools(locale()),
+    toolRegistry: (of: ConversationLocale = locale()) => module.toolRegistry(of),
+    toolGuide: (options?: ToolOptions) => module.toolGuide(locale(), options),
+    executeClientTool: (name: string, input: Record<string, unknown>, ctx: ToolContext, onAsk?: () => boolean) =>
+      module.executeClientTool(name, input, ctx, locale(), onAsk)
+  }
+}
 
 function makeCtx(): { ctx: { turnId: number; signal: AbortSignal; emit: (e: TurnEvent) => void }; events: TurnEvent[] } {
   const events: TurnEvent[] = []
@@ -646,6 +663,14 @@ describe('brain tools registry', () => {
     expect(detail.logTail.join('\n')).toContain('ログの一行')
   })
 
+  it('tells the model in its language why a job waiting to be merged cannot be merged by ASIST', async () => {
+    mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', status: 'done', mergeState: 'pending', worktree: { repo: '/repo', dir: '/ws/wt', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: null, stat: 'README.md | 2 +-', patch: '', submodules: [], blocked: errorText('jobs.merging.detached') })
+    const { executeClientTool } = await load()
+    const result = await executeClientTool('get_agent_job', { jobId: 'w1' }, makeCtx().ctx)
+    expect(JSON.parse(result.content).review).toMatchObject({ into: null, blocked: ja('jobs.merging.detached') })
+  })
+
   it('does not ask about discarding a job the agent service would refuse, such as one already merged, and tells the model why', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', status: 'done', mergeState: 'merged' } as never)
     mocks.agent.discardPreview.mockImplementationOnce(() => {
@@ -670,7 +695,8 @@ describe('brain tools registry', () => {
 
   it('refuses to merge a job that touched submodules before asking the user about it', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', worktree: { repo: '/repo', dir: '/ws/wt', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
-    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: 'vendor/sub | 2 +-', patch: '', submodules: ['vendor/sub'] })
+    const blocked = errorText('jobs.merging.submodules', { paths: 'vendor/sub', branch: 'asist/x', dir: '/ws/wt' })
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: 'vendor/sub | 2 +-', patch: '', submodules: ['vendor/sub'], blocked })
     const { executeClientTool } = await load()
     const result = await executeClientTool('merge_agent_job', { jobId: 'w1', commit: 'reviewed' }, makeCtx().ctx)
     expect(result.isError).toBe(true)
@@ -681,11 +707,12 @@ describe('brain tools registry', () => {
 
   it('refuses to merge a job with nothing to merge before asking the user about it', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', worktree: { repo: '/repo', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
-    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: '', patch: '', submodules: [] })
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: '', patch: '', submodules: [], blocked: errorText('jobs.merging.noChanges', { id: 'w1' }) })
     const { executeClientTool } = await load()
     const result = await executeClientTool('merge_agent_job', { jobId: 'w1', commit: 'reviewed' }, makeCtx().ctx)
     expect(result.isError).toBe(true)
     expect(result.content).toContain(ja('jobs.merging.noChanges', { id: 'w1' }))
+    expect(result.content).not.toContain('。。')
     expect(mocks.requestConfirm).not.toHaveBeenCalled()
     expect(mocks.agent.merge).not.toHaveBeenCalled()
   })

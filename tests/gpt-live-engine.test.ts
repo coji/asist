@@ -160,7 +160,7 @@ describe('GptLiveEngine', () => {
     // The brain records an utterance it took over, so the final transcript is not recorded again here.
     expect(mocks.record).not.toHaveBeenCalled()
     const route = beginTurn.mock.calls[0][2] as { open: (ctx: unknown) => { push: (s: string) => void; drain: () => Promise<void> } }
-    const sink = route.open({ turnId: 42, signal: new AbortController().signal, emit: vi.fn() })
+    const sink = route.open({ turnId: 42, signal: new AbortController().signal, emit: vi.fn(), locale: 'ja-JP' })
     sink.push('晴れです。')
     sink.push('')
     await sink.drain()

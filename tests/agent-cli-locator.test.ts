@@ -66,6 +66,13 @@ describe('finding the CLI on Windows', () => {
     expect(mocks.execFileSync).not.toHaveBeenCalled()
   })
 
+  it('finds the .exe in a Path folder written in quotes', () => {
+    vi.stubEnv('PATH', 'relative;"C:\\Program Files\\a;b";C:\\c')
+    const files = new Set(['C:\\Program Files\\a;b\\codex.exe', 'C:\\c\\codex.exe', 'relative\\codex.exe', MARKER])
+    mocks.exists = (file) => files.has(file)
+    expect(locateCli('codex')).toEqual({ state: 'found', path: 'C:\\Program Files\\a;b\\codex.exe' })
+  })
+
   it.each(['.cmd', '.bat'])('refuses a CLI that npm left only as a %s script, and says to use the official installer', (extension) => {
     mocks.exists = (file) => file === `C:\\npm\\claude${extension}`
     expect(locateCli('claude')).toEqual({ state: 'script-only' })

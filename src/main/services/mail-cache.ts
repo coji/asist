@@ -2,6 +2,7 @@ import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import {
   MAIL_FOLDERS,
   RECENT_WINDOW_MS,
+  isDuplicateCopy,
   mailListQuerySchema,
   parseMailInput,
   snippetOf,
@@ -37,7 +38,6 @@ export interface MailFlagUpdate {
   starred: boolean
   answered: boolean
   labels: string[]
-  duplicate: boolean
 }
 
 /** The body part numbers picked from the message's bodyStructure at fetch time, used to download the body. */
@@ -228,7 +228,7 @@ export class MailCache {
           JSON.stringify(message.attachments),
           message.size,
           JSON.stringify(message.labels),
-          isDuplicateFlag(message),
+          isDuplicateCopy(message.folder, message.labels) ? 1 : 0,
           message.bodyFetched ? 1 : 0,
           message.parts.textPart,
           message.parts.htmlPart
@@ -244,7 +244,7 @@ export class MailCache {
     )
     this.transaction(() => {
       for (const update of updates) {
-        statement.run(update.unread ? 1 : 0, update.starred ? 1 : 0, update.answered ? 1 : 0, JSON.stringify(update.labels), update.duplicate ? 1 : 0, accountId, folder, update.uid)
+        statement.run(update.unread ? 1 : 0, update.starred ? 1 : 0, update.answered ? 1 : 0, JSON.stringify(update.labels), isDuplicateCopy(folder, update.labels) ? 1 : 0, accountId, folder, update.uid)
       }
     })
   }
@@ -365,5 +365,3 @@ export class MailCache {
   }
 }
 
-const isDuplicateFlag = (message: MailMessage): number =>
-  message.folder === 'archive' && message.labels.some((label) => ['\\Inbox', '\\Sent', '\\Draft', '\\Trash', '\\Spam'].includes(label)) ? 1 : 0

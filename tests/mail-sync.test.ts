@@ -222,6 +222,24 @@ describe('MailAccountSync', () => {
     expect(imap.calls.some((call) => call.startsWith('fetch:Archive'))).toBe(true)
   })
 
+  it('moves the All Mail copy of a message into archive once Gmail takes it out of the inbox, and out again when it returns', async () => {
+    const { imap, cache, sync } = setup({ gmail: true })
+    const inInbox = imap.put('INBOX', { subject: '見積もりの相談', from: tanaka, to: me, date: new Date(NOW - 2 * HOUR), text: 'q', threadId: '77', labels: ['\\Inbox'], messageId: '<q@x>' })
+    const copy = imap.put('Archive', { subject: '見積もりの相談', from: tanaka, to: me, date: new Date(NOW - 2 * HOUR), text: 'q', threadId: '77', labels: ['\\Inbox'], messageId: '<q@x>' })
+    sync.start()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(cache.list({ view: 'archive' }).total).toBe(0)
+
+    imap.folders.get('INBOX')!.messages.delete(inInbox.uid)
+    copy.labels = []
+    await sync.syncNow()
+    expect(cache.list({ view: 'archive' }).messages.map((m) => m.uid)).toEqual([copy.uid])
+
+    copy.labels = ['\\Inbox']
+    await sync.syncNow()
+    expect(cache.list({ view: 'archive' }).total).toBe(0)
+  })
+
   it('reports a dropped connection as an error, reconnects after a wait and resyncs, and waits longer while it still cannot connect', async () => {
     const { imap, cache, sync, states, server } = setup()
     imap.put('INBOX', { subject: 'A', from: tanaka, to: me, date: new Date(NOW - HOUR), text: 'a' })

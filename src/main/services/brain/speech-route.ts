@@ -1,3 +1,4 @@
+import type { ConversationLocale } from '@shared/conversation-locale'
 import type { TurnEvent } from '@shared/ipc'
 import * as tts from '../tts'
 import { errMessage } from '@shared/api-errors'
@@ -27,6 +28,8 @@ export interface SpeechRouteContext {
   turnId: number
   signal: AbortSignal
   emit: (event: TurnEvent) => void
+  /** The language the sentences are written in, which the voice reads them in. */
+  locale: ConversationLocale
 }
 
 export interface SpeechRoute {
@@ -37,11 +40,11 @@ export interface SpeechRoute {
 /** The classic setup. The synthesis time of the first sentence is reported as ttsMs in the metrics. */
 export const ttsRoute: SpeechRoute = {
   kind: 'tts',
-  open: ({ turnId, signal, emit }) =>
+  open: ({ turnId, signal, emit, locale }) =>
     new SynthQueue({
       turnId,
       signal,
-      synthesize: (text, s) => tts.synthesizeSentence(text, s),
+      synthesize: (text, s) => tts.synthesizeSentence(text, locale, s),
       emitSegment: (segment) => emit({ type: 'segment', turnId, segment }),
       emitAudio: (index, samples, last) => emit({ type: 'segmentAudio', turnId, index, samples, last }),
       onFirstSynth: (ms) => emit({ type: 'metrics', turnId, timings: { ttsMs: ms } }),

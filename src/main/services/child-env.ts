@@ -19,6 +19,9 @@ export const WITHHELD_VARIABLES: readonly string[] = [
 /**
  * A variable's name as the OS compares it. Windows ignores the case, so Anthropic_Api_Key there is the same
  * variable as ANTHROPIC_API_KEY, and a copy of process.env keeps whichever case the name was set in.
+ * It reads process.platform rather than platformCapabilities(): deriving the capabilities on Windows runs
+ * the GPU and microphone checks, which start child processes through childEnv, so asking for them here
+ * would recurse without end.
  */
 export function envNameKey(name: string): string {
   return process.platform === 'win32' ? name.toUpperCase() : name

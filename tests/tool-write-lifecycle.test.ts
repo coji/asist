@@ -41,8 +41,8 @@ async function setup() {
   const bodies = (): string[] => saved().map((name) => fs.readFileSync(path.join(notesDirectory, name), 'utf8'))
   const round = new ToolRoundExecutor({
     signal: new AbortController().signal,
-    isParallel: (name) => toolRegistry().find(name)!.parallel,
-    execute: (call, signal) => executeClientTool(call.name, call.input, { turnId: 1, signal, emit: () => {} })
+    isParallel: (name) => toolRegistry('ja-JP').find(name)!.parallel,
+    execute: (call, signal) => executeClientTool(call.name, call.input, { turnId: 1, signal, emit: () => {} }, 'ja-JP')
   })
   return { saved, bodies, notify, service, round }
 }
