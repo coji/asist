@@ -292,6 +292,28 @@ describe('the aizuchi classifier', () => {
   })
 })
 
+describe('the aizuchi bank', () => {
+  it('is loaded again when main reports a new bank, and a change of the voice settings alone leaves it to main', async () => {
+    let bankChanged!: () => void
+    await start({
+      onAizuchiBankChanged: (callback: () => void) => {
+        bankChanged = callback
+        return () => {}
+      }
+    })
+    const { loadAizuchiBank } = await import('@/voice/aizuchi-bank')
+    const loads = (): number => vi.mocked(loadAizuchiBank).mock.calls.length
+    expect(loads()).toBe(1)
+
+    const before = structuredClone(mocks.settings)
+    mocks.settingsListener!({ settings: { ...before, ttsEngine: 'aivisspeech', conversationLocale: 'en-US' } }, { settings: before })
+    expect(loads()).toBe(1)
+
+    bankChanged()
+    expect(loads()).toBe(2)
+  })
+})
+
 describe('the opening of a speech that never becomes a turn', () => {
   it('does not play the bridge once the speech is reported dropped', async () => {
     let synthesized!: (clip: { text: string; audio: string }) => void

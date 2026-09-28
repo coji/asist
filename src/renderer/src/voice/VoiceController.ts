@@ -12,16 +12,13 @@ import { shouldNod, type NodKind } from '@shared/nod'
 import { classifyOverlap } from '@shared/user-backchannel'
 import { ECHO_TAIL_MS } from '@shared/self-echo'
 import { errorText } from '@shared/i18n/error-text'
-import { whisperLanguageName } from '@shared/asr-models'
-import { MicCapture, StreamResampler } from './MicCapture'
+import { MicInput } from './MicInput'
 import { VapAudio } from './VapAudio'
-import { NativeMicSource } from './NativeMic'
 import { VadSegmenter, type VadUtterance } from './VadSegmenter'
 import { SileroVad } from './SileroVad'
-import { DfnDenoiser } from './DfnDenoiser'
-import { AsrEngine, type AsrProgress } from './AsrEngine'
+import type { AsrProgress } from './AsrEngine'
+import { AsrBackend } from './AsrBackend'
 import { speechPlayer } from './SpeechPlayer'
-import { conversationLocale } from '@/conversation-locale'
 import { displayError, errorMessageOf } from '@/display-error'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
@@ -98,27 +95,22 @@ type VoiceEvents = {
 export class VoiceController {
   readonly events: Emitter<VoiceEvents> = mitt<VoiceEvents>()
 
-  private mic = new MicCapture()
-  /** Capture through the native microphone helper, which cancels the echo. If it is unavailable, mic takes over. */
-  private nativeMic = new NativeMicSource()
-  /** DeepFilterNet noise suppression. Unavailable or backed up, it passes the audio through unsuppressed. */
-  private dfn = new DfnDenoiser()
-  private nativeActive = false
-  private asr = new AsrEngine()
+  private microphone = new MicInput()
+  /** Which speech recognition transcribes. The setup demo replaces its preparation of the in-browser Whisper. */
+  readonly recognition = new AsrBackend({
+    onProgress: (progress) => this.events.emit('progress', progress),
+    onServerLost: () => this.stopPartialLoop()
+  })
   private vad: VadSegmenter
   /** Tells noise from voice. Where it is unavailable, the energy VAD runs alone. */
   private silero = new SileroVad()
   private state: VoiceState = 'off'
   /** The speeches, by startedAt, whose final transcript is still awaited. */
   private awaitingTranscript = new Set<number>()
-  private backend: 'server' | 'local' = 'server'
   private captureGeneration = 0
   private recoveryPromise: Promise<void> | null = null
   /** Final transcriptions run in the order they were recorded, so a later one finishing first cannot rewind the conversation. */
   private transcriptionTail: Promise<void> = Promise.resolve()
-  /** Final transcriptions queued or running in the main process. Discarding a generation stops the real work over IPC too. */
-  private serverRequests = new Set<string>()
-  private localWorkInFlight = 0
   private partialTimer: ReturnType<typeof setInterval> | null = null
   private partialInflight = false
   private partialRequestGeneration = 0
@@ -131,11 +123,6 @@ export class VoiceController {
    * brings no evidence at all, is refused.
    */
   bargeInMinSpeechMs = 100
-  /**
-   * Setting this to true is the user's explicit consent to use the in-browser Whisper, several
-   * hundred megabytes of it. By default nothing is downloaded and nothing falls back to it.
-   */
-  localFallbackEnabled = false
   partialIntervalMs = 600
   /** While the assistant speaks, a barge-in is confirmed only after the voice holds this long, so a momentary echo does not stop it. */
   bargeInConfirmMs = 250
@@ -219,7 +206,7 @@ export class VoiceController {
       // Native capture through Apple's VPIO cancels the echo in the OS and attenuates the
       // microphone further during double talk, so a boost on top of that would put an
       // interrupting voice out of reach of the threshold.
-      this.vad.thresholdBoost = this.nativeActive ? 1 : 3
+      this.vad.thresholdBoost = this.microphone.native ? 1 : 3
       // The listening aizuchi answers the capture in progress. Muting would throw that capture
       // away, and it is not the assistant taking the floor either.
       if (segment.clip === 'listening') return
@@ -386,19 +373,20 @@ export class VoiceController {
     this.vad.hangoverMs = Math.max(150, Math.min(1500, ms))
   }
 
-  /**
-   * Prepares the in-browser Whisper on an explicit request. Because it may fetch the model, enable
-   * never calls it on its own while localFallbackEnabled is false.
-   */
-  async prepareLocalAsr(onProgress?: (info: AsrProgress) => void): Promise<string> {
-    return this.asr.init((info) => {
-      this.events.emit('progress', info.progress)
-      onProgress?.(info)
-    })
+  /** The user's explicit consent to the in-browser Whisper, set from the settings. */
+  get localFallbackEnabled(): boolean {
+    return this.recognition.localFallbackEnabled
+  }
+  set localFallbackEnabled(enabled: boolean) {
+    this.recognition.localFallbackEnabled = enabled
+  }
+
+  prepareLocalAsr(onProgress?: (info: AsrProgress) => void): Promise<string> {
+    return this.recognition.prepareLocal(onProgress)
   }
 
   cancelLocalAsrPreparation(): void {
-    this.asr.reset(errorText('speechRecognition.errors.preparationCancelled'))
+    this.recognition.cancelLocalPreparation()
   }
 
   async enable(): Promise<void> {
@@ -414,31 +402,7 @@ export class VoiceController {
       const permitted = await window.api.requestMicPermission()
       if (!current()) return
       if (!permitted) throw new Error(errorText(osMessageKey('voice.mic.notPermitted', platformCapabilities().os)))
-      // With local ASR explicitly enabled, the UI must not sit for 15 seconds waiting for the
-      // server. Local is chosen and prepared at once, and the move up to the server is attempted
-      // after the microphone has started.
-      let status = await window.api.getStatus()
-      if (!status.asr && !this.localFallbackEnabled && !status.asrInstalled) {
-        throw new Error(errorText('speechRecognition.errors.notPrepared'))
-      }
-      if (!status.asr && !this.localFallbackEnabled) {
-        // Only when local has not been chosen does this wait for the more accurate server to start.
-        for (let i = 0; i < 10 && !status.asr; i++) {
-          await new Promise((r) => setTimeout(r, 1500))
-          if (!current()) return
-          status = await window.api.getStatus()
-        }
-      }
-      if (!current()) return
-      if (!status.asr && !this.localFallbackEnabled) {
-        throw new Error(errorText('speechRecognition.errors.serverUnavailable'))
-      }
-      this.backend = status.asr ? 'server' : 'local'
-      console.log(`ASR backend: ${this.backend}`)
-      if (this.backend === 'local') {
-        await this.prepareLocalAsr()
-        if (!current()) return
-      }
+      if (!(await this.recognition.choose(current))) return
       // The VAP worker is resident: it is started here and turning the microphone off leaves it running.
       if (this.usesMaai()) {
         this.vapUnsubscribe ??= window.api.onVapState((state) => {
@@ -461,22 +425,18 @@ export class VoiceController {
         this.vad.push(frame)
         if (this.usesMaai()) this.vapAudio.pushUser(frame)
       }
-      this.nativeActive = false
-      if (this.nativeMicPreferred) {
-        const nativeActive = await this.startNativeCapture(feed)
-        if (!current()) return
-        this.nativeActive = nativeActive
-      }
-      if (!this.nativeActive) {
-        // A microphone that goes away is looked for again, as when the native helper dies; with
-        // none left, enable fails and reports it.
-        await this.mic.start(feed, () => void this.recover())
-        // Each start releases its own resources. Calling the shared stop from an older start
-        // would also stop a recording that an off-then-on cycle has already begun.
-        if (!current()) return
-      }
+      // A helper that dies or a microphone that goes away rebuilds capture: native is tried again,
+      // getUserMedia takes over if that fails, and with no microphone left enable fails and reports it.
+      await this.microphone.start(
+        { native: this.nativeMicPreferred, noiseSuppression: this.noiseSuppression },
+        feed,
+        () => void this.recover()
+      )
+      // Each start releases its own resources. Calling the shared stop from an older start would
+      // also stop a recording that an off-then-on cycle has already begun.
+      if (!current()) return
       this.settleState()
-      if (this.backend === 'local') void this.probeUpgrade()
+      void this.recognition.probeUpgrade()
     } catch (err) {
       if (!current()) return
       this.events.emit('error', displayError(err))
@@ -484,51 +444,9 @@ export class VoiceController {
     }
   }
 
-  /**
-   * Tries to capture through the native microphone helper. On success the 48 kHz frames go to 16 kHz,
-   * through DeepFilterNet first where the settings ask for it, and on to feed. If it cannot start
-   * it returns false and the caller switches to getUserMedia.
-   */
-  private async startNativeCapture(feed: (frame: Float32Array) => void): Promise<boolean> {
-    if (typeof window.api.micNativeStart !== 'function') return false
-    const resampler = new StreamResampler(48_000, 16_000)
-    const deliver = (chunk: Float32Array): void => {
-      const frame = resampler.process(chunk)
-      if (frame.length > 0) feed(frame)
-    }
-    let pipeline: (frame: Float32Array) => void = deliver
-    if (this.noiseSuppression) {
-      // Until the model has loaded, and if it fails, the audio arrives unsuppressed.
-      void this.dfn.init()
-      this.dfn.reset()
-      this.dfn.onOutput = deliver
-      pipeline = (frame) => this.dfn.push(frame)
-    }
-    // A helper that dies rebuilds capture: native is tried again, and getUserMedia takes over if
-    // that fails.
-    return this.nativeMic.start(pipeline, () => void this.recover())
-  }
-
-  /** Moves up to the server if it comes up later, even while local is in use. */
-  private async probeUpgrade(): Promise<void> {
-    if (this.backend === 'server') return
-    try {
-      const status = await window.api.getStatus()
-      if (status.asr) {
-        this.handleAsrStatus(true)
-      }
-    } catch {
-      /* keep local */
-    }
-  }
-
   disable(): void {
     this.captureGeneration++
-    const serverRequests = [...this.serverRequests]
-    this.serverRequests.clear()
-    for (const requestId of serverRequests) {
-      void window.api.transcribeCancel(requestId).catch(() => {})
-    }
+    this.recognition.stop()
     // Detaching the chain keeps a new generation's final transcription out of the queue of an
     // aborted one.
     this.transcriptionTail = Promise.resolve()
@@ -538,36 +456,18 @@ export class VoiceController {
     this.overlap = 'none'
     this.captureIsBackchannel = false
     speechPlayer.unduck()
-    this.nativeMic.stop()
-    this.dfn.dispose()
-    this.nativeActive = false
+    this.microphone.stop()
     this.vapAudio.reset()
     this.vapState = null
-    this.mic.stop()
     this.vad.reset()
     this.silero.dispose()
-    if (this.backend === 'local' || this.localWorkInFlight > 0) {
-      this.asr.reset(errorText('speechRecognition.errors.stoppedWithMic'))
-    }
     for (const startedAt of dropped) this.events.emit('speechdropped', { startedAt })
     this.setState('off')
   }
 
-  /**
-   * Applies what the service watchdog reports. Recovery goes straight back to the server, and a
-   * stop sends the next final transcription to local, or to an explicit configuration error.
-   */
+  /** Applies what the service watchdog reports about the speech recognition server. */
   handleAsrStatus(available: boolean): void {
-    if (available) {
-      if (this.backend !== 'server') console.log('ASR backend upgraded: local → server')
-      this.backend = 'server'
-      return
-    }
-    if (this.backend === 'server') {
-      this.backend = 'local'
-      this.stopPartialLoop()
-      console.warn('ASR server unavailable; next utterance will use configured recovery path')
-    }
+    this.recognition.handleStatus(available)
   }
 
   /**
@@ -579,7 +479,7 @@ export class VoiceController {
     const wasEnabled = this.state !== 'off'
     const recovery = (async () => {
       if (!wasEnabled) {
-        await this.probeUpgrade()
+        await this.recognition.probeUpgrade()
         return
       }
 
@@ -594,7 +494,7 @@ export class VoiceController {
 
   private startPartialLoop(): void {
     // The in-browser Whisper is too slow to transcribe partials.
-    if (this.backend !== 'server' || this.partialIntervalMs <= 0) return
+    if (!this.recognition.onServer || this.partialIntervalMs <= 0) return
     this.stopPartialLoop()
     this.partialTimer = setInterval(() => void this.partialTick(), this.partialIntervalMs)
   }
@@ -702,10 +602,7 @@ export class VoiceController {
     let heard = false
     try {
       const audio = this.normalize(samples)
-      const text = await this.transcribeWithRecovery(
-        audio,
-        () => generation === this.captureGeneration
-      )
+      const text = await this.recognition.transcribe(audio, () => generation === this.captureGeneration)
       if (generation !== this.captureGeneration) return
       const asrMs = Math.round(performance.now() - t0)
       if (isMeaningfulTranscript(text, this.conversationLocale)) {
@@ -729,75 +626,8 @@ export class VoiceController {
         this.awaitingTranscript.delete(startedAt)
         if (!heard) this.events.emit('speechdropped', { startedAt })
         this.settleState()
-        void this.probeUpgrade()
+        void this.recognition.probeUpgrade()
       }
-    }
-  }
-
-  private async transcribeWithRecovery(
-    audio: Float32Array,
-    isCurrent: () => boolean = () => true
-  ): Promise<string> {
-    const ensureCurrent = (): void => {
-      if (!isCurrent()) throw new DOMException(errorText('speechRecognition.errors.staleTranscription'), 'AbortError')
-    }
-    ensureCurrent()
-    if (this.backend === 'local') {
-      if (!this.localFallbackEnabled) {
-        throw new Error(errorText('speechRecognition.errors.serverStopped'))
-      }
-      return this.transcribeLocalWithRetry(audio, isCurrent)
-    }
-
-    try {
-      const requestId = crypto.randomUUID()
-      this.serverRequests.add(requestId)
-      try {
-        const text = await window.api.transcribe(audio, requestId)
-        ensureCurrent()
-        return text
-      } finally {
-        this.serverRequests.delete(requestId)
-      }
-    } catch (serverError) {
-      ensureCurrent()
-      if (!this.localFallbackEnabled) {
-        throw new Error(errorText('speechRecognition.errors.serverTranscribeFailed', { detail: errorMessageOf(serverError) }))
-      }
-
-      // A server that dies after accepting the utterance hands the same audio to local, once.
-      this.backend = 'local'
-      this.stopPartialLoop()
-      return this.transcribeLocalWithRetry(audio, isCurrent)
-    }
-  }
-
-  private async transcribeLocalWithRetry(
-    audio: Float32Array,
-    isCurrent: () => boolean
-  ): Promise<string> {
-    this.localWorkInFlight++
-    try {
-      let firstError: unknown
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (!isCurrent()) throw new DOMException(errorText('speechRecognition.errors.staleTranscription'), 'AbortError')
-        try {
-          await this.prepareLocalAsr()
-          if (!isCurrent()) throw new DOMException(errorText('speechRecognition.errors.staleTranscription'), 'AbortError')
-          return await this.asr.transcribe(audio, whisperLanguageName(conversationLocale()))
-        } catch (error) {
-          if (!isCurrent()) throw error
-          if (attempt === 1) {
-            console.error('local ASR failed twice:', firstError, error)
-            throw new Error(errorText('speechRecognition.errors.localRecoveryFailed'))
-          }
-          firstError = error
-          this.asr.reset(errorText('speechRecognition.errors.retryingAfterFailure'))
-        }
-      }
-      throw new Error(errorText('speechRecognition.errors.localRecoveryFailed'))
-    } finally {
-      this.localWorkInFlight--
     }
   }
 

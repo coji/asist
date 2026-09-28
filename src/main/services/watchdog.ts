@@ -50,12 +50,8 @@ export function start(onChange: (snap: HealthSnapshot) => void): void {
         void tts.ensureEngine().catch((error) => console.error('TTS engine failed to start:', error))
       }
       const snap: HealthSnapshot = { asr: asrUp, tts: ttsUp }
+      if (snap.tts) aizuchi.ttsAnswered(last !== null && !last.tts)
       if (!last || last.asr !== snap.asr || last.tts !== snap.tts) {
-        // Aizuchi clips built while TTS was down have audio=null, so the bank is rebuilt once it is back.
-        if (last && !last.tts && snap.tts) {
-          aizuchi.invalidate()
-          void aizuchi.getBank()
-        }
         if (last) {
           console.log(
             `watchdog: asr ${last.asr}→${snap.asr}, tts ${last.tts}→${snap.tts}`

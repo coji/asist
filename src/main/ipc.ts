@@ -144,6 +144,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   mailEvents.on('event', (event) => send(IpcChannel.MailEvent, event))
   confirmEvents.on('event', (event) => send(IpcChannel.ConfirmEvent, event))
   appUpdateEvents.on('changed', (state) => send(IpcChannel.AppUpdateChanged, state))
+  aizuchi.events.on('changed', () => send(IpcChannel.AizuchiBankChanged, null))
   live.events.on('audio', (samples) => send(IpcChannel.LiveAudio, samples))
   live.events.on('event', (event) => send(IpcChannel.LiveEvent, event))
   timers.init()
@@ -408,10 +409,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   handle(IpcChannel.TtsPrepare, async () => {
     const result = await qwenTts.prepare((progress) => send(IpcChannel.SetupProgress, progress))
     // A bank built while the model was missing holds no audio.
-    if (result.ok && getSettings().ttsEngine === 'qwen3tts') {
-      aizuchi.invalidate()
-      void aizuchi.getBank()
-    }
+    if (result.ok && getSettings().ttsEngine === 'qwen3tts') aizuchi.rebuild()
     return result
   })
   handle(IpcChannel.TtsPrepareCancel, () => qwenTts.cancelPreparation())
@@ -510,9 +508,8 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
         // The clips exist for Japanese only, so the language decides whether there is a bank at all.
         before.conversationLocale !== after.conversationLocale
       ) {
-        aizuchi.invalidate()
         void tts.ensureEngine().catch((error) => console.error('TTS engine failed to start:', error))
-        void aizuchi.getBank()
+        aizuchi.rebuild()
       }
       if (before.globalHotkey !== after.globalHotkey) refreshHotkey()
       if (before.uiLocale !== after.uiLocale) refreshTrayMenu()

@@ -1,7 +1,5 @@
 import mitt, { type Emitter } from 'mitt'
-import { MicCapture, StreamResampler } from './MicCapture'
-import { NativeMicSource } from './NativeMic'
-import { DfnDenoiser } from './DfnDenoiser'
+import { MicInput } from './MicInput'
 import { SileroVad } from './SileroVad'
 import { errorText } from '@shared/i18n/error-text'
 import { displayError } from '@/display-error'
@@ -13,10 +11,6 @@ import { platformCapabilities } from '@/platform'
  * main process untouched, because the live model itself decides what it hears and when speech has
  * ended. The renderer only signals the main process when it catches a voice, so that a closed
  * session opens, and reports the level the orb displays.
- *
- * Capture runs through the same chain as VoiceController: the native microphone, DeepFilterNet,
- * then 16 kHz. Each of the two paths owns its own capture objects, because they differ only after
- * capture and VoiceController's copy is entangled with its recovery and generation handling.
  */
 
 export type LiveVoiceState = 'off' | 'loading' | 'on'
@@ -40,9 +34,7 @@ export class LiveVoice {
   readonly events: Emitter<LiveVoiceEvents> = mitt<LiveVoiceEvents>()
   private state: LiveVoiceState = 'off'
   private generation = 0
-  private mic = new MicCapture()
-  private nativeMic = new NativeMicSource()
-  private dfn = new DfnDenoiser()
+  private microphone = new MicInput()
   private silero = new SileroVad()
   private voicedMs = 0
   private quietMs = 0
@@ -74,15 +66,12 @@ export class LiveVoice {
         this.observe(frame)
         void window.api.livePush(frame).catch(() => {})
       }
-      let nativeActive = false
-      if (this.nativeMicPreferred) {
-        nativeActive = await this.startNativeCapture(feed)
-        if (!current()) return
-      }
-      if (!nativeActive) {
-        await this.mic.start(feed, () => void this.recover())
-        if (!current()) return
-      }
+      await this.microphone.start(
+        { native: this.nativeMicPreferred, noiseSuppression: this.noiseSuppression },
+        feed,
+        () => void this.recover()
+      )
+      if (!current()) return
       this.setState('on')
     } catch (err) {
       if (!current()) return
@@ -93,9 +82,7 @@ export class LiveVoice {
 
   disable(): void {
     this.generation++
-    this.nativeMic.stop()
-    this.dfn.dispose()
-    this.mic.stop()
+    this.microphone.stop()
     this.silero.dispose()
     this.speaking = false
     this.voicedMs = 0
@@ -109,23 +96,6 @@ export class LiveVoice {
     if (this.state === 'off') return
     this.disable()
     await this.enable()
-  }
-
-  private async startNativeCapture(feed: (frame: Float32Array) => void): Promise<boolean> {
-    if (typeof window.api.micNativeStart !== 'function') return false
-    const resampler = new StreamResampler(48_000, 16_000)
-    const deliver = (chunk: Float32Array): void => {
-      const frame = resampler.process(chunk)
-      if (frame.length > 0) feed(frame)
-    }
-    let pipeline: (frame: Float32Array) => void = deliver
-    if (this.noiseSuppression) {
-      void this.dfn.init()
-      this.dfn.reset()
-      this.dfn.onOutput = deliver
-      pipeline = (frame) => this.dfn.push(frame)
-    }
-    return this.nativeMic.start(pipeline, () => void this.recover())
   }
 
   /** Tells the main process that speech started or stopped, from the level and how long a voice has held. */

@@ -2,7 +2,6 @@ import type { AizuchiClip } from '@shared/ipc'
 import type { BackchannelKind } from '@shared/listening-aizuchi'
 import { categoryOfClassification, type AizuchiClassification } from '@shared/aizuchi-classifier'
 import { pickWeightedClip } from '@shared/aizuchi-clips'
-import { conversationFeatures, type ConversationLocale } from '@shared/conversation-locale'
 
 /**
  * The renderer's cache of the aizuchi bank. Holding the clips that the main process synthesized in
@@ -16,20 +15,18 @@ let lastText = ''
 let loadGeneration = 0
 
 /**
- * Called at startup, on a speaker change, when the conversation language changes and when TTS
- * recovers. While it fails, no aizuchi plays, and a language without aizuchi keeps the bank empty
- * without asking the main process to build one.
+ * Called at startup and whenever main reports that it threw the bank away. Main answers with an empty
+ * bank in a language without aizuchi. While the load fails, the conversation goes on with no aizuchi.
  */
-export async function loadAizuchiBank(locale: ConversationLocale): Promise<void> {
+export async function loadAizuchiBank(): Promise<void> {
   const generation = ++loadGeneration
   bank = []
   lastText = ''
-  if (!conversationFeatures(locale).aizuchi) return
   try {
     const clips = await window.api.aizuchiBank()
     if (generation === loadGeneration) bank = clips
-  } catch {
-    /* Continue without aizuchi. */
+  } catch (error) {
+    console.error('aizuchi bank failed to load:', error)
   }
 }
 

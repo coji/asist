@@ -68,6 +68,7 @@ const api: RendererApi = {
   onTimerEvent: subscribe<TimerEvent>(IpcChannel.TimerEvent),
 
   aizuchiBank: () => ipcRenderer.invoke(IpcChannel.AizuchiBank),
+  onAizuchiBankChanged: subscribe(IpcChannel.AizuchiBankChanged),
   bridgePlan: (input) => ipcRenderer.invoke(IpcChannel.BridgePlan, input),
   bridgeSynthesize: (text) => ipcRenderer.invoke(IpcChannel.BridgeClip, text),
   aizuchiClassify: (input) => ipcRenderer.invoke(IpcChannel.AizuchiClassify, input),

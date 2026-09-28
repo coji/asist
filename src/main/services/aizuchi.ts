@@ -2,6 +2,7 @@ import { app } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import mitt from 'mitt'
 import type { AizuchiClip } from '@shared/ipc'
 import { AIZUCHI_BANK, type AizuchiDef } from '@shared/aizuchi-bank'
 import { pickWeightedClip } from '@shared/aizuchi-clips'
@@ -49,7 +50,19 @@ function cacheFile(def: AizuchiDef, voice: Exclude<tts.TtsVoice, { engine: 'syst
   return `${CACHE_VERSION}-${hash}.wav`
 }
 
+/**
+ * `changed` goes out each time the bank is thrown away, and the renderer asks for the new one. Main alone
+ * decides which settings and which engine events change the clips.
+ */
+export const events = mitt<{ changed: void }>()
+
 let bank: AizuchiClip[] | null = null
+/** The cached bank has a clip without audio although an HTTP engine should have synthesized it. */
+let incomplete = false
+/** Whether the next check that finds the TTS answering builds an incomplete bank again. */
+let retryOnAnswer = false
+/** The generation of the last build started because the TTS answered. */
+let answerGeneration = -1
 let building: Promise<AizuchiClip[]> | null = null
 let generation = 0
 
@@ -58,10 +71,12 @@ export async function getBank(): Promise<AizuchiClip[]> {
   if (bank) return bank
   if (!building) {
     const current = generation
-    const operation = build().then((clips) => {
+    const operation = build().then(({ clips, missingAudio }) => {
       // A request that started before a settings change still gets the bank built from the current settings.
       if (generation !== current) return getBank()
       bank = clips
+      incomplete = missingAudio
+      retryOnAnswer = missingAudio && current !== answerGeneration
       return clips
     }).finally(() => {
       if (building === operation) building = null
@@ -77,11 +92,32 @@ export async function randomClip(category: AizuchiClip['category']): Promise<Aiz
   return pickWeightedClip(clips)
 }
 
-/** Makes the next getBank synthesize again, after the TTS settings change. */
-export function invalidate(): void {
+/**
+ * Throws the bank away and builds it again from the current settings, after the TTS settings change, the
+ * Qwen3-TTS model arrives or the engine answers again. Nothing waits for the build, so a failure, such
+ * as shipped clips that do not cover the bank, is logged here instead of being lost.
+ */
+export function rebuild(): void {
   generation += 1
   bank = null
   building = null
+  getBank().catch((error) => console.error('aizuchi bank failed:', error))
+  events.emit('changed')
+}
+
+/**
+ * The watchdog reports each check that finds the TTS answering, and whether it had found it down just
+ * before. A bank missing audio, because the engine did not answer yet or died while the clips were
+ * synthesized, is built again at the first such check after it was built, and again whenever the TTS
+ * comes back after being seen down. Waiting for down to up alone missed a bank built before the
+ * watchdog first saw the engine, such as the one built at launch while the spawned engine did not serve
+ * HTTP yet. A bank built again because the TTS answered and still missing audio is not retried on every
+ * check: synthesis then fails for another reason, which the build has logged.
+ */
+export function ttsAnswered(recovered: boolean): void {
+  if (!bank || !incomplete || !(recovered || retryOnAnswer)) return
+  rebuild()
+  answerGeneration = generation
 }
 
 interface BundledManifest {
@@ -105,10 +141,10 @@ function bundledClips(voice: QwenTtsVoice): (def: AizuchiDef) => string {
   }
 }
 
-async function build(): Promise<AizuchiClip[]> {
+async function build(): Promise<{ clips: AizuchiClip[]; missingAudio: boolean }> {
   // The bank is a set of Japanese interjections, so in another conversation language nothing is
   // synthesized, no cache file is read, and the renderer receives no clip to play.
-  if (!features().aizuchi) return []
+  if (!features().aizuchi) return { clips: [], missingAudio: false }
   const dir = cacheDir()
   fs.mkdirSync(dir, { recursive: true })
   const settings = getSettings()
@@ -118,6 +154,8 @@ async function build(): Promise<AizuchiClip[]> {
   // worker is ready instead would build a silent bank whenever it is still loading, which is every switch to this engine.
   const qwen = qwenTts.installationStatus()
   const bundled = settings.ttsEngine === 'qwen3tts' && qwen.runtimeInstalled && qwen.modelInstalled ? bundledClips(settings.qwenTtsVoice) : null
+  const httpEngine = settings.ttsEngine !== 'system' && settings.ttsEngine !== 'none' && settings.ttsEngine !== 'qwen3tts'
+  if (httpEngine && !ttsUp) console.warn(`aizuchi bank built without audio: ${settings.ttsEngine} does not answer`)
   const clips: AizuchiClip[] = []
   for (const def of AIZUCHI_BANK) {
     let audio: string | null = null
@@ -149,7 +187,7 @@ async function build(): Promise<AizuchiClip[]> {
   }
   pruneStaleClips(dir)
   console.log(`aizuchi bank ready: ${clips.length} clips (audio: ${clips.some((c) => c.audio)})`)
-  return clips
+  return { clips, missingAudio: httpEngine && clips.some((clip) => clip.audio === null) }
 }
 
 /**

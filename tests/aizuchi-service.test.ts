@@ -77,14 +77,14 @@ describe('aizuchi voice cache', () => {
     expect(mocks.speaker).toBeNull()
 
     mocks.speaker = 0
-    aizuchi.invalidate()
+    aizuchi.rebuild()
     const explicit = await aizuchi.getBank()
     expect(explicit.every((clip) => clip.audio === audioFor(0))).toBe(true)
 
     // Going back to automatic selection reuses the files already synthesized for the resolved speaker 1.
     const synthesized = mocks.synthesize.mock.calls.length
     mocks.speaker = null
-    aizuchi.invalidate()
+    aizuchi.rebuild()
     const reloaded = await aizuchi.getBank()
     expect(reloaded).toEqual(automatic)
     expect(mocks.synthesize).toHaveBeenCalledTimes(synthesized)
@@ -98,13 +98,87 @@ describe('aizuchi voice cache', () => {
     await vi.waitFor(() => expect(mocks.resolveVoice).toHaveBeenCalledTimes(1))
 
     mocks.speaker = 42
-    aizuchi.invalidate()
+    aizuchi.rebuild()
     const current = await aizuchi.getBank()
     expect(current.every((clip) => clip.audio === audioFor(42))).toBe(true)
     release({ engine: 'aivisspeech', speaker: 1 })
 
     expect(await old).toEqual(current)
     expect(await aizuchi.getBank()).toEqual(current)
+  })
+})
+
+describe('aizuchi bank rebuild', () => {
+  it('tells the renderer once the bank of the old settings is gone, and the bank it then asks for is built from the new ones', async () => {
+    const aizuchi = await import('../src/main/services/aizuchi')
+    expect((await aizuchi.getBank()).every((clip) => clip.audio === audioFor(1))).toBe(true)
+    const reloaded: Array<Promise<Awaited<ReturnType<typeof aizuchi.getBank>>>> = []
+    aizuchi.events.on('changed', () => reloaded.push(aizuchi.getBank()))
+
+    mocks.speaker = 7
+    aizuchi.rebuild()
+
+    expect(reloaded).toHaveLength(1)
+    expect((await reloaded[0]).every((clip) => clip.audio === audioFor(7))).toBe(true)
+  })
+})
+
+describe('aizuchi bank built while the TTS does not answer', () => {
+  it('is built again with audio once the TTS answers, as when the engine was spawned but did not serve HTTP yet', async () => {
+    const warned = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mocks.engineUp = false
+    const aizuchi = await import('../src/main/services/aizuchi')
+    expect((await aizuchi.getBank()).every((clip) => clip.audio === null)).toBe(true)
+    expect(warned).toHaveBeenCalled()
+    const changed = vi.fn()
+    aizuchi.events.on('changed', changed)
+
+    mocks.engineUp = true
+    aizuchi.ttsAnswered(false)
+
+    expect(changed).toHaveBeenCalledOnce()
+    expect((await aizuchi.getBank()).every((clip) => clip.audio === audioFor(1))).toBe(true)
+  })
+
+  it('keeps a bank that already has audio when the TTS answers', async () => {
+    const aizuchi = await import('../src/main/services/aizuchi')
+    await aizuchi.getBank()
+    const changed = vi.fn()
+    aizuchi.events.on('changed', changed)
+
+    aizuchi.ttsAnswered(false)
+    aizuchi.ttsAnswered(true)
+
+    expect(changed).not.toHaveBeenCalled()
+  })
+
+  it('is built again once the TTS answers after the engine died while the clips were synthesized', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.synthesize.mockRejectedValueOnce(new Error('connection refused'))
+    const aizuchi = await import('../src/main/services/aizuchi')
+    expect((await aizuchi.getBank()).some((clip) => clip.audio === null)).toBe(true)
+
+    aizuchi.ttsAnswered(false)
+
+    expect((await aizuchi.getBank()).every((clip) => clip.audio === audioFor(1))).toBe(true)
+  })
+
+  it('is not built again on every check while synthesis keeps failing with the TTS answering, only when the TTS comes back', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.synthesize.mockRejectedValue(new Error('speaker not found'))
+    const aizuchi = await import('../src/main/services/aizuchi')
+    await aizuchi.getBank()
+    const changed = vi.fn()
+    aizuchi.events.on('changed', changed)
+
+    aizuchi.ttsAnswered(false)
+    await aizuchi.getBank()
+    aizuchi.ttsAnswered(false)
+    await aizuchi.getBank()
+    expect(changed).toHaveBeenCalledOnce()
+
+    aizuchi.ttsAnswered(true)
+    expect(changed).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -125,7 +199,7 @@ describe('aizuchi bank outside Japanese', () => {
     expect(await aizuchi.getBank()).toEqual([])
 
     mocks.locale = 'ja-JP'
-    aizuchi.invalidate()
+    aizuchi.rebuild()
     const bank = await aizuchi.getBank()
     expect(bank.length).toBeGreaterThan(0)
     expect(bank.every((clip) => clip.audio === audioFor(1))).toBe(true)
@@ -176,5 +250,16 @@ describe('aizuchi bank with Qwen3-TTS', () => {
     await shipClips(['うん。'])
     const aizuchi = await import('../src/main/services/aizuchi')
     await expect(aizuchi.getBank()).rejects.toThrow('no pre-rendered aizuchi clip')
+  })
+
+  it('logs a rebuild that fails, which nothing waits for, instead of leaving the rejection unhandled', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.engine = 'qwen3tts'
+    await shipClips(['うん。'])
+    const aizuchi = await import('../src/main/services/aizuchi')
+    aizuchi.rebuild()
+    await vi.waitFor(() => expect(logged).toHaveBeenCalledWith('aizuchi bank failed:', expect.objectContaining({
+      message: expect.stringContaining('no pre-rendered aizuchi clip')
+    })))
   })
 })

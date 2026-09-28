@@ -47,6 +47,7 @@ export const rendererApiMethods = [
   'timerCancel',
   'onTimerEvent',
   'aizuchiBank',
+  'onAizuchiBankChanged',
   'bridgePlan',
   'bridgeSynthesize',
   'metricsLog',

@@ -480,6 +480,7 @@ export const mockApi: RendererApi = {
     return () => timerListeners.delete(callback)
   },
   aizuchiBank: async () => [],
+  onAizuchiBankChanged: () => () => {},
   bridgePlan: async () => ({ bridge: '' }),
   bridgeSynthesize: async (text) => ({ text, audio: null }),
   aizuchiClassify: async () => ({ cls: 'understand', prob: 1, complete: 1 }),

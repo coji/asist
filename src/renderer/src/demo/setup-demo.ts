@@ -143,9 +143,10 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return variant !== 'mic-denied'
   }
   // Whisper in the browser does not go through window.api: the renderer fetches several hundred MB from
-  // Hugging Face itself. The demo downloads nothing and only streams the progress.
+  // Hugging Face itself. The demo downloads nothing and only streams the progress, both when the wizard
+  // prepares it and when the microphone turns on with local recognition chosen.
   let localAsrCancelled = false
-  voiceController.prepareLocalAsr = async (onProgress) => {
+  voiceController.recognition.prepareLocal = async (onProgress) => {
     localAsrCancelled = false
     for (let progress = 0; progress <= 100; progress += 4) {
       if (localAsrCancelled) throw new Error('ブラウザ内音声認識の準備をキャンセルしました')
@@ -154,7 +155,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     }
     return 'demo'
   }
-  voiceController.cancelLocalAsrPreparation = () => {
+  voiceController.recognition.cancelLocalPreparation = () => {
     localAsrCancelled = true
   }
 

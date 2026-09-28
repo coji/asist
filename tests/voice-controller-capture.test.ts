@@ -42,7 +42,7 @@ interface Internals {
   captureIsBackchannel: boolean
   captureStartedAt: number
   vad: { push(frame: Float32Array): void; isSpeaking: boolean }
-  transcribeWithRecovery: (audio: Float32Array) => Promise<string>
+  recognition: { transcribe: (audio: Float32Array) => Promise<string> }
 }
 
 let VoiceController: typeof import('@/voice/VoiceController').VoiceController
@@ -215,7 +215,7 @@ describe('VoiceController when the reply starts while the user is already speaki
 describe('VoiceController after a speech end', () => {
   function transcribing(transcribe: () => Promise<string>): { controller: Controller; events: string[] } {
     const controller = listening()
-    internals(controller).transcribeWithRecovery = vi.fn(transcribe)
+    internals(controller).recognition.transcribe = vi.fn(transcribe)
     const events: string[] = []
     controller.events.on('speechend', ({ startedAt }) => events.push(`speechend:${startedAt}`))
     controller.events.on('utterance', ({ startedAt }) => events.push(`utterance:${startedAt}`))
