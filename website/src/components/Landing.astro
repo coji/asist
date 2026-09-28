@@ -202,7 +202,8 @@ const languages = landingLanguages.map((language) => ({ code: language.code, hre
             <h2>{t.start.title}</h2>
             <p>{t.start.sub}</p>
             <div class="cta">
-              <a class="btn primary" href="https://github.com/nyosegawa/asist/releases/latest">{t.start.download} <span aria-hidden="true">→</span></a>
+              <a class="btn primary" href="https://github.com/nyosegawa/asist/releases/latest/download/ASIST-arm64.dmg">{t.start.downloadMac}</a>
+              <a class="btn primary" href="https://github.com/nyosegawa/asist/releases/latest/download/ASIST-Setup-x64.exe">{t.start.downloadWindows}</a>
               <a class="btn ghost" href={`${docs}/docs/start/`}>{t.start.setup}</a>
             </div>
             <p class="meta"><span>{t.hero.free}</span><span>{t.start.mac}</span><span>{t.start.windows}</span></p>

@@ -89,7 +89,8 @@ export const ptBr: LandingText = {
   start: {
     title: 'Vamos começar.',
     sub: 'O ASIST no seu computador.',
-    download: 'Baixar',
+    downloadMac: 'Baixar para Mac',
+    downloadWindows: 'Baixar para Windows',
     setup: 'Guia de configuração',
     mac: 'macOS 14 ou posterior · Apple Silicon',
     windows: 'Windows 11 · x64',

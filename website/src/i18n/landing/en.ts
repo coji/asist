@@ -89,7 +89,8 @@ export const en: LandingText = {
   start: {
     title: 'Let’s get started.',
     sub: 'ASIST, on your computer.',
-    download: 'Download',
+    downloadMac: 'Download for Mac',
+    downloadWindows: 'Download for Windows',
     setup: 'Setup guide',
     mac: 'macOS 14 or later · Apple Silicon',
     windows: 'Windows 11 · x64',

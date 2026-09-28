@@ -89,7 +89,8 @@ export const id: LandingText = {
   start: {
     title: 'Ayo mulai.',
     sub: 'ASIST, di komputer Anda.',
-    download: 'Unduh',
+    downloadMac: 'Unduh untuk Mac',
+    downloadWindows: 'Unduh untuk Windows',
     setup: 'Panduan penyiapan',
     mac: 'macOS 14 atau lebih baru · Apple Silicon',
     windows: 'Windows 11 · x64',

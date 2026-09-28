@@ -89,7 +89,8 @@ export const ko: LandingText = {
   start: {
     title: '이제 시작해 볼까요?',
     sub: 'ASIST를 내 컴퓨터에.',
-    download: '다운로드',
+    downloadMac: 'Mac용 다운로드',
+    downloadWindows: 'Windows용 다운로드',
     setup: '설정 가이드',
     mac: 'macOS 14 이상 · Apple Silicon',
     windows: 'Windows 11 · x64',

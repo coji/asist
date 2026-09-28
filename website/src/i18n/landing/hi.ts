@@ -89,7 +89,8 @@ export const hi: LandingText = {
   start: {
     title: 'चलिए, शुरू करते हैं।',
     sub: 'ASIST, आपके कंप्यूटर पर।',
-    download: 'डाउनलोड करें',
+    downloadMac: 'Mac के लिए डाउनलोड करें',
+    downloadWindows: 'Windows के लिए डाउनलोड करें',
     setup: 'सेटअप गाइड',
     mac: 'macOS 14 या उसके बाद · Apple Silicon',
     windows: 'Windows 11 · x64',

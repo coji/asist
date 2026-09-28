@@ -89,7 +89,8 @@ export const de: LandingText = {
   start: {
     title: 'Legen wir los.',
     sub: 'ASIST auf Ihrem Computer.',
-    download: 'Herunterladen',
+    downloadMac: 'Für Mac herunterladen',
+    downloadWindows: 'Für Windows herunterladen',
     setup: 'Anleitung zur Einrichtung',
     mac: 'macOS 14 oder neuer · Apple Silicon',
     windows: 'Windows 11 · x64',

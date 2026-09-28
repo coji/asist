@@ -11,7 +11,7 @@ export interface LandingText {
   apps: { title: string; headline: string; body: string; agent: string; tasks: string; notes: string; mail: string; memory: string; calendar: string; settings: string }
   agent: { title: string; headline: string; body: string; artAlt: string; askHtml: string; confirm: string; confirmMeta: string; cancel: string; startJob: string }
   memory: { title: string; headline: string; body: string; artAlt: string; diaryDate: string; diaryTitle: string; diaryBody: string; noteHtml: string }
-  start: { title: string; sub: string; download: string; setup: string; mac: string; windows: string; bubble: string; step1: string; step2: string; step3: string }
+  start: { title: string; sub: string; downloadMac: string; downloadWindows: string; setup: string; mac: string; windows: string; bubble: string; step1: string; step2: string; step3: string }
   footer: { privacy: string; analytics: string; analyticsLink: string }
 }
 
@@ -104,7 +104,8 @@ export const ja: LandingText = {
   start: {
     title: 'さあ、はじめましょう。',
     sub: 'あなたのコンピュータに、ASIST を。',
-    download: 'ダウンロード',
+    downloadMac: 'Mac 版をダウンロード',
+    downloadWindows: 'Windows 版をダウンロード',
     setup: 'セットアップの手順',
     mac: 'macOS 14 以降・Apple Silicon',
     windows: 'Windows 11・x64',

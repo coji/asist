@@ -89,7 +89,8 @@ export const fr: LandingText = {
   start: {
     title: 'Lancez-vous.',
     sub: 'ASIST, sur votre ordinateur.',
-    download: 'Télécharger',
+    downloadMac: 'Télécharger pour Mac',
+    downloadWindows: 'Télécharger pour Windows',
     setup: 'Guide d’installation',
     mac: 'macOS 14 ou plus récent · Apple Silicon',
     windows: 'Windows 11 · x64',
