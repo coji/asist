@@ -189,7 +189,10 @@ describe('settings dialog', () => {
     expect(setup?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 4 }))
     expect(setup?.getAttribute('data-tone')).toBe('warn')
     expect(title(view)).toBe(t('settingsConversation.title'))
-    expect(view.querySelector('.st-page .st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.notSet'))
+    const keyRow = [...view.querySelectorAll('.st-page .st-row')].find(
+      (row) => row.querySelector('.st-row-label')?.textContent === t('settingsConversation.models.apiKey', { provider: 'OpenAI' })
+    )
+    expect(keyRow?.querySelector('.st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.notSet'))
   })
 
   it('writes a small cost the same way in the page list and on the costs page', async () => {
@@ -361,6 +364,59 @@ describe('settings dialog', () => {
     const row = view.querySelector('.st-key[data-provider="openai"]')!
     expect(row.querySelector('.st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.unreadable'))
     expect(row.querySelector('.st-btn')?.textContent).toBe(t('settingsIntegrations.apiKeys.register'))
+  })
+
+  const pageRow = (view: HTMLElement, label: string): Element | undefined =>
+    [...view.querySelectorAll('.st-page .st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === label)
+
+  it.each([
+    // A setup finished for text alone saves the engine that reads nothing.
+    ['none', t('common.off'), t('settingsModels.speech.none'), t('settingsVoice.title')],
+    // A setup finished with a live engine leaves the default engine, which was never installed.
+    ['voicevox', t('common.notFound'), t('settingsVoice.speech.engineMissing.macos', { engine: 'VOICEVOX' }), t('settingsModels.title')]
+  ] as const)(
+    'says what the cascade engine lacks once it is chosen after a live engine, with the speech engine %s, and leads to where each is prepared',
+    async (ttsEngine, speechChip, speechHint, speechPage) => {
+      const liveSettings = { ...settings, voiceEngine: 'gpt-live', ttsEngine } as AppSettings
+      useSettingsStore.setState({ settings: liveSettings })
+      useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'verified' }, tts: false } })
+      api.saveSettings.mockImplementationOnce(async (patch: Partial<AppSettings>) => ({ ...liveSettings, ...patch }))
+      const view = await render()
+      expect(pageRow(view, t('settingsModels.asr.title'))).toBeUndefined()
+
+      const engine = view.querySelector<HTMLSelectElement>(`select[aria-label="${t('settingsConversation.engine.selectLabel')}"]`)!
+      await act(async () => {
+        engine.value = 'cascade'
+        engine.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await act(async () => {})
+      expect(api.saveSettings).toHaveBeenLastCalledWith({ voiceEngine: 'cascade' })
+
+      const listening = pageRow(view, t('settingsModels.asr.title'))!
+      expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
+      expect(listening.querySelector('.st-row-hint')?.textContent).toBe(t('settingsConversation.engine.recognitionNotReady'))
+      const speech = pageRow(view, t('settingsModels.speech.title'))!
+      expect(speech.querySelector('.st-chip')?.textContent).toBe(speechChip)
+      expect(speech.querySelector('.st-row-hint')?.textContent).toBe(speechHint)
+
+      await act(async () => speech.querySelector<HTMLButtonElement>('.st-link')!.click())
+      expect(title(view)).toBe(speechPage)
+      await act(async () => nav(view, 'conversation').click())
+      await act(async () => pageRow(view, t('settingsModels.asr.title'))!.querySelector<HTMLButtonElement>('.st-link')!.click())
+      expect(title(view)).toBe(t('settingsModels.title'))
+    }
+  )
+
+  it('counts the cascade engine as able to listen through Whisper in the browser, which the microphone falls back to without the local model', async () => {
+    useSettingsStore.setState({ settings: { ...settings, localAsrEnabled: true } })
+    const view = await render()
+    const listening = pageRow(view, t('settingsModels.asr.title'))!
+    expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.ready'))
+    expect(listening.querySelector('.st-link')).toBeNull()
+    // The macOS voice needs nothing prepared, so the speech is ready and names the engine.
+    const speech = pageRow(view, t('settingsModels.speech.title'))!
+    expect(speech.querySelector('.st-chip')?.textContent).toBe(t('common.ready'))
+    expect(speech.querySelector('.st-row-hint')?.textContent).toBe(t('settings.ttsEngine.system.macos'))
   })
 
   it('reports a status check that fails instead of keeping the last status without a word', async () => {

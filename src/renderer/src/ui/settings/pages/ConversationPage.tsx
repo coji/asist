@@ -20,7 +20,7 @@ import { CONVERSATION_LOCALES, REGIONS, ttsEngineSpeaks, type ConversationLocale
 import { UI_LOCALE_NAMES, type MessageKey, type Translate } from '@shared/i18n'
 import { keyReadable, type ApiKeyState } from '@shared/ipc'
 import { useToastStore } from '@/state/stores'
-import type { SettingsContext } from '../context'
+import { cascadeListeningReady, speechReadiness, ttsEngineLabel, type SettingsContext, type SpeechReadiness } from '../context'
 import { useFieldDraft } from '../field-draft'
 import { Btn, Chip, Group, Link, NotSavedHint, Page, Row, type ChipTone } from '../primitives'
 import { displayError } from '@/display-error'
@@ -111,7 +111,7 @@ export function ConversationPage({ ctx }: { ctx: SettingsContext }): React.JSX.E
             ))}
           </select>
         </Row>
-        {live && <LiveEngineRows engine={live} ctx={ctx} disabled={saving} />}
+        {live ? <LiveEngineRows engine={live} ctx={ctx} disabled={saving} /> : <CascadeEngineRows ctx={ctx} />}
       </Group>
 
       <Group
@@ -280,6 +280,61 @@ const noteOf = (t: Translate, model: ConversationModel): string => {
 
 const engineHint = (t: Translate, engine: VoiceEngine): string =>
   engine === 'cascade' ? t('voiceEngines.cascade.hint') : engine === 'gpt-live' ? t('voiceEngines.gptLive.hint') : t('voiceEngines.geminiLive.hint')
+
+/** The chip of each state of the speech on the conversation page. The one of a missing engine is chosen by the engine. */
+const SPEECH_CHIP = {
+  ready: { tone: 'ok', label: 'common.ready' },
+  off: { tone: 'dim', label: 'common.off' },
+  cannotRun: { tone: 'warn', label: 'common.notReady' },
+  checking: { tone: 'dim', label: 'settingsModels.checking' }
+} as const satisfies Record<Exclude<SpeechReadiness, 'missing'>, { tone: ChipTone; label: MessageKey }>
+
+/**
+ * The rows of the cascade engine: whether the speech recognition and the speech engine it relies on are
+ * ready, and where each is prepared. A setup finished with a live engine or for text alone skips preparing
+ * both, so a switch to this engine shows here what is still missing.
+ */
+function CascadeEngineRows({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
+  const { settings, status, setup, go } = ctx
+  const t = useT()
+  const { os, speechRuntime } = platformCapabilities()
+  const listening = cascadeListeningReady(settings, setup, speechRuntime)
+  const engine = settings.ttsEngine
+  const speech = speechReadiness(engine, status, speechRuntime)
+  const engineName = ttsEngineLabel(t, engine)
+  const speechChip =
+    speech === 'missing'
+      ? { tone: 'warn' as const, label: engine === 'qwen3tts' ? ('common.notReady' as const) : ('common.notFound' as const) }
+      : SPEECH_CHIP[speech]
+  const speechHint =
+    speech === 'off'
+      ? t('settingsModels.speech.none')
+      : speech === 'cannotRun'
+        ? t('voice.speech.cannotRunHere', { engine: engineName })
+        : speech === 'missing'
+          ? engine === 'qwen3tts'
+            ? t('settingsVoice.speech.qwenNotPrepared')
+            : t(osMessageKey('settingsVoice.speech.engineMissing', os), { engine: engineName })
+          : engineName
+  return (
+    <>
+      <Row label={t('settingsModels.asr.title')} hint={listening === false ? t('settingsConversation.engine.recognitionNotReady') : undefined}>
+        <Chip tone={listening === null ? 'dim' : listening ? 'ok' : 'warn'}>
+          {t(listening === null ? 'settingsModels.checking' : listening ? 'common.ready' : 'common.notReady')}
+        </Chip>
+        {listening === false && <Link onClick={() => go('models')}>{t('common.openModels')}</Link>}
+      </Row>
+      <Row label={t('settingsModels.speech.title')} hint={speechHint}>
+        <Chip tone={speechChip.tone}>{t(speechChip.label)}</Chip>
+        {speech === 'missing' ? (
+          <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
+        ) : (
+          (speech === 'off' || speech === 'cannotRun') && <Link onClick={() => go('voice')}>{t('settingsModels.speech.chooseEngine')}</Link>
+        )}
+      </Row>
+    </>
+  )
+}
 
 /** The rows of a live engine: its model and voice, how long it waits before closing the session, and the state of the key. */
 function LiveEngineRows({ engine, ctx, disabled }: { engine: LiveEngine; ctx: SettingsContext; disabled: boolean }): React.JSX.Element {

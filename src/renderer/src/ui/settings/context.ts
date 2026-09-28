@@ -4,6 +4,7 @@ import type { SettingsPage } from '@shared/mini-apps'
 import type { SettingsPatch } from '@shared/settings'
 import type { PlatformCapabilities } from '@shared/platform'
 import { osMessageKey } from '@shared/i18n/os-message'
+import { ttsEngineRuns } from '@shared/tts-models'
 import { platformCapabilities } from '@/platform'
 
 export type { SettingsPage }
@@ -79,4 +80,33 @@ export function speechRecognitionReady(
 ): boolean | null {
   if (speechRuntime.kind === null) return settings.localAsrEnabled
   return setup ? setup.asr?.ready === true : null
+}
+
+/**
+ * Whether the microphone can be turned on for the cascade engine. The voice controller listens through
+ * the local model when it runs and through Whisper in the browser once that is enabled, and refuses to
+ * start with neither. Null while the state of the local model is still being read.
+ */
+export function cascadeListeningReady(
+  settings: AppSettings,
+  setup: SetupStatus | null,
+  speechRuntime: PlatformCapabilities['speechRuntime']
+): boolean | null {
+  return settings.localAsrEnabled || speechRecognitionReady(settings, setup, speechRuntime)
+}
+
+/** How the replies of the cascade engine are read aloud, as speechReadiness tells it. */
+export type SpeechReadiness = 'ready' | 'off' | 'missing' | 'cannotRun' | 'checking'
+
+/**
+ * How the replies are read aloud. 'off' is the engine that reads nothing, which leaves a reply as text
+ * alone. 'missing' is an engine that cannot be reached or whose model is not prepared, in which case the
+ * OS's speech synthesis reads the replies instead.
+ */
+export function speechReadiness(engine: TtsEngine, status: AppStatus | null, speechRuntime: PlatformCapabilities['speechRuntime']): SpeechReadiness {
+  if (engine === 'none') return 'off'
+  if (!ttsEngineRuns(engine, speechRuntime)) return 'cannotRun'
+  if (!ttsNeedsPreparation(engine)) return 'ready'
+  if (status === null) return 'checking'
+  return status.tts ? 'ready' : 'missing'
 }

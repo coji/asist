@@ -185,6 +185,19 @@ export const settingsConversation = defineMessages({
       'pt-BR': 'Não foi possível alterar o motor de voz',
       'es-419': 'No se pudo cambiar el motor de voz',
       'es-ES': 'No se ha podido cambiar el motor de voz'
+    },
+    recognitionNotReady: {
+      'ja-JP': '準備するまでマイクは使えません。',
+      'en-US': "The microphone can't be used until this is prepared.",
+      'fr-FR': "Le microphone reste inutilisable tant qu'elle n'est pas préparée.",
+      'de-DE': 'Bis sie vorbereitet ist, lässt sich das Mikrofon nicht verwenden.',
+      'hi-IN': 'इसे तैयार करने तक माइक्रोफ़ोन इस्तेमाल नहीं हो सकता।',
+      'id-ID': 'Mikrofon tidak bisa dipakai sampai ini disiapkan.',
+      'it-IT': 'Il microfono non si può usare finché non viene preparato.',
+      'ko-KR': '준비하기 전에는 마이크를 사용할 수 없습니다.',
+      'pt-BR': 'O microfone só pode ser usado depois que o reconhecimento estiver preparado.',
+      'es-419': 'No se puede usar el micrófono hasta que esté preparado.',
+      'es-ES': 'No se puede usar el micrófono hasta que esté preparado.'
     }
   },
   models: {

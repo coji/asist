@@ -8,7 +8,7 @@ import { useToastStore } from '@/state/stores'
 import { QWEN_TTS_VOICES, ttsEngineRuns, type QwenTtsVoice } from '@shared/tts-models'
 import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
 import { conversationFeatures } from '@shared/conversation-locale'
-import { ttsEngineLabel, isExternalTts, ttsNeedsPreparation, type SettingsContext } from '../context'
+import { ttsEngineLabel, isExternalTts, speechReadiness, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
 import { Advanced, Btn, Chip, Group, Link, Page, Row } from '../primitives'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
@@ -64,9 +64,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const asrChoices = speechRuntime.kind === null ? [] : asrModelChoices(speechRuntime.kind, settings.asrModel)
   const selectionOffered = asrChoices.every((choice) => choice.offered)
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
-  // True when the selected engine cannot be reached or its model is not prepared; the OS's own speech
-  // synthesis needs no preparation and never counts as missing.
-  const ttsMissing = engineUsable && ttsNeedsPreparation(engine) && status !== null && !status.tts
+  const ttsMissing = engineUsable && speechReadiness(engine, status, speechRuntime) === 'missing'
   const preview = (
     <Btn
       tone="quiet"
