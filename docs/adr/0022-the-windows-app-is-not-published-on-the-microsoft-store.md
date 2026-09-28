@@ -1,6 +1,6 @@
 # Windows のアプリは Microsoft Store では配らず、最初は署名せずに配る
 
-Windows のアプリは、GitHub の Release から NSIS のインストーラーで配る。Microsoft Store(MSIX)では配らない。最初は署名せず、SignPath Foundation のオープンソース向けの無料の署名を申請して、通れば署名する。署名の無いアプリは、SmartScreen の警告の画面を「詳細情報」から「実行」で進めて入れてもらうことになるので、その手順をドキュメントに書く。
+Windows のアプリは、GitHub の Release から NSIS のインストーラーで配る。Microsoft Store(MSIX)では配らない。最初は署名せず、SignPath Foundation のオープンソース向けの無料の署名を申請して、通れば署名する。署名の無いアプリは、SmartScreen の警告の画面を「詳細情報」から「実行」で進めて入れてもらうことになるので、その手順をドキュメントに書く。署名の無いあいだも、アプリは GitHub の Release から自分で更新する。そのときの危うさは、更新を扱う記録に書く。
 
 ## 見送った案
 
@@ -11,5 +11,5 @@ Windows のアプリは、GitHub の Release から NSIS のインストーラ�
 
 ## 分かっている制約
 
-- 署名が無いあいだは、SmartScreen の実績がたまらず、版を出すたびに警告が出る。Smart App Control が有効なマシンでは、入れられない。
+- 署名が無いあいだは、SmartScreen の実績がたまらず、版を出すたびに、ダウンロードしたインストーラーを開いた人には警告が出る。Smart App Control が有効なマシンでは、入れられない。
 - SignPath Foundation の署名では、発行元は「SignPath Foundation」と表示される。署名できるのは、公開のリポジトリから CI で自動でビルドしたものだけである。

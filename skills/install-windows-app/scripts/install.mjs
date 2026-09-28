@@ -58,8 +58,7 @@ if (args.has('--quit')) {
 }
 
 if (args.has('--build')) execSync('npm run dist:win', { cwd: repo, stdio: 'inherit', windowsHide: true })
-const { version } = JSON.parse(fs.readFileSync(path.join(repo, 'package.json'), 'utf8'))
-const installer = path.join(repo, 'dist', `ASIST Setup ${version}.exe`)
+const installer = path.join(repo, 'dist', 'ASIST-Setup-x64.exe')
 if (!fs.existsSync(installer)) fail(`インストーラーがありません: ${installer}(--build を付けてください)`)
 
 if (running()) {

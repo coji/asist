@@ -32,6 +32,8 @@ The app log is kept in the app log folder in the table above, one file per day.
 
 The speech recognition and speech models are downloaded into the standard Hugging Face cache: `~/.cache/huggingface/hub/` on macOS and `%USERPROFILE%\.cache\huggingface\hub\` on Windows. Other apps use the same place, so uninstalling ASIST doesn't remove them.
 
+The files of new versions that the automatic update downloads are kept in `~/Library/Caches/asist-updater/` on macOS and `%LOCALAPPDATA%\asist-updater\` on Windows, where a copy of the installer is kept as well. Uninstalling ASIST doesn't remove them.
+
 ## API keys and passwords
 
 API keys and mail passwords saved in the settings are encrypted with Electron's safeStorage and are never written as plain text. If encryption isn't available, ASIST doesn't save them and shows an error instead. How the encryption key is protected differs by OS.

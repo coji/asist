@@ -9,25 +9,11 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 
 ## Updating
 
-<Tabs syncKey="os">
-<TabItem label="macOS">
-
-ASIST checks the GitHub Releases for a new version when it opens, and every 6 hours while it is open. If there is one, it downloads it in the background and installs it the next time you quit ASIST. It never restarts on its own while you are talking or while a job is running.
+ASIST checks the GitHub Releases for a new version when it opens, and every 6 hours while it is open. If there is one, it downloads it in the background and installs it the next time you quit ASIST. It never restarts on its own while you are talking or while a job is running. This is the same on a Mac and on Windows.
 
 To install the update right away, click "Restart now" under "About" in the settings. The current version and the update status also appear there.
 
-</TabItem>
-<TabItem label="Windows">
-
-ASIST for Windows does not download new versions by itself. When a new version is out, install it as follows.
-
-1. Right-click the ASIST icon in the notification area of the taskbar and click "Quit".
-2. Download the new `ASIST Setup <version>.exe` from [Releases](https://github.com/nyosegawa/asist/releases/latest) and open it. Get past the SmartScreen warning as in [Installation](/en/docs/start/install/).
-
-Installing over the previous version keeps your settings and data in `%APPDATA%\asist`.
-
-</TabItem>
-</Tabs>
+On Windows, closing the window does not quit ASIST. When you right-click the ASIST icon in the notification area of the taskbar and click "Quit", the installer installs the new version without showing a window. When you click "Restart now", ASIST opens again once the new version is installed. Your settings and data in `%APPDATA%\asist` stay as they are.
 
 If a released version has a problem, a fixed version with a higher number is released. There is no way to go back to an earlier version.
 
@@ -41,6 +27,7 @@ If a released version has a problem, a fixed version with a higher number is rel
 3. To remove your settings and data as well, move the following folders to the Trash. This also removes your memory, notes, tasks, conversation history and fetched mail.
    - `~/Library/Application Support/asist/`
    - `~/Library/Logs/asist/`
+   - `~/Library/Caches/asist-updater/` (the files of new versions that the automatic update downloaded)
 4. To remove the key used to encrypt your saved API keys and mail passwords, find "asist Safe Storage" in Keychain Access and delete it.
 5. To remove the microphone and calendar permissions as well, run the following in Terminal.
 
@@ -55,6 +42,7 @@ If a released version has a problem, a fixed version with a higher number is rel
 1. Right-click the ASIST icon in the notification area of the taskbar and click "Quit".
 2. In Settings > Apps > Installed apps, click "…" next to ASIST, then "Uninstall".
 3. To remove your settings and data as well, delete the `%APPDATA%\asist` folder. This also removes your memory, notes, tasks, conversation history, fetched mail and app logs. The key used to encrypt your saved API keys and mail passwords is in this folder too, so it goes with it.
+4. The files of new versions that the automatic update downloaded, and its copy of the installer, are in `%LOCALAPPDATA%\asist-updater`, which uninstalling does not remove. To remove them too, delete that folder.
 
 </TabItem>
 </Tabs>

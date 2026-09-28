@@ -176,17 +176,17 @@ CSC_NAME="<氏名> (<Team ID>)" npm run dist:mac
 Windows 11 の x64 のマシンで実行します。準備のスクリプトはビルドするマシンのための git、uv、ネイティブのヘルパーを用意するので、ほかの OS では `npm run build` のあとで止まります。
 
 ```powershell
-npm run dist:win       # インストーラーを dist\ASIST Setup <版>.exe に作ります
+npm run dist:win       # インストーラーを dist\ASIST-Setup-x64.exe に作ります
 npm run dist:win:dir   # インストールせずに動かせるアプリを dist\win-unpacked に作ります
 ```
 
-証明書はまだ設定していないので、署名はしません。インストーラーは、管理者の権限を求めずに、使う人ごとに `%LOCALAPPDATA%\Programs\asist` に入れます。Electron の fuse は macOS と同じです。`app.asar` の中身が変わっていれば、`ASIST.exe` は起動してすぐに終了します。`ELECTRON_ENABLE_LOGGING=1` を付けて起動すると、そのときは `Integrity check failed for asar archive` と出ます。
+証明書はまだ設定していないので、署名はしません。インストーラーは、管理者の権限を求めずに、使う人ごとに `%LOCALAPPDATA%\Programs\asist` に入れます。`electron-builder.yml` は Windows に GitHub の公開の設定を持たせていないので、このインストーラーは自動更新の設定(`app-update.yml`)を持たず、リリースから自分を更新しません。Electron の fuse は macOS と同じです。`app.asar` の中身が変わっていれば、`ASIST.exe` は起動してすぐに終了します。`ELECTRON_ENABLE_LOGGING=1` を付けて起動すると、そのときは `Integrity check failed for asar archive` と出ます。
 
 Windows のマシンで、インストールして確かめ、終了するまでの手順は、[Windows のインストールの手順](../skills/install-windows-app/SKILL.md)にあります。
 
-## Mac のアプリをリリースする
+## リリースする
 
-配布するアプリは、この Mac で署名と公証をして、GitHub の Release に置きます。利用者のアプリは起動したときと 6 時間ごとに新しいバージョンを確かめ、裏で取得して、次に終了したときに入れ替えます。「このアプリについて」の「今すぐ再起動」で、すぐに入れ替えることもできます。
+配布する Mac のアプリはこの Mac で署名と公証をし、Windows のインストーラーは GitHub Actions で署名せずにビルドして、同じ GitHub の Release に置きます。利用者のアプリは、Mac でも Windows でも、起動したときと 6 時間ごとに新しいバージョンを確かめ、裏で取得して、次に終了したときに入れ替えます。「このアプリについて」の「今すぐ再起動」で、すぐに入れ替えることもできます。Windows では、インストーラーが画面を出さずに入れ替え、「今すぐ再起動」のときは入れ替えたあとで ASIST を開きます。
 
 最初に一度だけ、Developer ID Application の証明書をキーチェーンに入れ(Xcode の Settings → Accounts → Manage Certificates)、公証に使う Apple ID を notarytool に保存します。App 用パスワードは account.apple.com で作ります。
 
@@ -201,6 +201,8 @@ npm run release
 ```
 
 `npm run release` は、main が origin/main と同じで変更が無いことと、そのバージョンがまだ出ていないことを確かめます。次に、地図のキー(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`)があることと `npm audit --omit=dev` を確かめてから、dmg と zip をビルドして署名と公証をし、Gatekeeper が受け付けることを確かめます。そのうえで、dmg(`ASIST-arm64.dmg`。名前にバージョンを含めないので、`releases/latest/download/ASIST-arm64.dmg` がいつも最新を指します)、zip、`latest-mac.yml`、同梱した git のソース(`scripts/resources/git-macos.mjs` のバージョンの tarball)を Release に置きます。証明書を選ぶ `CSC_NAME` と、notarytool のプロファイルを選ぶ `APPLE_KEYCHAIN_PROFILE`(省くと `asist-notary`)で、どちらも変えられます。
+
+Mac のファイルを置いた Release は、まだ下書きのままです。`npm run release` は次に、`.github/workflows/windows-release.yml` をタグとコミットを渡して動かし、`gh run watch --exit-status` で終わるのを待ちます。このワークフローは、まず Release が下書きで、そのコミットから作ったものであることを確かめます。次に windows-latest で、`package.json` のバージョンがタグと同じであることを確かめ、リポジトリの Secrets にある地図のキーと Google の OAuth クライアント(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`、`ASIST_GOOGLE_CLIENT_ID`、`ASIST_GOOGLE_CLIENT_SECRET`)を入れて NSIS のインストーラーをビルドします。npm とリポジトリのスクリプトはこのビルドの job だけで動かし、その job のトークンには読む権限しか与えません。Release に書き込めるトークンを持つ job は、何も checkout せず、gh だけを動かします。GitHub の公開の設定は、このときだけコマンドラインで渡すので、自動更新の設定(`app-update.yml`)と `latest.yml` を持つのは、このインストーラーだけです。できたインストーラー(`ASIST-Setup-x64.exe`。名前にバージョンを含めないので、`releases/latest/download/ASIST-Setup-x64.exe` がいつも最新を指します)、その blockmap、`latest.yml`、同梱した Git for Windows のソース(`git-for-windows-<バージョン>.tar.gz`)は、Actions の artifact として Release に書き込める job に渡します。その job は、Release がまだ下書きで、同じコミットから作ったものであることをもう一度確かめてから、これらを下書きに置きます。`npm run release` は、下書きに Windows のファイルがすべてそろったことを確かめてから、Release を公開します。ワークフローが失敗したときは、下書きのまま止まり、次にすることを表示します。
 
 出したバージョンに問題があったときは、Release を消したり前のバージョンに戻したりせず、番号を上げて直したバージョンを出します。自動更新は、今のバージョンより新しい番号のバージョンだけを入れるからです。
 

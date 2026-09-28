@@ -10,9 +10,9 @@ sidebar:
 | Software | Obtained from | License |
 |---|---|---|
 | uv | Astral's releases on GitHub. It is checked by hash before it is bundled. | MIT or Apache-2.0 |
-| git | The source tarball from kernel.org. After a hash check, only the parts needed for local operations are compiled. The source is not modified. | GPL-2.0 |
+| git | On a Mac, the source tarball from kernel.org. After a hash check, only the parts needed for local operations are compiled. The source is not modified. On Windows, MinGit as Git for Windows publishes it. After a hash check, it is bundled without the parts ASIST does not use. | GPL-2.0 |
 
-The license texts of both are included in the app. For git, the [Release](https://github.com/nyosegawa/asist/releases) of each version of ASIST carries the source tarball of the same git version.
+The license texts of both are included in the app. For git, the [Release](https://github.com/nyosegawa/asist/releases) of each version of ASIST carries the source tarball of the same git version, and for the git on Windows, the source of the same version of Git for Windows.
 
 ## Data
 

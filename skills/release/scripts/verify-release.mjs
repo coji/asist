@@ -8,7 +8,8 @@ import path from 'node:path'
 /*
  * Checks a published release the way a user meets it: downloads the dmg and the update feed from
  * releases/latest, compares the dmg with the digest the feed lists, marks the dmg as downloaded from the
- * internet, and asks Gatekeeper about the app inside it.
+ * internet, and asks Gatekeeper about the app inside it. For Windows it downloads the installer and latest.yml
+ * and compares the installer with the digest and size the feed lists; a Mac cannot run the installer.
  *
  * Usage: node skills/release/scripts/verify-release.mjs <version>
  */
@@ -34,11 +35,19 @@ async function fetchTo(url, file) {
   fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()))
 }
 
+async function fetchText(url) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`${url} answered HTTP ${response.status}`)
+  return response.text()
+}
+
+const namesVersion = new RegExp(`^version: ${version.replace(/\./g, '\\.')}$`, 'm')
+
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-verify-'))
 const mount = path.join(work, 'mnt')
 try {
-  const feed = await (await fetch(`${LATEST}/latest-mac.yml`)).text()
-  check(new RegExp(`^version: ${version.replace(/\./g, '\\.')}$`, 'm').test(feed), 'latest-mac.yml names the version', feed.split('\n')[0])
+  const feed = await fetchText(`${LATEST}/latest-mac.yml`)
+  check(namesVersion.test(feed), 'latest-mac.yml names the version', feed.split('\n')[0])
 
   const dmg = path.join(work, 'ASIST-arm64.dmg')
   await fetchTo(`${LATEST}/ASIST-arm64.dmg`, dmg)
@@ -64,6 +73,15 @@ try {
   } finally {
     execFileSync('hdiutil', ['detach', mount], { stdio: 'ignore' })
   }
+
+  const windowsFeed = await fetchText(`${LATEST}/latest.yml`)
+  check(namesVersion.test(windowsFeed), 'latest.yml names the version', windowsFeed.split('\n')[0])
+  const installer = path.join(work, 'ASIST-Setup-x64.exe')
+  await fetchTo(`${LATEST}/ASIST-Setup-x64.exe`, installer)
+  const entry = /- url: ASIST-Setup-x64\.exe\n\s+sha512: (\S+)\n\s+size: (\d+)/.exec(windowsFeed)
+  const bytes = fs.readFileSync(installer)
+  check(entry?.[1] === createHash('sha512').update(bytes).digest('base64'), 'the installer matches the digest in latest.yml')
+  check(Number(entry?.[2]) === bytes.length, 'the installer has the size latest.yml lists', `${bytes.length} bytes`)
 } finally {
   fs.rmSync(work, { recursive: true, force: true })
 }

@@ -10,7 +10,9 @@ import { download } from './resources/shared.mjs'
  * Builds the version in package.json from main, signs it with Developer ID, notarizes it and publishes it
  * as a GitHub release: the dmg for a first install, the zip and latest-mac.yml that electron-updater reads,
  * and the source of the git that ships inside the app, which GPL-2.0 asks to be offered from the same
- * place as the binary.
+ * place as the binary. The Windows installer, its latest.yml and the source of its Git are built and added
+ * to the draft by .github/workflows/windows-release.yml, which this dispatches and waits for before it
+ * publishes.
  *
  * Environment: CSC_NAME (the name after "Developer ID Application: " of the signing identity; without it, the
  * only such identity in the keychain)
@@ -18,6 +20,10 @@ import { download } from './resources/shared.mjs'
  */
 
 const REPOSITORY = 'nyosegawa/asist'
+const WINDOWS_WORKFLOW = 'windows-release.yml'
+/** What the Windows workflow adds to the draft, besides the source of Git for Windows. */
+const WINDOWS_FILES = ['ASIST-Setup-x64.exe', 'ASIST-Setup-x64.exe.blockmap', 'latest.yml']
+const WINDOWS_GIT_SOURCE = /^git-for-windows-.+\.tar\.gz$/
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
 
@@ -33,7 +39,7 @@ export function withFileDigest(yml, url, sha512, size) {
 }
 
 function gitNote(version) {
-  return `The app includes Git ${GIT_SOURCE.version} (GPL-2.0). ${GIT_SOURCE.file} is its source, compiled by [scripts/resources/git-macos.mjs](https://github.com/${REPOSITORY}/blob/v${version}/scripts/resources/git-macos.mjs).`
+  return `The Mac app includes Git ${GIT_SOURCE.version} (GPL-2.0). ${GIT_SOURCE.file} is its source, compiled by [scripts/resources/git-macos.mjs](https://github.com/${REPOSITORY}/blob/v${version}/scripts/resources/git-macos.mjs).`
 }
 
 function run(command, args, options = {}) {
@@ -48,6 +54,44 @@ function read(command, args) {
 function fail(message) {
   console.error(`release: ${message}`)
   process.exit(1)
+}
+
+/**
+ * The Windows files of a release that are not on the draft yet. The source of Git for Windows is named by the
+ * version the workflow bundled, so it is matched by its pattern.
+ */
+export function missingWindowsFiles(assets) {
+  const missing = WINDOWS_FILES.filter((name) => !assets.includes(name))
+  if (!assets.some((name) => WINDOWS_GIT_SOURCE.test(name))) missing.push('git-for-windows-<version>.tar.gz')
+  return missing
+}
+
+/** Dispatches the Windows workflow for the draft and waits for it; a failure leaves the draft unpublished. */
+function addWindows(tag, commit) {
+  const dispatch = ['workflow', 'run', WINDOWS_WORKFLOW, '--repo', REPOSITORY, '--ref', 'main', '-f', `tag=${tag}`, '-f', `commit=${commit}`]
+  console.log(`$ gh ${dispatch.join(' ')}`)
+  const dispatched = spawnSync('gh', dispatch, { cwd: root, encoding: 'utf8' })
+  const said = `${dispatched.stdout}${dispatched.stderr}`
+  process.stdout.write(said)
+  if (dispatched.status !== 0) fail(`the Windows workflow could not be started; the draft ${tag} is left as it is`)
+  const runId = /\/actions\/runs\/(\d+)/.exec(said)?.[1]
+  if (!runId) fail(`gh did not name the run of ${WINDOWS_WORKFLOW}; find it with gh run list --repo ${REPOSITORY} --workflow ${WINDOWS_WORKFLOW}`)
+  const rerun = `gh workflow run ${WINDOWS_WORKFLOW} --repo ${REPOSITORY} --ref main -f tag=${tag} -f commit=${commit}`
+  const watched = spawnSync('gh', ['run', 'watch', runId, '--repo', REPOSITORY, '--exit-status', '--compact', '--interval', '30'], { cwd: root, stdio: 'inherit' })
+  if (watched.status !== 0) {
+    fail([
+      `the Windows installer was not added. The draft ${tag} is not published, so no user sees it.`,
+      `  Read why: gh run view ${runId} --repo ${REPOSITORY} --log-failed`,
+      `  When the cause is outside the code (a secret, the runner), run the workflow again and wait for it:`,
+      `    ${rerun}`,
+      `  and publish once the draft has the Windows files: gh release edit ${tag} --repo ${REPOSITORY} --draft=false --latest`,
+      `  When the code has to change, delete the draft (gh release delete ${tag} --repo ${REPOSITORY}), merge the fix and run npm run release again.`
+    ].join('\n'))
+  }
+  const release = JSON.parse(read('gh', ['release', 'view', tag, '--repo', REPOSITORY, '--json', 'isDraft,assets']))
+  if (!release.isDraft) fail(`${tag} was published while the Windows workflow ran`)
+  const missing = missingWindowsFiles(release.assets.map((asset) => asset.name))
+  if (missing.length > 0) fail(`the Windows workflow succeeded, but the draft ${tag} lacks ${missing.join(', ')}; run it again: ${rerun}`)
 }
 
 function digest(file, algorithm, encoding) {
@@ -76,8 +120,25 @@ function checkSource(tag) {
   if (read('git', ['status', '--porcelain'])) fail('the working tree has changes')
   run('git', ['fetch', 'origin', 'main'])
   if (read('git', ['rev-parse', 'HEAD']) !== read('git', ['rev-parse', 'origin/main'])) fail('main is not the same as origin/main')
-  const existing = spawnSync('gh', ['release', 'view', tag, '--repo', REPOSITORY], { cwd: root, stdio: 'ignore' })
-  if (existing.status === 0) fail(`${tag} is already released; raise the version in package.json`)
+  const existing = spawnSync('gh', ['release', 'view', tag, '--repo', REPOSITORY, '--json', 'isDraft,targetCommitish'], { cwd: root, encoding: 'utf8' })
+  if (existing.status === 0) fail(existingRelease(tag, JSON.parse(existing.stdout)))
+  if (existing.stderr.trim() !== 'release not found') fail(`could not ask GitHub whether ${tag} exists: ${existing.stderr.trim()}`)
+}
+
+/**
+ * Why a release of tag cannot start, given what gh found under that tag. gh finds a draft as well, and a draft
+ * is what a release leaves when it stopped after creating it, typically in the Windows workflow; no user has
+ * seen it, so it is finished or deleted rather than the version raised.
+ */
+export function existingRelease(tag, { isDraft, targetCommitish }) {
+  if (!isDraft) return `${tag} is already released; raise the version in package.json`
+  return [
+    `a draft release of ${tag}, made from ${targetCommitish}, is left from a release that stopped. Either finish it:`,
+    `    gh workflow run ${WINDOWS_WORKFLOW} --repo ${REPOSITORY} --ref main -f tag=${tag} -f commit=${targetCommitish}`,
+    `  wait for that run, check that the draft has the Windows files and publish it:`,
+    `    gh release edit ${tag} --repo ${REPOSITORY} --draft=false --latest`,
+    `  or delete it and run npm run release again: gh release delete ${tag} --repo ${REPOSITORY}`
+  ].join('\n')
 }
 
 /**
@@ -143,10 +204,11 @@ async function main() {
   await download(GIT_SOURCE.url, gitTarball, GIT_SOURCE.sha256)
 
   // The release stays a draft until every file is in place, since electron-updater reads the latest
-  // published release and would find it without latest-mac.yml.
+  // published release and would find it without latest-mac.yml or latest.yml.
   const commit = read('git', ['rev-parse', 'HEAD'])
   run('gh', ['release', 'create', tag, '--repo', REPOSITORY, '--target', commit, '--title', `ASIST ${version}`,
     '--notes', gitNote(version), '--generate-notes', '--draft', dmg, zip, `${zip}.blockmap`, feed, gitTarball])
+  addWindows(tag, commit)
   run('gh', ['release', 'edit', tag, '--repo', REPOSITORY, '--draft=false', '--latest'])
   console.log(`released ${tag}: https://github.com/${REPOSITORY}/releases/tag/${tag}`)
 }

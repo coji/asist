@@ -1,7 +1,8 @@
 /**
  * Where the automatic update of the app stands, as the about page shows it. `off` is a build that does not
- * come from a release (a development run or a local `dist:mac`), which has no feed to update from. An
- * update is downloaded in the background and installed by macOS when the app next quits.
+ * come from a release (a development run, or a local `dist:mac` or `dist:win`), which has no feed to update
+ * from. An update is downloaded in the background and installed when the app next quits: by Squirrel.Mac on
+ * macOS, and by the NSIS installer, run without a window, on Windows.
  */
 export type AppUpdateState =
   | { phase: 'off' }
@@ -20,7 +21,7 @@ export interface Updater {
   on(event: 'update-downloaded', listener: (info: { version: string }) => void): unknown
   on(event: 'error', listener: (error: Error) => void): unknown
   checkForUpdates(): Promise<unknown>
-  quitAndInstall(): void
+  quitAndInstall(isSilent: boolean, isForceRunAfter: boolean): void
 }
 
 /** The part of Electron's own autoUpdater, Squirrel.Mac, that reports an update staged for install. */
@@ -63,7 +64,7 @@ export function afterStaging(updater: Updater, native: NativeUpdater): Updater {
       return (updater.on as (event: string, listener: never) => unknown)(event, listener)
     },
     checkForUpdates: () => updater.checkForUpdates(),
-    quitAndInstall: () => updater.quitAndInstall()
+    quitAndInstall: (isSilent: boolean, isForceRunAfter: boolean) => updater.quitAndInstall(isSilent, isForceRunAfter)
   } as Updater
 }
 
@@ -102,10 +103,14 @@ export class AppUpdateController {
     this.updater.checkForUpdates().catch(() => undefined)
   }
 
-  /** Quits and installs the downloaded version now, instead of at the next quit. */
+  /**
+   * Quits, installs the downloaded version and starts the app again, instead of installing at the next quit.
+   * The NSIS updater runs the installer with its window unless told to be silent, and a silent installer
+   * starts the app again only when told to; Squirrel.Mac ignores both and always starts it again.
+   */
   install(): void {
     if (this.current.phase !== 'ready') throw new Error(`no update is ready to install (${this.current.phase})`)
-    this.updater.quitAndInstall()
+    this.updater.quitAndInstall(true, true)
   }
 
   private set(state: AppUpdateState): void {

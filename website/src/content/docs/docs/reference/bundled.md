@@ -10,9 +10,9 @@ sidebar:
 | ソフトウェア | 入手先 | ライセンス |
 |---|---|---|
 | uv | Astral の GitHub のリリース。ハッシュで確かめてから同梱します。 | MIT か Apache-2.0 |
-| git | kernel.org のソースの tarball。ハッシュで確かめてから、手元の操作に要る部分だけをコンパイルします。ソースには手を加えていません。 | GPL-2.0 |
+| git | Mac では kernel.org のソースの tarball。ハッシュで確かめてから、手元の操作に要る部分だけをコンパイルします。ソースには手を加えていません。Windows では Git for Windows が配る MinGit。ハッシュで確かめてから、ASIST が使わない部分を除いて同梱します。 | GPL-2.0 |
 
-どちらもライセンスの本文をアプリの中に入れています。git のソースは、各バージョンの [Release](https://github.com/nyosegawa/asist/releases) に同じバージョンの tarball を置いています。
+どちらもライセンスの本文をアプリの中に入れています。git のソースは、各バージョンの [Release](https://github.com/nyosegawa/asist/releases) に同じバージョンの tarball を置いています。Windows の git については、同じバージョンの Git for Windows のソースを置いています。
 
 ## データ
 

@@ -32,6 +32,8 @@ ASIST から開発者へ送るデータはありません。設定とデータ�
 
 声の聞き取りと読み上げのモデルは、Hugging Face の標準のキャッシュに取得します。macOS では `~/.cache/huggingface/hub/`、Windows では `%USERPROFILE%\.cache\huggingface\hub\` です。ほかのアプリも同じ場所を使うので、ASIST をアンインストールしても消えません。
 
+自動更新で取得した新しいバージョンのファイルは、macOS では `~/Library/Caches/asist-updater/`、Windows では `%LOCALAPPDATA%\asist-updater\` に置きます。Windows では、インストーラーの控えもここに置きます。どちらも、ASIST をアンインストールしても消えません。
+
 ## API キーとパスワード
 
 設定で保存した API キーとメールのパスワードは、Electron の safeStorage で暗号化し、平文では書きません。暗号化が使えないときは保存せず、エラーにします。暗号化の鍵の守り方は、OS によって違います。

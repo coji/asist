@@ -19,7 +19,7 @@ Run everything in PowerShell from the root of the checkout on the Windows machin
    node skills/install-windows-app/scripts/install.mjs --build --replace-running --launch --cdp
    ```
 
-   - `--build` runs `npm run dist:win`, which writes `dist\ASIST Setup <version>.exe`. Without it, the installer already in `dist\` is used.
+   - `--build` runs `npm run dist:win`, which writes `dist\ASIST-Setup-x64.exe`. Without it, the installer already in `dist\` is used.
    - `--replace-running` stops a running ASIST first. Without it, the script stops when ASIST is running. Closing the window only hides it and the tray's quit is out of a script's reach, so the app is stopped with `taskkill /F`; its agent CLIs stop with it, through the launcher's job object.
    - The installer runs with `/S`: no window, no administrator rights, into `%LOCALAPPDATA%\Programs\asist`, with a Start menu shortcut. A silent install does not start the app.
    - `--launch` starts `ASIST.exe` and prints where its launch log is (`%TEMP%\asist-<time>.log`, or `ASIST_LOG`). The launch log holds the renderer's console messages and Chromium's own output; the main process writes to the daily log in step 4. The app is started through `Start-Process`, so the command returns at once even from a shell that waits for every process holding its output.

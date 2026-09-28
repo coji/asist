@@ -106,9 +106,10 @@ mac:
 
 win:
   icon: build/icon.png
-  # Only the Mac app is released yet. Without a publish setting of its own, electron-builder takes the GitHub
-  # repository from the git remote and writes app-update.yml into the installer, and the Windows app then
-  # failed every check with a 404 for latest.yml (measured 2026-09-28 on electron-builder 26.16.1).
+  # electron-builder writes app-update.yml into every NSIS installer that has a publish setting, and with none
+  # of its own it takes the GitHub repository from the git remote. No command line flag keeps the file out, so
+  # the setting stays null here and .github/workflows/windows-release.yml alone passes the GitHub one: a local
+  # dist:win installer then never updates itself from a release of other code.
   publish: null
   # --dir replaces this target and packages for the CPU of the machine that runs electron-builder unless an
   # architecture flag is given (measured 2026-09-27 on electron-builder 26.16.1), so dist:win:dir passes --x64.
@@ -134,6 +135,9 @@ win:
 nsis:
   oneClick: true
   perMachine: false
+  # Without the version in its name, releases/latest/download/ASIST-Setup-x64.exe always reaches the newest
+  # installer.
+  artifactName: ${productName}-Setup-${arch}.${ext}
 
 npmRebuild: false
 

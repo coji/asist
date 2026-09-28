@@ -55,9 +55,9 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りをこのコンピュータの中で動かすには、NVIDIA の GPU(GeForce RTX 20 か GTX 16 以降の世代、ドライバー 580 以降)が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。Windows 版には、カレンダーと Qwen3-TTS はまだありません。
 
-1. [Releases](https://github.com/nyosegawa/asist/releases/latest) からダウンロードします。Mac では `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。Windows では `ASIST Setup <バージョン>.exe` をダウンロードして開きます。インストーラーにはまだ署名が無いので、SmartScreen の警告が出たら「詳細情報」を押し、そのあと「実行」を押します。
+1. [Releases](https://github.com/nyosegawa/asist/releases/latest) からダウンロードします。Mac では `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。Windows では `ASIST-Setup-x64.exe` をダウンロードして開きます。インストーラーにはまだ署名が無いので、SmartScreen の警告が出たら「詳細情報」を押し、そのあと「実行」を押します。
 2. ASIST を開き、初回セットアップで言語、モデル、声、マイクを選びます。
-3. 話しかけます。新しいバージョンは自動で届き、次に終了したときに入れ替わります。Windows では、新しいバージョンのインストーラーを前のバージョンの上から入れます。データはそのまま残ります。
+3. 話しかけます。新しいバージョンは、Mac でも Windows でも自動で届き、次に終了したときに入れ替わります。
 
 画面つきの手順、マイクとカレンダーの許可、Agent の CLI の準備は、ドキュメントの[はじめる](https://asist-agent.com/docs/start/)にあります。
 

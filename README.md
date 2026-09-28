@@ -55,9 +55,9 @@ ASIST is an assistant you talk to, and it answers in its own voice. Weather, eve
 
 You need an Apple Silicon Mac with macOS 14 or later, or an x64 PC with Windows 11, and an API key for a conversation model from one of Anthropic, OpenAI, Google or Cerebras. On Windows, speech recognition on your computer needs an NVIDIA GPU (GeForce RTX 20 or GTX 16 generation or later, driver 580 or later); without one, talk through Whisper in the browser or a Live API voice engine, or type. The calendar and Qwen3-TTS are not in the Windows version yet.
 
-1. Download from [Releases](https://github.com/nyosegawa/asist/releases/latest). On a Mac, download `ASIST-arm64.dmg` and drag ASIST into Applications. On Windows, download `ASIST Setup <version>.exe` and open it; the installer is not signed yet, so click “More info”, then “Run anyway” when SmartScreen warns you.
+1. Download from [Releases](https://github.com/nyosegawa/asist/releases/latest). On a Mac, download `ASIST-arm64.dmg` and drag ASIST into Applications. On Windows, download `ASIST-Setup-x64.exe` and open it; the installer is not signed yet, so click “More info”, then “Run anyway” when SmartScreen warns you.
 2. Open ASIST and pick the language, model, voice and microphone in the first-run setup.
-3. Start talking. New versions arrive on their own and install the next time you quit. On Windows, install a new version over the old one with its installer; your data stays.
+3. Start talking. New versions arrive on their own and install the next time you quit, on a Mac and on Windows alike.
 
 Step-by-step pages with screenshots, the microphone and calendar permissions, and setting up the agent CLI are in [Getting started](https://asist-agent.com/en/docs/start/).
 
