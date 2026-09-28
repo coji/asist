@@ -156,10 +156,12 @@ npm run promo:thumbnail      # YouTube のサムネイルを promotions/launch-v
 署名の証明書を指定して実行します。アプリは `dist/` に出ます。
 
 ```bash
-CSC_NAME="Apple Development: ..." npm run dist:mac
+CSC_NAME="<氏名> (<Team ID>)" npm run dist:mac
 ```
 
-証明書は、Team ID を持つもの(Apple Development か Developer ID Application)を指定します。アプリはライブラリの検証を有効にしているので、自己署名の証明書で署名すると、アプリ本体と Electron Framework の Team ID が一致せず、起動した直後に終了します。`CSC_NAME` を省くと electron-builder がキーチェーンから証明書を選ぶので、自己署名の証明書があるときは必ず指定します。
+証明書には、配布するバージョンと同じ Developer ID Application を使います。macOS はマイクとカレンダーの許可を署名に結び付けるので、別の証明書で署名したアプリに入れ替えると、許可がやり直しになります。アプリはライブラリの検証を有効にしているので、自己署名の証明書で署名すると、アプリ本体と Electron Framework の Team ID が一致せず、起動した直後に終了します。`CSC_NAME` には、`security find-identity -v -p codesigning` に出る名前から「Developer ID Application: 」を除いた部分を渡します。前置きを付けると electron-builder は止まり、付けなければ Developer ID Application の証明書を自分で選びます。`CSC_NAME` を省くと electron-builder がキーチェーンから証明書を選ぶので、自己署名の証明書があるときは必ず指定します。
+
+このビルドは dmg も zip も作らないので、自動更新の設定(`app-update.yml`)を持たず、リリースから自分を更新しません。
 
 `npm run build` のあとには `scripts/third-party-notices.mjs` が動き、バンドルに入った npm のパッケージと、app.asar に入る本番用の依存パッケージのライセンスを集めて `build/THIRD_PARTY_NOTICES.txt` に書きます。アプリの `Contents/Resources` には、これと ASIST の `LICENSE.txt`、Electron と Chromium のライセンスが入り、「このアプリについて」から開けます。ライセンスを書いていないパッケージがあると、ビルドはそこで止まります。
 
@@ -181,6 +183,26 @@ npm run dist:win:dir   # インストールせずに動かせるアプリを dis
 証明書はまだ設定していないので、署名はしません。インストーラーは、管理者の権限を求めずに、使う人ごとに `%LOCALAPPDATA%\Programs\asist` に入れます。Electron の fuse は macOS と同じです。`app.asar` の中身が変わっていれば、`ASIST.exe` は起動してすぐに終了します。`ELECTRON_ENABLE_LOGGING=1` を付けて起動すると、そのときは `Integrity check failed for asar archive` と出ます。
 
 Windows のマシンで、インストールして確かめ、終了するまでの手順は、[Windows のインストールの手順](../skills/install-windows-app/SKILL.md)にあります。
+
+## Mac のアプリをリリースする
+
+配布するアプリは、この Mac で署名と公証をして、GitHub の Release に置きます。利用者のアプリは起動したときと 6 時間ごとに新しいバージョンを確かめ、裏で取得して、次に終了したときに入れ替えます。「このアプリについて」の「今すぐ再起動」で、すぐに入れ替えることもできます。
+
+最初に一度だけ、Developer ID Application の証明書をキーチェーンに入れ(Xcode の Settings → Accounts → Manage Certificates)、公証に使う Apple ID を notarytool に保存します。App 用パスワードは account.apple.com で作ります。
+
+```bash
+xcrun notarytool store-credentials asist-notary --apple-id <Apple ID> --team-id <Team ID>
+```
+
+リリースのたびに、`package.json` の `version` を上げるプルリクエストをマージしてから、main で実行します。
+
+```bash
+npm run release
+```
+
+`npm run release` は、main が origin/main と同じで変更が無いことと、そのバージョンがまだ出ていないことを確かめます。次に、地図のキー(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`)があることと `npm audit --omit=dev` を確かめてから、dmg と zip をビルドして署名と公証をし、Gatekeeper が受け付けることを確かめます。そのうえで、dmg(`ASIST-arm64.dmg`。名前にバージョンを含めないので、`releases/latest/download/ASIST-arm64.dmg` がいつも最新を指します)、zip、`latest-mac.yml`、同梱した git のソース(`scripts/resources/git-macos.mjs` のバージョンの tarball)を Release に置きます。証明書を選ぶ `CSC_NAME` と、notarytool のプロファイルを選ぶ `APPLE_KEYCHAIN_PROFILE`(省くと `asist-notary`)で、どちらも変えられます。
+
+出したバージョンに問題があったときは、Release を消したり前のバージョンに戻したりせず、番号を上げて直したバージョンを出します。自動更新は、今のバージョンより新しい番号のバージョンだけを入れるからです。
 
 ## 実機での確認
 

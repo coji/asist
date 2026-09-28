@@ -13,7 +13,14 @@ import { download, extract, requireCommand, run, stampCurrent, withTemporaryDir,
 
 const VERSION = '2.55.0'
 const MODULE = fileURLToPath(import.meta.url)
-const SHA256 = '457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357'
+
+/** The release tarball the Mac app's git is compiled from, which scripts/release.mjs also publishes. */
+export const GIT_SOURCE = {
+  version: VERSION,
+  file: `git-${VERSION}.tar.xz`,
+  url: `https://www.kernel.org/pub/software/scm/git/git-${VERSION}.tar.xz`,
+  sha256: '457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357'
+}
 
 // The flags keep the build to the system libraries of macOS 14 and later on Apple Silicon.
 const FLAGS = [
@@ -58,9 +65,9 @@ export async function prepareGitMacos({ resources }) {
   requireCommand('cc', 'install Xcode Command Line Tools before building')
 
   await withTemporaryDir('asist-git-', async (work) => {
-    const tarball = path.join(work, `git-${VERSION}.tar.xz`)
+    const tarball = path.join(work, GIT_SOURCE.file)
     console.error(`git: fetching git ${VERSION}`)
-    await download(`https://www.kernel.org/pub/software/scm/git/git-${VERSION}.tar.xz`, tarball, SHA256)
+    await download(GIT_SOURCE.url, tarball, GIT_SOURCE.sha256)
     extract(tarball, work)
     const source = path.join(work, `git-${VERSION}`)
 

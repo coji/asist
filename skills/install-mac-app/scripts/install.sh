@@ -5,7 +5,7 @@
 #   --replace-running  quit a running ASIST and replace it (without it, stop when one is running)
 #   --launch           after installing, start with --enable-logging and print where the log is
 #   --cdp              with --launch, also open the DevTools protocol on port 9222 (only while checking, since any local process can drive the app through it)
-# Environment variables: CSC_NAME (the signing identity; without it, the only Apple Development identity in the keychain), ASIST_LOG (where the launch log goes)
+# Environment variables: CSC_NAME (the name after "Developer ID Application: " of the signing identity; without it, the only such identity in the keychain), ASIST_LOG (where the launch log goes)
 set -eu
 repo=$(cd "$(dirname "$0")/../../.." && pwd)
 cd "$repo"
@@ -30,15 +30,17 @@ fi
 app=dist/mac-arm64/ASIST.app
 if [ $build = 1 ]; then
   if [ -z "${CSC_NAME:-}" ]; then
-    found=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development: [^"]*\)".*/\1/p' | sort -u)
+    # electron-builder refuses a name that starts with "Developer ID Application:" and picks that kind of
+    # certificate itself, so only the name after it is passed on.
+    found=$(security find-identity -v -p codesigning | sed -n 's/.*"Developer ID Application: \([^"]*\)".*/\1/p' | sort -u)
     if [ "$(printf '%s\n' "$found" | grep -c .)" != 1 ]; then
-      echo "Apple Development の署名identityが一つに決まりません。CSC_NAME で指定してください" >&2
+      echo "Developer ID Application の署名identityが一つに決まりません。CSC_NAME で指定してください" >&2
       security find-identity -v -p codesigning >&2
       exit 1
     fi
     CSC_NAME=$found
   fi
-  if ! security find-identity -v -p codesigning | grep -Fq "$CSC_NAME"; then
+  if ! security find-identity -v -p codesigning | grep -Fq "\"Developer ID Application: $CSC_NAME\""; then
     echo "署名identityが見つかりません: $CSC_NAME" >&2
     echo "security find-identity -v -p codesigning で確かめ、CSC_NAME で指定してください" >&2
     exit 1
@@ -49,8 +51,10 @@ if [ ! -d "$app" ]; then
   echo "ビルドがありません: $app(--build を付けてください)" >&2
   exit 1
 fi
-if ! codesign -dvv "$app" 2>&1 | grep -q "Authority=Apple Development"; then
-  echo "$app は Apple Development で署名されていません。マイク許可が定着しないので入れません" >&2
+# The released app is signed with Developer ID, and macOS ties the microphone and calendar permissions to
+# that signature, so a build signed otherwise would lose them on every switch between the two.
+if ! codesign -dvv "$app" 2>&1 | grep -q "Authority=Developer ID Application"; then
+  echo "$app は Developer ID で署名されていません。リリース版とマイクやカレンダーの許可を共有できないので入れません" >&2
   exit 1
 fi
 

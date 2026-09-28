@@ -619,5 +619,98 @@ export const settingsAbout = defineMessages({
       'es-419': 'Abrir',
       'es-ES': 'Abrir'
     }
+  },
+  update: {
+    label: {
+      'ja-JP': '更新',
+      'en-US': 'Updates',
+      'fr-FR': 'Mises à jour',
+      'de-DE': 'Updates',
+      'hi-IN': 'अपडेट',
+      'id-ID': 'Pembaruan',
+      'it-IT': 'Aggiornamenti',
+      'ko-KR': '업데이트',
+      'pt-BR': 'Atualizações',
+      'es-419': 'Actualizaciones',
+      'es-ES': 'Actualizaciones'
+    },
+    checking: {
+      'ja-JP': '確認しています',
+      'en-US': 'Checking',
+      'fr-FR': 'Vérification en cours',
+      'de-DE': 'Wird geprüft',
+      'hi-IN': 'जाँच हो रही है',
+      'id-ID': 'Sedang memeriksa',
+      'it-IT': 'Controllo in corso',
+      'ko-KR': '확인하는 중',
+      'pt-BR': 'Verificando',
+      'es-419': 'Buscando',
+      'es-ES': 'Buscando'
+    },
+    current: {
+      'ja-JP': '最新のバージョンです',
+      'en-US': 'Up to date',
+      'fr-FR': 'À jour',
+      'de-DE': 'Aktuell',
+      'hi-IN': 'नवीनतम वर्शन',
+      'id-ID': 'Versi terbaru',
+      'it-IT': 'Aggiornata',
+      'ko-KR': '최신 버전',
+      'pt-BR': 'Atualizado',
+      'es-419': 'Actualizada',
+      'es-ES': 'Actualizada'
+    },
+    downloading: {
+      'ja-JP': '{version} を取得しています({percent}%)',
+      'en-US': 'Downloading {version} ({percent}%)',
+      'fr-FR': 'Téléchargement de {version} ({percent} %)',
+      'de-DE': '{version} wird geladen ({percent} %)',
+      'hi-IN': '{version} डाउनलोड हो रहा है ({percent}%)',
+      'id-ID': 'Mengunduh {version} ({percent}%)',
+      'it-IT': 'Download di {version} ({percent}%)',
+      'ko-KR': '{version} 받는 중({percent}%)',
+      'pt-BR': 'Baixando {version} ({percent}%)',
+      'es-419': 'Descargando {version} ({percent} %)',
+      'es-ES': 'Descargando {version} ({percent} %)'
+    },
+    ready: {
+      'ja-JP': '{version} は次に終了したときに入ります',
+      'en-US': '{version} installs the next time you quit',
+      'fr-FR': '{version} s’installera à la prochaine fermeture',
+      'de-DE': '{version} wird beim nächsten Beenden installiert',
+      'hi-IN': '{version} अगली बार बंद करने पर इंस्टॉल होगा',
+      'id-ID': '{version} dipasang saat aplikasi ditutup berikutnya',
+      'it-IT': '{version} verrà installata alla prossima chiusura',
+      'ko-KR': '{version}은(는) 다음에 종료할 때 설치됩니다',
+      'pt-BR': 'A {version} será instalada na próxima vez que você sair',
+      'es-419': 'La {version} se instala la próxima vez que salgas',
+      'es-ES': 'La {version} se instala la próxima vez que salgas'
+    },
+    restart: {
+      'ja-JP': '今すぐ再起動',
+      'en-US': 'Restart now',
+      'fr-FR': 'Redémarrer',
+      'de-DE': 'Jetzt neu starten',
+      'hi-IN': 'अभी रीस्टार्ट करें',
+      'id-ID': 'Mulai ulang sekarang',
+      'it-IT': 'Riavvia ora',
+      'ko-KR': '지금 재시작',
+      'pt-BR': 'Reiniciar agora',
+      'es-419': 'Reiniciar ahora',
+      'es-ES': 'Reiniciar ahora'
+    },
+    failed: {
+      'ja-JP': '新しいバージョンを確認できませんでした',
+      'en-US': "Couldn't check for a new version",
+      'fr-FR': 'Impossible de vérifier les nouvelles versions',
+      'de-DE': 'Nach neuen Versionen konnte nicht gesucht werden',
+      'hi-IN': 'नया वर्शन जाँचा नहीं जा सका',
+      'id-ID': 'Tidak dapat memeriksa versi baru',
+      'it-IT': 'Impossibile cercare nuove versioni',
+      'ko-KR': '새 버전을 확인하지 못했습니다',
+      'pt-BR': 'Não foi possível verificar novas versões',
+      'es-419': 'No se pudo buscar una versión nueva',
+      'es-ES': 'No se ha podido buscar una versión nueva'
+    }
   }
 })

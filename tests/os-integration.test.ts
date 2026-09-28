@@ -55,7 +55,8 @@ vi.mock('../src/main/services/agent', async () => {
 vi.mock('../src/main/services/i18n', () => ({ t: (key: string) => key, errorMessage: (error: unknown) => (error as Error).message }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 
-import { hotkeyStatus, refreshHotkey, setupOsIntegration } from '../src/main/os-integration'
+// The quit is approved once for the whole process, so each test takes a fresh copy of the module.
+let os: typeof import('../src/main/os-integration')
 
 /** A hidden window that keeps its listeners, so that a test can close it the way the user does. */
 function hiddenWindow() {
@@ -87,7 +88,9 @@ const finished = (id: string, patch: Partial<AgentJob> = {}): AgentJob => ({
   id, title: id, prompt: id, cwd: '/w', readonly: true, engine: 'codex', status: 'done', startedAt: 1, endedAt: 2, ...patch
 })
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules()
+  os = await import('../src/main/os-integration')
   mocks.notifications.length = 0
   mocks.appListeners.clear()
   mocks.quit.mockReset()
@@ -100,7 +103,7 @@ beforeEach(() => {
 
 describe('the OS notification when a job ends while the window is hidden', () => {
   it('is raised for a job of the user and not for the memory curation, which runs behind the conversation', () => {
-    setupOsIntegration(hiddenWindow() as never)
+    os.setupOsIntegration(hiddenWindow() as never)
     mocks.agentEvents.emit('event', { type: 'update', job: finished('curation', { memoryCuration: { through: '2026-09-25', applied: false } }) })
     mocks.agentEvents.emit('event', { type: 'update', job: finished('report') })
     expect(mocks.notifications).toEqual([{ title: 'app.notify.jobDone', body: 'report' }])
@@ -110,7 +113,7 @@ describe('the OS notification when a job ends while the window is hidden', () =>
 describe('quitting while agents run', () => {
   it('closes the window only after every agent has stopped', async () => {
     const window = hiddenWindow()
-    setupOsIntegration(window as never)
+    os.setupOsIntegration(window as never)
     let stopped!: () => void
     mocks.shutdown.mockReturnValue(new Promise((resolve) => (stopped = resolve)))
     expect(quit()).toBe(false)
@@ -125,7 +128,7 @@ describe('quitting while agents run', () => {
 
   it('leaves the app as it was when an agent cannot be stopped, so the window still hides and a later quit tries again', async () => {
     const window = hiddenWindow()
-    setupOsIntegration(window as never)
+    os.setupOsIntegration(window as never)
     mocks.shutdown.mockRejectedValueOnce(new Error('an agent did not stop'))
     expect(quit()).toBe(false)
     await vi.waitFor(() => expect(mocks.showErrorBox).toHaveBeenCalledWith('app.startup.agentStopFailed', 'an agent did not stop'))
@@ -142,23 +145,41 @@ describe('quitting while agents run', () => {
   })
 })
 
+describe('installing an update now', () => {
+  it('starts only after every agent has stopped, and lets the install close the window', async () => {
+    const window = hiddenWindow()
+    os.setupOsIntegration(window as never)
+    let stopped!: () => void
+    mocks.shutdown.mockReturnValue(new Promise((resolve) => (stopped = resolve)))
+    const install = vi.fn(() => {
+      expect(window.close()).toBe(true)
+      expect(quit()).toBe(true)
+    })
+    os.quitAfterAgentsStop(install)
+    expect(window.close()).toBe(false)
+    stopped()
+    await vi.waitFor(() => expect(install).toHaveBeenCalledOnce())
+    expect(mocks.quit).not.toHaveBeenCalled()
+  })
+})
+
 describe('the global hotkey', () => {
   it('registers the accelerator of the OS it runs on', () => {
     mocks.settings.globalHotkey = true
-    setupOsIntegration(hiddenWindow() as never)
+    os.setupOsIntegration(hiddenWindow() as never)
     mocks.windows = true
-    setupOsIntegration(hiddenWindow() as never)
+    os.setupOsIntegration(hiddenWindow() as never)
     expect(mocks.register.mock.calls.map(([accelerator]) => accelerator)).toEqual([MACOS.hotkey, WINDOWS.hotkey])
-    expect(hotkeyStatus()).toBe('registered')
+    expect(os.hotkeyStatus()).toBe('registered')
   })
 
   it('reports a registration the OS refuses, and nothing once the setting turns the hotkey off', () => {
     mocks.settings.globalHotkey = true
     mocks.register.mockReturnValue(false)
-    setupOsIntegration(hiddenWindow() as never)
-    expect(hotkeyStatus()).toBe('failed')
+    os.setupOsIntegration(hiddenWindow() as never)
+    expect(os.hotkeyStatus()).toBe('failed')
     mocks.settings.globalHotkey = false
-    refreshHotkey()
-    expect(hotkeyStatus()).toBe('off')
+    os.refreshHotkey()
+    expect(os.hotkeyStatus()).toBe('off')
   })
 })

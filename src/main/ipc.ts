@@ -36,6 +36,7 @@ import { acknowledgePlayback } from './services/brain/job-reporting'
 import * as agent from './services/agent'
 import { usageDays } from './services/usage-ledger'
 import { forgetCliSearches, locateCli } from './services/agent-process/cli-locator'
+import { appUpdateState, events as appUpdateEvents, readyUpdateInstall } from './services/app-update'
 import { fetchPanel } from './services/panel-fetchers'
 import {
   configuredModels,
@@ -59,7 +60,7 @@ import { curateNow, curatedThrough, lastFailure, pendingJob } from './services/m
 import * as timers from './services/timers'
 import { events as noteEvents, getNoteService } from './services/user-notes'
 import { events as taskEvents, getTaskService } from './services/user-tasks'
-import { hotkeyStatus, notifyFromRenderer, refreshHotkey, refreshTrayMenu } from './os-integration'
+import { hotkeyStatus, notifyFromRenderer, quitAfterAgentsStop, refreshHotkey, refreshTrayMenu } from './os-integration'
 import { microphonePermission } from './services/microphone-permission'
 import { platformCapabilities } from './services/platform'
 import { completeSetup } from './services/setup-completion'
@@ -142,6 +143,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   taskEvents.on('changed', (tasks) => send(IpcChannel.TasksChanged, tasks))
   mailEvents.on('event', (event) => send(IpcChannel.MailEvent, event))
   confirmEvents.on('event', (event) => send(IpcChannel.ConfirmEvent, event))
+  appUpdateEvents.on('changed', (state) => send(IpcChannel.AppUpdateChanged, state))
   live.events.on('audio', (samples) => send(IpcChannel.LiveAudio, samples))
   live.events.on('event', (event) => send(IpcChannel.LiveEvent, event))
   timers.init()
@@ -222,6 +224,8 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     const error = await shell.openPath(file)
     if (error) throw new Error(error)
   })
+  handle(IpcChannel.AppUpdateState, () => appUpdateState())
+  handle(IpcChannel.AppUpdateInstall, () => quitAfterAgentsStop(readyUpdateInstall()))
   handle(IpcChannel.ApiUsage, () => usageDays())
 
   // Starting the engine takes seconds, around five for VOICEVOX, so the status is returned only once the

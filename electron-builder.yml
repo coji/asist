@@ -90,13 +90,20 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  # The signing identity comes from CSC_NAME (Apple Development). With an ad-hoc or missing signature
+  # The signing identity comes from CSC_NAME (Developer ID Application). With an ad-hoc or missing signature
   # the microphone's TCC permission does not persist.
   extendInfo:
     # What a system in a language the app has no folder for shows. The other languages are in build/lproj.
     NSCalendarsFullAccessUsageDescription: 'ASIST shows the events of the calendars you choose, and adds, changes or deletes an event only after you confirm it.'
     NSMicrophoneUsageDescription: 'ASIST uses the microphone so that you can talk with the assistant.'
     LSMinimumSystemVersion: '14.0'
+  # The releases of the public repository are where electron-updater looks for a newer version, and where
+  # scripts/release.mjs puts the dmg, the zip and latest-mac.yml. Only the Mac app is released there, so the
+  # Windows build carries no app-update.yml and its updates stay off.
+  publish:
+    provider: github
+    owner: nyosegawa
+    repo: asist
 
 win:
   icon: build/icon.png
@@ -126,6 +133,10 @@ nsis:
   perMachine: false
 
 npmRebuild: false
+
+# Without the version in its name, releases/latest/download/ASIST-arm64.dmg always reaches the newest dmg.
+dmg:
+  artifactName: ${productName}-${arch}.${ext}
 
 # With these fuses left at Electron's defaults, any local process can run its own code under ASIST's
 # signature, and so with the microphone and calendar permissions the user granted to ASIST, through

@@ -19,6 +19,7 @@ import { useViewStore } from '../src/renderer/src/state/view'
 import { asrModelSpec, offeredAsrModels } from '@shared/asr-models'
 import { CREDITS } from '@shared/credits'
 import type { PlatformCapabilities, SpeechRuntime } from '@shared/platform'
+import type { AppUpdateState } from '@shared/app-update'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, setCapabilities } from './helpers/platform'
 
 // The voice modules build an AudioContext at import time, so they are replaced for a test that only renders the UI.
@@ -117,6 +118,8 @@ const api = {
   onSetupProgress: vi.fn((_callback: (p: SetupProgress) => void) => () => {}),
   openExternal: vi.fn(async () => {}),
   appVersion: vi.fn(async () => '1.0.0'),
+  appUpdateState: vi.fn(async (): Promise<AppUpdateState> => ({ phase: 'off' })),
+  onAppUpdateChanged: vi.fn((_callback: (state: AppUpdateState) => void) => () => {}),
   folderChoose: vi.fn(async (_startAt?: string): Promise<string | null> => null),
   apiUsage: vi.fn(async (): Promise<UsageDay[]> => [
     {

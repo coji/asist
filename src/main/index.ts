@@ -20,6 +20,7 @@ import * as aizuchiClassifier from './services/aizuchi-classifier'
 import { initJobReporting } from './services/brain/job-reporting'
 import { compactionJob, initMaintenance } from './services/maintenance'
 import * as memory from './services/memory'
+import { initAppUpdates } from './services/app-update'
 import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
 import { handleFileScheme, registerFileScheme } from './file-protocol'
@@ -180,6 +181,7 @@ if (!hasSingleInstanceLock) {
     memory.ensureLoaded()
     initMemoryCuration()
     void memory.startEmbeddingIfEnabled().catch((err) => console.error('memory embedding:', err))
+    initAppUpdates()
 
     // The window only hides when it is closed and is destroyed only by a quit, so it is never created a second
     // time, which would register the IPC handlers again.

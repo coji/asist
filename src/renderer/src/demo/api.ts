@@ -729,7 +729,10 @@ export const mockApi: RendererApi = {
   openExternal: async (url) => {
     window.open(url, '_blank')
   },
-  appVersion: async () => '1.0.0',
+  appVersion: async () => '0.1.0',
+  appUpdateState: async () => ({ phase: 'ready', version: '0.1.1' }),
+  onAppUpdateChanged: () => () => {},
+  appUpdateInstall: async () => {},
   getPlatformCapabilities: async () => capabilities,
   hotkeyStatus: async () => (!settings.globalHotkey ? 'off' : hotkeyRefused ? 'failed' : 'registered'),
   paintWindowControls: async () => {},

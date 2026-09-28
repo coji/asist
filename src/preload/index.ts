@@ -162,6 +162,9 @@ const api: RendererApi = {
   hotkeyStatus: () => ipcRenderer.invoke(IpcChannel.HotkeyStatus),
   paintWindowControls: (colors) => ipcRenderer.invoke(IpcChannel.PaintWindowControls, colors),
   licensesOpen: () => ipcRenderer.invoke(IpcChannel.LicensesOpen),
+  appUpdateState: () => ipcRenderer.invoke(IpcChannel.AppUpdateState),
+  onAppUpdateChanged: subscribe(IpcChannel.AppUpdateChanged),
+  appUpdateInstall: () => ipcRenderer.invoke(IpcChannel.AppUpdateInstall),
   apiUsage: () => ipcRenderer.invoke(IpcChannel.ApiUsage)
 }
 

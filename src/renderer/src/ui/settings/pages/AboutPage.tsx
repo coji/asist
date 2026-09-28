@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import type { AppUpdateState } from '@shared/app-update'
 import { ASIST_LICENSE, creditsOf, type Credit, type CreditGroup } from '@shared/credits'
 import { Btn, Chip, Group, Page, Row } from '../primitives'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
+import { displayError } from '@/display-error'
 import type { Translate } from '@shared/i18n'
 
 /** The about page: the version of the app and every model and data source it uses, with its license. */
@@ -18,6 +20,7 @@ export function AboutPage(): React.JSX.Element {
         <Row label={t('settingsAbout.version')}>
           <span className="st-value">{version}</span>
         </Row>
+        <Update t={t} />
         <Row label={t('settingsAbout.license')}>
           <a className="st-link" href={ASIST_LICENSE.url} target="_blank" rel="noreferrer">
             {ASIST_LICENSE.name}
@@ -34,6 +37,56 @@ export function AboutPage(): React.JSX.Element {
       <Credits group="software" t={t} />
     </Page>
   )
+}
+
+/** Where the automatic update stands. A build that does not come from a release has no row. */
+function Update({ t }: { t: Translate }): React.JSX.Element | null {
+  const [state, setState] = useState<AppUpdateState | null>(null)
+  const [installError, setInstallError] = useState<string | null>(null)
+  useEffect(() => {
+    const unsubscribe = window.api.onAppUpdateChanged(setState)
+    void window.api.appUpdateState().then(setState)
+    return unsubscribe
+  }, [])
+  if (!state || state.phase === 'off') return null
+  const install = (): void => {
+    setInstallError(null)
+    window.api.appUpdateInstall().catch((error: unknown) => setInstallError(displayError(error)))
+  }
+  switch (state.phase) {
+    case 'checking':
+      return (
+        <Row label={t('settingsAbout.update.label')}>
+          <Chip tone="dim">{t('settingsAbout.update.checking')}</Chip>
+        </Row>
+      )
+    case 'current':
+      return (
+        <Row label={t('settingsAbout.update.label')}>
+          <Chip tone="ok">{t('settingsAbout.update.current')}</Chip>
+        </Row>
+      )
+    case 'downloading':
+      return (
+        <Row label={t('settingsAbout.update.label')}>
+          <Chip tone="cyan">{t('settingsAbout.update.downloading', { version: state.version, percent: state.percent })}</Chip>
+        </Row>
+      )
+    case 'ready':
+      return (
+        <Row label={t('settingsAbout.update.label')} hint={installError ?? t('settingsAbout.update.ready', { version: state.version })}>
+          <Btn tone="primary" onClick={install}>
+            {t('settingsAbout.update.restart')}
+          </Btn>
+        </Row>
+      )
+    case 'failed':
+      return (
+        <Row label={t('settingsAbout.update.label')} hint={state.message}>
+          <Chip tone="warn">{t('settingsAbout.update.failed')}</Chip>
+        </Row>
+      )
+  }
 }
 
 function Credits({ group, t }: { group: CreditGroup; t: Translate }): React.JSX.Element {

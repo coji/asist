@@ -55,27 +55,36 @@ const notify = (title: string, body: string): boolean => {
   return true
 }
 
+// Only a quit closes the window, and only once every agent the app owns has stopped, so that none keeps
+// writing to a worktree after the app is gone. When one cannot be stopped the quit is cancelled and the app
+// stays as it was: the window still hides when closed, and a later quit tries again.
+let quitApproved = false
+let stoppingAgents = false
+
+/**
+ * Stops every agent, then quits with `quit`: app.quit() for an ordinary quit, or the install of a staged
+ * update, which closes the windows itself and so has to be approved before it starts.
+ */
+export function quitAfterAgentsStop(quit: () => void): void {
+  if (stoppingAgents) return
+  stoppingAgents = true
+  void agent.shutdown().then(
+    () => {
+      quitApproved = true
+      quit()
+    },
+    (error: unknown) => {
+      stoppingAgents = false
+      dialog.showErrorBox(t('app.startup.agentStopFailed'), errorMessage(error))
+    }
+  )
+}
+
 export function setupOsIntegration(window: BrowserWindow): void {
-  // Only a quit closes the window, and only once every agent the app owns has stopped, so that none keeps
-  // writing to a worktree after the app is gone. When one cannot be stopped the quit is cancelled and the
-  // app stays as it was: the window still hides when closed, and a later quit tries again.
-  let quitApproved = false
-  let stoppingAgents = false
   app.on('before-quit', (event) => {
     if (quitApproved) return
     event.preventDefault()
-    if (stoppingAgents) return
-    stoppingAgents = true
-    void agent.shutdown().then(
-      () => {
-        quitApproved = true
-        app.quit()
-      },
-      (error: unknown) => {
-        stoppingAgents = false
-        dialog.showErrorBox(t('app.startup.agentStopFailed'), errorMessage(error))
-      }
-    )
+    quitAfterAgentsStop(() => app.quit())
   })
   window.on('close', (e) => {
     if (quitApproved) return

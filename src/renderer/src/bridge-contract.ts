@@ -135,6 +135,9 @@ export const rendererApiMethods = [
   'hotkeyStatus',
   'paintWindowControls',
   'licensesOpen',
+  'appUpdateState',
+  'onAppUpdateChanged',
+  'appUpdateInstall',
   'apiUsage'
 ] as const satisfies readonly (keyof RendererApi)[]
 

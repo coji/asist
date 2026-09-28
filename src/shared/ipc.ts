@@ -1,6 +1,7 @@
 import type { AizuchiClassification } from './aizuchi-classifier'
 import type { AgentStreamEvent } from './agent-stream'
 import type { UsageDay } from './api-usage'
+import type { AppUpdateState } from './app-update'
 import type { CalendarChange, CalendarChangeResult, CalendarEvent, CalendarListRange, CalendarStatus } from './calendar'
 import type { ConfirmEvent, ConfirmRequest } from './confirm'
 import type { MiniAppTarget, MiniAppView } from './mini-apps'
@@ -831,6 +832,9 @@ export const IpcChannel = {
   HotkeyStatus: 'hotkey-status',
   PaintWindowControls: 'paint-window-controls',
   LicensesOpen: 'licenses-open',
+  AppUpdateState: 'app-update-state',
+  AppUpdateChanged: 'app-update-changed',
+  AppUpdateInstall: 'app-update-install',
   ApiUsage: 'api-usage',
   LogsOpenFolder: 'logs-open-folder',
   FolderChoose: 'folder-choose',
@@ -1128,6 +1132,10 @@ export interface RendererApi {
   paintWindowControls(colors: WindowControlColors): Promise<void>
   /** Opens THIRD_PARTY_NOTICES.txt, the licenses of ASIST and of everything it bundles, in the default text editor. */
   licensesOpen(): Promise<void>
+  appUpdateState(): Promise<AppUpdateState>
+  onAppUpdateChanged(callback: (state: AppUpdateState) => void): () => void
+  /** Quits and installs the downloaded version now. Without it, macOS installs the version at the next quit. */
+  appUpdateInstall(): Promise<void>
   /** The paid API use summed per local day, oldest first. */
   apiUsage(): Promise<UsageDay[]>
 }
