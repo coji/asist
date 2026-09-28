@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 import traceback
 import wave
 
@@ -68,8 +67,7 @@ def main() -> int:
         processor = AutoProcessor.from_pretrained(model_ref, **kwargs)
         # device_map would load straight onto the GPU but requires accelerate, which the lock leaves out.
         model = AutoModelForMultimodalLM.from_pretrained(model_ref, dtype=dtype, **kwargs).to(device).eval()
-        print(f"loaded on {device} as {dtype}", file=sys.stderr, flush=True)
-        emit({"type": "ready"})
+        emit({"type": "ready", "device": str(device), "dtype": str(dtype)})
     except Exception as error:
         emit({"type": "fatal", "error": str(error)})
         traceback.print_exc(file=sys.stderr)
@@ -79,7 +77,6 @@ def main() -> int:
         try:
             request = json.loads(raw_line)
             request_id = str(request["id"])
-            started = time.perf_counter()
             # The caller sends the language as the English name Qwen3-ASR was trained with, which the
             # processor writes into the prompt so that the model generates only the transcription.
             inputs = processor.apply_transcription_request(
@@ -90,7 +87,6 @@ def main() -> int:
             with torch.inference_mode():
                 output = model.generate(**inputs)
             text = processor.decode(output[:, inputs["input_ids"].shape[1]:], return_format="transcription_only")[0]
-            print(f"transcribed {request_id} in {time.perf_counter() - started:.2f} s", file=sys.stderr, flush=True)
             emit({"type": "result", "id": request_id, "text": text.strip()})
         except Exception as error:
             request_id = str(request.get("id", "")) if "request" in locals() else ""
