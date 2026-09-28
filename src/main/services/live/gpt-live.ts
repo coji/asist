@@ -168,6 +168,10 @@ export class GptLiveEngine extends LiveEngineBase {
       throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
     }
     const settings = this.settings().gptLive
+    // Read before the socket and the timer exist: a history that cannot be read would otherwise leave an
+    // open socket and a pending start that rejects, unobserved, when the timer runs out.
+    const instructions = this.deps.instructions()
+    const input = initialItems(this.deps.history())
     const socket = this.deps.connect(client)
     this.socket = socket
     this.currentSeconds = 0
@@ -212,8 +216,8 @@ export class GptLiveEngine extends LiveEngineBase {
         model: settings.model,
         audio: { format: { type: 'audio/pcm', rate: this.info.inputRate }, output: { voice: settings.voice } },
         delegation: { type: 'client' },
-        instructions: this.deps.instructions(),
-        input: initialItems(this.deps.history())
+        instructions,
+        input
       }
     })
     await ready

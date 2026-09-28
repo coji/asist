@@ -691,6 +691,31 @@ describe('brain turn', () => {
     }
   })
 
+  it('holds a job report while the conversation log cannot be read, and delivers it once the log reads again', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    try {
+      const { brain } = await loadBrain()
+      const { logFileName } = await import('../src/main/services/brain/conversation-log')
+      // A directory in the day file's place fails the read with EISDIR, as a permission error would.
+      const dayFile = path.join(mocks.userData, 'conversations', logFileName(new Date()))
+      fs.mkdirSync(dayFile, { recursive: true })
+      const { initJobReporting, acknowledgePlayback } = await import('../src/main/services/brain/job-reporting')
+      acknowledgeLikeTheRenderer(brain, acknowledgePlayback)
+      initJobReporting()
+      mocks.rounds.push(async (round) => { round.text('調査が終わりました。'); return {} })
+      await finishJob()
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(mocks.requests).toEqual([])
+      fs.rmdirSync(dayFile)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(mocks.requests).toHaveLength(1)
+      const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+      expect(textOf(mocks.requests[0].messages.at(-1)!)).toBe(reportNotice(FINISHED_JOB).text)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('reports nothing for a job that is gone by the time the history has room', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     try {

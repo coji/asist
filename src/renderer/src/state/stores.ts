@@ -363,6 +363,9 @@ interface JobState {
   loadLog: (id: string) => Promise<void>
 }
 
+/** The jobs whose log failed to load and has not loaded since, which have had their toast. */
+const jobLogFailuresShown = new Set<string>()
+
 export const useJobStore = create<JobState>((set) => ({
   jobs: [],
   logs: {},
@@ -381,7 +384,18 @@ export const useJobStore = create<JobState>((set) => ({
     }),
   load: async () => set({ jobs: await window.api.jobList() }),
   loadLog: async (id) => {
-    const log = await window.api.jobLog(id)
+    let log: JobLogLine[]
+    try {
+      log = await window.api.jobLog(id)
+    } catch (error) {
+      // Every card of the job and every opening of the jobs screen loads the log, and one toast per job says it.
+      if (!jobLogFailuresShown.has(id)) {
+        jobLogFailuresShown.add(id)
+        useToastStore.getState().push({ kind: 'error', title: translate('jobs.log.loadFailed'), body: displayError(error) })
+      }
+      return
+    }
+    jobLogFailuresShown.delete(id)
     set((s) => ({ logs: { ...s.logs, [id]: log } }))
   }
 }))

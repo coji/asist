@@ -57,7 +57,7 @@ class FakeSocket {
   }
 }
 
-async function setup(): Promise<{
+async function setup(options: { history?: () => Array<{ role: 'user' | 'assistant'; content: string }> } = {}): Promise<{
   engine: import('../src/main/services/live/gpt-live').GptLiveEngine
   sockets: FakeSocket[]
   events: LiveEvent[]
@@ -80,10 +80,10 @@ async function setup(): Promise<{
     beginTurn,
     onTurnEvent: () => () => {},
     instructions: () => 'INSTRUCTIONS',
-    history: () => [
+    history: options.history ?? (() => [
       { role: 'user', content: 'こんにちは' },
       { role: 'assistant', content: 'こんにちは。' }
-    ]
+    ])
   })
   engine.events.on('event', (event) => events.push(event))
   engine.events.on('audio', (samples) => audio.push(samples))
@@ -126,6 +126,19 @@ describe('GptLiveEngine', () => {
     expect(events.at(-1)).toMatchObject({ type: 'latency', connectMs: 0 })
     engine.pushAudio(new Float32Array(160))
     expect(sockets[0].ofType('session.input_audio.append')).toHaveLength(2)
+    await engine.stop()
+  })
+
+  it('opens no socket when the history cannot be read, and reports the failure to connect', async () => {
+    const { engine, sockets, events } = await setup({
+      history: () => {
+        throw new Error('conversation log unreadable')
+      }
+    })
+    engine.activity(true)
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(sockets).toEqual([])
+    expect(events.at(-1)).toMatchObject({ type: 'error', message: expect.stringContaining('conversation log unreadable') })
     await engine.stop()
   })
 

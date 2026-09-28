@@ -24,23 +24,26 @@ export function appendJsonl(name: string, value: unknown): void {
   fs.appendFileSync(file, JSON.stringify(value) + '\n', FILE_MODE)
 }
 
-/** Reads the last maxLines lines, skipping any line that does not parse. */
+/** Reads the last maxLines lines, skipping any line that does not parse. A file that does not exist has no lines; one that cannot be read throws. */
 export function readJsonl<T>(name: string, maxLines = Infinity): T[] {
+  let text: string
   try {
-    const lines = fs.readFileSync(dataPath(name), 'utf8').split('\n').filter(Boolean)
-    const slice = lines.length > maxLines ? lines.slice(-maxLines) : lines
-    const out: T[] = []
-    for (const line of slice) {
-      try {
-        out.push(JSON.parse(line) as T)
-      } catch {
-        // The line does not parse and is skipped.
-      }
-    }
-    return out
-  } catch {
-    return []
+    text = fs.readFileSync(dataPath(name), 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
   }
+  const lines = text.split('\n').filter(Boolean)
+  const slice = lines.length > maxLines ? lines.slice(-maxLines) : lines
+  const out: T[] = []
+  for (const line of slice) {
+    try {
+      out.push(JSON.parse(line) as T)
+    } catch {
+      // The line does not parse and is skipped.
+    }
+  }
+  return out
 }
 
 export function removeData(name: string): void {

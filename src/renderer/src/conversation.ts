@@ -2,7 +2,7 @@ import { isJobTerminal } from '@shared/job-status'
 import type { HangoverMode, LiveEvent, TurnEvent, TurnTimings } from '@shared/ipc'
 import { isSelfEcho, PlaybackLog, stripClipEcho } from '@shared/self-echo'
 import { conversationFeatures } from '@shared/conversation-locale'
-import { isLiveEngine, type VoiceEngine } from '@shared/voice-engine'
+import { isLiveEngine, liveTextInput, type VoiceEngine } from '@shared/voice-engine'
 import { stopsLiveEngine } from '@shared/live-session-policy'
 import { safetyNoticePending } from '@shared/settings'
 import { translate } from '@/i18n'
@@ -322,6 +322,9 @@ async function initializeConversation(): Promise<void> {
 
   voiceController.events.on('error', (message) =>
     toasts.push({ kind: 'error', title: translate('voice.micFailed'), body: message })
+  )
+  voiceController.events.on('maaiUnavailable', () =>
+    toasts.push({ kind: 'info', title: translate('voice.maaiUnavailable.title'), body: translate('voice.maaiUnavailable.body') })
   )
 
   liveVoice.events.on('state', (state) => {
@@ -681,12 +684,29 @@ async function startVoiceTurn(
   }
 }
 
+/**
+ * Whether typed text can be sent as it is. In live mode, text over the engine's limit is refused with a
+ * toast rather than cut, and the caller keeps it for the user to shorten.
+ */
+export function typedTextFits(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed || !liveMode()) return true
+  try {
+    liveTextInput(trimmed)
+    return true
+  } catch (error) {
+    useToastStore.getState().push({ kind: 'error', title: translate('conversation.sendFailed'), body: displayError(error) })
+    return false
+  }
+}
+
 /** A turn started from typed text, with no aizuchi and no end-to-end measurement. In live mode the text goes to main's live engine. */
 export async function sendTypedMessage(text: string): Promise<void> {
   const trimmed = text.trim()
   if (!trimmed) return
   const turn = useTurnStore.getState()
   if (liveMode()) {
+    if (!typedTextFits(trimmed)) return
     useFeedStore.getState().append({ role: 'user', text: trimmed })
     turn.setPhase('think')
     try {

@@ -121,6 +121,76 @@ describe('MaAI by conversation language', () => {
   })
 })
 
+describe('MaAI that does not start', () => {
+  function controllerWithMaai(): InstanceType<typeof VoiceController> {
+    const controller = new VoiceController()
+    controller.nativeMicPreferred = false
+    controller.vapEnabled = true
+    controller.conversationLocale = 'ja-JP'
+    internals(controller).mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    return controller
+  }
+
+  async function turnMicOnAndOff(controller: InstanceType<typeof VoiceController>): Promise<void> {
+    await controller.enable()
+    controller.disable()
+    // The start is not awaited by enable, so its result arrives a few microtasks later.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+
+  it('says so once while MaAI stays on, whether the start failed or threw, and the microphone keeps working', async () => {
+    const controller = controllerWithMaai()
+    const said = vi.fn()
+    const errors = vi.fn()
+    controller.events.on('maaiUnavailable', said)
+    controller.events.on('error', errors)
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {})
+    window.api.vapStart = vi.fn(async () => false)
+    await turnMicOnAndOff(controller)
+    window.api.vapStart = vi.fn(async () => {
+      throw new Error('worker gone')
+    })
+    await turnMicOnAndOff(controller)
+    quiet.mockRestore()
+    expect(said).toHaveBeenCalledOnce()
+    expect(errors).not.toHaveBeenCalled()
+  })
+
+  it('says so again after MaAI is turned off and on', async () => {
+    const controller = controllerWithMaai()
+    const said = vi.fn()
+    controller.events.on('maaiUnavailable', said)
+    window.api.vapStart = vi.fn(async () => false)
+    await turnMicOnAndOff(controller)
+    controller.vapEnabled = false
+    controller.vapEnabled = true
+    await turnMicOnAndOff(controller)
+    expect(said).toHaveBeenCalledTimes(2)
+  })
+
+  it('says nothing when MaAI was turned off before the start answered', async () => {
+    const controller = controllerWithMaai()
+    const said = vi.fn()
+    controller.events.on('maaiUnavailable', said)
+    let answer: (started: boolean) => void = () => {}
+    window.api.vapStart = vi.fn(() => new Promise<boolean>((resolve) => (answer = resolve)))
+    await controller.enable()
+    controller.vapEnabled = false
+    answer(false)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    controller.disable()
+    expect(said).not.toHaveBeenCalled()
+  })
+
+  it('says nothing when MaAI started', async () => {
+    const controller = controllerWithMaai()
+    const said = vi.fn()
+    controller.events.on('maaiUnavailable', said)
+    await turnMicOnAndOff(controller)
+    expect(said).not.toHaveBeenCalled()
+  })
+})
+
 describe('the list of Whisper hallucinations by conversation language', () => {
   async function transcribe(locale: 'ja-JP' | 'en-US', text: string): Promise<string[]> {
     const controller = new VoiceController()

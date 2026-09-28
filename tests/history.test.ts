@@ -275,6 +275,30 @@ describe('ConversationHistory, derived from the conversation log', () => {
   })
 })
 
+describe('loading the history from the log', () => {
+  it('throws when the log cannot be read and reads it again on the next use, so no turn runs on an empty history', () => {
+    let readable = false
+    const history = new ConversationHistory({
+      recentTurns: 0,
+      compressAtTokens: 300,
+      limitTokens: 600,
+      hardLimitTokens: 1_000_000,
+      load: () => {
+        if (!readable) throw new Error('EACCES: permission denied')
+        return [user(1, '前の話'), assistant(1, '前の返事')]
+      },
+      saveCheckpoint: () => {},
+      summarize: async () => '要約',
+      locale: () => 'ja-JP'
+    })
+    expect(() => history.ensureLoaded()).toThrow('EACCES')
+    readable = true
+    history.ensureLoaded()
+    expect(history.toMessages().map(textOf)).toEqual([expect.stringContaining('前の話'), '前の返事'])
+    expect(history.highestTurnId).toBe(1)
+  })
+})
+
 describe('context length and the trigger for compaction', () => {
   it('estimates the context from the history until a measurement arrives, then adds what came after it', () => {
     const { history } = makeHistory()

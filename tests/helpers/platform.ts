@@ -37,12 +37,12 @@ export const WINDOWS = deriveCapabilities({
   ...osCalendar
 })
 
-/** An x64 Windows PC where nvidia-smi could not run, so that it has no local speech models. */
+/** An x64 Windows PC where nvidia-smi is not installed, so that it has no local speech models. */
 export const WINDOWS_WITHOUT_GPU = deriveCapabilities({
   platform: 'win32',
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
-  nvidiaGpu: () => nvidiaGpuSupport(null),
+  nvidiaGpu: () => ({ usable: false, reason: 'no-nvidia-gpu' }),
   micCancelsEcho: () => false,
   ...osCalendar
 })

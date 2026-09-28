@@ -29,3 +29,18 @@ describe('the idle compaction', () => {
     expect(compactionJob.due!()).toBe(true)
   })
 })
+
+describe('the maintenance loop', () => {
+  it('goes on to the next job when a due check throws', async () => {
+    const { initMaintenance } = await import('../src/main/services/maintenance')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const run = vi.fn(async () => {})
+    const stop = initMaintenance([
+      { name: 'broken', conditions: { quietMs: 0 }, due: () => { throw new Error('log unreadable') }, run: async () => {} },
+      { name: 'next', conditions: { quietMs: 0 }, run }
+    ])
+    await vi.waitFor(() => expect(run).toHaveBeenCalled())
+    stop()
+    error.mockRestore()
+  })
+})

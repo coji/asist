@@ -169,13 +169,20 @@ function pushLog(id: string, kind: 'system' | 'stderr', text: string): void {
   pushEvent(id, { kind, text })
 }
 
+/** The jobs whose log file has already failed a write, so a full disk is not reported once per line. */
+const unwritableLogs = new Set<string>()
+
 function pushEvent(id: string, event: JobLogEvent): void {
   if (!jobs.has(id)) return
   const line: JobLogLine = { t: Date.now(), event }
   try {
     appendJsonl(logFile(id), line)
-  } catch {
-    // Failing to persist a log line is not fatal.
+  } catch (error) {
+    // The job goes on and the screen still gets the line; the log says once per job that its file is incomplete.
+    if (!unwritableLogs.has(id)) {
+      unwritableLogs.add(id)
+      console.error(`job ${id} log could not be written:`, error)
+    }
   }
   events.emit('event', { type: 'log', id, line })
 }

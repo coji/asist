@@ -37,10 +37,10 @@ export function initMaintenance(jobs: MaintenanceJob[]): () => void {
     running = true
     try {
       for (const job of jobs) {
-        if (job.due && !job.due()) continue
-        const quiet = isQuiet({ now: Date.now(), lastActivityAt: lastActivity(), turnActive: turnScheduler.activeTurnId !== null }, job.conditions)
-        if (!quiet) continue
         try {
+          if (job.due && !job.due()) continue
+          const quiet = isQuiet({ now: Date.now(), lastActivityAt: lastActivity(), turnActive: turnScheduler.activeTurnId !== null }, job.conditions)
+          if (!quiet) continue
           await job.run()
         } catch (err) {
           console.error(`maintenance ${job.name} failed:`, errMessage(err))

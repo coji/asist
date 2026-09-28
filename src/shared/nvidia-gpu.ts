@@ -1,5 +1,9 @@
-/** Why this machine's NVIDIA GPU cannot run the local speech runtime on Windows. */
-export type NvidiaGpuUnavailable = 'no-nvidia-gpu' | 'driver-too-old' | 'gpu-too-old'
+/**
+ * Why this machine's NVIDIA GPU cannot run the local speech runtime on Windows. gpu-check-failed is
+ * nvidia-smi failing for a reason other than finding no GPU, such as a driver that is not running or a
+ * check that timed out, which a restart or a working driver can clear.
+ */
+export type NvidiaGpuUnavailable = 'no-nvidia-gpu' | 'driver-too-old' | 'gpu-too-old' | 'gpu-check-failed'
 
 /** Whether the local speech runtime can run on this machine's NVIDIA GPU, with the GPU it runs on. */
 export type NvidiaGpuSupport =
@@ -40,11 +44,11 @@ function readLine(line: string): NvidiaGpu | null {
 }
 
 /**
- * Decides from the output of nvidia-smi run with `NVIDIA_SMI_QUERY`, or null when it could not run,
- * whether the local speech runtime can run here. A line that does not read as a GPU counts as no GPU.
+ * Decides from the output of nvidia-smi run with `NVIDIA_SMI_QUERY` whether the local speech runtime can
+ * run here. A line that does not read as a GPU counts as no GPU.
  */
-export function nvidiaGpuSupport(output: string | null): NvidiaGpuSupport {
-  const gpus = (output ?? '').split(/\r?\n/).map(readLine).filter((gpu) => gpu !== null)
+export function nvidiaGpuSupport(output: string): NvidiaGpuSupport {
+  const gpus = output.split(/\r?\n/).map(readLine).filter((gpu) => gpu !== null)
   if (gpus.length === 0) return { usable: false, reason: 'no-nvidia-gpu' }
   // nvidia-smi lists the GPUs in PCI bus order, and the worker, with CUDA_DEVICE_ORDER=PCI_BUS_ID, runs on
   // the first GPU of compute capability 7.5 or higher in the same order, so the memory reported is that

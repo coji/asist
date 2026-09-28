@@ -373,6 +373,19 @@ export const jobs = defineMessages({
       'pt-BR': 'Não foi possível salvar o estado do job: {detail}',
       'es-419': 'No se pudo guardar el estado del trabajo: {detail}',
       'es-ES': 'No se ha podido guardar el estado del trabajo: {detail}'
+    },
+    loadFailed: {
+      'ja-JP': 'ジョブのログを読み込めませんでした',
+      'en-US': "Couldn't load the job log",
+      'fr-FR': 'Impossible de charger le log du job',
+      'de-DE': 'Das Protokoll des Jobs ließ sich nicht laden',
+      'hi-IN': 'जॉब का लॉग लोड नहीं हो सका',
+      'id-ID': 'Tidak bisa memuat log pekerjaan',
+      'it-IT': "Impossibile caricare il registro dell'incarico",
+      'ko-KR': '작업 로그를 불러올 수 없습니다',
+      'pt-BR': 'Não foi possível carregar o registro do job',
+      'es-419': 'No se pudo cargar el registro del trabajo',
+      'es-ES': 'No se ha podido cargar el registro del trabajo'
     }
   },
   elapsed: {

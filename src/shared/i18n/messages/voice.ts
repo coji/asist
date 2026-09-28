@@ -312,6 +312,19 @@ export const voice = defineMessages({
       'pt-BR': 'Não foi possível iniciar o motor live.',
       'es-419': 'No se pudo iniciar el motor live.',
       'es-ES': 'No se ha podido iniciar el motor live.'
+    },
+    textTooLong: {
+      'ja-JP': '文が長すぎます。live エンジンに送れるのは {max} 文字までです。',
+      'en-US': 'The text is too long. The live engine takes up to {max} characters.',
+      'fr-FR': 'Le texte est trop long. Le moteur live accepte au plus {max} caractères.',
+      'de-DE': 'Der Text ist zu lang. Die live-Engine nimmt höchstens {max} Zeichen an.',
+      'hi-IN': 'टेक्स्ट बहुत लंबा है। live इंजन में ज़्यादा से ज़्यादा {max} अक्षर भेजे जा सकते हैं।',
+      'id-ID': 'Teksnya terlalu panjang. Mesin live menerima paling banyak {max} karakter.',
+      'it-IT': 'Il testo è troppo lungo. Il motore live accetta al massimo {max} caratteri.',
+      'ko-KR': '텍스트가 너무 깁니다. live 엔진에는 최대 {max}자까지 보낼 수 있습니다.',
+      'pt-BR': 'O texto é longo demais. O motor live aceita no máximo {max} caracteres.',
+      'es-419': 'El texto es demasiado largo. El motor live acepta hasta {max} caracteres.',
+      'es-ES': 'El texto es demasiado largo. El motor live acepta hasta {max} caracteres.'
     }
   },
   mic: {
@@ -368,6 +381,34 @@ export const voice = defineMessages({
       'pt-BR': 'Não foi possível captar o áudio do microfone. Verifique o dispositivo de entrada.',
       'es-419': 'No se pudo captar el audio del micrófono. Revisa el dispositivo de entrada.',
       'es-ES': 'No se ha podido captar el sonido del micrófono. Comprueba el dispositivo de entrada.'
+    }
+  },
+  maaiUnavailable: {
+    title: {
+      'ja-JP': 'MaAI を起動できませんでした',
+      'en-US': "Couldn't start MaAI",
+      'fr-FR': 'Impossible de démarrer MaAI',
+      'de-DE': 'MaAI ließ sich nicht starten',
+      'hi-IN': 'MaAI शुरू नहीं हो सका',
+      'id-ID': 'Tidak bisa memulai MaAI',
+      'it-IT': 'Impossibile avviare MaAI',
+      'ko-KR': 'MaAI를 시작할 수 없습니다',
+      'pt-BR': 'Não foi possível iniciar o MaAI',
+      'es-419': 'No se pudo iniciar MaAI',
+      'es-ES': 'No se ha podido iniciar MaAI'
+    },
+    body: {
+      'ja-JP': '話し終わりは、設定した無音の長さで判断します。会話はこのまま続けられます。',
+      'en-US': 'The end of speech is judged by the silence length in your settings. You can keep talking.',
+      'fr-FR': 'La fin de la parole est déterminée par la durée de silence réglée. Vous pouvez continuer à parler.',
+      'de-DE': 'Das Ende der Rede wird an der eingestellten Stille erkannt. Sie können weitersprechen.',
+      'hi-IN': 'बोलना कब खत्म हुआ, यह सेटिंग में तय खामोशी की लंबाई से तय होगा। आप बात जारी रख सकते हैं।',
+      'id-ID': 'Akhir ucapan ditentukan dari lama jeda hening di pengaturan. Percakapan bisa terus berjalan.',
+      'it-IT': 'La fine del parlato viene decisa dalla durata del silenzio impostata. Puoi continuare a parlare.',
+      'ko-KR': '말이 끝났는지는 설정한 무음 길이로 판단합니다. 대화는 그대로 계속할 수 있습니다.',
+      'pt-BR': 'O fim da fala é decidido pela duração do silêncio definida nas configurações. Você pode continuar falando.',
+      'es-419': 'El final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.',
+      'es-ES': 'El final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.'
     }
   }
 })

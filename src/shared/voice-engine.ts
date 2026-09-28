@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { MessageKey, Translate } from './i18n'
+import { errorText } from './i18n/error-text'
 import type { LlmProvider } from './llm-catalog'
 
 /**
@@ -23,6 +24,21 @@ export type LiveEngine = Exclude<VoiceEngine, 'cascade'>
 
 /** Takes any string, because the first-run setup hands main a voice mode that is either a way of listening or a live engine. */
 export const isLiveEngine = (value: string): value is LiveEngine => value !== 'cascade' && (VOICE_ENGINES as readonly string[]).includes(value)
+
+/**
+ * The longest typed text a live engine is handed, in UTF-16 code units as `String.length` counts them.
+ * Longer text is refused, never cut. A cascade turn has no such limit: the conversation model is bounded
+ * only by its context window, which the history's compaction already watches.
+ */
+export const LIVE_TEXT_MAX_LENGTH = 4000
+
+/** The typed text as a live engine takes it, trimmed. Text over the limit is refused with a message for the user. */
+export function liveTextInput(text: unknown): string {
+  const value = typeof text === 'string' ? text.trim() : ''
+  if (!value) throw new Error('invalid live text')
+  if (value.length > LIVE_TEXT_MAX_LENGTH) throw new Error(errorText('voice.live.textTooLong', { max: LIVE_TEXT_MAX_LENGTH }))
+  return value
+}
 
 /** The model and voice chosen for a live engine. `model` is the model ID of the provider's Live API. */
 export interface LiveModelSetting {

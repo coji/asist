@@ -214,5 +214,18 @@ export const conversation = defineMessages({
       'es-419': 'No se pudo escribir una respuesta. Vuelve a hablarme.',
       'es-ES': 'No se ha podido escribir una respuesta. Vuelve a hablarme.'
     }
+  },
+  logUnreadable: {
+    'ja-JP': '会話ログを読めません: {reason}',
+    'en-US': "Couldn't read the conversation log: {reason}",
+    'fr-FR': 'Impossible de lire le log des conversations : {reason}',
+    'de-DE': 'Das Gesprächsprotokoll ließ sich nicht lesen: {reason}',
+    'hi-IN': 'बातचीत का लॉग पढ़ा नहीं जा सका: {reason}',
+    'id-ID': 'Tidak bisa membaca log percakapan: {reason}',
+    'it-IT': 'Impossibile leggere il registro delle conversazioni: {reason}',
+    'ko-KR': '대화 로그를 읽을 수 없습니다: {reason}',
+    'pt-BR': 'Não foi possível ler o registro da conversa: {reason}',
+    'es-419': 'No se pudo leer el registro de la conversación: {reason}',
+    'es-ES': 'No se ha podido leer el registro de la conversación: {reason}'
   }
 })

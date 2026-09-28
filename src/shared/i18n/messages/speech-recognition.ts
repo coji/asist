@@ -373,6 +373,19 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O driver da NVIDIA é antigo demais para este reconhecimento de fala. Atualize-o para a versão 580 ou mais recente e inicie o ASIST de novo.',
       'es-419': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.',
       'es-ES': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.'
+    },
+    gpuCheckFailed: {
+      'ja-JP': 'NVIDIA の GPU を確かめられなかったため、この音声認識を使えません。NVIDIA のドライバーが動いているか確かめて ASIST を起動し直すか、ブラウザ内 Whisper を使ってください。',
+      'en-US': "Couldn't check the NVIDIA GPU, so this speech recognition is unavailable. Make sure the NVIDIA driver is working and start ASIST again, or use in-browser Whisper.",
+      'fr-FR': "Impossible de vérifier le GPU NVIDIA, cette reconnaissance vocale n'est donc pas disponible. Vérifiez que le pilote NVIDIA fonctionne et relancez ASIST, ou utilisez Whisper dans le navigateur.",
+      'de-DE': 'Die NVIDIA-GPU ließ sich nicht prüfen, daher ist diese Spracherkennung nicht verfügbar. Prüfen Sie, ob der NVIDIA-Treiber läuft, und starten Sie ASIST neu, oder verwenden Sie Whisper im Browser.',
+      'hi-IN': 'NVIDIA GPU की जाँच नहीं हो सकी, इसलिए यह स्पीच रिकग्निशन उपलब्ध नहीं है। देखें कि NVIDIA ड्राइवर चल रहा है और ASIST दोबारा शुरू करें, या ब्राउज़र वाला Whisper इस्तेमाल करें।',
+      'id-ID': 'GPU NVIDIA tidak bisa diperiksa, jadi pengenalan suara ini tidak tersedia. Pastikan driver NVIDIA berjalan lalu jalankan ulang ASIST, atau pakai Whisper dalam browser.',
+      'it-IT': 'Impossibile verificare la GPU NVIDIA, quindi questo riconoscimento vocale non è disponibile. Controlla che il driver NVIDIA funzioni e riavvia ASIST, oppure usa Whisper nel browser.',
+      'ko-KR': 'NVIDIA GPU를 확인할 수 없어 이 음성 인식을 사용할 수 없습니다. NVIDIA 드라이버가 동작하는지 확인하고 ASIST를 다시 시작하거나, 브라우저 내 Whisper를 사용하십시오.',
+      'pt-BR': 'Não foi possível verificar a GPU NVIDIA, então este reconhecimento de fala não está disponível. Confira se o driver da NVIDIA está funcionando e inicie o ASIST de novo, ou use o Whisper no navegador.',
+      'es-419': 'No se pudo comprobar la GPU NVIDIA, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de NVIDIA funcione y vuelve a iniciar ASIST, o usa Whisper en el navegador.',
+      'es-ES': 'No se ha podido comprobar la GPU NVIDIA, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de NVIDIA funciona y vuelve a iniciar ASIST, o usa Whisper en el navegador.'
     }
   }
 })

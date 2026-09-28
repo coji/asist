@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import { sendTypedMessage } from '@/conversation'
+import { sendTypedMessage, typedTextFits } from '@/conversation'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { speechPlayer } from '@/voice/SpeechPlayer'
@@ -111,6 +111,12 @@ export function Feed(): React.JSX.Element {
   const karaoke = useKaraoke()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState('')
+  // Text the conversation refuses stays in the box for the user to shorten.
+  const send = (): void => {
+    if (!typedTextFits(input)) return
+    void sendTypedMessage(input)
+    setInput('')
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -148,8 +154,7 @@ export function Feed(): React.JSX.Element {
         className="flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault()
-          void sendTypedMessage(input)
-          setInput('')
+          send()
         }}
       >
         <input
@@ -159,8 +164,7 @@ export function Feed(): React.JSX.Element {
             // The Enter that confirms a conversion in the Japanese IME must not send the message.
             if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
               e.preventDefault()
-              void sendTypedMessage(input)
-              setInput('')
+              send()
             }
           }}
           placeholder={micState === 'on' ? t('conversation.inputWhileListening') : t('conversation.input')}

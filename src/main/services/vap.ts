@@ -22,8 +22,11 @@ import { createEnvironment, environmentCurrent, installRequirements, recordEnvir
  * returns, for every 80 ms frame, the probabilities of holding the turn, of an aizuchi being due, of the
  * user currently producing one, and of a nod.
  *
- * Every stage fails open: when the runtime is not installed, the worker will not start, or it crashes,
- * the renderer keeps running on its heuristics, a fixed hangover and aizuchi placed at textual breaks.
+ * When the worker cannot start or crashes, the conversation goes on without it, on the fixed hangover and
+ * aizuchi placed at textual breaks. It is the one failure the app continues through rather than stops on:
+ * MaAI only sharpens the timing, and turning the microphone off over it would take the conversation away.
+ * Each cause is logged here, and the renderer, told by a start that returns false, says once that the
+ * fixed wait is in use.
  */
 
 const WORKER_READY_TIMEOUT_MS = 120_000
@@ -295,9 +298,19 @@ function workerArgs(): string[] {
 async function startWorker(): Promise<boolean> {
   if (workerRunning()) return true
   stopWorker()
-  if (!runtimeInstalled()) return false
-  if (missingModels().length > 0) return false
-  if (!fs.existsSync(resourcePath('vap_worker.py'))) return false
+  if (!runtimeInstalled()) {
+    console.warn('vap: the worker cannot start, its Python environment is not prepared')
+    return false
+  }
+  const missing = missingModels()
+  if (missing.length > 0) {
+    console.warn(`vap: the worker cannot start, models are missing: ${missing.map((model) => model.file).join(', ')}`)
+    return false
+  }
+  if (!fs.existsSync(resourcePath('vap_worker.py'))) {
+    console.warn(`vap: the worker cannot start, its script is missing: ${resourcePath('vap_worker.py')}`)
+    return false
+  }
 
   const spawned = spawn(pythonPath(), workerArgs(), {
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -318,8 +331,15 @@ async function startWorker(): Promise<boolean> {
       workerReady = false
     }
   }
-  spawned.on('error', detach)
-  spawned.on('exit', detach)
+  spawned.on('error', (error) => {
+    if (child === spawned) console.warn(`vap: the worker could not run: ${error.message}`)
+    detach()
+  })
+  spawned.on('exit', (code, signal) => {
+    // A worker stopped through stopWorker is no longer the child, so only one that ended on its own is logged.
+    if (child === spawned) console.warn(`vap: the worker exited (code ${code}, signal ${signal})`)
+    detach()
+  })
   // A write between the worker's death and its exit event, or after it closed its input, fails with
   // EPIPE, which becomes an uncaught exception unless the stream has a listener.
   spawned.stdin.on('error', (error) => {
@@ -328,7 +348,10 @@ async function startWorker(): Promise<boolean> {
   })
 
   const ready = await waitUntilReady(spawned)
-  if (!ready && child === spawned) stopWorker()
+  if (!ready && child === spawned) {
+    console.warn(`vap: the worker did not load within ${WORKER_READY_TIMEOUT_MS / 1000} s`)
+    stopWorker()
+  }
   if (ready) resident = true
   return ready
 }

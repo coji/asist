@@ -37,7 +37,6 @@ describe('whether the NVIDIA GPU can run the local speech runtime', () => {
   })
 
   it.each([
-    ['nvidia-smi could not run', null],
     ['an empty output', ''],
     ['the message nvidia-smi prints without a driver', "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.\r\n"],
     ['a field nvidia-smi does not know', 'Field "compute_cap" is not a valid field to query.'],

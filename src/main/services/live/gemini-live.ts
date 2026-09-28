@@ -189,6 +189,8 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
     const settings = this.settings().geminiLive
     const resumption = this.resumption && this.now() - this.resumption.at < RESUMPTION_TTL_MS ? this.resumption : null
     const resume = resumption?.handle ?? null
+    // Built before the timer exists, since building it reads the history, which can fail.
+    const systemInstruction = this.deps.systemInstruction(new Date(this.now()))
     const owned: { session: GeminiSession | null; ready: boolean } = { session: null, ready: false }
     this.owned = owned
     let connected!: Promise<GeminiSession>
@@ -202,7 +204,7 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
       connected = this.deps.connect({
         model: settings.model,
         voice: settings.voice,
-        systemInstruction: this.deps.systemInstruction(new Date(this.now())),
+        systemInstruction,
         functionDeclarations: this.deps.functionDeclarations(),
         resumptionHandle: resume,
         callbacks: {

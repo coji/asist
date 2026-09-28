@@ -83,6 +83,11 @@ type VoiceEvents = {
   backchannel: BackchannelDecision
   /** A nod, an aizuchi without a sound, which makes the orb sway slightly. */
   nod: NodKind
+  /**
+   * MaAI is on but its worker did not start, so the fixed hangover decides the end of speech. It comes
+   * once until MaAI is turned off and on again; the cause is in main's log.
+   */
+  maaiUnavailable: undefined
   error: string
 }
 
@@ -142,8 +147,17 @@ export class VoiceController {
   noiseSuppression = true
   /** The aizuchi classifier's reading that the sentence is unfinished, wired up by conversation. It extends the VAD's hangover. */
   holdProvider: (() => boolean) | null = null
+  private vapSetting = false
+  /** Whether this run of the MaAI setting has already said that the worker did not start. */
+  private maaiUnavailableSaid = false
   /** VAP turn taking, which moves the hangover and times the aizuchi. Set from the settings. */
-  vapEnabled = false
+  get vapEnabled(): boolean {
+    return this.vapSetting
+  }
+  set vapEnabled(enabled: boolean) {
+    if (!enabled) this.maaiUnavailableSaid = false
+    this.vapSetting = enabled
+  }
   /**
    * The language the conversation is held in, set from the settings and read at each use. The aizuchi
    * and the turn-taking model exist for Japanese only, so in another language they stay out of the
@@ -351,6 +365,16 @@ export class VoiceController {
     return this.vapEnabled && conversationFeatures(this.conversationLocale).maai
   }
 
+  /**
+   * The conversation goes on without MaAI, on the fixed hangover, and the user hears of it once. A start
+   * that ends after MaAI was turned off, or the language changed, has nothing to report.
+   */
+  private sayMaaiUnavailable(): void {
+    if (!this.usesMaai() || this.maaiUnavailableSaid) return
+    this.maaiUnavailableSaid = true
+    this.events.emit('maaiUnavailable')
+  }
+
   /** Whether the newest VAP estimate can be used. A stopped or backed-up worker leaves it stale. */
   private vapFresh(): boolean {
     return (
@@ -422,7 +446,15 @@ export class VoiceController {
           this.vapStateAt = performance.now()
           this.maybeNod()
         })
-        void window.api.vapStart().catch(() => {})
+        void window.api.vapStart().then(
+          (started) => {
+            if (!started) this.sayMaaiUnavailable()
+          },
+          (err: unknown) => {
+            console.error('MaAI start failed:', errorMessageOf(err))
+            this.sayMaaiUnavailable()
+          }
+        )
       }
       const feed = (frame: Float32Array): void => {
         this.silero.push(frame)

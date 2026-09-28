@@ -48,7 +48,7 @@ import {
   validateProviderKey
 } from './services/llm'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, sameModel } from '@shared/llm-catalog'
-import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
+import { LIVE_ENGINE_INFO, isLiveEngine, liveTextInput } from '@shared/voice-engine'
 import { stopsLiveEngine } from '@shared/live-session-policy'
 import { appendJsonl } from './services/store'
 import * as watchdog from './services/watchdog'
@@ -313,11 +313,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   handle(IpcChannel.LiveActivity, (_e, active: boolean) => {
     live.activity(active === true)
   })
-  handle(IpcChannel.LiveText, (_e, text: unknown) => {
-    const value = typeof text === 'string' ? text.trim() : ''
-    if (!value || value.length > 4000) throw new Error('invalid live text')
-    return live.text(value)
-  })
+  handle(IpcChannel.LiveText, (_e, text: unknown) => live.text(liveTextInput(text)))
 
   handle(IpcChannel.PanelFetch, (_e, type: string, props: Record<string, unknown>) =>
     fetchPanel(type, props)

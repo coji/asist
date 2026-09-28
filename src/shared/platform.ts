@@ -18,7 +18,7 @@ export type SpeechRuntime = 'mlx' | 'cuda'
 
 /**
  * Why this machine cannot run the local speech models, which the screens show in place of the choice.
- * Only Windows can lack them, and only for want of a GPU the CUDA runtime runs on.
+ * Only Windows can lack them, for want of a GPU the CUDA runtime runs on or of a check that found one.
  */
 export type SpeechRuntimeUnavailable = NvidiaGpuUnavailable
 
@@ -35,7 +35,8 @@ export const CALENDAR_BACKEND_VARIABLE = 'ASIST_CALENDAR_BACKEND'
 export const SPEECH_RUNTIME_UNAVAILABLE_TEXT = {
   'no-nvidia-gpu': 'speechRecognition.unavailable.noNvidiaGpu',
   'gpu-too-old': 'speechRecognition.unavailable.gpuTooOld',
-  'driver-too-old': 'speechRecognition.unavailable.driverTooOld'
+  'driver-too-old': 'speechRecognition.unavailable.driverTooOld',
+  'gpu-check-failed': 'speechRecognition.unavailable.gpuCheckFailed'
 } as const satisfies Record<SpeechRuntimeUnavailable, MessageKey>
 
 export interface PlatformCapabilities {

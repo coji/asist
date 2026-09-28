@@ -159,3 +159,17 @@ describe('summaries', () => {
     expect(summarizeToolResult('a'.repeat(300), 100)).toBe('a'.repeat(100) + '…')
   })
 })
+
+describe('reading a day of the log', () => {
+  it('finds no records for a day with no file', () => {
+    const { log } = makeLog()
+    expect(log.readDay(new Date(2026, 8, 8))).toEqual([])
+  })
+
+  it('throws for a day file that exists but cannot be read, rather than pass for a day with nothing said', () => {
+    const { log, dir } = makeLog()
+    // A directory in the file's place fails the read with EISDIR on every system, as a permission error would.
+    fs.mkdirSync(path.join(dir, '2026-09-08.jsonl'))
+    expect(() => log.readDay(new Date(2026, 8, 8))).toThrow()
+  })
+})

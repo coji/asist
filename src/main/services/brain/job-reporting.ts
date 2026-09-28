@@ -23,6 +23,8 @@ const JOB_REPORT_PLAYBACK_TIMEOUT_MS = 3 * 60_000
 const MAX_JOB_REPORT_ATTEMPTS = 5
 /** How often a report held at the hard limit looks again whether the history has room, which only reads a number in memory. */
 const HISTORY_ROOM_POLL_MS = 5_000
+/** How often a report held by a conversation log that cannot be read tries the read again, which reads the files of several days. */
+const HISTORY_LOAD_RETRY_MS = 30_000
 
 /** What the model is told about a job that ended. It reads it and reports it in its own words. */
 const REPORT: Readonly<
@@ -81,8 +83,18 @@ async function waitForIdle(): Promise<void> {
  * when one starts.
  */
 async function waitForRoomInHistory(): Promise<void> {
-  // A report can come before any turn has read the history, which looks empty until then.
-  history.ensureLoaded()
+  // A report can come before any turn has read the history, which looks empty until then. A log that
+  // cannot be read holds the report the same way, rather than drop it, until a read succeeds.
+  for (let logged = false; ; ) {
+    try {
+      history.ensureLoaded()
+      break
+    } catch (error) {
+      if (!logged) console.error('job report waits for the conversation log:', errMessage(error))
+      logged = true
+      await sleep(HISTORY_LOAD_RETRY_MS)
+    }
+  }
   while (!conversationOwner() && history.needsCompaction() === 'block') await sleep(HISTORY_ROOM_POLL_MS)
 }
 

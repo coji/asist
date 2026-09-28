@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { expiredDatedFiles, localDateKey } from '@shared/local-date'
 import type { ConversationPart, NativeOutput } from '@shared/conversation'
+import { errorText } from '@shared/i18n/error-text'
 
 /**
  * The conversation log. For each turn it appends the user's utterance, the assistant's utterance, the
@@ -196,14 +197,19 @@ export class ConversationLog {
     return out
   }
 
-  /** Reads that day's records oldest first, returning nothing when the file is missing. Unreadable lines are skipped and reported to onError once per file. */
+  /**
+   * Reads that day's records oldest first, returning nothing when the file does not exist. A file that
+   * exists but cannot be read throws, since an empty day would drop that day from the history. Unreadable
+   * lines are skipped and reported to onError once per file.
+   */
   readDay(date: Date): ConversationRecord[] {
     const file = path.join(this.options.dir, logFileName(date))
     let text: string
     try {
       text = fs.readFileSync(file, 'utf8')
-    } catch {
-      return []
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+      throw new Error(errorText('conversation.logUnreadable', { reason: (err as Error).message }), { cause: err })
     }
     const out: ConversationRecord[] = []
     let skipped = 0

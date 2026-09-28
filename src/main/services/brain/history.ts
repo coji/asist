@@ -103,7 +103,7 @@ export interface HistoryOptions {
   summarize: (existingSummary: string, log: string) => Promise<string>
   /** The language the conversation is held in, read on every render so that a change applies at once. */
   locale: () => ConversationLocale
-  onError?: (stage: 'load' | 'summarize' | 'checkpoint', err: unknown) => void
+  onError?: (stage: 'summarize' | 'checkpoint', err: unknown) => void
 }
 
 const hasReply = (turn: HistoryTurn): boolean =>
@@ -160,16 +160,15 @@ export class ConversationHistory {
 
   constructor(private readonly options: HistoryOptions) {}
 
+  /**
+   * Reads the log into the history on first use. A read that fails throws and leaves the history unloaded
+   * for the next use to try again: a conversation that went on without its history would reply without
+   * context, and a checkpoint written from it would leave the earlier turns out of every later replay.
+   */
   ensureLoaded(): void {
     if (this.loaded) return
+    let records = this.options.load()
     this.loaded = true
-    let records: ConversationRecord[]
-    try {
-      records = this.options.load()
-    } catch (err) {
-      this.options.onError?.('load', err)
-      return
-    }
     this.highestLoadedTurnId = highestTurnId(records)
     const checkpointIndex = records.map((r) => r.kind).lastIndexOf('checkpoint')
     if (checkpointIndex >= 0) {
