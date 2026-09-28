@@ -98,8 +98,7 @@ mac:
     NSMicrophoneUsageDescription: 'ASIST uses the microphone so that you can talk with the assistant.'
     LSMinimumSystemVersion: '14.0'
   # The releases of the public repository are where electron-updater looks for a newer version, and where
-  # scripts/release.mjs puts the dmg, the zip and latest-mac.yml. Only the Mac app is released there, so the
-  # Windows build carries no app-update.yml and its updates stay off.
+  # scripts/release.mjs puts the dmg, the zip and latest-mac.yml.
   publish:
     provider: github
     owner: nyosegawa
@@ -107,6 +106,10 @@ mac:
 
 win:
   icon: build/icon.png
+  # Only the Mac app is released yet. Without a publish setting of its own, electron-builder takes the GitHub
+  # repository from the git remote and writes app-update.yml into the installer, and the Windows app then
+  # failed every check with a 404 for latest.yml (measured 2026-09-28 on electron-builder 26.16.1).
+  publish: null
   # --dir replaces this target and packages for the CPU of the machine that runs electron-builder unless an
   # architecture flag is given (measured 2026-09-27 on electron-builder 26.16.1), so dist:win:dir passes --x64.
   target:
