@@ -136,5 +136,7 @@ skill; each holds steps these rules do not repeat.
   in the installed app.
 - `install-windows-app`: the same on a Windows machine: building the installer, installing, checking
   the installed app over CDP, and quitting it.
+- `release`: releasing a new version from this Mac: the version number, the pull request that raises it,
+  `npm run release`, notarization, and checking the published release.
 - `website`: changing, checking or publishing the website and the documentation at asist-agent.com,
   writing or translating a documentation page, or anything that runs wrangler.
