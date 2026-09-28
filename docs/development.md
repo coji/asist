@@ -12,7 +12,7 @@ npm run build
 
 ## Windows で clone する
 
-Windows 対応はまだ途中です。計画と進み具合は [docs/windows](windows/) と issue #48 にあります。Windows で作業するときは、clone の前に、次のことを済ませます。
+Windows 11(x64)で作業するときは、clone の前に、次のことを済ませます。
 
 - 「設定」→「システム」→「開発者向け」で、開発者モードを有効にします。
 - Git for Windows で、シンボリックリンクと長いパスを有効にします。
@@ -38,9 +38,17 @@ npm run dev
 
 Windows 11(x64)では、Node.js 22、上の「Windows で clone する」のとおりに設定した Git for Windows、Visual Studio の「C++ によるデスクトップ開発」が要ります。Visual Studio は Build Tools だけでもかまいません。準備のスクリプトは、git の代わりに MinGit を取得し、エージェントの CLI を動かす `asist-agent-launcher.exe` と、マイクを Windows のエコーキャンセルを通して取り込む `asist-mic.exe` を、`vswhere` で見つけた Visual Studio の `cl.exe` でコンパイルします。Visual Studio Community 2017 と、CI(windows-latest)の Visual Studio 2026 で確かめました。コマンドは macOS と同じです。アプリは、設定と記憶を `%APPDATA%\asist` に、ログを `%APPDATA%\asist\logs` に書きます。Windows は、スタートメニューのショートカットと同じ AppUserModelID を持つアプリの通知しか出しません。`npm run dev` のアプリにはショートカットが無いので、通知はインストールしたアプリで確かめます。
 
+Windows では、npm のスクリプトは `cmd.exe` で動き、Claude Code の Bash のツールは Git Bash で動きます。Python は入れません。同梱した uv が、決まったバージョンの Python を取得します。Windows のマシンで ASIST の動きまで確かめるときは、次のものも入れておきます。
+
+- **NVIDIA のドライバー。** ローカルの音声認識には、ドライバー 580 以上と、compute capability 7.5 以上(RTX 20 以降)の GPU が要ります。`nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv` で確かめます。
+- **Claude Code。** 公式のネイティブのインストーラー(`irm https://claude.ai/install.ps1 | iex`)で入れ、入った `%USERPROFILE%\.local\bin` を利用者の PATH に足します。npm で入れた claude は `.cmd` しか無いので ASIST からは起動できず、残っているとターミナルでも先に見つかるので、`npm uninstall -g @anthropic-ai/claude-code` で消します。`Get-Command claude -All` にネイティブのものだけが出ることを確かめます。
+- **Codex CLI。** PowerShell 7(`winget install --id Microsoft.PowerShell --exact`)を入れ、そこから公式のインストーラー(`irm https://chatgpt.com/codex/install.ps1 | iex`)で入れます。`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin` に入ります。2026-09-27 には、Windows に最初からある PowerShell 5.1 ではインストーラーが `OSArchitecture` を読めずに止まり、winget の `OpenAI.Codex`(0.157.1)はリンクから起動されると `the CLI package does not match this platform or executable` で止まりました。入れたら、ターミナルで `codex` を一度起動して、Windows の sandbox を準備します。準備が済むまで、ASIST は codex のジョブを始めません。
+- **GitHub CLI。** `gh auth login` で、git の方式に SSH を選び、ブラウザで認証します。SSH の鍵だけでは gh の API を使えません。
+- **Google Chrome。** `scripts/cdp` の撮影と計測に使います。
+
 起動時の環境変数は、親プロセスの環境変数、実行ディレクトリの `.env` の順に優先します。Finder や Dock から開いたアプリは `/` で起動するので、実行ディレクトリの `.env` を読むのは、`npm run dev` のようにリポジトリから起動したときだけです。
 
-API キーは、環境変数(実行ディレクトリの `.env` を含む)にあればそれを使い、なければ設定で保存したキーを使います。環境変数にある provider のキーは、設定では保存できません。設定で保存したキーは、Electron の safeStorage で macOS のキーチェーンの鍵を使って暗号化し、平文では書きません。暗号化が使えないときは保存せず、エラーにします。開発版とインストールしたアプリでは鍵が違うので、一方で保存したキーはもう一方では読めません。読めないときはエラーになるので、設定で入れ直します。
+API キーは、環境変数(実行ディレクトリの `.env` を含む)にあればそれを使い、なければ設定で保存したキーを使います。環境変数にある provider のキーは、設定では保存できません。設定で保存したキーは、Electron の safeStorage で暗号化し、平文では書きません。暗号化の鍵は、macOS ではキーチェーンに、Windows では DPAPI で守って userData の `Local State` に置かれます。暗号化が使えないときは保存せず、エラーにします。macOS では、開発版とインストールしたアプリで鍵が違うので、一方で保存したキーはもう一方では読めません。読めないときはエラーになるので、設定で入れ直します。Windows では、開発版とインストールしたアプリが同じ userData と同じ鍵を使うので、一方で保存したキーをもう一方でも読めます。
 
 地図のカードには、Google の Maps Embed API のキーが要ります。キーはビルドのときに埋め込みます。Google Cloud で Maps Embed API を有効にしてキーを作り、リポジトリ直下の `.env` に書いてから `npm run dev` や `npm run dist:mac` を実行します。
 
