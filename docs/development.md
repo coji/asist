@@ -137,7 +137,7 @@ ASIST_SELFTEST=1 npx electron .
 
 ## 同梱している素材の作り直し
 
-- **Qwen3-TTS の相槌の音声。** アプリは実行時に合成せず、`resources/aizuchi/qwen3tts/<声>/` に同梱したものを使います。Qwen3-TTS は、短い一言だけを読ませると数秒しゃべり続けることがあるためです。相槌の文言(`src/shared/aizuchi-bank.ts`)を変えたときや、声を足したときは、`node scripts/aizuchi-clips/build.mjs <声> <確認用の HTML の出力先>` で作り直します。スクリプトは、相槌を続きの文の前に付けて何度か読ませ、forced aligner で相槌の区間を切り出し、音声認識で文言を確かめて、いちばん良い候補を書き出します。mlx-audio 0.4.7 を入れた Python の環境と、Qwen3-TTS、Qwen3-ASR、Qwen3-ForcedAligner の MLX のモデルが要ります。その python は `ASIST_MLX_PYTHON` で指定します(既定は `~/Library/Application Support/asist/mlx-audio-runtime/bin/python`)。出力された HTML で全部を聞いて確かめてから、コミットします。
+- **Qwen3-TTS の相槌の音声。** アプリは実行時に合成せず、`resources/aizuchi/qwen3tts/<声>/` に同梱したものを使います。Qwen3-TTS は、短い一言だけを読ませると数秒しゃべり続けることがあるためです。相槌の文言(`src/shared/aizuchi-bank.ts`)を変えたときや、声を足したときは、`node scripts/aizuchi-clips/build.mjs <声> <確認用の HTML の出力先>` で作り直します。スクリプトは、相槌を続きの文の前に付けて何度か読ませ、続きの文が音声認識でそのまま聞こえる間で相槌を切り出し、切り出した相槌の文言も音声認識で確かめて、いちばん良い候補を書き出します。読み上げと音声認識には、同梱する qwen3-tts-worker と llama-server(`node scripts/prepare-resources.mjs dev`)を使い、アプリで準備した Qwen3-TTS 0.6B と Qwen3-ASR 1.7B のファイルを読みます。ほかの場所にあるファイルを使うときは、`ASIST_SPEECH_MODELS` でそのフォルダを指定します。相槌は 0.6B で作り、読み上げを 1.7B にしたときも同じものを鳴らします。出力された HTML で全部を聞いて確かめてから、コミットします。
 - **live の声の見本。** `npm run gen:live-voices` が、provider の TTS に同じ文を読ませて `src/renderer/src/assets/live-voices/` に置きます。
 - **アイコン。** 元の画像と生成プロンプトは `resources/artwork/` にあり、`python3 scripts/gen-icon.py` で作り直せます(Pillow が要ります)。
 - **天気の画像。** 47 都道府県の風景と 5 種類の空模様を、別々の画像として重ねています。生成プロンプトは `src/renderer/src/assets/weather/` の各 `prompts.json` にあり、`python3 scripts/check-weather-alpha.py` で PNG のアルファを検査します。取得と対応表の更新は[天気の仕様](../src/main/services/weather/SPEC.md)にあります。
@@ -261,6 +261,5 @@ Windows では、インストーラーで入れたアプリで、カレンダー
 
 | 用途 | モデル |
 |---|---|
-| 同梱する相槌の音声の切り出しと検証 | Qwen3-ForcedAligner 0.6B 4bit(`mlx-community/Qwen3-ForcedAligner-0.6B-4bit`、Apache-2.0)、Qwen3-ASR、Qwen3-TTS |
 | 同梱する live の声の見本 | OpenAI の `gpt-4o-mini-tts`(TTS に無い声は `gpt-live-1` のセッションから録音)、Google の `gemini-2.5-flash-preview-tts` |
 | アイコン、天気の風景と空模様の画像 | 画像生成のモデル。プロンプトは `resources/artwork/` と `src/renderer/src/assets/weather/` にあります。 |
