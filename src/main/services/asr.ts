@@ -1,5 +1,4 @@
 import {
-  ASR_MODEL_NAMES,
   asrDownloadGb,
   asrModelSpec,
   isAsrModel,
@@ -12,37 +11,33 @@ import {
 } from '@shared/asr-models'
 import type { SetupProgress, SetupStatus } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type SpeechRuntime, type SpeechRuntimeUnavailable } from '@shared/platform'
+import { LOCAL_SPEECH_UNAVAILABLE_TEXT, type LocalSpeechUnavailable } from '@shared/platform'
 import { t } from './i18n'
 import { platformCapabilities } from './platform'
 import { getSettings } from './settings'
-import * as local from './local-asr'
+import * as local from './llama-asr'
 
-/**
- * The model the setting stands for on this machine, with the runtime's build of it, which is null when
- * the runtime does not offer that model; or why this machine has no runtime to run one.
- */
+/** The model the setting stands for on this machine, or why this machine cannot run one. */
 type Resolution =
-  | { runtime: SpeechRuntime; model: ResolvedAsrModel; spec: AsrModelSpec | null; recommendation: AsrHardwareRecommendation }
-  | { model: null; reason: SpeechRuntimeUnavailable }
+  | { model: ResolvedAsrModel; spec: AsrModelSpec; recommendation: AsrHardwareRecommendation }
+  | { model: null; reason: LocalSpeechUnavailable }
 
 function resolve(selected: AsrModel = getSettings().asrModel): Resolution {
-  const runtime = platformCapabilities().speechRuntime
-  if (runtime.kind === null) return { model: null, reason: runtime.reason }
-  const recommendation = recommendAsrModel(runtime.kind, runtime.memoryGb)
+  const { localSpeech } = platformCapabilities()
+  if (localSpeech.backend === null) return { model: null, reason: localSpeech.reason }
+  const recommendation = recommendAsrModel(localSpeech.backend, localSpeech.memoryGb)
   const model = resolveAsrModel(selected, recommendation)
-  return { runtime: runtime.kind, model, spec: asrModelSpec(runtime.kind, model), recommendation }
+  return { model, spec: asrModelSpec(model), recommendation }
 }
 
 /** The model to transcribe with; on a machine that cannot run it the reason is thrown for the user. */
 function modelOrThrow(): AsrModelSpec {
   const resolution = resolve()
-  if (resolution.model === null) throw new Error(errorText(SPEECH_RUNTIME_UNAVAILABLE_TEXT[resolution.reason]))
-  if (resolution.spec === null) throw new Error(errorText('speechRecognition.errors.unknownModel'))
+  if (resolution.model === null) throw new Error(errorText(LOCAL_SPEECH_UNAVAILABLE_TEXT[resolution.reason]))
   return resolution.spec
 }
 
-/** The runtime's build of the selected model, or null where there is none to start. */
+/** The selected model, or null where there is none to start. */
 function startable(): AsrModelSpec | null {
   const resolution = resolve()
   return resolution.model === null ? null : resolution.spec
@@ -51,26 +46,24 @@ function startable(): AsrModelSpec | null {
 export async function installationStatus(selected: AsrModel = getSettings().asrModel): Promise<SetupStatus['asr']> {
   const resolution = resolve(selected)
   if (resolution.model === null) return null
-  const { runtime, model, spec, recommendation } = resolution
+  const { model, spec, recommendation } = resolution
   const installed = local.installationStatus(spec)
   return {
     selectedModel: selected,
     resolvedModel: model,
     recommendedModel: recommendation.recommendedModel,
-    label: spec === null ? ASR_MODEL_NAMES[model] : spec.label,
+    label: spec.label,
     totalMemoryGb: recommendation.totalMemoryGb,
     ...installed,
-    downloadGb: asrDownloadGb(runtime, spec, installed),
-    ready: spec !== null && (await local.available(spec))
+    downloadGb: asrDownloadGb(spec, installed.modelInstalled),
+    ready: await local.available(spec)
   }
 }
 
-/** Whether the selected model and its runtime are installed, so that the server can be started at all. */
+/** Whether the selected model is installed, so that the server can be started at all. */
 export function installed(): boolean {
   const spec = startable()
-  if (spec === null) return false
-  const { runtimeInstalled, modelInstalled } = local.installationStatus(spec)
-  return runtimeInstalled && modelInstalled
+  return spec !== null && local.installationStatus(spec).modelInstalled
 }
 
 export async function available(): Promise<boolean> {
@@ -110,8 +103,7 @@ export async function prepareModel(
 ): Promise<{ ok: boolean; message: string }> {
   if (!isAsrModel(selected)) return { ok: false, message: t('speechRecognition.errors.unknownModel') }
   const resolution = resolve(selected)
-  if (resolution.model === null) return { ok: false, message: t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[resolution.reason]) }
-  if (resolution.spec === null) return { ok: false, message: t('speechRecognition.errors.unknownModel') }
+  if (resolution.model === null) return { ok: false, message: t(LOCAL_SPEECH_UNAVAILABLE_TEXT[resolution.reason]) }
   return local.prepare(resolution.spec, onProgress)
 }
 

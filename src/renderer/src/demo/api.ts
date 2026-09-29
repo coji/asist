@@ -89,21 +89,20 @@ const requestedTheme = new URLSearchParams(location.search).get('theme')
 
 const capabilities = demoCapabilities(location.search)
 
-/** The local speech recognition as main reports it on a machine that has neither its environment nor its model yet. */
+/** The local speech recognition as main reports it on a machine that has not downloaded its model yet. */
 function demoAsrStatus(): SetupStatus['asr'] {
-  const runtime = capabilities.speechRuntime
-  if (runtime.kind === null) return null
-  const { recommendedModel } = recommendAsrModel(runtime.kind, runtime.memoryGb)
-  const spec = asrModelSpec(runtime.kind, recommendedModel)!
-  const installed = { runtimeInstalled: false, modelInstalled: false }
+  const { localSpeech } = capabilities
+  if (localSpeech.backend === null) return null
+  const { recommendedModel } = recommendAsrModel(localSpeech.backend, localSpeech.memoryGb)
+  const spec = asrModelSpec(recommendedModel)
   return {
     selectedModel: 'auto',
     resolvedModel: recommendedModel,
     recommendedModel,
     label: spec.label,
-    totalMemoryGb: runtime.memoryGb,
-    ...installed,
-    downloadGb: asrDownloadGb(runtime.kind, spec, installed),
+    totalMemoryGb: localSpeech.memoryGb,
+    modelInstalled: false,
+    downloadGb: asrDownloadGb(spec, false),
     ready: false
   }
 }
@@ -132,6 +131,7 @@ const settings: AppSettings = {
   voicevoxSpeaker: 1,
   aivisSpeaker: null,
   qwenTtsVoice: 'ono_anna',
+  qwenTtsSize: '0.6b',
   bargeIn: true,
   aizuchi: true,
   aizuchiRate: 0.85,
@@ -579,9 +579,7 @@ export const mockApi: RendererApi = {
     services: await mockApi.getStatus(),
     asr: demoAsrStatus(),
     qwenTts: {
-      label: 'Qwen3-TTS 0.6B 8-bit MLX',
-      recommended: recommendQwenTts(capabilities.speechRuntime),
-      runtimeInstalled: false,
+      recommended: recommendQwenTts(capabilities.localSpeech),
       modelInstalled: false,
       ready: false
     }

@@ -16,18 +16,20 @@ ASIST runs on a Mac and on Windows.
 
 You need a Mac with Apple silicon and macOS 14 or later. ASIST does not run on an Intel Mac.
 
-Speech recognition and the other local models run on your Mac. With all of them in use, they take about 4.1 GB of memory in total, and choosing Qwen3-TTS for reading aloud takes about 2 GB more. You can choose Qwen3-TTS on a Mac with 16 GB of memory or more. The breakdown is in [Memory requirements](/en/docs/reference/memory/).
+Speech recognition and the other local models run on your Mac. Speech recognition and Qwen3-TTS for reading aloud run on the Mac's GPU, in programs bundled with the app. With all of them in use, they take about 5.1 GB of memory in total. On a Mac with less than 16 GB of memory, ASIST recommends a smaller model for speech recognition, and they take about 3.5 GB. Choosing Qwen3-TTS for reading aloud takes about 2.3 GB more. Qwen3-TTS is recommended on a Mac with 16 GB of memory or more. The breakdown is in [Memory requirements](/en/docs/reference/memory/).
 
 </TabItem>
 <TabItem label="Windows">
 
 You need a PC with an x64 processor and Windows 11. Windows on an Arm processor is not supported.
 
-To run speech recognition on your computer, you need an NVIDIA GPU: a GeForce RTX 20 or GTX 16 generation GPU or later, with driver version 580 or later. With 6 GB of GPU memory or more, Qwen3-ASR 1.7B is recommended, and Qwen3-ASR 0.6B below that. The first preparation downloads about 3.6 to 6.1 GB for the runtime and the model together.
+To run speech recognition and Qwen3-TTS for reading aloud on your computer, you need a discrete GPU. Any discrete GPU that its Vulkan driver shows can be used, whether from NVIDIA, AMD or Intel Arc. A GPU built into the processor is not used. With more than one discrete GPU, ASIST uses the one with the most memory.
+
+With 6 GB of GPU memory or more, Qwen3-ASR 1.7B is recommended for speech recognition. Below that, Qwen3-ASR 0.6B is recommended. Qwen3-TTS for reading aloud is recommended with 8 GB of GPU memory or more. The first preparation downloads a model of about 1.0 to 2.5 GB for speech recognition, and about 1.2 GB for Qwen3-TTS.
 
 You can use ASIST without a usable GPU. Use Whisper running in the browser for speech recognition, choose GPT-Live or Gemini Live as the voice engine, or type to it.
 
-The Windows version does not have the calendar or Qwen3-TTS for reading aloud yet.
+The Windows version does not have the calendar yet.
 
 </TabItem>
 </Tabs>
@@ -50,7 +52,7 @@ You need an API key from one of these providers. You enter it during the first-t
 | The `codex` or `claude` CLI | Agent jobs and memory curation. Install the one you want to use and sign in to it first. See [Setting up the Agent](/en/docs/start/agent-cli/). |
 | VOICEVOX or AivisSpeech | Reading Japanese aloud. If it is in your Applications folder on a Mac, or installed without changing the install folder on Windows, ASIST starts it in the background and connects to it. |
 
-The uv bundled with the app creates the Python environments for the models that run on your computer. uv also downloads Python at that point, so you do not need to install anything beforehand.
+The uv bundled with the app creates the Python environments that searching the memory by meaning, choosing the kind of backchannel and MaAI use. uv also downloads Python at that point, so you do not need to install anything beforehand.
 
 ## Before you start
 

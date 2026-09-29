@@ -43,6 +43,7 @@ function defaultSettings(): AppSettings {
     persona: defaultPersona(locale),
     conversationLogRetentionDays: 90,
     ttsEngine: 'voicevox',
+    qwenTtsSize: '0.6b',
     voicevoxSpeaker: Number(process.env.VOICEVOX_SPEAKER || 1),
     aivisSpeaker: null,
     bargeIn: true,

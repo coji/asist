@@ -8,13 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   windows: false,
+  noGpu: false,
   spawn: vi.fn(),
   settings: { ttsEngine: 'voicevox' as TtsEngine, voicevoxSpeaker: 3, aivisSpeaker: null as number | null, conversationLocale: 'ja-JP' as ConversationLocale }
 }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('../src/main/services/platform', async () => {
-  const { MACOS, WINDOWS } = await import('./helpers/platform')
-  return { platformCapabilities: () => (mocks.windows ? WINDOWS : MACOS) }
+  const { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU } = await import('./helpers/platform')
+  return { platformCapabilities: () => (mocks.noGpu ? WINDOWS_WITHOUT_GPU : mocks.windows ? WINDOWS : MACOS) }
 })
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({ ...mocks.settings }),
@@ -34,6 +35,7 @@ beforeEach(() => {
   vi.resetModules()
   mocks.settings = { ttsEngine: 'voicevox', voicevoxSpeaker: 3, aivisSpeaker: null, conversationLocale: 'ja-JP' }
   mocks.windows = false
+  mocks.noGpu = false
   mocks.spawn.mockReset().mockImplementation(() => {
     const child = Object.assign(new EventEmitter(), { unref: vi.fn() })
     children.push(child)
@@ -244,9 +246,17 @@ describe('an engine that cannot speak the conversation language', () => {
 
   it('refuses Qwen3-TTS left in the settings on a machine that cannot run it, with that reason', async () => {
     mocks.settings.ttsEngine = 'qwen3tts'
-    mocks.windows = true
+    mocks.noGpu = true
     const tts = await import('../src/main/services/tts')
     await expect(tts.resolveVoice()).rejects.toThrow('[asist:voice.speech.cannotRunHere {"engine":"Qwen3-TTS"}]')
+  })
+
+  it('starts nothing for Qwen3-TTS left in the settings on a machine that cannot run it, so that the app still starts', async () => {
+    mocks.settings.ttsEngine = 'qwen3tts'
+    mocks.noGpu = true
+    const tts = await import('../src/main/services/tts')
+    await expect(tts.ensureEngine()).resolves.toBeUndefined()
+    expect(mocks.spawn).not.toHaveBeenCalled()
   })
 
   it('keeps the Japanese engines for a Japanese conversation', async () => {

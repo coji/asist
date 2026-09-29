@@ -6,9 +6,10 @@ import type { ReactNode } from 'react'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, PROVIDER_DEFAULT_MODELS, modelName, type LlmProvider } from '@shared/llm-catalog'
 import type { SetupProgress, SetupStatus, TtsEngine } from '@shared/ipc'
 import { asrModelChoices, type AsrModel } from '@shared/asr-models'
+import { qwenTtsSizeGb, type QwenTtsSize } from '@shared/tts-models'
 import { ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
+import { LOCAL_SPEECH_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
 import { Advanced, Btn, Chip, Progress, type ChipTone } from '../settings/primitives'
 import { ttsEngineLabel } from '../settings/context'
 import type { ExtraModel } from './extras'
@@ -160,7 +161,7 @@ export function SpeakingStep({
 }
 
 export function ListeningStep({
-  speechRuntime,
+  localSpeech,
   choice,
   onChoice,
   setup,
@@ -176,8 +177,8 @@ export function ListeningStep({
   onPrepareLocal,
   onCancelLocal
 }: {
-  /** Where this machine has no runtime for the model, its reason stands in place of that choice. */
-  speechRuntime: PlatformCapabilities['speechRuntime']
+  /** Where this machine cannot run the model, its reason stands in place of that choice. */
+  localSpeech: PlatformCapabilities['localSpeech']
   choice: ListeningChoice | null
   onChoice: (choice: ListeningChoice) => void
   setup: SetupStatus | null
@@ -209,13 +210,13 @@ export function ListeningStep({
       : { tone: 'warn' as const, label: t('common.notReady') }
   return (
     <div className="su-stack">
-      {speechRuntime.kind === null ? (
-        <p className="su-hint">{t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])}</p>
+      {localSpeech.backend === null ? (
+        <p className="su-hint">{t(LOCAL_SPEECH_UNAVAILABLE_TEXT[localSpeech.reason])}</p>
       ) : (
         <Option
           active={choice === 'server'}
           title={t('setup.listening.recommended', { model: asr?.label ?? t('setup.listening.unknownModel') })}
-          detail={asr ? asrRecommendationReason(t, speechRuntime.kind, asr) : t(`setup.listening.unknownReason.${speechRuntime.kind}`)}
+          detail={asr ? asrRecommendationReason(t, localSpeech.backend, asr) : t(`setup.listening.unknownReason.${localSpeech.backend}`)}
           chip={serverChip}
           onClick={() => onChoice('server')}
         >
@@ -232,7 +233,7 @@ export function ListeningStep({
             ) : (
               <div className="su-inline">
                 <Btn tone="primary" onClick={onPrepareServer}>
-                  {asr?.runtimeInstalled && asr.modelInstalled ? t('setup.listening.startModel') : t('setup.listening.prepareModel')}
+                  {asr?.modelInstalled ? t('setup.listening.startModel') : t('setup.listening.prepareModel')}
                 </Btn>
                 {asr && asr.downloadGb > 0 && (
                   <span className="su-hint">
@@ -245,8 +246,8 @@ export function ListeningStep({
           <Advanced title={t('setup.listening.details.title')} note={t('setup.listening.details.note')}>
             <div className="su-details">
               <select className="st-select" value={asrModel} disabled={downloadBusy} onChange={(event) => onAsrModel(event.target.value as AsrModel)}>
-                <option value="auto">{t(`setup.listening.automaticModel.${speechRuntime.kind}`)}</option>
-                {asrModelChoices(speechRuntime.kind, asrModel).map((model) => (
+                <option value="auto">{t(`setup.listening.automaticModel.${localSpeech.backend}`)}</option>
+                {asrModelChoices().map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}
                   </option>
@@ -254,12 +255,8 @@ export function ListeningStep({
               </select>
               <dl>
                 <div>
-                  <dt>{t(`setup.listening.details.memory.${speechRuntime.kind}`)}</dt>
+                  <dt>{t(`setup.listening.details.memory.${localSpeech.backend}`)}</dt>
                   <dd>{asr?.totalMemoryGb ?? '—'} GB</dd>
-                </div>
-                <div>
-                  <dt>{t('setup.listening.details.runtime')}</dt>
-                  <dd>{asr?.runtimeInstalled ? t('setup.listening.details.runtimeInstalled') : t('setup.listening.details.runtimeMissing')}</dd>
                 </div>
                 <div>
                   <dt>{t('setup.listening.details.modelFiles')}</dt>
@@ -306,7 +303,7 @@ type OfferedTtsEngine = Exclude<TtsEngine, 'none'>
  * The engines that read the replies aloud. VOICEVOX and AivisSpeech are separate applications, and
  * ASIST starts them in the background when they sit in the Applications folder; when they do not,
  * the user is asked to install them from the official site. Qwen3-TTS is a model ASIST downloads
- * and runs itself, offered only on a Mac with the memory for it.
+ * and runs itself on the GPU, offered only where the GPU has the memory for it beside the speech recognition.
  */
 const TTS_ENGINES: Array<{ id: OfferedTtsEngine; site?: string }> = [
   { id: 'system' },
@@ -323,6 +320,7 @@ export function TtsStep({
   ttsChecking,
   ttsDownload,
   qwenTtsOffered,
+  qwenTtsSize,
   onRecheckTts,
   onPrepareTts,
   onCancelPrepareTts,
@@ -339,12 +337,15 @@ export function TtsStep({
   ttsDownload: SetupProgress | null
   /** Offered where the machine has the memory for it, or already chosen on a machine that runs it. */
   qwenTtsOffered: boolean
+  /** The size of Qwen3-TTS the settings name, whose files the description counts. */
+  qwenTtsSize: QwenTtsSize
   onRecheckTts: () => void
   onPrepareTts: () => void
   onCancelPrepareTts: () => void
   onTestTts: () => void
 }): React.JSX.Element {
   const t = useT()
+  const formatLocale = useFormatLocale()
   const { os } = platformCapabilities()
   const systemVoice = useSystemVoice(locale)
   return (
@@ -359,7 +360,11 @@ export function TtsStep({
               key={engine.id}
               active={active}
               title={title}
-              detail={t(engine.id === 'qwen3tts' ? 'setup.tts.engines.qwen3tts.detail' : osMessageKey(`setup.tts.engines.${engine.id}.detail`, os))}
+              detail={
+                engine.id === 'qwen3tts'
+                  ? t('setup.tts.engines.qwen3tts.detail', { sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(qwenTtsSizeGb(qwenTtsSize)) })
+                  : t(osMessageKey(`setup.tts.engines.${engine.id}.detail`, os))
+              }
               chip={
                 !active
                   ? undefined

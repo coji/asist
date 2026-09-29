@@ -1,13 +1,15 @@
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
+import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { qwenTtsLanguage } from '@shared/tts-models'
+import { QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsLanguage } from '@shared/tts-models'
 
-const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+const mocks = vi.hoisted(() => ({ spawn: vi.fn(), settings: { qwenTtsSize: '0.6b' as '0.6b' | '1.7b' } }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
+vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
-vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn() } }))
+vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/app', getPath: () => '/user-data', on: vi.fn() } }))
 
 const RATE = 24_000
 function fakeChild() {
@@ -38,7 +40,7 @@ const REQUEST = { text: 'こんにちは。', voice: 'ono_anna', language: 'japa
 
 beforeEach(async () => {
   vi.resetModules()
-  vi.stubEnv('ASIST_MLX_PYTHON', '/unused/python')
+  mocks.settings.qwenTtsSize = '0.6b'
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
   children = []
   mocks.spawn.mockReset().mockImplementation(() => {
@@ -192,10 +194,28 @@ describe('Qwen3-TTS service', () => {
     expect(child().input.filter((message) => message.text)).toHaveLength(6)
   })
 
-  it('does not start a worker while the model is not installed', async () => {
-    vi.mocked(fs.existsSync).mockImplementation((file) => !String(file).endsWith('model.safetensors'))
+  it('does not start a worker while a file of the model is missing', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((file) => !String(file).endsWith('qwen3-tts-codec-12hz-f16.gguf'))
     await expect(collect(qwen.stream(REQUEST))).rejects.toThrow('not installed')
     expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('runs the worker on the talker of the size the setting names, the shared codec and the GPU the capabilities chose', async () => {
+    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    const [command, args] = mocks.spawn.mock.calls[0] as [string, string[]]
+    expect(path.basename(command)).toMatch(/^qwen3-tts-worker(\.exe)?$/)
+    expect(args.map((arg) => (arg.endsWith('.gguf') ? path.basename(arg) : arg))).toEqual([
+      QWEN_TTS_MODELS['0.6b'].talker.file, QWEN_TTS_CODEC.file, '--device', 'MTL0'
+    ])
+  })
+
+  it('starts the worker again on the other talker when the size changes', async () => {
+    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    mocks.settings.qwenTtsSize = '1.7b'
+    expect(qwen.available()).toBe(false)
+    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    expect(children[0].kill).toHaveBeenCalled()
+    expect(path.basename((mocks.spawn.mock.calls[1] as [string, string[]])[1][0])).toBe(QWEN_TTS_MODELS['1.7b'].talker.file)
   })
 })
 

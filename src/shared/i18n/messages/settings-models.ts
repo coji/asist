@@ -93,32 +93,6 @@ export const settingsModels = defineMessages({
       'es-419': '{memoryGb} GB · {model}.',
       'es-ES': '{memoryGb} GB · {model}.'
     },
-    needsRuntimeAndModel: {
-      'ja-JP': '{memoryGb}GB · {model}。実行環境とモデルをまだ取得していません。',
-      'en-US': '{memoryGb} GB · {model}. The runtime and the model are not downloaded yet.',
-      'fr-FR': "{memoryGb} Go · {model}. L'environnement d'exécution et le modèle ne sont pas encore téléchargés.",
-      'de-DE': '{memoryGb} GB · {model}. Laufzeitumgebung und Modell sind noch nicht geladen.',
-      'hi-IN': '{memoryGb} GB · {model}। रनटाइम और मॉडल अभी डाउनलोड नहीं हुए।',
-      'id-ID': '{memoryGb} GB · {model}. Runtime dan modelnya belum diunduh.',
-      'it-IT': "{memoryGb} GB · {model}. L'ambiente di esecuzione e il modello non sono ancora stati scaricati.",
-      'ko-KR': '{memoryGb}GB · {model}. 실행 환경과 모델을 아직 내려받지 않았습니다.',
-      'pt-BR': '{memoryGb} GB · {model}. O ambiente de execução e o modelo ainda não foram baixados.',
-      'es-419': '{memoryGb} GB · {model}. Todavía no se descargaron el entorno de ejecución ni el modelo.',
-      'es-ES': '{memoryGb} GB · {model}. El entorno de ejecución y el modelo todavía no se han descargado.'
-    },
-    needsRuntime: {
-      'ja-JP': '{memoryGb}GB · {model}。実行環境をまだ取得していません。',
-      'en-US': '{memoryGb} GB · {model}. The runtime is not downloaded yet.',
-      'fr-FR': "{memoryGb} Go · {model}. L'environnement d'exécution n'est pas encore téléchargé.",
-      'de-DE': '{memoryGb} GB · {model}. Die Laufzeitumgebung ist noch nicht geladen.',
-      'hi-IN': '{memoryGb} GB · {model}। रनटाइम अभी डाउनलोड नहीं हुआ।',
-      'id-ID': '{memoryGb} GB · {model}. Runtime-nya belum diunduh.',
-      'it-IT': "{memoryGb} GB · {model}. L'ambiente di esecuzione non è ancora stato scaricato.",
-      'ko-KR': '{memoryGb}GB · {model}. 실행 환경을 아직 내려받지 않았습니다.',
-      'pt-BR': '{memoryGb} GB · {model}. O ambiente de execução ainda não foi baixado.',
-      'es-419': '{memoryGb} GB · {model}. Todavía no se descargó el entorno de ejecución.',
-      'es-ES': '{memoryGb} GB · {model}. El entorno de ejecución todavía no se ha descargado.'
-    },
     needsModel: {
       'ja-JP': '{memoryGb}GB · {model}。モデルをまだ取得していません。',
       'en-US': '{memoryGb} GB · {model}. The model is not downloaded yet.',
@@ -252,31 +226,17 @@ export const settingsModels = defineMessages({
       'es-ES': 'No hace falta ninguna aplicación más.'
     },
     qwen: {
-      'ja-JP': '{model} をこのコンピュータ上で動かします。音声認識と共有の実行環境とモデル(約 1.9GB)を取得します。常駐中は約 2GB のメモリを使うので、16GB 以上のコンピュータに向きます。',
-      'en-US': '{model} runs on this computer. Downloads the model (about 1.9 GB) and the runtime it shares with speech recognition. It holds about 2 GB of memory while resident, so it suits a computer with 16 GB or more.',
-      'fr-FR': "{model} tourne sur cet ordinateur. Télécharge le modèle (environ 1,9 Go) et l'environnement d'exécution qu'il partage avec la reconnaissance vocale. Il occupe environ 2 Go de mémoire tant qu'il reste chargé, ce qui convient à un ordinateur de 16 Go ou plus.",
-      'de-DE': '{model} läuft auf diesem Computer. Lädt das Modell (rund 1,9 GB) und die Laufzeitumgebung, die es mit der Spracherkennung teilt. Solange es im Speicher bleibt, belegt es rund 2 GB und passt damit zu einem Computer mit 16 GB oder mehr.',
-      'hi-IN': '{model} इसी कंप्यूटर पर चलता है। मॉडल (करीब 1.9 GB) और स्पीच रिकग्निशन के साथ साझा रनटाइम डाउनलोड होते हैं। चलते रहने पर यह करीब 2 GB मेमोरी घेरता है, इसलिए यह 16 GB या उससे ज़्यादा वाले कंप्यूटर के लिए ठीक है।',
-      'id-ID': '{model} berjalan di komputer ini. Mengunduh modelnya (sekitar 1,9 GB) dan runtime yang dipakainya bersama pengenalan suara. Model ini menahan sekitar 2 GB memori selama tetap berjalan, jadi cocok untuk komputer dengan 16 GB atau lebih.',
-      'it-IT': "{model} funziona su questo computer. Scarica il modello (circa 1,9 GB) e l'ambiente di esecuzione condiviso con il riconoscimento vocale. Mentre resta in memoria ne occupa circa 2 GB, quindi è adatto a un computer con 16 GB o più.",
-      'ko-KR': '{model} 모델을 이 컴퓨터에서 실행합니다. 음성 인식과 공유하는 실행 환경과 모델(약 1.9GB)을 내려받습니다. 상주 중에는 약 2GB의 메모리를 쓰므로 16GB 이상인 컴퓨터에 맞습니다.',
-      'pt-BR': '{model} roda neste computador. Baixa o modelo (cerca de 1,9 GB) e o ambiente de execução que ele divide com o reconhecimento de fala. Ocupa cerca de 2 GB de memória enquanto fica residente, então combina com um computador de 16 GB ou mais.',
-      'es-419': '{model} funciona en esta computadora. Descarga el modelo (unos 1.9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que conviene una computadora de 16 GB o más.',
-      'es-ES': '{model} se ejecuta en este ordenador. Descarga el modelo (unos 1,9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria, así que va bien en un ordenador con 16 GB o más.'
-    },
-    /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
-    qwenTooLittleMemory: {
-      'ja-JP': '{model} をこの Mac 上で動かします。音声認識と共有の実行環境とモデル(約 1.9GB)を取得します。常駐中は約 2GB のメモリを使います。この Mac はメモリが 16GB 未満なので、VOICEVOX か macOS の音声合成を勧めます。',
-      'en-US': '{model} runs on this Mac. Downloads the model (about 1.9 GB) and the runtime it shares with speech recognition. It holds about 2 GB of memory while resident. This Mac has less than 16 GB of memory, so VOICEVOX or the macOS voice suits it better.',
-      'fr-FR': "{model} tourne sur ce Mac. Télécharge le modèle (environ 1,9 Go) et l'environnement d'exécution qu'il partage avec la reconnaissance vocale. Il occupe environ 2 Go de mémoire tant qu'il reste chargé. Ce Mac a moins de 16 Go de mémoire : VOICEVOX ou la voix de macOS lui conviennent mieux.",
-      'de-DE': '{model} läuft auf diesem Mac. Lädt das Modell (rund 1,9 GB) und die Laufzeitumgebung, die es mit der Spracherkennung teilt. Solange es im Speicher bleibt, belegt es rund 2 GB. Dieser Mac hat weniger als 16 GB Arbeitsspeicher, deshalb passen VOICEVOX oder die macOS-Stimme besser.',
-      'hi-IN': '{model} इसी Mac पर चलता है। मॉडल (करीब 1.9 GB) और स्पीच रिकग्निशन के साथ साझा रनटाइम डाउनलोड होते हैं। चलते रहने पर यह करीब 2 GB मेमोरी घेरता है। इस Mac में 16 GB से कम मेमोरी है, इसलिए VOICEVOX या macOS की आवाज़ ज़्यादा ठीक रहेगी।',
-      'id-ID': '{model} berjalan di Mac ini. Mengunduh modelnya (sekitar 1,9 GB) dan runtime yang dipakainya bersama pengenalan suara. Model ini menahan sekitar 2 GB memori selama tetap berjalan. Memori Mac ini kurang dari 16 GB, jadi VOICEVOX atau suara macOS lebih cocok.',
-      'it-IT': "{model} funziona su questo Mac. Scarica il modello (circa 1,9 GB) e l'ambiente di esecuzione condiviso con il riconoscimento vocale. Mentre resta in memoria ne occupa circa 2 GB. Questo Mac ha meno di 16 GB di memoria, quindi sono più adatti VOICEVOX o la sintesi vocale di macOS.",
-      'ko-KR': '{model} 모델을 이 Mac에서 실행합니다. 음성 인식과 공유하는 실행 환경과 모델(약 1.9GB)을 내려받습니다. 상주 중에는 약 2GB의 메모리를 씁니다. 이 Mac은 메모리가 16GB 미만이므로 VOICEVOX나 macOS 음성 합성을 권장합니다.',
-      'pt-BR': '{model} roda neste Mac. Baixa o modelo (cerca de 1,9 GB) e o ambiente de execução que ele divide com o reconhecimento de fala. Ocupa cerca de 2 GB de memória enquanto fica residente. Este Mac tem menos de 16 GB de memória, então o VOICEVOX ou a voz do macOS combinam melhor.',
-      'es-419': '{model} funciona en esta Mac. Descarga el modelo (unos 1.9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria. Esta Mac tiene menos de 16 GB, así que le conviene más VOICEVOX o la voz de macOS.',
-      'es-ES': '{model} se ejecuta en este Mac. Descarga el modelo (unos 1,9 GB) y el entorno de ejecución que comparte con el reconocimiento de voz. Mientras está residente ocupa unos 2 GB de memoria. Este Mac tiene menos de 16 GB, así que le van mejor VOICEVOX o la voz de macOS.'
+      'ja-JP': '{model} をこのコンピュータの GPU で動かします。モデル(約 {sizeGb}GB)を取得します。',
+      'en-US': '{model} runs on the GPU of this computer. Downloads the model (about {sizeGb} GB).',
+      'fr-FR': '{model} tourne sur le GPU de cet ordinateur. Télécharge le modèle (environ {sizeGb} Go).',
+      'de-DE': '{model} läuft auf der GPU dieses Computers. Lädt das Modell (rund {sizeGb} GB).',
+      'hi-IN': '{model} इसी कंप्यूटर के GPU पर चलता है। मॉडल (करीब {sizeGb} GB) डाउनलोड होता है।',
+      'id-ID': '{model} berjalan di GPU komputer ini. Mengunduh modelnya (sekitar {sizeGb} GB).',
+      'it-IT': '{model} funziona sulla GPU di questo computer. Scarica il modello (circa {sizeGb} GB).',
+      'ko-KR': '{model} 모델을 이 컴퓨터의 GPU에서 실행합니다. 모델(약 {sizeGb}GB)을 내려받습니다.',
+      'pt-BR': '{model} roda na GPU deste computador. Baixa o modelo (cerca de {sizeGb} GB).',
+      'es-419': '{model} funciona en la GPU de esta computadora. Descarga el modelo (unos {sizeGb} GB).',
+      'es-ES': '{model} se ejecuta en la GPU de este ordenador. Descarga el modelo (unos {sizeGb} GB).'
     },
     external: {
       macos: {
@@ -344,6 +304,34 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Indisponível',
       'es-419': 'No disponible',
       'es-ES': 'No disponible'
+    },
+    qwenTooLittleMemory: {
+      macos: {
+        'ja-JP': '{model} をこの Mac の GPU で動かします。モデル(約 {sizeGb}GB)を取得します。この Mac はメモリが 16GB 未満で、音声認識と並べて動かすには足りないため、VOICEVOX か macOS の音声合成を勧めます。',
+        'en-US': '{model} runs on the GPU of this Mac. Downloads the model (about {sizeGb} GB). This Mac has less than 16 GB of memory, too little to run it beside speech recognition, so VOICEVOX or the macOS voice suits it better.',
+        'fr-FR': '{model} tourne sur le GPU de ce Mac. Télécharge le modèle (environ {sizeGb} Go). Ce Mac a moins de 16 Go de mémoire, trop peu pour le faire tourner à côté de la reconnaissance vocale : VOICEVOX ou la voix de macOS lui conviennent mieux.',
+        'de-DE': '{model} läuft auf der GPU dieses Mac. Lädt das Modell (rund {sizeGb} GB). Dieser Mac hat weniger als 16 GB Arbeitsspeicher, zu wenig für den Betrieb neben der Spracherkennung, deshalb passen VOICEVOX oder die macOS-Stimme besser.',
+        'hi-IN': '{model} इसी Mac के GPU पर चलता है। मॉडल (करीब {sizeGb} GB) डाउनलोड होता है। इस Mac में 16 GB से कम मेमोरी है, जो स्पीच रिकग्निशन के साथ इसे चलाने के लिए कम है, इसलिए VOICEVOX या macOS की आवाज़ ज़्यादा ठीक रहेगी।',
+        'id-ID': '{model} berjalan di GPU Mac ini. Mengunduh modelnya (sekitar {sizeGb} GB). Memori Mac ini kurang dari 16 GB, terlalu sedikit untuk menjalankannya bersama pengenalan suara, jadi VOICEVOX atau suara macOS lebih cocok.',
+        'it-IT': '{model} funziona sulla GPU di questo Mac. Scarica il modello (circa {sizeGb} GB). Questo Mac ha meno di 16 GB di memoria, troppo pochi per farlo funzionare insieme al riconoscimento vocale, quindi sono più adatti VOICEVOX o la sintesi vocale di macOS.',
+        'ko-KR': '{model} 모델을 이 Mac의 GPU에서 실행합니다. 모델(약 {sizeGb}GB)을 내려받습니다. 이 Mac은 메모리가 16GB 미만이라 음성 인식과 함께 실행하기에 부족하므로 VOICEVOX나 macOS 음성 합성을 권장합니다.',
+        'pt-BR': '{model} roda na GPU deste Mac. Baixa o modelo (cerca de {sizeGb} GB). Este Mac tem menos de 16 GB de memória, pouco para rodá-lo junto com o reconhecimento de fala, então o VOICEVOX ou a voz do macOS combinam melhor.',
+        'es-419': '{model} funciona en la GPU de esta Mac. Descarga el modelo (unos {sizeGb} GB). Esta Mac tiene menos de 16 GB de memoria, poca para ejecutarlo junto al reconocimiento de voz, así que le conviene más VOICEVOX o la voz de macOS.',
+        'es-ES': '{model} se ejecuta en la GPU de este Mac. Descarga el modelo (unos {sizeGb} GB). Este Mac tiene menos de 16 GB de memoria, poca para ejecutarlo junto al reconocimiento de voz, así que le van mejor VOICEVOX o la voz de macOS.'
+      },
+      windows: {
+        'ja-JP': '{model} をこのコンピュータの GPU で動かします。モデル(約 {sizeGb}GB)を取得します。この GPU はメモリが 8GB 未満で、音声認識と並べて動かすには足りないため、VOICEVOX か Windows の音声合成を勧めます。',
+        'en-US': '{model} runs on the GPU of this computer. Downloads the model (about {sizeGb} GB). This GPU has less than 8 GB of memory, too little to run it beside speech recognition, so VOICEVOX or the Windows voice suits it better.',
+        'fr-FR': '{model} tourne sur le GPU de cet ordinateur. Télécharge le modèle (environ {sizeGb} Go). Ce GPU a moins de 8 Go de mémoire, trop peu pour le faire tourner à côté de la reconnaissance vocale : VOICEVOX ou la voix de Windows conviennent mieux.',
+        'de-DE': '{model} läuft auf der GPU dieses Computers. Lädt das Modell (rund {sizeGb} GB). Diese GPU hat weniger als 8 GB Speicher, zu wenig für den Betrieb neben der Spracherkennung, deshalb passen VOICEVOX oder die Windows-Stimme besser.',
+        'hi-IN': '{model} इसी कंप्यूटर के GPU पर चलता है। मॉडल (करीब {sizeGb} GB) डाउनलोड होता है। इस GPU में 8 GB से कम मेमोरी है, जो स्पीच रिकग्निशन के साथ इसे चलाने के लिए कम है, इसलिए VOICEVOX या Windows की आवाज़ ज़्यादा ठीक रहेगी।',
+        'id-ID': '{model} berjalan di GPU komputer ini. Mengunduh modelnya (sekitar {sizeGb} GB). Memori GPU ini kurang dari 8 GB, terlalu sedikit untuk menjalankannya bersama pengenalan suara, jadi VOICEVOX atau suara Windows lebih cocok.',
+        'it-IT': '{model} funziona sulla GPU di questo computer. Scarica il modello (circa {sizeGb} GB). Questa GPU ha meno di 8 GB di memoria, troppo pochi per farlo funzionare insieme al riconoscimento vocale, quindi sono più adatti VOICEVOX o la sintesi vocale di Windows.',
+        'ko-KR': '{model} 모델을 이 컴퓨터의 GPU에서 실행합니다. 모델(약 {sizeGb}GB)을 내려받습니다. 이 GPU는 메모리가 8GB 미만이라 음성 인식과 함께 실행하기에 부족하므로 VOICEVOX나 Windows 음성 합성을 권장합니다.',
+        'pt-BR': '{model} roda na GPU deste computador. Baixa o modelo (cerca de {sizeGb} GB). Esta GPU tem menos de 8 GB de memória, pouco para rodá-lo junto com o reconhecimento de fala, então o VOICEVOX ou a voz do Windows combinam melhor.',
+        'es-419': '{model} funciona en la GPU de esta computadora. Descarga el modelo (unos {sizeGb} GB). Esta GPU tiene menos de 8 GB de memoria, poca para ejecutarlo junto al reconocimiento de voz, así que conviene más VOICEVOX o la voz de Windows.',
+        'es-ES': '{model} se ejecuta en la GPU de este ordenador. Descarga el modelo (unos {sizeGb} GB). Esta GPU tiene menos de 8 GB de memoria, poca para ejecutarlo junto al reconocimiento de voz, así que van mejor VOICEVOX o la voz de Windows.'
+      }
     }
   },
   agent: {
@@ -785,45 +773,6 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Baixando {model}',
       'es-419': 'Descargando {model}',
       'es-ES': 'Descargando {model}'
-    },
-    modelDownloadFailed: {
-      'ja-JP': '{model} を取得できませんでした: {detail}',
-      'en-US': "Couldn't download {model}: {detail}",
-      'fr-FR': 'Impossible de télécharger {model} : {detail}',
-      'de-DE': '{model} konnte nicht heruntergeladen werden: {detail}',
-      'hi-IN': '{model} डाउनलोड नहीं हो सका: {detail}',
-      'id-ID': 'Tidak dapat mengunduh {model}: {detail}',
-      'it-IT': 'Impossibile scaricare {model}: {detail}',
-      'ko-KR': '{model}을(를) 받을 수 없습니다: {detail}',
-      'pt-BR': 'Não foi possível baixar {model}: {detail}',
-      'es-419': 'No se pudo descargar {model}: {detail}',
-      'es-ES': 'No se ha podido descargar {model}: {detail}'
-    },
-    mlxRuntime: {
-      'ja-JP': 'MLX Audio {version} の実行環境を準備しています',
-      'en-US': 'Preparing the MLX Audio {version} runtime',
-      'fr-FR': "Préparation de l'environnement d'exécution MLX Audio {version}",
-      'de-DE': 'Die Laufzeitumgebung MLX Audio {version} wird vorbereitet',
-      'hi-IN': 'MLX Audio {version} का रनटाइम तैयार हो रहा है',
-      'id-ID': 'Menyiapkan runtime MLX Audio {version}',
-      'it-IT': "Preparazione dell'ambiente di esecuzione MLX Audio {version} in corso",
-      'ko-KR': 'MLX Audio {version} 실행 환경을 준비하고 있습니다',
-      'pt-BR': 'Preparando o ambiente de execução do MLX Audio {version}',
-      'es-419': 'Preparando el entorno de ejecución de MLX Audio {version}',
-      'es-ES': 'Preparando el entorno de ejecución de MLX Audio {version}'
-    },
-    cudaRuntime: {
-      'ja-JP': 'CUDA 版 PyTorch {version} の実行環境を準備しています',
-      'en-US': 'Preparing the PyTorch {version} runtime for CUDA',
-      'fr-FR': "Préparation de l'environnement d'exécution PyTorch {version} pour CUDA",
-      'de-DE': 'Die Laufzeitumgebung PyTorch {version} für CUDA wird vorbereitet',
-      'hi-IN': 'CUDA के लिए PyTorch {version} का रनटाइम तैयार हो रहा है',
-      'id-ID': 'Menyiapkan runtime PyTorch {version} untuk CUDA',
-      'it-IT': "Preparazione dell'ambiente di esecuzione PyTorch {version} per CUDA in corso",
-      'ko-KR': 'CUDA용 PyTorch {version} 실행 환경을 준비하고 있습니다',
-      'pt-BR': 'Preparando o ambiente de execução do PyTorch {version} para CUDA',
-      'es-419': 'Preparando el entorno de ejecución de PyTorch {version} para CUDA',
-      'es-ES': 'Preparando el entorno de ejecución de PyTorch {version} para CUDA'
     }
   }
 })

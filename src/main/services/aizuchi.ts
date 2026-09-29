@@ -153,7 +153,7 @@ async function build(): Promise<{ clips: AizuchiClip[]; missingAudio: boolean }>
   // The shipped clips need no running worker, only the engine the replies will be read with. Asking whether the
   // worker is ready instead would build a silent bank whenever it is still loading, which is every switch to this engine.
   const qwen = qwenTts.installationStatus()
-  const bundled = settings.ttsEngine === 'qwen3tts' && qwen.runtimeInstalled && qwen.modelInstalled ? bundledClips(settings.qwenTtsVoice) : null
+  const bundled = settings.ttsEngine === 'qwen3tts' && qwen.modelInstalled ? bundledClips(settings.qwenTtsVoice) : null
   const httpEngine = settings.ttsEngine !== 'system' && settings.ttsEngine !== 'none' && settings.ttsEngine !== 'qwen3tts'
   if (httpEngine && !ttsUp) console.warn(`aizuchi bank built without audio: ${settings.ttsEngine} does not answer`)
   const clips: AizuchiClip[] = []

@@ -62,12 +62,12 @@ When "Turn-taking (MaAI)" is on in the "Voice" settings but MaAI can't start, AS
 
 ## Windows offers no speech recognition model
 
-On Windows, speech recognition on your computer needs an NVIDIA GPU. When there is none it can use, "Listening" in the first-time setup and "Voice" in the settings show the reason in place of the model.
+On Windows, speech recognition and Qwen3-TTS on your computer need a discrete GPU, whether from NVIDIA, AMD or Intel Arc. When there is none they can use, "Listening" in the first-time setup and "Voice" in the settings show the reason in place of the model, and Qwen3-TTS cannot be chosen for reading aloud either. ASIST checks the GPU when it starts.
 
-- If your computer has an NVIDIA GPU but it says none was found, the driver may be older than 580: drivers before 580 put `nvidia-smi`, which ASIST uses to look for the GPU, somewhere else. Update the driver and start ASIST again.
-- If your computer has no NVIDIA GPU, or it says the GPU is too old, Qwen3-ASR cannot run on this computer. It needs a GeForce RTX 20 or GTX 16 generation GPU or later. Use Whisper running in the browser for speech recognition, or choose [GPT-Live or Gemini Live](/en/docs/settings/voice-engine/) as the voice engine.
-- If it says the NVIDIA driver is too old, update the driver to version 580 or later and start ASIST again. ASIST checks the GPU and the driver when it starts.
-- If it says the NVIDIA GPU couldn't be checked, `nvidia-smi` failed without reporting the GPU. Make sure the NVIDIA driver is running and start ASIST again.
+- If it says "This speech recognition needs a discrete GPU, and none was found on this computer.", the Vulkan driver shows no discrete GPU. A GPU built into the processor is not used. If your computer has a discrete GPU, install its maker's driver again and start ASIST again. Without a discrete GPU, use Whisper running in the browser for speech recognition, or choose [GPT-Live or Gemini Live](/en/docs/settings/voice-engine/) as the voice engine.
+- If it says "Couldn't check the GPU, so this speech recognition is unavailable.", ASIST could not read the list of GPUs. Make sure the GPU driver is working and start ASIST again.
+
+The first start of a new version of ASIST, and the first start after a GPU driver update, is when the driver builds the programs that run on the GPU. Only that time, preparing and starting speech recognition and Qwen3-TTS take longer than usual. From the second start on, the driver uses what it saved.
 
 ## Agent jobs don't start
 

@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
 /**
- * Main's own capabilities run nvidia-smi and, on Windows, open the real microphone to check its echo
+ * Main's own capabilities run the speech worker and, on Windows, open the real microphone to check its echo
  * cancellation, which a test must not do. Every test file therefore sees the fixture of the system it runs
  * on, whose real git and processes the agent and memory tests use, and a test that needs another machine
  * mocks the module again.

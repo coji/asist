@@ -644,20 +644,6 @@ export const setup = defineMessages({
         'es-419': 'La lectura en voz alta está lista. Continúa con Siguiente.',
         'es-ES': 'La lectura en voz alta está preparada. Continúa con “Siguiente”.'
       },
-      /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
-      prepareOrSystem: {
-        'ja-JP': '「モデルを準備する」を押すか、macOS の音声合成を選んでください。',
-        'en-US': 'Press Prepare the model, or choose the macOS voice.',
-        'fr-FR': 'Cliquez sur « Préparer le modèle », ou choisissez la voix de macOS.',
-        'de-DE': 'Drücken Sie „Modell vorbereiten“, oder wählen Sie die macOS-Stimme.',
-        'hi-IN': '"मॉडल तैयार करें" दबाएँ, या macOS की आवाज़ चुनें।',
-        'id-ID': 'Tekan Siapkan model, atau pilih suara macOS.',
-        'it-IT': 'Premi «Prepara il modello», oppure scegli la sintesi vocale di macOS.',
-        'ko-KR': "'모델 준비하기'를 누르거나 macOS 음성 합성을 선택하십시오.",
-        'pt-BR': 'Clique em Preparar o modelo ou escolha a voz do macOS.',
-        'es-419': 'Presiona «Preparar el modelo», o elige la voz de macOS.',
-        'es-ES': 'Pulsa “Preparar el modelo” o elige la voz de macOS.'
-      },
       verifying: {
         'ja-JP': '検証しています',
         'en-US': 'Checking',
@@ -711,6 +697,34 @@ export const setup = defineMessages({
         'pt-BR': 'Escolha um mecanismo para ler as respostas em voz alta.',
         'es-419': 'Elige un motor para leer las respuestas en voz alta.',
         'es-ES': 'Elige un motor para leer las respuestas en voz alta.'
+      },
+      prepareOrSystem: {
+        macos: {
+          'ja-JP': '「モデルを準備する」を押すか、macOS の音声合成を選んでください。',
+          'en-US': 'Press Prepare the model, or choose the macOS voice.',
+          'fr-FR': 'Cliquez sur « Préparer le modèle », ou choisissez la voix de macOS.',
+          'de-DE': 'Drücken Sie „Modell vorbereiten“, oder wählen Sie die macOS-Stimme.',
+          'hi-IN': '"मॉडल तैयार करें" दबाएँ, या macOS की आवाज़ चुनें।',
+          'id-ID': 'Tekan Siapkan model, atau pilih suara macOS.',
+          'it-IT': 'Premi «Prepara il modello», oppure scegli la sintesi vocale di macOS.',
+          'ko-KR': "'모델 준비하기'를 누르거나 macOS 음성 합성을 선택하십시오.",
+          'pt-BR': 'Clique em Preparar o modelo ou escolha a voz do macOS.',
+          'es-419': 'Presiona «Preparar el modelo», o elige la voz de macOS.',
+          'es-ES': 'Pulsa “Preparar el modelo” o elige la voz de macOS.'
+        },
+        windows: {
+          'ja-JP': '「モデルを準備する」を押すか、Windows の音声合成を選んでください。',
+          'en-US': 'Press Prepare the model, or choose the Windows voice.',
+          'fr-FR': 'Cliquez sur « Préparer le modèle », ou choisissez la voix de Windows.',
+          'de-DE': 'Drücken Sie „Modell vorbereiten“, oder wählen Sie die Windows-Stimme.',
+          'hi-IN': '"मॉडल तैयार करें" दबाएँ, या Windows की आवाज़ चुनें।',
+          'id-ID': 'Tekan Siapkan model, atau pilih suara Windows.',
+          'it-IT': 'Premi «Prepara il modello», oppure scegli la sintesi vocale di Windows.',
+          'ko-KR': "'모델 준비하기'를 누르거나 Windows 음성 합성을 선택하십시오.",
+          'pt-BR': 'Clique em Preparar o modelo ou escolha a voz do Windows.',
+          'es-419': 'Presiona «Preparar el modelo», o elige la voz de Windows.',
+          'es-ES': 'Pulsa “Preparar el modelo” o elige la voz de Windows.'
+        }
       }
     },
     mic: {
@@ -1353,45 +1367,6 @@ export const setup = defineMessages({
         'es-419': 'Elige el modelo y mira qué está preparado',
         'es-ES': 'Elige el modelo y mira qué está preparado'
       },
-      runtime: {
-        'ja-JP': '実行環境',
-        'en-US': 'Runtime',
-        'fr-FR': "Environnement d'exécution",
-        'de-DE': 'Laufzeitumgebung',
-        'hi-IN': 'रनटाइम',
-        'id-ID': 'Runtime',
-        'it-IT': 'Ambiente di esecuzione',
-        'ko-KR': '실행 환경',
-        'pt-BR': 'Ambiente de execução',
-        'es-419': 'Entorno de ejecución',
-        'es-ES': 'Entorno de ejecución'
-      },
-      runtimeInstalled: {
-        'ja-JP': '導入済み',
-        'en-US': 'Installed',
-        'fr-FR': 'Installé',
-        'de-DE': 'Installiert',
-        'hi-IN': 'इंस्टॉल है',
-        'id-ID': 'Terpasang',
-        'it-IT': 'Installato',
-        'ko-KR': '설치됨',
-        'pt-BR': 'Instalado',
-        'es-419': 'Instalado',
-        'es-ES': 'Instalado'
-      },
-      runtimeMissing: {
-        'ja-JP': '未導入',
-        'en-US': 'Not installed',
-        'fr-FR': 'Non installé',
-        'de-DE': 'Nicht installiert',
-        'hi-IN': 'इंस्टॉल नहीं',
-        'id-ID': 'Belum terpasang',
-        'it-IT': 'Non installato',
-        'ko-KR': '설치 안 됨',
-        'pt-BR': 'Não instalado',
-        'es-419': 'Sin instalar',
-        'es-ES': 'Sin instalar'
-      },
       modelFiles: {
         'ja-JP': 'モデルのファイル',
         'en-US': 'Model files',
@@ -1432,7 +1407,7 @@ export const setup = defineMessages({
         'es-ES': 'Sin descargar'
       },
       memory: {
-        mlx: {
+        metal: {
           'ja-JP': '搭載メモリ',
           'en-US': 'Installed memory',
           'fr-FR': 'Mémoire installée',
@@ -1445,7 +1420,7 @@ export const setup = defineMessages({
           'es-419': 'Memoria instalada',
           'es-ES': 'Memoria instalada'
         },
-        cuda: {
+        vulkan: {
           'ja-JP': 'GPU のメモリ',
           'en-US': 'GPU memory',
           'fr-FR': 'Mémoire du GPU',
@@ -1489,7 +1464,7 @@ export const setup = defineMessages({
       }
     },
     automaticModel: {
-      mlx: {
+      metal: {
         'ja-JP': '自動(搭載メモリに合わせる)',
         'en-US': 'Automatic (by installed memory)',
         'fr-FR': 'Automatique (selon la mémoire installée)',
@@ -1502,7 +1477,7 @@ export const setup = defineMessages({
         'es-419': 'Automático (según la memoria instalada)',
         'es-ES': 'Automático (según la memoria instalada)'
       },
-      cuda: {
+      vulkan: {
         'ja-JP': '自動(GPU のメモリに合わせる)',
         'en-US': 'Automatic (by GPU memory)',
         'fr-FR': 'Automatique (selon la mémoire du GPU)',
@@ -1517,7 +1492,7 @@ export const setup = defineMessages({
       }
     },
     unknownReason: {
-      mlx: {
+      metal: {
         'ja-JP': '搭載メモリを見て、合うモデルを選びます。',
         'en-US': 'The model is chosen to fit the installed memory.',
         'fr-FR': 'Le modèle est choisi en fonction de la mémoire installée.',
@@ -1530,7 +1505,7 @@ export const setup = defineMessages({
         'es-419': 'El modelo se elige según la memoria instalada.',
         'es-ES': 'El modelo se elige según la memoria instalada.'
       },
-      cuda: {
+      vulkan: {
         'ja-JP': 'GPU のメモリを見て、合うモデルを選びます。',
         'en-US': 'The model is chosen to fit the GPU memory.',
         'fr-FR': 'Le modèle est choisi en fonction de la mémoire du GPU.',
@@ -1620,17 +1595,17 @@ export const setup = defineMessages({
       },
       qwen3tts: {
         detail: {
-          'ja-JP': '文を作りながら読み始めます。モデル(約 1.9GB)をこのコンピュータに取得して動かし、動いている間は約 2GB のメモリを使います。',
-          'en-US': 'Starts reading while the sentence is still being generated. The model (about 1.9 GB) is downloaded and run on this computer, and uses about 2 GB of memory while it runs.',
-          'fr-FR': "Commence à lire pendant que la phrase s'écrit encore. Le modèle (environ 1,9 Go) est téléchargé et exécuté sur cet ordinateur, et occupe environ 2 Go de mémoire pendant son fonctionnement.",
-          'de-DE': 'Beginnt zu lesen, während der Satz noch entsteht. Das Modell (rund 1,9 GB) wird auf diesen Computer geladen und läuft hier; solange es läuft, belegt es rund 2 GB Arbeitsspeicher.',
-          'hi-IN': 'वाक्य बनते-बनते ही पढ़ना शुरू कर देता है। मॉडल (करीब 1.9 GB) इसी कंप्यूटर पर डाउनलोड होकर चलता है, और चलते समय करीब 2 GB मेमोरी लेता है।',
-          'id-ID': 'Mulai membaca sementara kalimatnya masih disusun. Modelnya (sekitar 1,9 GB) diunduh dan dijalankan di komputer ini, dan memakai sekitar 2 GB memori selama berjalan.',
-          'it-IT': 'Inizia a leggere mentre la frase è ancora in scrittura. Il modello (circa 1,9 GB) viene scaricato ed eseguito su questo computer, e occupa circa 2 GB di memoria mentre è in funzione.',
-          'ko-KR': '문장을 만들면서 읽기 시작합니다. 모델(약 1.9GB)을 이 컴퓨터에 내려받아 실행하며, 실행하는 동안 약 2GB의 메모리를 씁니다.',
-          'pt-BR': 'Começa a ler enquanto a frase ainda está sendo gerada. O modelo (cerca de 1,9 GB) é baixado e roda neste computador, e ocupa cerca de 2 GB de memória enquanto roda.',
-          'es-419': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1.9 GB) se descarga y se ejecuta en esta computadora, y ocupa unos 2 GB de memoria mientras funciona.',
-          'es-ES': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos 1,9 GB) se descarga y se ejecuta en este ordenador, y ocupa unos 2 GB de memoria mientras funciona.'
+          'ja-JP': '文を作りながら読み始めます。モデル(約 {sizeGb}GB)をこのコンピュータに取得し、GPU で動かします。',
+          'en-US': 'Starts reading while the sentence is still being generated. The model (about {sizeGb} GB) is downloaded to this computer and runs on its GPU.',
+          'fr-FR': "Commence à lire pendant que la phrase s'écrit encore. Le modèle (environ {sizeGb} Go) est téléchargé sur cet ordinateur et tourne sur son GPU.",
+          'de-DE': 'Beginnt zu lesen, während der Satz noch entsteht. Das Modell (rund {sizeGb} GB) wird auf diesen Computer geladen und läuft auf seiner GPU.',
+          'hi-IN': 'वाक्य बनते-बनते ही पढ़ना शुरू कर देता है। मॉडल (करीब {sizeGb} GB) इसी कंप्यूटर पर डाउनलोड होकर उसके GPU पर चलता है।',
+          'id-ID': 'Mulai membaca sementara kalimatnya masih disusun. Modelnya (sekitar {sizeGb} GB) diunduh ke komputer ini dan berjalan di GPU-nya.',
+          'it-IT': 'Inizia a leggere mentre la frase è ancora in scrittura. Il modello (circa {sizeGb} GB) viene scaricato su questo computer e funziona sulla sua GPU.',
+          'ko-KR': '문장을 만들면서 읽기 시작합니다. 모델(약 {sizeGb}GB)을 이 컴퓨터에 내려받아 GPU에서 실행합니다.',
+          'pt-BR': 'Começa a ler enquanto a frase ainda está sendo gerada. O modelo (cerca de {sizeGb} GB) é baixado para este computador e roda na GPU dele.',
+          'es-419': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos {sizeGb} GB) se descarga en esta computadora y se ejecuta en su GPU.',
+          'es-ES': 'Empieza a leer mientras la frase todavía se está generando. El modelo (unos {sizeGb} GB) se descarga en este ordenador y se ejecuta en su GPU.'
         }
       },
       voicevox: {

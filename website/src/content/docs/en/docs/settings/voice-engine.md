@@ -9,7 +9,7 @@ Under "Voice engine" in "Conversation", choose what listens and speaks. The defa
 
 When you choose "Speech recognition on this computer + model + speech", the rows below it show whether "Speech recognition" and "Speech" are ready. If you chose GPT-Live, Gemini Live or "Text only" in the first setup, it skipped preparing both. Prepare speech recognition in "Models"; until then the microphone can't be used. When "Speech" is "Off", replies appear as text only. To hear them, choose an engine with "Choose an engine".
 
-When you choose GPT-Live or Gemini Live, the microphone audio goes straight to the provider, and ASIST speaks in the provider's voice. The model handles backchannels, listening, and deciding when you have finished speaking or interrupted. Speech recognition and reading aloud on this computer, the bridge phrase and MaAI are not used, so you can talk by voice even on Windows without a usable NVIDIA GPU. Changing the engine, "Model", "Voice" or "Close the session after" turns the microphone off, so turn it on again.
+When you choose GPT-Live or Gemini Live, the microphone audio goes straight to the provider, and ASIST speaks in the provider's voice. The model handles backchannels, listening, and deciding when you have finished speaking or interrupted. Speech recognition and reading aloud on this computer, the bridge phrase and MaAI are not used, so you can talk by voice even on Windows without a discrete GPU. Changing the engine, "Model", "Voice" or "Close the session after" turns the microphone off, so turn it on again.
 
 | Engine | Decisions and tools | Estimated cost | Key needed |
 |---|---|---|---|

@@ -13,7 +13,6 @@ dns.setDefaultResultOrder('ipv4first')
 import { registerIpc } from './ipc'
 import { setupOsIntegration } from './os-integration'
 import * as asr from './services/asr'
-import { clearTemporaryAudio } from './services/local-asr'
 import * as tts from './services/tts'
 import * as aizuchi from './services/aizuchi'
 import * as aizuchiClassifier from './services/aizuchi-classifier'
@@ -159,13 +158,7 @@ if (!hasSingleInstanceLock) {
 
     createWindow()
 
-    // The sidecars are warmed up here, and a failure does not stop the app from starting. No
-    // transcription has started yet, so any recording in the temporary folder is left from an earlier run.
-    try {
-      clearTemporaryAudio()
-    } catch (error) {
-      console.error('could not remove the leftover recordings:', error)
-    }
+    // The sidecars are warmed up here, and a failure does not stop the app from starting.
     void asr.ensureServer()
     void tts.ensureEngine().then(() => aizuchi.getBank()).catch((error) => console.error('TTS preparation failed:', error))
     // The aizuchi classifier stays resident when it is prepared and aizuchi are wanted; without it no

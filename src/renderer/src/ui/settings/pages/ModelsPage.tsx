@@ -5,11 +5,11 @@ import { speechRecognitionReady, ttsEngineLabel, isExternalTts, ttsNeedsPreparat
 import { Btn, Chip, Link, Page, Progress } from '../primitives'
 import { progressLabel } from '../../progress-label'
 import { conversationFeatures } from '@shared/conversation-locale'
-import { useT } from '@/i18n'
+import { useFormatLocale, useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT } from '@shared/platform'
+import { LOCAL_SPEECH_UNAVAILABLE_TEXT } from '@shared/platform'
 import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
-import { ttsEngineRuns } from '@shared/tts-models'
+import { QWEN_TTS_MODELS, qwenTtsSizeGb, ttsEngineRuns } from '@shared/tts-models'
 import { osMessageKey } from '@shared/i18n/os-message'
 
 /**
@@ -20,7 +20,8 @@ import { osMessageKey } from '@shared/i18n/os-message'
 export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, status, setup, vap, embedding, aizuchiClassifier, prep, prepare, set, go } = ctx
   const t = useT()
-  const { speechRuntime, os } = platformCapabilities()
+  const formatLocale = useFormatLocale()
+  const { localSpeech, os } = platformCapabilities()
   const asr = setup?.asr ?? null
   const asrReady = asr?.ready === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
@@ -43,23 +44,14 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
     </>
   )
   const asrDescription =
-    speechRuntime.kind === null
-      ? t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])
+    localSpeech.backend === null
+      ? t(LOCAL_SPEECH_UNAVAILABLE_TEXT[localSpeech.reason])
       : !asr
         ? t('settingsModels.asr.checking')
-        : t(
-            !asr.runtimeInstalled && !asr.modelInstalled
-              ? 'settingsModels.asr.needsRuntimeAndModel'
-              : !asr.runtimeInstalled
-                ? 'settingsModels.asr.needsRuntime'
-                : !asr.modelInstalled
-                  ? 'settingsModels.asr.needsModel'
-                  : 'settingsModels.asr.model',
-            { memoryGb: asr.totalMemoryGb, model: asr.label }
-          )
-  const recognitionReady = speechRecognitionReady(settings, setup, speechRuntime)
+        : t(asr.modelInstalled ? 'settingsModels.asr.model' : 'settingsModels.asr.needsModel', { memoryGb: asr.totalMemoryGb, model: asr.label })
+  const recognitionReady = speechRecognitionReady(settings, setup, localSpeech)
   const asrState = recognitionReady === null ? 'unknown' : recognitionReady ? 'ready' : 'missing'
-  const engineRuns = ttsEngineRuns(engine, speechRuntime)
+  const engineRuns = ttsEngineRuns(engine, localSpeech)
 
   return (
     <Page title={t('settingsModels.title')} lead={t('settingsModels.lead')}>
@@ -75,7 +67,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
           stateLabel={asrState === 'unknown' ? t('settingsModels.checking') : asrState === 'ready' ? t('common.ready') : t('common.notReady')}
           description={asrDescription}
         >
-          {speechRuntime.kind !== null && (
+          {localSpeech.backend !== null && (
             <>
               <Btn tone="primary" disabled={prep.busy} onClick={prepare.asr}>
                 {preparing('asr')
@@ -144,8 +136,9 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
                 : engine === 'system'
                   ? t('settingsModels.speech.system')
                   : engine === 'qwen3tts'
-                    ? t(setup && !setup.qwenTts.recommended ? 'settingsModels.speech.qwenTooLittleMemory' : 'settingsModels.speech.qwen', {
-                        model: setup?.qwenTts.label ?? 'Qwen3-TTS'
+                    ? t(setup && !setup.qwenTts.recommended ? osMessageKey('settingsModels.speech.qwenTooLittleMemory', os) : 'settingsModels.speech.qwen', {
+                        model: QWEN_TTS_MODELS[settings.qwenTtsSize].label,
+                        sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(qwenTtsSizeGb(settings.qwenTtsSize))
                       })
                     : t(osMessageKey('settingsModels.speech.external', os), { engine: ttsEngineLabel(t, engine) })
           }

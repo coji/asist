@@ -2,8 +2,10 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { prepareGitMacos } from './git-macos.mjs'
 import { prepareGitWindows } from './git-windows.mjs'
+import { prepareLlamaCpp } from './llama-cpp.mjs'
 import { prepareNativeMacos } from './native-macos.mjs'
 import { prepareNativeWindows } from './native-windows.mjs'
+import { prepareQwen3Tts } from './qwen3-tts.mjs'
 import { run } from './shared.mjs'
 import { prepareUv } from './uv.mjs'
 
@@ -25,15 +27,15 @@ function preparePermissionTexts({ root }) {
 export const TARGETS = {
   'darwin-arm64': {
     test: [prepareGitMacos, prepareElectron],
-    dev: [prepareGitMacos, prepareUv, prepareNativeMacos, prepareElectron],
-    build: [prepareGitMacos, prepareUv, prepareNativeMacos, preparePermissionTexts],
-    check: [prepareUv]
+    dev: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeMacos, prepareElectron],
+    build: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeMacos, preparePermissionTexts],
+    check: [prepareUv, prepareLlamaCpp, prepareQwen3Tts]
   },
   'win32-x64': {
     test: [prepareGitWindows, prepareNativeWindows, prepareElectron],
-    dev: [prepareGitWindows, prepareUv, prepareNativeWindows, prepareElectron],
-    build: [prepareGitWindows, prepareUv, prepareNativeWindows],
-    check: [prepareGitWindows, prepareUv]
+    dev: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeWindows, prepareElectron],
+    build: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeWindows],
+    check: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts]
   }
 }
 

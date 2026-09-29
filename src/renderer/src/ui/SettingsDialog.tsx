@@ -221,10 +221,10 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   // needs preparing without opening the page. Speech can only be missing when a separate engine is
   // selected, since the macOS speech synthesis needs no preparation.
   const features = conversationFeatures(settings.conversationLocale)
-  const { calendar, speechRuntime } = platformCapabilities()
-  const engineRuns = ttsEngineRuns(settings.ttsEngine, speechRuntime)
+  const { calendar, localSpeech } = platformCapabilities()
+  const engineRuns = ttsEngineRuns(settings.ttsEngine, localSpeech)
   const missing = [
-    speechRecognitionReady(settings, setup, speechRuntime) === false,
+    speechRecognitionReady(settings, setup, localSpeech) === false,
     status !== null && engineRuns && ttsNeedsPreparation(settings.ttsEngine) && !status.tts,
     status !== null && status.agent !== 'found',
     features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),

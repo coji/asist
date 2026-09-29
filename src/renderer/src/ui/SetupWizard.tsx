@@ -306,7 +306,7 @@ export function SetupWizard(): React.JSX.Element | null {
     }
   }
 
-  /** Downloads the Qwen3-TTS model and starts it, which also installs the MLX runtime when the speech recognition has not. */
+  /** Downloads the Qwen3-TTS model and starts it. */
   const prepareTts = async (): Promise<void> => {
     if (ttsChecking) return
     setTtsChecking(true)
@@ -389,8 +389,8 @@ export function SetupWizard(): React.JSX.Element | null {
     if (step === 'tts') {
       if (ttsReady) return t('setup.guide.tts.ready')
       // A saved engine this machine cannot run is offered by no choice on the screen, so it is chosen again.
-      if (!ttsEngineRuns(settings.ttsEngine, capabilities.speechRuntime)) return t('setup.guide.tts.choose')
-      if (settings.ttsEngine === 'qwen3tts') return ttsChecking ? ttsDownload?.message || t('common.preparing') : t('setup.guide.tts.prepareOrSystem')
+      if (!ttsEngineRuns(settings.ttsEngine, capabilities.localSpeech)) return t('setup.guide.tts.choose')
+      if (settings.ttsEngine === 'qwen3tts') return ttsChecking ? ttsDownload?.message || t('common.preparing') : t(osMessageKey('setup.guide.tts.prepareOrSystem', capabilities.os))
       return ttsChecking ? t('setup.guide.tts.verifying') : t(osMessageKey('setup.guide.tts.notConnected', capabilities.os), { engine: services?.ttsLabel ?? t('setup.steps.tts.title') })
     }
     if (step === 'mic') {
@@ -477,7 +477,7 @@ export function SetupWizard(): React.JSX.Element | null {
           )}
           {step === 'listening' && (
             <ListeningStep
-              speechRuntime={capabilities.speechRuntime}
+              localSpeech={capabilities.localSpeech}
               choice={listening}
               onChoice={setListening}
               setup={setup}
@@ -512,7 +512,8 @@ export function SetupWizard(): React.JSX.Element | null {
               }}
               ttsChecking={ttsChecking}
               ttsDownload={ttsDownload}
-              qwenTtsOffered={qwenTtsRuns(capabilities.speechRuntime) && (setup?.qwenTts.recommended === true || settings.ttsEngine === 'qwen3tts')}
+              qwenTtsOffered={qwenTtsRuns(capabilities.localSpeech) && (setup?.qwenTts.recommended === true || settings.ttsEngine === 'qwen3tts')}
+              qwenTtsSize={settings.qwenTtsSize}
               onRecheckTts={() => void verifyTts()}
               onPrepareTts={() => void prepareTts()}
               onCancelPrepareTts={() => void window.api.cancelTtsPreparation()}

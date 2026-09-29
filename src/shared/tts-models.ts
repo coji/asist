@@ -1,27 +1,58 @@
 import type { TtsEngine } from './ipc'
-import type { PlatformCapabilities } from './platform'
+import type { PinnedFile } from './pinned-file'
+import type { PlatformCapabilities, SpeechBackend } from './platform'
+
+/** The sizes of Qwen3-TTS the setting can name. */
+export const QWEN_TTS_SIZES = ['0.6b', '1.7b'] as const
+
+export type QwenTtsSize = (typeof QWEN_TTS_SIZES)[number]
+
+/** One size of Qwen3-TTS for qwen3-tts-ggml: its talker, which runs with the shared codec. */
+export interface QwenTtsModelSpec {
+  label: string
+  talker: PinnedFile
+}
+
+const QWEN_TTS_REPO = { repo: 'sakasegawa/qwen3-tts-ggml', revision: 'c014bc3b717c001aa7ac870178656acc30b78f09' }
+
+/** The codec decoder every size speaks through. */
+export const QWEN_TTS_CODEC: PinnedFile = {
+  ...QWEN_TTS_REPO,
+  file: 'qwen3-tts-codec-12hz-f16.gguf',
+  bytes: 245_553_152,
+  sha256: '38763be32099ad36b7b4345fc852ac379fb4fde0782ff85929d2b984b4bc22c1'
+}
 
 /**
- * The local speech synthesis model. Measured on 2026-09-20 with mlx-audio 0.4.7, one Japanese
- * sentence at a time: on an M5 the first audio arrives 0.19 s after the request and one second of
- * speech takes 0.37 s to generate; on a 16 GB M2 it is 0.30 s and 0.58 s. The worker holds about
- * 2.1 GB, which is why the model is recommended only from 16 GB of memory.
+ * The sizes, measured on 2026-09-29 with qwen3-tts-ggml and Q8_0 on Japanese sentences: on an M5 with
+ * Metal 0.6B speaks its first audio 0.05 s after the request at 0.35 of real time in 2.3 GB, 1.7B 0.08 s
+ * and 0.49 in 3.3 GB; on an RTX 2080 with Vulkan 0.6B takes 0.07 s, 0.31 and 1.6 GB of VRAM, 1.7B 0.08 s,
+ * 0.36 and 2.7 GB. 1.7B makes almost no silence before the voice, which 0.6B makes for up to a second.
  */
-export const QWEN_TTS_MODEL = Object.freeze({
-  id: 'mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit',
-  revision: '049ef77fe8816b536193c0c25f9a214d17921282',
-  label: 'Qwen3-TTS 0.6B 8-bit MLX',
-  files: [
-    '.gitattributes', 'README.md', 'config.json', 'generation_config.json', 'merges.txt', 'model.safetensors',
-    'model.safetensors.index.json', 'preprocessor_config.json', 'speech_tokenizer/config.json',
-    'speech_tokenizer/configuration.json', 'speech_tokenizer/model.safetensors',
-    'speech_tokenizer/preprocessor_config.json', 'tokenizer_config.json', 'vocab.json'
-  ],
-  weightSizeGb: 1.9,
-  residentMemoryGb: 2.1
-})
+export const QWEN_TTS_MODELS: Readonly<Record<QwenTtsSize, QwenTtsModelSpec>> = {
+  '0.6b': {
+    label: 'Qwen3-TTS 0.6B',
+    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-0.6b-customvoice-q8_0.gguf', bytes: 967_979_232, sha256: '11b6d52c4ec154041aee90dbcb10b269f17a27b1643bfa02ca38bb9fb9ee01c1' }
+  },
+  '1.7b': {
+    label: 'Qwen3-TTS 1.7B',
+    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-1.7b-customvoice-q8_0.gguf', bytes: 2_042_224_992, sha256: 'c3faf095ecc9b4cf503ffef38ae936eca794fbc4f104fac8c6e9deb72c51b943' }
+  }
+}
 
-export const QWEN_TTS_MIN_RECOMMENDED_MEMORY_GB = 16
+/** The files a size needs. */
+export const qwenTtsFiles = (size: QwenTtsSize): PinnedFile[] => [QWEN_TTS_MODELS[size].talker, QWEN_TTS_CODEC]
+
+/**
+ * The memory from which Qwen3-TTS is offered beside the speech recognition, in GB as the capabilities give
+ * it: the Mac's own, which every app shares, and the GPU's on Windows, where 1.7B speech recognition and
+ * 0.6B synthesis held 6.7 GB of an 8 GB RTX 2080 with the desktop's 1.9 GB (2026-09-29), more than a 6 GB
+ * GPU has.
+ */
+const RECOMMENDED_FROM_GB: Readonly<Record<SpeechBackend, number>> = { metal: 16, vulkan: 8 }
+
+/** The memory from which 1.7B is offered too; with 1.7B recognition it took 7.7 GB of the same 8 GB. */
+const LARGER_FROM_GB: Readonly<Record<SpeechBackend, number>> = { metal: 24, vulkan: 10 }
 
 /**
  * The preset voices of the pinned model. Every voice can speak every language the model supports;
@@ -62,11 +93,11 @@ export function qwenTtsLanguage(locale: string): string | null {
   return QWEN_TTS_LANGUAGES[locale.split('-')[0].toLowerCase()] ?? null
 }
 
-/** Whether the speech runtime of this machine can run Qwen3-TTS at all, which so far only MLX does. */
+/** Whether this machine can run Qwen3-TTS at all: wherever the local speech runs. */
 export function qwenTtsRuns(
-  speechRuntime: PlatformCapabilities['speechRuntime']
-): speechRuntime is Extract<PlatformCapabilities['speechRuntime'], { memoryGb: number }> {
-  return speechRuntime.kind === 'mlx'
+  localSpeech: PlatformCapabilities['localSpeech']
+): localSpeech is Extract<PlatformCapabilities['localSpeech'], { memoryGb: number }> {
+  return localSpeech.backend !== null
 }
 
 /**
@@ -74,10 +105,21 @@ export function qwenTtsRuns(
  * settings brought over from a Mac, is treated like one that cannot speak the conversation language:
  * it is not offered, not counted as something to prepare, and reading with it fails with the reason.
  */
-export const ttsEngineRuns = (engine: TtsEngine, speechRuntime: PlatformCapabilities['speechRuntime']): boolean =>
-  engine !== 'qwen3tts' || qwenTtsRuns(speechRuntime)
+export const ttsEngineRuns = (engine: TtsEngine, localSpeech: PlatformCapabilities['localSpeech']): boolean =>
+  engine !== 'qwen3tts' || qwenTtsRuns(localSpeech)
 
-/** Whether to offer Qwen3-TTS: a runtime that runs it, with the memory for it beside the speech recognition. */
-export function recommendQwenTts(speechRuntime: PlatformCapabilities['speechRuntime']): boolean {
-  return qwenTtsRuns(speechRuntime) && speechRuntime.memoryGb >= QWEN_TTS_MIN_RECOMMENDED_MEMORY_GB
+/** Whether to offer Qwen3-TTS: a machine that runs it, with the memory for it beside the speech recognition. */
+export function recommendQwenTts(localSpeech: PlatformCapabilities['localSpeech']): boolean {
+  return qwenTtsRuns(localSpeech) && localSpeech.memoryGb >= RECOMMENDED_FROM_GB[localSpeech.backend]
+}
+
+/** The sizes to choose from on this machine: 0.6B wherever Qwen3-TTS runs, 1.7B where the memory holds it. */
+export function offeredQwenTtsSizes(localSpeech: PlatformCapabilities['localSpeech']): QwenTtsSize[] {
+  if (!qwenTtsRuns(localSpeech)) return []
+  return localSpeech.memoryGb >= LARGER_FROM_GB[localSpeech.backend] ? ['0.6b', '1.7b'] : ['0.6b']
+}
+
+/** The files of a size together, in GB of 10^9 bytes. */
+export function qwenTtsSizeGb(size: QwenTtsSize): number {
+  return Math.round(qwenTtsFiles(size).reduce((sum, file) => sum + file.bytes, 0) / 1e7) / 100
 }

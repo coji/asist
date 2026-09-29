@@ -1,12 +1,18 @@
-import { nvidiaGpuSupport } from '@shared/nvidia-gpu'
 import { deriveCapabilities, type PlatformCapabilities } from '@shared/platform'
+import type { SpeechDevice } from '@shared/speech-devices'
 
 const GIB = 1024 ** 3
 
-/** nvidia-smi is run only on Windows, so a Mac that asked for it would be a defect. */
-const noNvidiaSmi = (): never => {
-  throw new Error('nvidia-smi is not run on a Mac')
+/** The device list is read only on Windows, so a Mac that asked for it would be a defect. */
+const noDeviceList = (): never => {
+  throw new Error('the speech devices are not listed on a Mac')
 }
+
+/** What `qwen3-tts-worker --devices` lists on the Windows PC the port was measured on. */
+const RTX_2080_DEVICES: SpeechDevice[] = [
+  { name: 'Vulkan0', description: 'NVIDIA GeForce RTX 2080', kind: 'gpu', memoryTotal: 8 * GIB },
+  { name: 'CPU', description: 'Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz', kind: 'cpu', memoryTotal: 32 * GIB }
+]
 
 /** The microphone check is run only on Windows, so a Mac that asked for it would be a defect. */
 const noMicCheck = (): never => {
@@ -22,34 +28,34 @@ const noGoogleClient = (): never => {
 const osCalendar = { calendarBackend: undefined, googleClient: noGoogleClient }
 
 /** The capabilities of a 32 GB Apple Silicon Mac. */
-export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, nvidiaGpu: noNvidiaSmi, micCancelsEcho: noMicCheck, ...osCalendar })
+export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, speechDevices: noDeviceList, micCancelsEcho: noMicCheck, ...osCalendar })
 
 /**
- * An x64 Windows PC with an 8 GB RTX 2080, the machine the CUDA runtime was measured on, whose microphone
+ * An x64 Windows PC with an 8 GB RTX 2080, the machine the local speech was measured on, whose microphone
  * Windows does not cancel the echo on, so that it captures through getUserMedia.
  */
 export const WINDOWS = deriveCapabilities({
   platform: 'win32',
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
-  nvidiaGpu: () => nvidiaGpuSupport('NVIDIA GeForce RTX 2080, 8192, 591.86, 7.5'),
+  speechDevices: () => RTX_2080_DEVICES,
   micCancelsEcho: () => false,
   ...osCalendar
 })
 
-/** An x64 Windows PC where nvidia-smi is not installed, so that it has no local speech models. */
+/** An x64 Windows PC with no discrete GPU, so that it has no local speech models. */
 export const WINDOWS_WITHOUT_GPU = deriveCapabilities({
   platform: 'win32',
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
-  nvidiaGpu: () => ({ usable: false, reason: 'no-nvidia-gpu' }),
+  speechDevices: () => RTX_2080_DEVICES.filter((device) => device.kind !== 'gpu'),
   micCancelsEcho: () => false,
   ...osCalendar
 })
 
 /**
  * The fixture of the system the tests run on, for tests that run its real git or uv. Main's own
- * capabilities would run nvidia-smi and open the real microphone on Windows.
+ * capabilities would run the speech worker and open the real microphone on Windows.
  */
 export const HOST = process.platform === 'win32' ? WINDOWS : MACOS
 

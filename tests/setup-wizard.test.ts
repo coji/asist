@@ -32,22 +32,21 @@ let progressListener: (progress: SetupProgress) => void = () => {}
 
 /**
  * The local speech recognition as main reports it before anything is downloaded: none on a machine without
- * a runtime for it, and otherwise the runtime's build of the model it recommends for the memory it has.
+ * a GPU for it, and otherwise the model it recommends for the memory it has.
  */
 const asrStatus = (): SetupStatus['asr'] => {
-  const runtime = platformCapabilities().speechRuntime
-  if (runtime.kind === null) return null
-  const { recommendedModel } = recommendAsrModel(runtime.kind, runtime.memoryGb)
-  const spec = asrModelSpec(runtime.kind, recommendedModel)!
-  const installed = { runtimeInstalled: false, modelInstalled: false }
+  const { localSpeech } = platformCapabilities()
+  if (localSpeech.backend === null) return null
+  const { recommendedModel } = recommendAsrModel(localSpeech.backend, localSpeech.memoryGb)
+  const spec = asrModelSpec(recommendedModel)
   return {
     selectedModel: 'auto',
     resolvedModel: recommendedModel,
     recommendedModel,
     label: spec.label,
-    totalMemoryGb: runtime.memoryGb,
-    ...installed,
-    downloadGb: asrDownloadGb(runtime.kind, spec, installed),
+    totalMemoryGb: localSpeech.memoryGb,
+    modelInstalled: false,
+    downloadGb: asrDownloadGb(spec, false),
     ready: false
   }
 }
@@ -57,7 +56,7 @@ const setupStatus = (): SetupStatus =>
     services: status,
     asr: asrStatus(),
     // This Mac has too little memory for the local speech model, so the setup does not offer it.
-    qwenTts: { label: 'Qwen3-TTS', recommended: qwenTtsRecommended, runtimeInstalled: false, modelInstalled: false, ready: false }
+    qwenTts: { recommended: qwenTtsRecommended, modelInstalled: false, ready: false }
   }) as SetupStatus
 
 const api = {
@@ -164,6 +163,7 @@ beforeEach(async () => {
     conversationModel: { provider: 'anthropic', id: 'claude-sonnet-5' },
     bridgeModel: { provider: 'anthropic', id: 'claude-haiku-4-5' },
     ttsEngine: 'voicevox',
+    qwenTtsSize: '0.6b',
     asrModel: 'auto',
     micAutoStart: false,
     localAsrEnabled: false,
@@ -574,25 +574,25 @@ describe('first-run setup on Windows with an NVIDIA GPU', () => {
   beforeEach(() => setCapabilities(WINDOWS))
   afterEach(() => setCapabilities(MACOS))
 
-  it('offers the CUDA build of Qwen3-ASR with the reason from the GPU memory and the size of what it downloads', async () => {
+  it('offers Qwen3-ASR with the reason from the GPU memory and the size of what it downloads', async () => {
     await render()
     await toModel(ja)
     await verifyKey(ja)
     await press(ja('setup.next'))
     await press(ja('setup.speaking.voice.title'))
     await press(ja('setup.next'))
-    const label = asrModelSpec('cuda', 'qwen3-asr-1.7b')!.label
+    const label = asrModelSpec('qwen3-asr-1.7b').label
     expect(optionTitles()).toEqual([ja('setup.listening.recommended', { model: label }), ja('setup.listening.local.title')])
     await press(ja('setup.listening.recommended', { model: label }))
     const body = container.querySelector('.su-body')!.textContent
-    expect(body).toContain(ja('speechRecognition.recommendation.cuda.larger', { memoryGb: 8 }))
-    // The torch environment of 2.04 GB and the model of 4.09 GB.
-    expect(body).toContain(ja('setup.listening.downloadNote', { sizeGb: '6.1' }))
-    expect(container.querySelector('.su-details dt')?.textContent).toBe(ja('setup.listening.details.memory.cuda'))
+    expect(body).toContain(ja('speechRecognition.recommendation.vulkan.larger', { memoryGb: 8 }))
+    const sizeGb = new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 1 }).format(asrDownloadGb(asrModelSpec('qwen3-asr-1.7b'), false))
+    expect(body).toContain(ja('setup.listening.downloadNote', { sizeGb }))
+    expect(container.querySelector('.su-details dt')?.textContent).toBe(ja('setup.listening.details.memory.vulkan'))
     expect([...container.querySelectorAll('.su-details option')].map((option) => option.textContent)).toEqual([
-      ja('setup.listening.automaticModel.cuda'),
+      ja('setup.listening.automaticModel.vulkan'),
       label,
-      asrModelSpec('cuda', 'qwen3-asr-0.6b')!.label
+      asrModelSpec('qwen3-asr-0.6b').label
     ])
   })
 })
@@ -611,7 +611,7 @@ describe('first-run setup on a machine without the local models or a calendar', 
     await press(ja('setup.speaking.voice.title'))
     await press(ja('setup.next'))
     expect(optionTitles()).toEqual([ja('setup.listening.local.title')])
-    expect(container.querySelector('.su-body')?.textContent).toContain(ja('speechRecognition.unavailable.noNvidiaGpu'))
+    expect(container.querySelector('.su-body')?.textContent).toContain(ja('speechRecognition.unavailable.noDiscreteGpu'))
 
     await press(ja('setup.listening.local.title'))
     await press(ja('setup.listening.prepareModel'))

@@ -190,20 +190,6 @@ export const settingsVoice = defineMessages({
         'es-ES': 'No se encuentra {engine}. Las respuestas se leen con la voz de Windows.'
       }
     },
-    /** Shown only where Qwen3-TTS runs, which is the MLX runtime of macOS alone, so it names the macOS voice. */
-    qwenNotPrepared: {
-      'ja-JP': 'Qwen3-TTS のモデルを準備していません。macOS の音声合成で読み上げています。',
-      'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the macOS voice.',
-      'fr-FR': "Le modèle Qwen3-TTS n'est pas préparé. Les réponses sont lues avec la voix de macOS.",
-      'de-DE': 'Das Modell von Qwen3-TTS ist nicht vorbereitet. Antworten werden mit der macOS-Stimme vorgelesen.',
-      'hi-IN': 'Qwen3-TTS का मॉडल तैयार नहीं है। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
-      'id-ID': 'Model Qwen3-TTS belum disiapkan. Jawaban dibacakan dengan suara macOS.',
-      'it-IT': 'Il modello di Qwen3-TTS non è pronto. Le risposte vengono lette con la sintesi vocale di macOS.',
-      'ko-KR': 'Qwen3-TTS 모델을 준비하지 않았습니다. macOS 음성 합성으로 읽어주고 있습니다.',
-      'pt-BR': 'O modelo do Qwen3-TTS não está preparado. As respostas estão sendo lidas com a voz do macOS.',
-      'es-419': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.',
-      'es-ES': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.'
-    },
     engines: {
       qwen3tts: {
         'ja-JP': 'Qwen3-TTS(このコンピュータ上で実行)',
@@ -335,6 +321,60 @@ export const settingsVoice = defineMessages({
       'pt-BR': '{name} (masculina)',
       'es-419': '{name} (masculina)',
       'es-ES': '{name} (masculina)'
+    },
+    qwenNotPrepared: {
+      macos: {
+        'ja-JP': 'Qwen3-TTS のモデルを準備していません。macOS の音声合成で読み上げています。',
+        'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the macOS voice.',
+        'fr-FR': "Le modèle Qwen3-TTS n'est pas préparé. Les réponses sont lues avec la voix de macOS.",
+        'de-DE': 'Das Modell von Qwen3-TTS ist nicht vorbereitet. Antworten werden mit der macOS-Stimme vorgelesen.',
+        'hi-IN': 'Qwen3-TTS का मॉडल तैयार नहीं है। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': 'Model Qwen3-TTS belum disiapkan. Jawaban dibacakan dengan suara macOS.',
+        'it-IT': 'Il modello di Qwen3-TTS non è pronto. Le risposte vengono lette con la sintesi vocale di macOS.',
+        'ko-KR': 'Qwen3-TTS 모델을 준비하지 않았습니다. macOS 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': 'O modelo do Qwen3-TTS não está preparado. As respostas estão sendo lidas com a voz do macOS.',
+        'es-419': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.',
+        'es-ES': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.'
+      },
+      windows: {
+        'ja-JP': 'Qwen3-TTS のモデルを準備していません。Windows の音声合成で読み上げています。',
+        'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the Windows voice.',
+        'fr-FR': "Le modèle Qwen3-TTS n'est pas préparé. Les réponses sont lues avec la voix de Windows.",
+        'de-DE': 'Das Modell von Qwen3-TTS ist nicht vorbereitet. Antworten werden mit der Windows-Stimme vorgelesen.',
+        'hi-IN': 'Qwen3-TTS का मॉडल तैयार नहीं है। जवाब Windows की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': 'Model Qwen3-TTS belum disiapkan. Jawaban dibacakan dengan suara Windows.',
+        'it-IT': 'Il modello di Qwen3-TTS non è pronto. Le risposte vengono lette con la sintesi vocale di Windows.',
+        'ko-KR': 'Qwen3-TTS 모델을 준비하지 않았습니다. Windows 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': 'O modelo do Qwen3-TTS não está preparado. As respostas estão sendo lidas com a voz do Windows.',
+        'es-419': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de Windows.',
+        'es-ES': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de Windows.'
+      }
+    },
+    model: {
+      'ja-JP': 'モデル',
+      'en-US': 'Model',
+      'fr-FR': 'Modèle',
+      'de-DE': 'Modell',
+      'hi-IN': 'मॉडल',
+      'id-ID': 'Model',
+      'it-IT': 'Modello',
+      'ko-KR': '모델',
+      'pt-BR': 'Modelo',
+      'es-419': 'Modelo',
+      'es-ES': 'Modelo'
+    },
+    modelHint: {
+      'ja-JP': '1.7B は読み始める前の無音が短い代わりに、メモリを約 1GB 多く使います。変えると新しいモデルの準備が要ります。',
+      'en-US': '1.7B leaves less silence before it starts speaking, and uses about 1 GB more memory. After a change, the new model has to be prepared.',
+      'fr-FR': '1.7B laisse moins de silence avant de commencer à parler, mais occupe environ 1 Go de mémoire de plus. Après un changement, il faut préparer le nouveau modèle.',
+      'de-DE': '1.7B lässt weniger Stille, bevor es zu sprechen beginnt, belegt aber rund 1 GB mehr Speicher. Nach einem Wechsel muss das neue Modell vorbereitet werden.',
+      'hi-IN': '1.7B बोलना शुरू करने से पहले कम चुप रहता है, लेकिन करीब 1 GB ज़्यादा मेमोरी लेता है। बदलने के बाद नया मॉडल तैयार करना होगा।',
+      'id-ID': '1.7B lebih sedikit diam sebelum mulai berbicara, tetapi memakai sekitar 1 GB memori lebih banyak. Setelah diganti, model baru perlu disiapkan.',
+      'it-IT': '1.7B lascia meno silenzio prima di iniziare a parlare, ma occupa circa 1 GB di memoria in più. Dopo il cambio, il nuovo modello va preparato.',
+      'ko-KR': '1.7B는 말을 시작하기 전의 무음이 짧지만 메모리를 약 1GB 더 씁니다. 바꾼 뒤에는 새 모델을 준비해야 합니다.',
+      'pt-BR': 'O 1.7B deixa menos silêncio antes de começar a falar, mas ocupa cerca de 1 GB de memória a mais. Depois de trocar, é preciso preparar o novo modelo.',
+      'es-419': '1.7B deja menos silencio antes de empezar a hablar, pero ocupa aproximadamente 1 GB más de memoria. Después de cambiarlo, hay que preparar el nuevo modelo.',
+      'es-ES': '1.7B deja menos silencio antes de empezar a hablar, pero ocupa aproximadamente 1 GB más de memoria. Tras cambiarlo, hay que preparar el nuevo modelo.'
     }
   },
   recognition: {
@@ -495,7 +535,7 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Una vez preparado, toma el relevo cuando el reconocimiento de voz de este ordenador se detiene.'
     },
     automatic: {
-      mlx: {
+      metal: {
         'ja-JP': '自動(搭載メモリに合わせる)',
         'en-US': 'Automatic (by installed memory)',
         'fr-FR': 'Automatique (selon la mémoire installée)',
@@ -508,7 +548,7 @@ export const settingsVoice = defineMessages({
         'es-419': 'Automático (según la memoria instalada)',
         'es-ES': 'Automático (según la memoria instalada)'
       },
-      cuda: {
+      vulkan: {
         'ja-JP': '自動(GPU のメモリに合わせる)',
         'en-US': 'Automatic (by GPU memory)',
         'fr-FR': 'Automatique (selon la mémoire du GPU)',

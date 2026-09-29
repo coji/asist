@@ -9,7 +9,7 @@ import { parseVapWorkerLine } from '@shared/vap-protocol'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './i18n'
 import { pythonEnv } from './child-env'
-import { downloadPinnedFile } from './onnx-runtime'
+import { downloadPinnedFile } from './pinned-download'
 import { resourcePath } from './resource-path'
 import { createEnvironment, environmentCurrent, installRequirements, recordEnvironment, venvPython } from './uv'
 

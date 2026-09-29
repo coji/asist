@@ -76,8 +76,8 @@ export interface SpeechSegment {
 }
 
 /**
- * The speech engine: one that speaks the VOICEVOX-compatible API, Qwen3-TTS on the local MLX
- * runtime, the macOS speech synthesis, or none at all. With `none` the reply is neither synthesized nor played and arrives only as text in the
+ * The speech engine: one that speaks the VOICEVOX-compatible API, Qwen3-TTS on this computer's GPU,
+ * the OS's speech synthesis, or none at all. With `none` the reply is neither synthesized nor played and arrives only as text in the
  * feed, for a user who wants text alone.
  */
 export type TtsEngine = 'voicevox' | 'aivisspeech' | 'qwen3tts' | 'system' | 'none'
@@ -694,19 +694,16 @@ export interface SetupStatus {
     resolvedModel: ResolvedAsrModel
     recommendedModel: ResolvedAsrModel
     label: string
-    /** The memory the recommendation is decided from: the Mac's own on mlx, the GPU's on cuda. */
+    /** The memory the recommendation is decided from: the Mac's own on metal, the GPU's on vulkan. */
     totalMemoryGb: number
-    runtimeInstalled: boolean
     modelInstalled: boolean
-    /** What preparing the resolved model downloads: the environment and the model, less what is installed. */
+    /** What preparing the resolved model downloads: nothing once it is installed. */
     downloadGb: number
     ready: boolean
   } | null
-  /** The local Qwen3-TTS model. `recommended` is whether this Mac has the memory to run it beside the speech recognition. */
+  /** The Qwen3-TTS size the settings name. `recommended` is whether this machine has the memory to run it beside the speech recognition. */
   qwenTts: {
-    label: string
     recommended: boolean
-    runtimeInstalled: boolean
     modelInstalled: boolean
     ready: boolean
   }
@@ -1034,7 +1031,7 @@ export interface RendererApi {
   completeSetup(request: CompleteSetupRequest): Promise<AppSettings>
   prepareAsrModel(model?: AsrModel): Promise<{ ok: boolean; message: string }>
   cancelAsrPreparation(): Promise<boolean>
-  /** Installs the MLX runtime if needed and downloads the Qwen3-TTS model, about 1.9 GB. Progress arrives through onSetupProgress. */
+  /** Downloads the files of the Qwen3-TTS size the settings name and starts it. Progress arrives through onSetupProgress. */
   prepareTtsModel(): Promise<{ ok: boolean; message: string }>
   cancelTtsPreparation(): Promise<boolean>
   onSetupProgress(callback: (p: SetupProgress) => void): () => void

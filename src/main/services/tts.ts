@@ -108,6 +108,12 @@ const starting = new Map<TtsEngine, Promise<void>>()
  * stopped as soon as another engine is chosen.
  */
 export function ensureEngine(engine: TtsEngine = currentEngine()): Promise<void> {
+  // An engine this machine cannot run, such as Qwen3-TTS in settings brought from another machine, is
+  // never started; reading with it fails with the reason instead.
+  if (!ttsEngineRuns(engine, platformCapabilities().localSpeech)) {
+    qwenTts.stop()
+    return Promise.resolve()
+  }
   if (engine === 'qwen3tts') return qwenTts.ensureWorker().then(() => undefined)
   qwenTts.stop()
   if (engine === 'system' || engine === 'none') return Promise.resolve()
@@ -198,7 +204,7 @@ export async function resolveVoice(settings: AppSettings = getSettings(), locale
   const engine = settings.ttsEngine
   if (engine === 'none') throw new Error(errorText('voice.speech.noSpeech'))
   if (engine === 'system') return { engine: 'system' }
-  if (!ttsEngineRuns(engine, platformCapabilities().speechRuntime)) {
+  if (!ttsEngineRuns(engine, platformCapabilities().localSpeech)) {
     throw new Error(errorText('voice.speech.cannotRunHere', { engine: engineLabel(engine) }))
   }
   if (engine === 'qwen3tts') {

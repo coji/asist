@@ -17,7 +17,7 @@ import {
   type TurnStartOptions
 } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
-import { QWEN_TTS_MODEL, recommendQwenTts } from '@shared/tts-models'
+import { recommendQwenTts } from '@shared/tts-models'
 import { parseSettingsPatch } from '@shared/settings'
 import { parseTurnMetricLog } from '@shared/turn-metric-log'
 import { docsUrl } from '@shared/docs-links'
@@ -187,8 +187,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       services,
       asr: asrStatus,
       qwenTts: {
-        label: QWEN_TTS_MODEL.label,
-        recommended: recommendQwenTts(platformCapabilities().speechRuntime),
+        recommended: recommendQwenTts(platformCapabilities().localSpeech),
         ...qwenInstalled,
         ready: qwenTts.available()
       }
@@ -505,6 +504,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
         before.voicevoxSpeaker !== after.voicevoxSpeaker ||
         before.aivisSpeaker !== after.aivisSpeaker ||
         before.qwenTtsVoice !== after.qwenTtsVoice ||
+        before.qwenTtsSize !== after.qwenTtsSize ||
         // The clips exist for Japanese only, so the language decides whether there is a bank at all.
         before.conversationLocale !== after.conversationLocale
       ) {

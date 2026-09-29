@@ -4,6 +4,7 @@ import type { ApiKeyState, RendererApi, SetupProgress } from '@shared/ipc'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
 import { errorText } from '@shared/i18n/error-text'
 import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
+import { QWEN_TTS_MODELS } from '@shared/tts-models'
 import { voiceController } from '@/voice/VoiceController'
 
 /**
@@ -62,7 +63,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return {
       ...setup,
       services: await api.getStatus(),
-      asr: setup.asr && { ...setup.asr, runtimeInstalled: state.asrReady, modelInstalled: state.asrReady, downloadGb: state.asrReady ? 0 : setup.asr.downloadGb, ready: state.asrReady }
+      asr: setup.asr && { ...setup.asr, modelInstalled: state.asrReady, downloadGb: state.asrReady ? 0 : setup.asr.downloadGb, ready: state.asrReady }
     }
   }
   api.saveApiKey = async (provider) => {
@@ -90,8 +91,8 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return { ok: true, message: translate('settingsModels.preparation.done', { model: asr.label }) }
   }
   api.prepareTtsModel = async () => {
-    const totalMb = 1974
-    const message = translate('settingsModels.preparation.downloading', { model: 'Qwen3-TTS 0.6B 8-bit MLX' })
+    const totalMb = 1214
+    const message = translate('settingsModels.preparation.downloading', { model: QWEN_TTS_MODELS['0.6b'].label })
     for (let pct = 0; pct <= 100; pct += 4) {
       progressListeners.forEach((listener) => listener({ status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb, message }))
       await sleep(120)

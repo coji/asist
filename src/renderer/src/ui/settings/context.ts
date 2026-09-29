@@ -70,15 +70,15 @@ export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts
 
 /**
  * Whether speech recognition is ready, which the models card shows and the page list counts: the local
- * model where the machine has a runtime for one, Whisper in the browser where it has not. Null while the
+ * model where the machine runs one, Whisper in the browser where it does not. Null while the
  * state of the local model is still being read.
  */
 export function speechRecognitionReady(
   settings: AppSettings,
   setup: SetupStatus | null,
-  speechRuntime: PlatformCapabilities['speechRuntime']
+  localSpeech: PlatformCapabilities['localSpeech']
 ): boolean | null {
-  if (speechRuntime.kind === null) return settings.localAsrEnabled
+  if (localSpeech.backend === null) return settings.localAsrEnabled
   return setup ? setup.asr?.ready === true : null
 }
 
@@ -90,9 +90,9 @@ export function speechRecognitionReady(
 export function cascadeListeningReady(
   settings: AppSettings,
   setup: SetupStatus | null,
-  speechRuntime: PlatformCapabilities['speechRuntime']
+  localSpeech: PlatformCapabilities['localSpeech']
 ): boolean | null {
-  return settings.localAsrEnabled || speechRecognitionReady(settings, setup, speechRuntime)
+  return settings.localAsrEnabled || speechRecognitionReady(settings, setup, localSpeech)
 }
 
 /** How the replies of the cascade engine are read aloud, as speechReadiness tells it. */
@@ -103,9 +103,9 @@ export type SpeechReadiness = 'ready' | 'off' | 'missing' | 'cannotRun' | 'check
  * alone. 'missing' is an engine that cannot be reached or whose model is not prepared, in which case the
  * OS's speech synthesis reads the replies instead.
  */
-export function speechReadiness(engine: TtsEngine, status: AppStatus | null, speechRuntime: PlatformCapabilities['speechRuntime']): SpeechReadiness {
+export function speechReadiness(engine: TtsEngine, status: AppStatus | null, localSpeech: PlatformCapabilities['localSpeech']): SpeechReadiness {
   if (engine === 'none') return 'off'
-  if (!ttsEngineRuns(engine, speechRuntime)) return 'cannotRun'
+  if (!ttsEngineRuns(engine, localSpeech)) return 'cannotRun'
   if (!ttsNeedsPreparation(engine)) return 'ready'
   if (status === null) return 'checking'
   return status.tts ? 'ready' : 'missing'

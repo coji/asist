@@ -53,7 +53,7 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 ## はじめる
 
-必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りをこのコンピュータの中で動かすには、NVIDIA の GPU(GeForce RTX 20 か GTX 16 以降の世代、ドライバー 580 以降)が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。Windows 版には、カレンダーと Qwen3-TTS はまだありません。
+必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りと Qwen3-TTS をこのコンピュータの中で動かすには、Vulkan が動く単体の GPU が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。Windows 版には、カレンダーはまだありません。
 
 1. [Releases](https://github.com/nyosegawa/asist/releases/latest) からダウンロードします。Mac では `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。Windows では `ASIST-Setup-x64.exe` をダウンロードして開きます。インストーラーにはまだ署名が無いので、SmartScreen の警告が出たら「詳細情報」を押し、そのあと「実行」を押します。
 2. ASIST を開き、初回セットアップで言語、モデル、声、マイクを選びます。

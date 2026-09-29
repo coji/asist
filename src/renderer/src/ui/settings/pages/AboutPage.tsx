@@ -92,7 +92,7 @@ function Update({ t }: { t: Translate }): React.JSX.Element | null {
 function Credits({ group, t }: { group: CreditGroup; t: Translate }): React.JSX.Element {
   return (
     <Group title={t(`settingsAbout.${group}.title`)} description={t(`settingsAbout.${group}.description`)}>
-      {creditsOf(group, platformCapabilities().speechRuntime.kind).map((credit) => (
+      {creditsOf(group, platformCapabilities().localSpeech.backend !== null).map((credit) => (
         <Row key={credit.id} label={credit.name} hint={t(credit.use)}>
           <Chip tone="dim">{credit.license ?? t('settingsAbout.providerTerms')}</Chip>
           <Source credit={credit} />

@@ -1,38 +1,42 @@
 import { describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
-import { nvidiaGpuSupport } from '@shared/nvidia-gpu'
 import { deriveCapabilities, shortcutLabel, type Machine } from '@shared/platform'
+import type { SpeechDevice } from '@shared/speech-devices'
 
 const GIB = 1024 ** 3
 const unasked = (): boolean => {
   throw new Error('the microphone check runs on Windows alone')
 }
 
+const gpu = (name: string, description: string, memoryGb: number, kind: SpeechDevice['kind'] = 'gpu'): SpeechDevice =>
+  ({ name, description, kind, memoryTotal: memoryGb * GIB })
+const CPU = gpu('CPU', 'Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz', 32, 'cpu')
+
 /**
- * A machine whose nvidia-smi printed this. Its microphone check is
- * given only where a test is about it.
+ * A machine whose device list is this, or failed when null. Its microphone check is given only where a
+ * test is about it.
  */
 const machine = (
   platform: string,
   arch: string,
-  nvidiaSmi = '',
+  devices: SpeechDevice[] | null = [CPU],
   totalMemoryBytes = 16 * GIB,
   micCancelsEcho: () => boolean = platform === 'win32' ? () => false : unasked
 ): Machine => ({
   platform,
   arch,
   totalMemoryBytes,
-  nvidiaGpu: () => nvidiaGpuSupport(nvidiaSmi),
+  speechDevices: () => devices,
   micCancelsEcho,
   calendarBackend: undefined,
   googleClient: () => false
 })
 
 describe('what a machine can run', () => {
-  it('gives an Apple Silicon Mac the MLX runtime with its memory, the native microphone without a check, the calendar and Alt+Space', () => {
+  it('gives an Apple Silicon Mac the local speech on Metal with its memory, the native microphone without a check, the calendar and Alt+Space', () => {
     expect(deriveCapabilities(machine('darwin', 'arm64'))).toEqual({
       os: 'macos',
-      speechRuntime: { kind: 'mlx', memoryGb: 16 },
+      localSpeech: { backend: 'metal', device: 'MTL0', memoryGb: 16 },
       nativeMic: true,
       calendar: 'eventkit',
       hotkey: 'Alt+Space'
@@ -40,40 +44,44 @@ describe('what a machine can run', () => {
   })
 
   it('counts the memory in whole GB the way the recommendations read it', () => {
-    const memory = (bytes: number) => deriveCapabilities(machine('darwin', 'arm64', '', bytes)).speechRuntime
-    expect(memory(15.7 * GIB)).toEqual({ kind: 'mlx', memoryGb: 16 })
-    expect(memory(0.2 * GIB)).toEqual({ kind: 'mlx', memoryGb: 1 })
+    const memory = (bytes: number) => deriveCapabilities(machine('darwin', 'arm64', [], bytes)).localSpeech
+    expect(memory(15.7 * GIB)).toEqual({ backend: 'metal', device: 'MTL0', memoryGb: 16 })
+    expect(memory(0.2 * GIB)).toEqual({ backend: 'metal', device: 'MTL0', memoryGb: 1 })
   })
 
-  it('never runs nvidia-smi on a Mac', () => {
-    const nvidiaGpu = vi.fn(() => nvidiaGpuSupport(''))
-    deriveCapabilities({ ...machine('darwin', 'arm64'), nvidiaGpu })
-    expect(nvidiaGpu).not.toHaveBeenCalled()
+  it('never lists the devices on a Mac', () => {
+    const speechDevices = vi.fn(() => [CPU])
+    deriveCapabilities({ ...machine('darwin', 'arm64'), speechDevices })
+    expect(speechDevices).not.toHaveBeenCalled()
   })
 
-  it('gives x64 Windows with a usable NVIDIA GPU the CUDA runtime with the memory of that GPU, and none of the Mac-only helpers', () => {
-    expect(deriveCapabilities(machine('win32', 'x64', 'NVIDIA GeForce RTX 2080, 8192, 591.86, 7.5\r\n', 32 * GIB))).toEqual({
+  it('gives x64 Windows with a discrete GPU the local speech on Vulkan on that GPU with its memory, and none of the Mac-only helpers', () => {
+    expect(deriveCapabilities(machine('win32', 'x64', [gpu('Vulkan0', 'NVIDIA GeForce RTX 2080', 8), CPU], 32 * GIB))).toEqual({
       os: 'windows',
-      speechRuntime: { kind: 'cuda', memoryGb: 8 },
+      localSpeech: { backend: 'vulkan', device: 'Vulkan0', memoryGb: 8 },
       nativeMic: false,
       calendar: null,
       hotkey: expect.any(String)
     })
-    expect(deriveCapabilities(machine('win32', 'x64', 'NVIDIA GeForce RTX 2060, 6144, 581.29, 7.5')).speechRuntime).toEqual({ kind: 'cuda', memoryGb: 6 })
+  })
+
+  it('runs the local speech on the discrete GPU with the most memory, never on an integrated one', () => {
+    const devices = [gpu('Vulkan0', 'Intel(R) UHD Graphics 770', 16, 'igpu'), gpu('Vulkan1', 'NVIDIA GeForce RTX 3060', 12), gpu('Vulkan2', 'AMD Radeon RX 7900 XTX', 24), CPU]
+    expect(deriveCapabilities(machine('win32', 'x64', devices)).localSpeech).toEqual({ backend: 'vulkan', device: 'Vulkan2', memoryGb: 24 })
   })
 
   it.each([
-    ['nvidia-smi listed no GPU', '', 'no-nvidia-gpu'],
-    ['the only GPU is a GTX 1080', 'NVIDIA GeForce GTX 1080, 8192, 581.57, 6.1', 'gpu-too-old'],
-    ['the driver is older than 580', 'NVIDIA GeForce RTX 3060, 12288, 572.83, 8.6', 'driver-too-old']
-  ])('gives x64 Windows no local speech runtime when %s, with the reason', (_case, nvidiaSmi, reason) => {
-    expect(deriveCapabilities(machine('win32', 'x64', nvidiaSmi)).speechRuntime).toEqual({ kind: null, reason })
+    ['only an integrated GPU and the CPU are listed', [gpu('Vulkan0', 'Intel(R) Iris(R) Xe Graphics', 16, 'igpu'), CPU], 'no-discrete-gpu'],
+    ['only the CPU is listed', [CPU], 'no-discrete-gpu'],
+    ['the device list could not be read', null, 'gpu-check-failed']
+  ])('gives x64 Windows no local speech when %s, with the reason', (_case, devices, reason) => {
+    expect(deriveCapabilities(machine('win32', 'x64', devices)).localSpeech).toEqual({ backend: null, reason })
   })
 
   it('gives x64 Windows the native microphone exactly when its check finds echo cancellation on, asking once', () => {
     for (const cancelsEcho of [true, false]) {
       const micCancelsEcho = vi.fn(() => cancelsEcho)
-      expect(deriveCapabilities(machine('win32', 'x64', '', 32 * GIB, micCancelsEcho)).nativeMic).toBe(cancelsEcho)
+      expect(deriveCapabilities(machine('win32', 'x64', [CPU], 32 * GIB, micCancelsEcho)).nativeMic).toBe(cancelsEcho)
       expect(micCancelsEcho).toHaveBeenCalledOnce()
     }
   })

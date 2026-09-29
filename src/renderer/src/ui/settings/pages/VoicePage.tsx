@@ -5,8 +5,8 @@ import { asrModelChoices, type AsrModel } from '@shared/asr-models'
 import { HoloSwitch } from '@/components/ui/switch'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
-import { QWEN_TTS_VOICES, ttsEngineRuns, type QwenTtsVoice } from '@shared/tts-models'
-import { SPEECH_RUNTIME_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
+import { QWEN_TTS_MODELS, QWEN_TTS_SIZES, QWEN_TTS_VOICES, offeredQwenTtsSizes, ttsEngineRuns, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
+import { LOCAL_SPEECH_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { ttsEngineLabel, isExternalTts, speechReadiness, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
@@ -48,23 +48,27 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const engine = settings.ttsEngine
   const features = conversationFeatures(settings.conversationLocale)
   const capabilities = platformCapabilities()
-  const speechRuntime = capabilities.speechRuntime
+  const localSpeech = capabilities.localSpeech
   // The engines this machine runs that can read the conversation language. A saved engine that is not
   // among them, which a change of language or settings brought from another machine leaves behind,
   // shows as no selection until one is picked.
   const engines: TtsEngine[] = [
     ...(features.japaneseTts ? (['voicevox', 'aivisspeech'] as const) : []),
-    ...(features.qwenTts && ttsEngineRuns('qwen3tts', speechRuntime) ? (['qwen3tts'] as const) : []),
+    ...(features.qwenTts && ttsEngineRuns('qwen3tts', localSpeech) ? (['qwen3tts'] as const) : []),
     'system',
     'none'
   ]
   const engineUsable = engines.includes(engine)
   const speakers = useSpeakerOptions(engineUsable, engine)
+  // The size is chosen where the memory holds more than one. A saved size this machine does not offer,
+  // which settings brought from a larger machine leave behind, stays in the list because it is the one
+  // that runs, until a smaller one is picked.
+  const offeredSizes = offeredQwenTtsSizes(localSpeech)
+  const qwenTtsSizes = QWEN_TTS_SIZES.filter((size) => offeredSizes.includes(size) || size === settings.qwenTtsSize)
   const asrReady = setup?.asr?.ready === true
-  const asrChoices = speechRuntime.kind === null ? [] : asrModelChoices(speechRuntime.kind, settings.asrModel)
-  const selectionOffered = asrChoices.every((choice) => choice.offered)
+  const asrChoices = localSpeech.backend === null ? [] : asrModelChoices()
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
-  const ttsMissing = engineUsable && speechReadiness(engine, status, speechRuntime) === 'missing'
+  const ttsMissing = engineUsable && speechReadiness(engine, status, localSpeech) === 'missing'
   const preview = (
     <Btn
       tone="quiet"
@@ -116,12 +120,12 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         <Row
           label={t('settingsVoice.speech.engine')}
           hint={
-            !ttsEngineRuns(engine, speechRuntime)
+            !ttsEngineRuns(engine, localSpeech)
               ? t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, engine) })
               : !ttsMissing
                 ? undefined
                 : engine === 'qwen3tts'
-                  ? t('settingsVoice.speech.qwenNotPrepared')
+                  ? t(osMessageKey('settingsVoice.speech.qwenNotPrepared', capabilities.os))
                   : t(osMessageKey('settingsVoice.speech.engineMissing', capabilities.os), { engine: ttsEngineLabel(t, engine) })
           }
         >
@@ -176,6 +180,22 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
             {preview}
           </Row>
         )}
+        {engineUsable && engine === 'qwen3tts' && qwenTtsSizes.length > 1 && (
+          <Row label={t('settingsVoice.speech.model')} hint={t('settingsVoice.speech.modelHint')}>
+            <select
+              className="st-select"
+              aria-label={t('settingsVoice.speech.model')}
+              value={settings.qwenTtsSize}
+              onChange={(e) => set({ qwenTtsSize: e.target.value as QwenTtsSize })}
+            >
+              {qwenTtsSizes.map((size) => (
+                <option key={size} value={size}>
+                  {QWEN_TTS_MODELS[size].label}
+                </option>
+              ))}
+            </select>
+          </Row>
+        )}
         {engineUsable && engine === 'qwen3tts' && (
           <Row label={t('settingsVoice.speech.voice')} hint={t('settingsVoice.speech.voiceHint')}>
             <select
@@ -197,18 +217,16 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
       </Group>
 
       <Group title={t('settingsVoice.recognition.title')} description={t('settingsVoice.recognition.description')}>
-        {speechRuntime.kind === null ? (
-          <Row label={t('settingsVoice.recognition.model')} hint={t(SPEECH_RUNTIME_UNAVAILABLE_TEXT[speechRuntime.reason])} />
+        {localSpeech.backend === null ? (
+          <Row label={t('settingsVoice.recognition.model')} hint={t(LOCAL_SPEECH_UNAVAILABLE_TEXT[localSpeech.reason])} />
         ) : (
           <>
             <Row
               label={t('settingsVoice.recognition.model')}
               hint={
-                !selectionOffered
-                  ? t('speechRecognition.errors.unknownModel')
-                  : setup?.asr
-                    ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, speechRuntime.kind, setup.asr) })
-                    : t('settingsVoice.recognition.checking')
+                setup?.asr
+                  ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, localSpeech.backend, setup.asr) })
+                  : t('settingsVoice.recognition.checking')
               }
             >
               <Chip tone={asrReady ? 'ok' : 'warn'}>{asrReady ? t('common.ready') : t('common.notReady')}</Chip>
@@ -224,7 +242,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                     .catch((err: unknown) => toast({ kind: 'error', title: t('settingsVoice.recognition.changeFailed'), body: displayError(err) }))
                 }}
               >
-                <option value="auto">{t(`settingsVoice.recognition.automatic.${speechRuntime.kind}`)}</option>
+                <option value="auto">{t(`settingsVoice.recognition.automatic.${localSpeech.backend}`)}</option>
                 {asrChoices.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}

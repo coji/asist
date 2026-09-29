@@ -7,15 +7,11 @@ import { app } from 'electron'
 import type { SetupProgress } from '@shared/ipc'
 import type { MessageKey } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
+import type { PinnedFile } from '@shared/pinned-file'
 import { pythonEnv } from './child-env'
 import { errorMessage, t } from './i18n'
-import {
-  downloadMissing,
-  ensureRuntime,
-  pythonPath,
-  runtimeInstalled,
-  type PinnedFile
-} from './onnx-runtime'
+import { ensureRuntime, pythonPath, runtimeInstalled } from './onnx-runtime'
+import { downloadMissing } from './pinned-download'
 import { resourcePath } from './resource-path'
 
 /**

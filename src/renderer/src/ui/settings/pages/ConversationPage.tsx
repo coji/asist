@@ -297,10 +297,10 @@ const SPEECH_CHIP = {
 function CascadeEngineRows({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, status, setup, go } = ctx
   const t = useT()
-  const { os, speechRuntime } = platformCapabilities()
-  const listening = cascadeListeningReady(settings, setup, speechRuntime)
+  const { os, localSpeech } = platformCapabilities()
+  const listening = cascadeListeningReady(settings, setup, localSpeech)
   const engine = settings.ttsEngine
-  const speech = speechReadiness(engine, status, speechRuntime)
+  const speech = speechReadiness(engine, status, localSpeech)
   const engineName = ttsEngineLabel(t, engine)
   const speechChip =
     speech === 'missing'
@@ -313,7 +313,7 @@ function CascadeEngineRows({ ctx }: { ctx: SettingsContext }): React.JSX.Element
         ? t('voice.speech.cannotRunHere', { engine: engineName })
         : speech === 'missing'
           ? engine === 'qwen3tts'
-            ? t('settingsVoice.speech.qwenNotPrepared')
+            ? t(osMessageKey('settingsVoice.speech.qwenNotPrepared', os))
             : t(osMessageKey('settingsVoice.speech.engineMissing', os), { engine: engineName })
           : engineName
   return (

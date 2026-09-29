@@ -1,13 +1,19 @@
 import { randomUUID } from 'node:crypto'
-import { QWEN_TTS_MODEL, type QwenTtsVoice } from '@shared/tts-models'
+import fs from 'node:fs'
+import { QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsFiles, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
 import type { SetupProgress } from '@shared/ipc'
-import * as runtime from './speech-runtime'
+import { platformCapabilities } from './platform'
+import { getSettings } from './settings'
+import { ttsWorkerPath } from './speech-binaries'
+import { filesInstalled, modelFilePath, prepareModelFiles } from './speech-models'
 import { SpeechShaper, encodeWav } from './speech-shaper'
+import { startSpeechWorker, type SpeechWorker } from './speech-worker'
 
 /**
- * Speech synthesis with the pinned Qwen3-TTS model, which runs in a worker on the speech runtime. The
- * worker serves one request at a time in arrival order and returns the audio in pieces while the
- * sentence is still being generated, so a caller can start playback after the first piece.
+ * Speech synthesis with Qwen3-TTS in qwen3-tts-worker, on the GPU the capabilities chose, at the size the
+ * setting names. The worker serves one request at a time in arrival order and returns the audio in pieces
+ * while the sentence is still being generated: its first frame alone, then four frames at a time, so a
+ * caller can start playback after the first piece.
  */
 
 export interface QwenSpeechRequest {
@@ -58,18 +64,21 @@ class PieceQueue {
   }
 }
 
-let worker: runtime.SpeechWorker | null = null
+let worker: SpeechWorker | null = null
+/** The size the running worker loaded. */
+let workerSize: QwenTtsSize | null = null
 let workerReady = false
 let starting: Promise<boolean> | null = null
 let silenceTimer: NodeJS.Timeout | null = null
 const requests = new Map<string, PieceQueue>()
 
-export function installationStatus(): { runtimeInstalled: boolean; modelInstalled: boolean } {
-  return { runtimeInstalled: runtime.runtimeInstalled(), modelInstalled: runtime.modelInstalled(QWEN_TTS_MODEL) }
+/** Whether the files of the size are there. */
+export function installationStatus(size: QwenTtsSize = getSettings().qwenTtsSize): { modelInstalled: boolean } {
+  return { modelInstalled: filesInstalled(qwenTtsFiles(size)) }
 }
 
 export function available(): boolean {
-  return Boolean(worker && workerReady && worker.alive)
+  return Boolean(worker && workerReady && worker.alive && workerSize === getSettings().qwenTtsSize)
 }
 
 /** True while a worker this app started is loading the model. */
@@ -106,22 +115,32 @@ function handleMessage(message: Record<string, unknown>): void {
   armSilenceTimer()
 }
 
-function startWorker(): Promise<boolean> {
-  if (available()) return Promise.resolve(true)
+async function startWorker(): Promise<boolean> {
+  if (available()) return true
   if (starting) return starting
   stopWorker()
-  const started = runtime.startWorker({
-    worker: 'tts',
-    model: QWEN_TTS_MODEL,
-    onMessage: (message) => {
-      if (worker === started) handleMessage(message)
-    },
-    onFailure: (error) => {
-      if (worker === started) stopWorker(error)
+  const size = getSettings().qwenTtsSize
+  const { localSpeech } = platformCapabilities()
+  // The capabilities leave Qwen3-TTS out where the local speech does not run, so a start here is a caller's mistake.
+  if (localSpeech.backend === null) throw new Error('Qwen3-TTS cannot run on this machine')
+  if (!installationStatus(size).modelInstalled) return false
+  // The worker ships with the app, so a missing one is a broken build rather than something to prepare.
+  if (!fs.existsSync(ttsWorkerPath())) throw new Error(`qwen3-tts-worker is missing from ${ttsWorkerPath()}`)
+  const started: SpeechWorker = startSpeechWorker(
+    ttsWorkerPath(),
+    [modelFilePath(QWEN_TTS_MODELS[size].talker), modelFilePath(QWEN_TTS_CODEC), '--device', localSpeech.device],
+    'qwen3-tts',
+    {
+      onMessage: (message) => {
+        if (worker === started) handleMessage(message)
+      },
+      onFailure: (error) => {
+        if (worker === started) stopWorker(error)
+      }
     }
-  })
-  if (!started) return Promise.resolve(false)
+  )
   worker = started
+  workerSize = size
   const operation = started.ready
     .then((ready) => {
       if (worker !== started) return false
@@ -136,7 +155,7 @@ function startWorker(): Promise<boolean> {
   return operation
 }
 
-/** Starts the worker from the local snapshot. Resolves false when the runtime or the model is not installed. */
+/** Starts the worker on the size the setting names. Resolves false when the worker or the model files are missing. */
 export function ensureWorker(): Promise<boolean> {
   return startWorker()
 }
@@ -148,6 +167,7 @@ export function stop(): void {
 function stopWorker(error: Error = new DOMException('Qwen3-TTS worker stopped', 'AbortError')): void {
   const stale = worker
   worker = null
+  workerSize = null
   workerReady = false
   starting = null
   stale?.stop()
@@ -173,7 +193,7 @@ const plausibleSeconds = (text: string): number =>
 const CLIP_ATTEMPTS = 6
 
 /**
- * Synthesizes one text and yields mono pieces of up to half a second each as they are generated,
+ * Synthesizes one text and yields mono pieces of up to a third of a second each as they are generated,
  * with the silence around the sentence cut and the level evened out. The stream ends early when
  * the model rambles past a plausible length. Aborting the signal, or leaving the loop early, cancels
  * the request in the worker.
@@ -233,13 +253,15 @@ export async function synthesizeWav(request: QwenSpeechRequest, signal?: AbortSi
 let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
 let prepareController: AbortController | null = null
 
-/** Installs the runtime if needed and downloads the pinned model. Progress arrives through `onProgress`. */
+/** Downloads the files of the size the setting names and starts the worker on them. Progress arrives through `onProgress`. */
 export function prepare(onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
   if (prepareInFlight) return prepareInFlight
   const controller = new AbortController()
   prepareController = controller
-  const operation = runtime.prepareModel({
-    model: QWEN_TTS_MODEL,
+  const size = getSettings().qwenTtsSize
+  const operation = prepareModelFiles({
+    files: qwenTtsFiles(size),
+    label: QWEN_TTS_MODELS[size].label,
     feature: 'Qwen3-TTS',
     signal: controller.signal,
     onProgress,

@@ -551,32 +551,43 @@ export const settingsAbout = defineMessages({
       'es-ES': 'El historial de la memoria y los worktrees de las tareas de edición'
     },
     asr: {
-      mlx: {
-        'ja-JP': 'MLX で動かす音声認識',
-        'en-US': 'Speech recognition run through MLX',
-        'fr-FR': 'Reconnaissance vocale exécutée par MLX',
-        'de-DE': 'Spracherkennung über MLX',
-        'hi-IN': 'MLX से चलने वाली वाक् पहचान',
-        'id-ID': 'Pengenalan suara lewat MLX',
-        'it-IT': 'Riconoscimento vocale eseguito con MLX',
-        'ko-KR': 'MLX로 도는 음성 인식',
-        'pt-BR': 'Reconhecimento de fala executado por MLX',
-        'es-419': 'Reconocimiento de voz ejecutado con MLX',
-        'es-ES': 'Reconocimiento de voz ejecutado con MLX'
-      },
-      cuda: {
-        'ja-JP': 'NVIDIA の GPU で動かす音声認識',
-        'en-US': 'Speech recognition run on the NVIDIA GPU',
-        'fr-FR': 'Reconnaissance vocale exécutée sur le GPU NVIDIA',
-        'de-DE': 'Spracherkennung auf der NVIDIA-GPU',
-        'hi-IN': 'NVIDIA GPU पर चलने वाली वाक् पहचान',
-        'id-ID': 'Pengenalan suara di GPU NVIDIA',
-        'it-IT': 'Riconoscimento vocale eseguito sulla GPU NVIDIA',
-        'ko-KR': 'NVIDIA GPU에서 도는 음성 인식',
-        'pt-BR': 'Reconhecimento de fala executado na GPU NVIDIA',
-        'es-419': 'Reconocimiento de voz ejecutado en la GPU NVIDIA',
-        'es-ES': 'Reconocimiento de voz ejecutado en la GPU NVIDIA'
-      }
+      'ja-JP': '音声認識',
+      'en-US': 'Speech recognition',
+      'fr-FR': 'Reconnaissance vocale',
+      'de-DE': 'Spracherkennung',
+      'hi-IN': 'वाक् पहचान',
+      'id-ID': 'Pengenalan suara',
+      'it-IT': 'Riconoscimento vocale',
+      'ko-KR': '음성 인식',
+      'pt-BR': 'Reconhecimento de fala',
+      'es-419': 'Reconocimiento de voz',
+      'es-ES': 'Reconocimiento de voz'
+    },
+    llamaCpp: {
+      'ja-JP': '音声認識のモデルを GPU で動かす',
+      'en-US': 'Running the speech recognition models on the GPU',
+      'fr-FR': 'Exécution des modèles de reconnaissance vocale sur le GPU',
+      'de-DE': 'Ausführung der Spracherkennungsmodelle auf der GPU',
+      'hi-IN': 'वाक् पहचान के मॉडल GPU पर चलाना',
+      'id-ID': 'Menjalankan model pengenalan suara di GPU',
+      'it-IT': 'Esecuzione dei modelli di riconoscimento vocale sulla GPU',
+      'ko-KR': '음성 인식 모델을 GPU에서 실행',
+      'pt-BR': 'Execução dos modelos de reconhecimento de fala na GPU',
+      'es-419': 'Ejecución de los modelos de reconocimiento de voz en la GPU',
+      'es-ES': 'Ejecución de los modelos de reconocimiento de voz en la GPU'
+    },
+    qwen3TtsGgml: {
+      'ja-JP': 'Qwen3-TTS を GPU で動かす',
+      'en-US': 'Running Qwen3-TTS on the GPU',
+      'fr-FR': 'Exécution de Qwen3-TTS sur le GPU',
+      'de-DE': 'Ausführung von Qwen3-TTS auf der GPU',
+      'hi-IN': 'Qwen3-TTS को GPU पर चलाना',
+      'id-ID': 'Menjalankan Qwen3-TTS di GPU',
+      'it-IT': 'Esecuzione di Qwen3-TTS sulla GPU',
+      'ko-KR': 'Qwen3-TTS를 GPU에서 실행',
+      'pt-BR': 'Execução do Qwen3-TTS na GPU',
+      'es-419': 'Ejecución de Qwen3-TTS en la GPU',
+      'es-ES': 'Ejecución de Qwen3-TTS en la GPU'
     }
   },
   notices: {

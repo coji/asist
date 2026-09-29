@@ -39,13 +39,15 @@ The first time you open ASIST, you go through nine screens in order. Screens tha
 
 5. **Prepare the speech recognition model** (with "Talk by voice")
 
-   On a Mac, ASIST recommends Qwen3-ASR or Whisper running on MLX, depending on how much memory the Mac has. On Windows, it recommends Qwen3-ASR 1.7B or 0.6B, depending on the memory of the NVIDIA GPU, and the first preparation also downloads the CUDA build of PyTorch (about 2 GB) with the model. Click "Prepare the model" to download the model and run it on your computer. You can also choose Whisper running inside the browser. On Windows without a usable NVIDIA GPU, the reason appears in place of the model, so choose Whisper running inside the browser.
+   On a Mac with 16 GB of memory or more, ASIST recommends Qwen3-ASR 1.7B, and Qwen3-ASR 0.6B with less. On Windows, it recommends 1.7B with 6 GB of memory or more on the discrete GPU, and 0.6B with less. Click "Prepare the model" to download the model (about 2.5 GB for 1.7B, about 1.0 GB for 0.6B) and run it on your computer's GPU. You can also choose Whisper running inside the browser. On Windows without a discrete GPU, the reason appears in place of the model, so choose Whisper running inside the browser.
+
+   On Windows, the first start of a new version of ASIST, and the first start after a GPU driver update, is when the driver builds the programs that run on the GPU. Only that time, the preparation takes longer than usual.
 
    ![The screen after the recommended model is ready](/screens/en/setup-4-listening.webp)
 
 6. **Choose a voice for reading aloud** (with "Talk by voice" or "Type, and hear the replies")
 
-   Only the options that can speak the conversation language appear. For Japanese, these are "macOS voice", Qwen3-TTS, VOICEVOX and AivisSpeech on a Mac, and "Windows voice", VOICEVOX and AivisSpeech on Windows. Qwen3-TTS is on the Mac only, and you can choose it with 16 GB of memory or more; it downloads a model (about 1.9 GB) and runs it on your Mac. If you choose the system's voice, ASIST checks whether a voice for that language is installed, and if not, shows you where in System Settings or Windows Settings to add one.
+   Only the options that can speak the conversation language appear. For Japanese, these are "macOS voice", Qwen3-TTS, VOICEVOX and AivisSpeech on a Mac, and "Windows voice", Qwen3-TTS, VOICEVOX and AivisSpeech on Windows. Qwen3-TTS appears on a Mac with 16 GB of memory or more, and on Windows with 8 GB of memory or more on the discrete GPU. It downloads the 0.6B model (about 1.2 GB) and runs it on your computer's GPU. On a Mac with 24 GB of memory or more, and on Windows with 10 GB of GPU memory or more, you can change it to 1.7B (about 2.3 GB) later under "Model" in "Speech" on the "Voice" page of the settings. After the change, prepare the new model on the "Models" page of the settings. If you choose the system's voice, ASIST checks whether a voice for that language is installed, and if not, shows you where in System Settings or Windows Settings to add one.
 
    ![The screen with reading aloud ready](/screens/en/setup-5-speech.webp)
 

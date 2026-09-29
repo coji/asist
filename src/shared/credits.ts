@@ -1,6 +1,5 @@
-import { offeredAsrBuilds, type ResolvedAsrModel } from './asr-models'
+import { ASR_MODEL_SPECS } from './asr-models'
 import type { MessageKey } from './i18n'
-import type { SpeechRuntime } from './platform'
 
 /** The groups of the credits, in the order the about page shows them. */
 export type CreditGroup = 'local' | 'api' | 'data' | 'bundled' | 'software'
@@ -56,10 +55,10 @@ export const CREDITS = [
   {
     id: 'ttsQwen',
     group: 'local',
-    name: 'Qwen3-TTS 12Hz 0.6B CustomVoice 8bit (MLX)',
+    name: 'Qwen3-TTS 12Hz CustomVoice 0.6B, 1.7B (GGUF)',
     provider: 'Alibaba Qwen',
     license: 'Apache-2.0',
-    url: 'https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit'
+    url: 'https://huggingface.co/sakasegawa/qwen3-tts-ggml'
   },
   {
     id: 'maai',
@@ -237,6 +236,22 @@ export const CREDITS = [
     provider: 'The Git Project',
     license: 'GPL-2.0',
     url: 'https://www.kernel.org/pub/software/scm/git/'
+  },
+  {
+    id: 'llamaCpp',
+    group: 'software',
+    name: 'llama.cpp',
+    provider: 'The ggml authors',
+    license: 'MIT',
+    url: 'https://github.com/ggml-org/llama.cpp'
+  },
+  {
+    id: 'qwen3TtsGgml',
+    group: 'software',
+    name: 'qwen3-tts-ggml',
+    provider: 'Sakasegawa',
+    license: 'MIT',
+    url: 'https://github.com/nyosegawa/qwen3-tts-ggml'
   }
 ] as const satisfies readonly Credit[]
 
@@ -245,38 +260,31 @@ export interface ListedCredit extends Credit {
   readonly use: Extract<MessageKey, `settingsAbout.use.${string}`>
 }
 
-/** The owner of each speech recognition model and its license, which every runtime's build of it keeps. */
-const ASR_MODEL_OWNERS: Record<ResolvedAsrModel, Pick<Credit, 'provider' | 'license'>> = {
-  'qwen3-asr-1.7b': { provider: 'Alibaba Qwen', license: 'Apache-2.0' },
-  'qwen3-asr-0.6b': { provider: 'Alibaba Qwen', license: 'Apache-2.0' },
-  'whisper-large-v3-turbo': { provider: 'OpenAI', license: 'MIT' }
-}
-
 /**
- * The local speech recognition models are the builds the runtime's table offers, so a machine credits
- * the models it can run and no other runtime's. Each is named by the label the voice page gives it, and
- * one sentence per runtime says what they are for, because that label already tells them apart.
+ * The local speech recognition models, named by the label the voice page gives them, where the local
+ * speech runs. Both are Alibaba's Qwen3-ASR, converted to GGUF by the ggml project.
  */
-function speechRecognitionCredits(runtime: SpeechRuntime | null): ListedCredit[] {
-  if (runtime === null) return []
-  return offeredAsrBuilds(runtime).map(([model, build]) => ({
-    id: build.id,
+function speechRecognitionCredits(localSpeechRuns: boolean): ListedCredit[] {
+  if (!localSpeechRuns) return []
+  return Object.values(ASR_MODEL_SPECS).map((spec) => ({
+    id: spec.model.repo,
     group: 'local',
-    name: build.label,
-    ...ASR_MODEL_OWNERS[model],
-    url: `https://huggingface.co/${build.id}`,
-    use: `settingsAbout.use.asr.${runtime}`
+    name: `${spec.label} (GGUF)`,
+    provider: 'Alibaba Qwen',
+    license: 'Apache-2.0',
+    url: `https://huggingface.co/${spec.model.repo}`,
+    use: 'settingsAbout.use.asr'
   }))
 }
 
 /** The license ASIST itself is published under, as the LICENSE file at the root of the repository states it. */
 export const ASIST_LICENSE = { name: 'MIT', url: 'https://opensource.org/license/mit' } as const
 
-/** The credits of a group on a machine whose local speech models run on this runtime, or on none. */
-export function creditsOf(group: CreditGroup, speechRuntime: SpeechRuntime | null): ListedCredit[] {
+/** The credits of a group on a machine where the local speech models run or do not. */
+export function creditsOf(group: CreditGroup, localSpeechRuns: boolean): ListedCredit[] {
   const listed = CREDITS.filter((credit) => credit.group === group).map((credit) => ({
     ...credit,
     use: `settingsAbout.use.${credit.id}` as const
   }))
-  return group === 'local' ? [...speechRecognitionCredits(speechRuntime), ...listed] : listed
+  return group === 'local' ? [...speechRecognitionCredits(localSpeechRuns), ...listed] : listed
 }

@@ -25,7 +25,7 @@ vi.mock('../src/main/services/settings', () => ({
   })
 }))
 vi.mock('../src/main/services/qwen-tts', () => ({
-  installationStatus: () => ({ runtimeInstalled: true, modelInstalled: mocks.qwenModelInstalled })
+  installationStatus: () => ({ modelInstalled: mocks.qwenModelInstalled })
 }))
 vi.mock('../src/main/services/tts', () => ({
   available: () => Promise.resolve(mocks.engineUp),

@@ -43,7 +43,7 @@ const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
 const SAME_IN_EVERY_LANGUAGE = new Set([
   'ASIST', 'AGENT JOBS', 'CALENDAR', 'MAIL', 'MEMORY', 'NOTES', 'SETTINGS', 'TASKS', '· FOCUS', '▲ YOU', 'METRIC',
   'LLM', 'ASR', 'TTS', 'AGENT', 'Agent', 'CPU', 'GMT', 'Cc', 'Enter', 'exit', 'push', 'Stars', 'Forks', 'Issues', 'ms', 'GB',
-  'Codex', 'Claude Code', 'Qwen3-ASR 1.7B 8-bit MLX', 'Whisper large-v3-turbo MLX',
+  'Codex', 'Claude Code',
   '/Users/you/Desktop'
 ])
 const READ_ALOUD_ATTRIBUTES = new Set(['aria-label', 'title', 'placeholder', 'alt', 'label'])

@@ -26,11 +26,18 @@ ASIST から開発者へ送るデータはありません。設定とデータ�
 | `api-usage.json` | 有料の API の使用量と料金(日ごとの合計) |
 | `joblogs/` | Agent のジョブのログ |
 | `python/`、`uv-cache/` | uv が取得した Python と、パッケージのキャッシュ |
-| `mlx-audio-runtime/`(macOS)、`cuda-speech-runtime/`(Windows)、`embedding-runtime/`、`vap-runtime/` | このコンピュータで動かすモデルの Python の環境 |
+| `speech-models/` | 声の聞き取りと Qwen3-TTS のモデル |
+| `embedding-runtime/`、`vap-runtime/` | 記憶の意味検索、相槌の種類の判定、MaAI が使う Python の環境 |
 
 動作ログは、上の表の動作ログのフォルダに日ごとに残ります。
 
-声の聞き取りと読み上げのモデルは、Hugging Face の標準のキャッシュに取得します。macOS では `~/.cache/huggingface/hub/`、Windows では `%USERPROFILE%\.cache\huggingface\hub\` です。ほかのアプリも同じ場所を使うので、ASIST をアンインストールしても消えません。
+以前のバージョンの ASIST は、声の聞き取りと読み上げのために `mlx-audio-runtime/`(macOS)か `cuda-speech-runtime/`(Windows)に Python の環境を作り、モデルを Hugging Face の標準のキャッシュに取得していました。今のバージョンはどれも使わないので、削除できます。Hugging Face のキャッシュは macOS では `~/.cache/huggingface/hub/`、Windows では `%USERPROFILE%\.cache\huggingface\hub\` です。ほかのアプリも同じ場所を使うので、ASIST が取得した次のフォルダだけを削除します。
+
+- `models--mlx-community--Qwen3-ASR-1.7B-8bit`
+- `models--mlx-community--whisper-large-v3-turbo-asr-fp16`
+- `models--mlx-community--Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit`
+- `models--Qwen--Qwen3-ASR-1.7B-hf`
+- `models--Qwen--Qwen3-ASR-0.6B-hf`
 
 自動更新で取得した新しいバージョンのファイルは、macOS では `~/Library/Caches/asist-updater/`、Windows では `%LOCALAPPDATA%\asist-updater\` に置きます。Windows では、インストーラーの控えもここに置きます。どちらも、ASIST をアンインストールしても消えません。
 

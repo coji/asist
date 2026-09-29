@@ -46,5 +46,5 @@ When fetching card data and models, ASIST sends `ASIST/<version> (https://github
 |---|---|
 | Models that run on this computer | Hugging Face (`huggingface.co`). Only the CPC weights come from `dl.fbaipublicfiles.com` |
 | Python | The bundled uv downloads it from python-build-standalone on GitHub and checks it by hash. |
-| Python packages | The bundled uv downloads them from PyPI and checks them against pinned hashes. Only the CUDA build of PyTorch, which speech recognition uses on Windows, comes from `download.pytorch.org`. |
+| Python packages | The bundled uv downloads them from PyPI and checks them against pinned hashes. |
 | New versions of ASIST | GitHub Releases (`github.com/nyosegawa/asist`) |

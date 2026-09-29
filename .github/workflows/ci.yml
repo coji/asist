@@ -87,14 +87,16 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # git and uv are pinned in these modules, and their VERSION stamps record the modules' content, so the
-      # modules are the key.
+      # git, uv, llama.cpp and qwen3-tts-ggml are pinned in these modules, and their VERSION stamps record the
+      # modules' content, so the modules are the key.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             resources/git
             resources/uv
-          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
+            resources/llama.cpp
+            resources/qwen3-tts
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/qwen3-tts.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:mac:unsigned
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
@@ -102,11 +104,13 @@ jobs:
         env:
           ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
           ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}
-      - name: Run the git and uv inside the app
+      - name: Run the git, uv and speech programs inside the app
         run: |
           resources="dist/mac-arm64/ASIST.app/Contents/Resources"
           "$resources/git/bin/git" --version
           "$resources/uv/uv" --version
+          "$resources/llama.cpp/llama-server" --version
+          "$resources/qwen3-tts/qwen3-tts-worker" --devices
 
   # The checks of test on Windows, except the dictionary's, which does not depend on the OS.
   test-windows:
@@ -133,7 +137,9 @@ jobs:
           path: |
             resources/git
             resources/uv
-          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs') }}
+            resources/llama.cpp
+            resources/qwen3-tts
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/qwen3-tts.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:win:dir
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
@@ -141,12 +147,14 @@ jobs:
         env:
           ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
           ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}
-      - name: Run the git, uv, agent launcher and microphone helper inside the app
+      - name: Run the git, uv, speech programs, agent launcher and microphone helper inside the app
         shell: bash
         run: |
           resources="dist/win-unpacked/resources"
           "$resources/git/mingw64/bin/git.exe" --version
           "$resources/uv/uv.exe" --version
+          "$resources/llama.cpp/llama-server.exe" --version
+          "$resources/qwen3-tts/qwen3-tts-worker.exe" --devices
           "$resources/asist-agent-launcher.exe" --version
           "$resources/asist-mic.exe" --version
       # A changed app.asar stops ASIST.exe within a second with "Integrity check failed for asar archive"

@@ -46,5 +46,5 @@ ASIST が外へ送るものと、外から受け取るものの一覧です。�
 |---|---|
 | このコンピュータで動かすモデル | Hugging Face(`huggingface.co`)。CPC の重みだけ `dl.fbaipublicfiles.com` |
 | Python | 同梱の uv が、GitHub の python-build-standalone から取得し、ハッシュで確かめます。 |
-| Python のパッケージ | 同梱の uv が PyPI から取得し、固定したハッシュで確かめます。Windows の音声認識に使う CUDA 版 PyTorch だけは `download.pytorch.org` から取得します。 |
+| Python のパッケージ | 同梱の uv が PyPI から取得し、固定したハッシュで確かめます。 |
 | 新しいバージョンの ASIST | GitHub の Release(`github.com/nyosegawa/asist`) |

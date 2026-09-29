@@ -1,6 +1,6 @@
 import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
-import type { NvidiaGpuSupport, NvidiaGpuUnavailable } from './nvidia-gpu'
+import { chooseSpeechDevice, type SpeechDevice } from './speech-devices'
 
 /**
  * What this OS and this machine can run, decided once in the main process and handed to the renderer
@@ -11,16 +11,16 @@ import type { NvidiaGpuSupport, NvidiaGpuUnavailable } from './nvidia-gpu'
 export type OsFamily = 'macos' | 'windows'
 
 /**
- * The Python environment the local speech models run in on this machine: MLX on an Apple Silicon Mac,
- * and torch built for CUDA on Windows with an NVIDIA GPU, which runs only the speech recognition.
+ * The GPU interface the local speech models run on: Metal on an Apple Silicon Mac, Vulkan on Windows.
+ * llama-server runs the speech recognition and qwen3-tts-worker the speech synthesis, both built on ggml.
  */
-export type SpeechRuntime = 'mlx' | 'cuda'
+export type SpeechBackend = 'metal' | 'vulkan'
 
 /**
  * Why this machine cannot run the local speech models, which the screens show in place of the choice.
- * Only Windows can lack them, for want of a GPU the CUDA runtime runs on or of a check that found one.
+ * Only Windows can lack them: it has no discrete GPU, or listing the devices failed.
  */
-export type SpeechRuntimeUnavailable = NvidiaGpuUnavailable
+export type LocalSpeechUnavailable = 'no-discrete-gpu' | 'gpu-check-failed'
 
 /**
  * Where the calendar reads and writes events: the Mac's own calendars through EventKit, or one Google
@@ -32,12 +32,13 @@ export type CalendarBackend = 'eventkit' | 'google'
 export const CALENDAR_BACKEND_VARIABLE = 'ASIST_CALENDAR_BACKEND'
 
 /** The sentence the screens show, and an error carries, for each reason. */
-export const SPEECH_RUNTIME_UNAVAILABLE_TEXT = {
-  'no-nvidia-gpu': 'speechRecognition.unavailable.noNvidiaGpu',
-  'gpu-too-old': 'speechRecognition.unavailable.gpuTooOld',
-  'driver-too-old': 'speechRecognition.unavailable.driverTooOld',
+export const LOCAL_SPEECH_UNAVAILABLE_TEXT = {
+  'no-discrete-gpu': 'speechRecognition.unavailable.noDiscreteGpu',
   'gpu-check-failed': 'speechRecognition.unavailable.gpuCheckFailed'
-} as const satisfies Record<SpeechRuntimeUnavailable, MessageKey>
+} as const satisfies Record<LocalSpeechUnavailable, MessageKey>
+
+/** The device ggml names the GPU of an Apple Silicon Mac. */
+const METAL_DEVICE = 'MTL0'
 
 export interface PlatformCapabilities {
   /**
@@ -46,11 +47,12 @@ export interface PlatformCapabilities {
    */
   os: OsFamily
   /**
-   * The runtime of the local speech models with the memory the models are loaded into, or why there is
-   * none. The memory is the Mac's own on mlx, which the models share with every other app, and the GPU's
-   * on cuda; each runtime's model table decides its recommendation from that number alone.
+   * Where the local speech models run: the backend, the device the binaries are told to use, and the
+   * memory the models are loaded into; or why there is none. The memory is the Mac's own on metal, which
+   * the models share with every other app, and the GPU's on vulkan; the recommendations are decided from
+   * that number alone.
    */
-  speechRuntime: { kind: SpeechRuntime; memoryGb: number } | { kind: null; reason: SpeechRuntimeUnavailable }
+  localSpeech: { backend: SpeechBackend; device: string; memoryGb: number } | { backend: null; reason: LocalSpeechUnavailable }
   /**
    * The native microphone helper, which captures with the echo of everything the machine plays cancelled:
    * voice processing on macOS, the communications echo canceller on Windows. Without it the renderer
@@ -67,8 +69,8 @@ export interface Machine {
   platform: string
   arch: string
   totalMemoryBytes: number
-  /** Asked only on Windows, where it runs nvidia-smi. */
-  nvidiaGpu: () => NvidiaGpuSupport
+  /** Asked only on Windows, where it runs `qwen3-tts-worker --devices`; null when that failed. */
+  speechDevices: () => SpeechDevice[] | null
   /**
    * Whether the Windows microphone helper finds echo cancellation on for the default microphone, which main
    * answers by running the helper's check. It is asked on Windows alone: every macOS the app supports has
@@ -93,26 +95,32 @@ function calendarOf(osDefault: CalendarBackend | null, requested: string | undef
   return 'google'
 }
 
+/** The local speech of a Windows machine, from its device list. */
+function windowsSpeech(devices: SpeechDevice[] | null): PlatformCapabilities['localSpeech'] {
+  if (devices === null) return { backend: null, reason: 'gpu-check-failed' }
+  const chosen = chooseSpeechDevice(devices)
+  return chosen === null ? { backend: null, reason: 'no-discrete-gpu' } : { backend: 'vulkan', ...chosen }
+}
+
 /**
  * The capabilities of a machine. Only Apple Silicon Macs and x64 Windows are built for; any other
  * combination fails, because a guess at what it can run would show features that then fail.
  */
 export function deriveCapabilities(machine: Machine): PlatformCapabilities {
-  const { platform, arch, totalMemoryBytes, nvidiaGpu, micCancelsEcho } = machine
+  const { platform, arch, totalMemoryBytes, speechDevices, micCancelsEcho } = machine
   if (platform === 'darwin' && arch === 'arm64') {
     return {
       os: 'macos',
-      speechRuntime: { kind: 'mlx', memoryGb: Math.max(1, Math.round(totalMemoryBytes / 1024 ** 3)) },
+      localSpeech: { backend: 'metal', device: METAL_DEVICE, memoryGb: Math.max(1, Math.round(totalMemoryBytes / 1024 ** 3)) },
       nativeMic: true,
       calendar: calendarOf('eventkit', machine.calendarBackend, machine.googleClient),
       hotkey: 'Alt+Space'
     }
   }
   if (platform === 'win32' && arch === 'x64') {
-    const gpu = nvidiaGpu()
     return {
       os: 'windows',
-      speechRuntime: gpu.usable ? { kind: 'cuda', memoryGb: gpu.memoryGb } : { kind: null, reason: gpu.reason },
+      localSpeech: windowsSpeech(speechDevices()),
       nativeMic: micCancelsEcho(),
       calendar: calendarOf(null, machine.calendarBackend, machine.googleClient),
       // On a Windows 11 machine with PowerToys, Copilot and Claude running (2026-09-27), Alt+Space and

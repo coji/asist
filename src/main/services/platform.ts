@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { CALENDAR_BACKEND_VARIABLE, deriveCapabilities, type PlatformCapabilities } from '@shared/platform'
-import { detectNvidiaGpu } from './gpu'
 import { googleOAuthClient } from './google-oauth-client'
 import { windowsMicCancelsEcho } from './mic-helper'
+import { listSpeechDevices } from './speech-devices'
 
 let capabilities: PlatformCapabilities | null = null
 
@@ -16,7 +16,7 @@ export function platformCapabilities(): PlatformCapabilities {
     platform: process.platform,
     arch: process.arch,
     totalMemoryBytes: os.totalmem(),
-    nvidiaGpu: detectNvidiaGpu,
+    speechDevices: listSpeechDevices,
     micCancelsEcho: windowsMicCancelsEcho,
     calendarBackend: process.env[CALENDAR_BACKEND_VARIABLE],
     googleClient: () => googleOAuthClient() !== null

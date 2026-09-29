@@ -78,7 +78,9 @@ const BUNDLED_PROGRAMS = {
     'Electron and Chromium: see LICENSE.electron.txt and LICENSES.chromium.html in this folder.',
     'Git (GPL-2.0): see git/COPYING in this folder. The source code of the same version is attached to',
     '  each release at https://github.com/nyosegawa/asist/releases.',
-    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.'
+    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.',
+    'llama.cpp (MIT): see llama.cpp/LICENSE in this folder.',
+    'qwen3-tts-ggml (MIT): see qwen3-tts/LICENSE in this folder.'
   ],
   win32: [
     'Electron and Chromium: see LICENSE.electron.txt and LICENSES.chromium.html next to ASIST.exe, in the',
@@ -86,7 +88,10 @@ const BUNDLED_PROGRAMS = {
     'Git (GPL-2.0): see git/LICENSE.txt in this folder, and the licenses of the libraries it runs with in',
     '  git/mingw64/share/licenses and git/usr/share/licenses. The source code of the same version is',
     '  attached to each release at https://github.com/nyosegawa/asist/releases.',
-    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.'
+    'uv (MIT or Apache-2.0): see uv/LICENSE-MIT and uv/LICENSE-APACHE in this folder.',
+    'llama.cpp (MIT): see llama.cpp/LICENSE in this folder, and llama.cpp/LICENSE-LLVM-OpenMP for the',
+    '  OpenMP runtime it runs with.',
+    'qwen3-tts-ggml (MIT): see qwen3-tts/LICENSE in this folder.'
   ]
 }
 

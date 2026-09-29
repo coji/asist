@@ -26,11 +26,18 @@ The folder of settings and data holds the following.
 | `api-usage.json` | Usage and cost of the paid APIs (daily totals) |
 | `joblogs/` | Logs of Agent jobs |
 | `python/`, `uv-cache/` | The Python that uv downloaded, and the package cache |
-| `mlx-audio-runtime/` (macOS), `cuda-speech-runtime/` (Windows), `embedding-runtime/`, `vap-runtime/` | Python environments for the models that run on this computer |
+| `speech-models/` | The models for speech recognition and Qwen3-TTS |
+| `embedding-runtime/`, `vap-runtime/` | Python environments for searching the memory by meaning, choosing the kind of backchannel, and MaAI |
 
 The app log is kept in the app log folder in the table above, one file per day.
 
-The speech recognition and speech models are downloaded into the standard Hugging Face cache: `~/.cache/huggingface/hub/` on macOS and `%USERPROFILE%\.cache\huggingface\hub\` on Windows. Other apps use the same place, so uninstalling ASIST doesn't remove them.
+Earlier versions of ASIST created a Python environment in `mlx-audio-runtime/` (macOS) or `cuda-speech-runtime/` (Windows) for speech recognition and reading aloud, and downloaded the models into the standard Hugging Face cache. The current version uses none of these, so you can delete them. The Hugging Face cache is `~/.cache/huggingface/hub/` on macOS and `%USERPROFILE%\.cache\huggingface\hub\` on Windows. Other apps use the same place, so delete only these folders, which ASIST downloaded:
+
+- `models--mlx-community--Qwen3-ASR-1.7B-8bit`
+- `models--mlx-community--whisper-large-v3-turbo-asr-fp16`
+- `models--mlx-community--Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit`
+- `models--Qwen--Qwen3-ASR-1.7B-hf`
+- `models--Qwen--Qwen3-ASR-0.6B-hf`
 
 The files of new versions that the automatic update downloads are kept in `~/Library/Caches/asist-updater/` on macOS and `%LOCALAPPDATA%\asist-updater\` on Windows, where a copy of the installer is kept as well. Uninstalling ASIST doesn't remove them.
 

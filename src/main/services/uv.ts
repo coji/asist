@@ -8,9 +8,9 @@ import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 
 /**
- * The uv that ships in resources/uv, which builds the Python environment of every local model. Python
+ * The uv that ships in resources/uv, which builds the Python environments of the local models that run in Python. Python
  * itself is not shipped: the interpreter would be signed with the app's hardened runtime, and library
- * validation would then refuse the torch and mlx extension modules installed into it later. uv downloads
+ * validation would then refuse the torch extension modules installed into it later. uv downloads
  * it instead, and a pinned uv carries the checksums of the builds it downloads.
  *
  * Only a Python that uv downloaded is used, and it and uv's cache live under userData. A Python from

@@ -4,7 +4,7 @@ import { mailSettingsSchema } from './mail'
 import { ASR_MODELS, type AsrModel } from './asr-models'
 import { dockOrderSchema } from './dock'
 import { conversationModelSchema } from './llm-catalog'
-import { QWEN_TTS_VOICE_IDS } from './tts-models'
+import { QWEN_TTS_SIZES, QWEN_TTS_VOICE_IDS } from './tts-models'
 import { CONVERSATION_LOCALES } from './conversation-locale'
 import { UI_LOCALES } from './i18n'
 import { THEMES } from './themes'
@@ -48,6 +48,7 @@ const fields = {
   voicevoxSpeaker: z.number().int().nonnegative(),
   aivisSpeaker: z.number().int().nonnegative().nullable(),
   qwenTtsVoice: z.enum(QWEN_TTS_VOICE_IDS),
+  qwenTtsSize: z.enum(QWEN_TTS_SIZES),
   bargeIn: z.boolean(),
   aizuchi: z.boolean(),
   aizuchiRate: z.number().min(0).max(1),
@@ -136,15 +137,27 @@ export const safetyNoticePending = (settings: Pick<AppSettings, 'onboardingVersi
   settings.onboardingVersion >= 1 && settings.safetyNoticeVersion < 1
 
 /** The speech recognition models of version 3, which named the macOS runtime, by the names of version 4. */
-const V3_ASR_MODELS: Record<string, AsrModel> = {
+const V3_ASR_MODELS: Record<string, string> = {
   auto: 'auto',
   'qwen3-asr-1.7b-mlx': 'qwen3-asr-1.7b',
   'whisper-large-v3-turbo-mlx': 'whisper-large-v3-turbo'
 }
 
+/**
+ * The speech recognition models of version 4 by the names of version 5, which has no Whisper: the local
+ * speech moved to llama.cpp, which runs Qwen3-ASR only, and a Mac that chose Whisper for its memory is
+ * given the recommendation for that memory.
+ */
+const V4_ASR_MODELS: Record<string, AsrModel> = {
+  auto: 'auto',
+  'qwen3-asr-1.7b': 'qwen3-asr-1.7b',
+  'qwen3-asr-0.6b': 'qwen3-asr-0.6b',
+  'whisper-large-v3-turbo': 'auto'
+}
+
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 4,
+  version: 5,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -156,6 +169,16 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
     3: (content) => {
       const { asrModel, ...rest } = content as Record<string, unknown>
       return { ...rest, asrModel: typeof asrModel === 'string' && Object.hasOwn(V3_ASR_MODELS, asrModel) ? V3_ASR_MODELS[asrModel] : asrModel }
+    },
+    // Version 5 drops Whisper and adds the size of Qwen3-TTS, which was 0.6B until then. A value version 4
+    // did not allow is kept, for the parse to refuse.
+    4: (content) => {
+      const { asrModel, ...rest } = content as Record<string, unknown>
+      return {
+        ...rest,
+        asrModel: typeof asrModel === 'string' && Object.hasOwn(V4_ASR_MODELS, asrModel) ? V4_ASR_MODELS[asrModel] : asrModel,
+        qwenTtsSize: '0.6b'
+      }
     }
   },
   parse: parseAppSettings,

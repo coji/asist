@@ -2,35 +2,35 @@ import { defineMessages } from '../message'
 
 export const speechRecognition = defineMessages({
   recommendation: {
-    mlx: {
+    metal: {
       larger: {
-        'ja-JP': 'メモリが {memoryGb}GB あるので、認識の精度が高く多言語に強い Qwen3-ASR を勧めます。',
-        'en-US': 'With {memoryGb} GB of memory, Qwen3-ASR is recommended for its accuracy and its range of languages.',
-        'fr-FR': "Avec {memoryGb} Go de mémoire, Qwen3-ASR est recommandé pour sa précision et le nombre de langues qu'il reconnaît.",
-        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Qwen3-ASR zu empfehlen: es erkennt genauer und beherrscht mehr Sprachen.',
-        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR ठीक रहेगा। यह ज़्यादा सटीक है और कई भाषाएँ पहचानता है।',
-        'id-ID': 'Dengan memori {memoryGb} GB, Qwen3-ASR disarankan karena akurasinya tinggi dan kuat di banyak bahasa.',
-        'it-IT': 'Con {memoryGb} GB di memoria conviene Qwen3-ASR, preciso e adatto a molte lingue.',
-        'ko-KR': '메모리가 {memoryGb}GB이므로 인식 정확도가 높고 여러 언어에 강한 Qwen3-ASR을 권장합니다.',
-        'pt-BR': 'Com {memoryGb} GB de memória, o Qwen3-ASR é recomendado pela precisão e pela variedade de idiomas.',
-        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.',
-        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR por su precisión y por la cantidad de idiomas que reconoce.'
+        'ja-JP': 'メモリが {memoryGb}GB あるので、精度の高い Qwen3-ASR 1.7B を勧めます。',
+        'en-US': 'With {memoryGb} GB of memory, Qwen3-ASR 1.7B is recommended for its accuracy.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire, Qwen3-ASR 1.7B est recommandé pour sa précision.',
+        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Qwen3-ASR 1.7B zu empfehlen, weil es genauer erkennt.',
+        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 1.7B ठीक रहेगा। यह ज़्यादा सटीक है।',
+        'id-ID': 'Dengan memori {memoryGb} GB, Qwen3-ASR 1.7B disarankan karena akurasinya tinggi.',
+        'it-IT': 'Con {memoryGb} GB di memoria conviene Qwen3-ASR 1.7B, il più preciso.',
+        'ko-KR': '메모리가 {memoryGb}GB이므로 인식 정확도가 높은 Qwen3-ASR 1.7B를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória, o Qwen3-ASR 1.7B é recomendado pela precisão.',
+        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR 1.7B por su precisión.',
+        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR 1.7B por su precisión.'
       },
       smaller: {
-        'ja-JP': 'メモリが {memoryGb}GB なので、約 2.3GB で動く Whisper MLX を勧めます。',
-        'en-US': 'With {memoryGb} GB of memory, Whisper MLX is recommended; it runs in about 2.3 GB.',
-        'fr-FR': 'Avec {memoryGb} Go de mémoire, Whisper MLX est recommandé : il tient dans environ 2,3 Go.',
-        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Whisper MLX zu empfehlen; es läuft mit etwa 2,3 GB.',
-        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Whisper MLX ठीक रहेगा। यह करीब 2.3 GB में चलता है।',
-        'id-ID': 'Karena memori {memoryGb} GB, Whisper MLX disarankan; model ini jalan dengan sekitar 2,3 GB.',
-        'it-IT': 'Con {memoryGb} GB di memoria conviene Whisper MLX, che occupa circa 2,3 GB.',
-        'ko-KR': '메모리가 {memoryGb}GB이므로 약 2.3GB로 동작하는 Whisper MLX를 권장합니다.',
-        'pt-BR': 'Com {memoryGb} GB de memória, o Whisper MLX é recomendado: ele roda em cerca de 2,3 GB.',
-        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2.3 GB.',
-        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Whisper MLX, que funciona con unos 2,3 GB.'
+        'ja-JP': 'メモリが {memoryGb}GB なので、約 1.8GB で動く Qwen3-ASR 0.6B を勧めます。',
+        'en-US': 'With {memoryGb} GB of memory, Qwen3-ASR 0.6B is recommended; it runs in about 1.8 GB.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire, Qwen3-ASR 0.6B est recommandé : il tient dans environ 1,8 Go.',
+        'de-DE': 'Mit {memoryGb} GB Arbeitsspeicher ist Qwen3-ASR 0.6B zu empfehlen; es läuft mit etwa 1,8 GB.',
+        'hi-IN': 'मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 0.6B ठीक रहेगा। यह करीब 1.8 GB में चलता है।',
+        'id-ID': 'Karena memori {memoryGb} GB, Qwen3-ASR 0.6B disarankan; model ini jalan dengan sekitar 1,8 GB.',
+        'it-IT': 'Con {memoryGb} GB di memoria conviene Qwen3-ASR 0.6B, che occupa circa 1,8 GB.',
+        'ko-KR': '메모리가 {memoryGb}GB이므로 약 1.8GB로 동작하는 Qwen3-ASR 0.6B를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória, o Qwen3-ASR 0.6B é recomendado: ele roda em cerca de 1,8 GB.',
+        'es-419': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1.8 GB.',
+        'es-ES': 'Con {memoryGb} GB de memoria, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1,8 GB.'
       }
     },
-    cuda: {
+    vulkan: {
       larger: {
         'ja-JP': 'GPU のメモリが {memoryGb}GB あるので、精度の高い Qwen3-ASR 1.7B を勧めます。',
         'en-US': 'With {memoryGb} GB of GPU memory, Qwen3-ASR 1.7B is recommended for its accuracy.',
@@ -45,17 +45,17 @@ export const speechRecognition = defineMessages({
         'es-ES': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 1.7B por su precisión.'
       },
       smaller: {
-        'ja-JP': 'GPU のメモリが {memoryGb}GB なので、約 1.6GB で動く Qwen3-ASR 0.6B を勧めます。',
-        'en-US': 'With {memoryGb} GB of GPU memory, Qwen3-ASR 0.6B is recommended; it runs in about 1.6 GB.',
-        'fr-FR': 'Avec {memoryGb} Go de mémoire GPU, Qwen3-ASR 0.6B est recommandé : il tient dans environ 1,6 Go.',
-        'de-DE': 'Mit {memoryGb} GB GPU-Speicher ist Qwen3-ASR 0.6B zu empfehlen; es läuft mit etwa 1,6 GB.',
-        'hi-IN': 'GPU की मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 0.6B ठीक रहेगा। यह करीब 1.6 GB में चलता है।',
-        'id-ID': 'Karena memori GPU {memoryGb} GB, Qwen3-ASR 0.6B disarankan; model ini jalan dengan sekitar 1,6 GB.',
-        'it-IT': 'Con {memoryGb} GB di memoria della GPU conviene Qwen3-ASR 0.6B, che occupa circa 1,6 GB.',
-        'ko-KR': 'GPU 메모리가 {memoryGb}GB이므로 약 1.6GB로 동작하는 Qwen3-ASR 0.6B를 권장합니다.',
-        'pt-BR': 'Com {memoryGb} GB de memória na GPU, o Qwen3-ASR 0.6B é recomendado: ele roda em cerca de 1,6 GB.',
-        'es-419': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1.6 GB.',
-        'es-ES': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1,6 GB.'
+        'ja-JP': 'GPU のメモリが {memoryGb}GB なので、約 1.9GB で動く Qwen3-ASR 0.6B を勧めます。',
+        'en-US': 'With {memoryGb} GB of GPU memory, Qwen3-ASR 0.6B is recommended; it runs in about 1.9 GB.',
+        'fr-FR': 'Avec {memoryGb} Go de mémoire GPU, Qwen3-ASR 0.6B est recommandé : il tient dans environ 1,9 Go.',
+        'de-DE': 'Mit {memoryGb} GB GPU-Speicher ist Qwen3-ASR 0.6B zu empfehlen; es läuft mit etwa 1,9 GB.',
+        'hi-IN': 'GPU की मेमोरी {memoryGb} GB है, इसलिए Qwen3-ASR 0.6B ठीक रहेगा। यह करीब 1.9 GB में चलता है।',
+        'id-ID': 'Karena memori GPU {memoryGb} GB, Qwen3-ASR 0.6B disarankan; model ini jalan dengan sekitar 1,9 GB.',
+        'it-IT': 'Con {memoryGb} GB di memoria della GPU conviene Qwen3-ASR 0.6B, che occupa circa 1,9 GB.',
+        'ko-KR': 'GPU 메모리가 {memoryGb}GB이므로 약 1.9GB로 동작하는 Qwen3-ASR 0.6B를 권장합니다.',
+        'pt-BR': 'Com {memoryGb} GB de memória na GPU, o Qwen3-ASR 0.6B é recomendado: ele roda em cerca de 1,9 GB.',
+        'es-419': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1.9 GB.',
+        'es-ES': 'Con {memoryGb} GB de memoria en la GPU, se recomienda Qwen3-ASR 0.6B, que funciona con unos 1,9 GB.'
       }
     }
   },
@@ -85,19 +85,6 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O reconhecimento de fala parou.',
       'es-419': 'Se detuvo el reconocimiento de voz.',
       'es-ES': 'Se ha detenido el reconocimiento de voz.'
-    },
-    superseded: {
-      'ja-JP': '前の音声認識を中止しました。',
-      'en-US': 'The earlier speech recognition was stopped.',
-      'fr-FR': 'La reconnaissance vocale précédente a été arrêtée.',
-      'de-DE': 'Die frühere Spracherkennung wurde gestoppt.',
-      'hi-IN': 'पहले वाला स्पीच रिकग्निशन रोक दिया गया।',
-      'id-ID': 'Pengenalan suara sebelumnya dihentikan.',
-      'it-IT': 'Il riconoscimento vocale precedente è stato interrotto.',
-      'ko-KR': '이전 음성 인식을 중지했습니다.',
-      'pt-BR': 'O reconhecimento de fala anterior parou.',
-      'es-419': 'Se detuvo el reconocimiento de voz anterior.',
-      'es-ES': 'Se ha detenido el reconocimiento de voz anterior.'
     },
     timedOut: {
       'ja-JP': '音声認識が時間内に終わりませんでした。',
@@ -335,57 +322,31 @@ export const speechRecognition = defineMessages({
     }
   },
   unavailable: {
-    noNvidiaGpu: {
-      'ja-JP': 'この音声認識には NVIDIA の GPU が要りますが、このコンピュータには見つかりませんでした。ブラウザ内 Whisper を使ってください。',
-      'en-US': 'This speech recognition needs an NVIDIA GPU, and none was found on this computer. Use in-browser Whisper instead.',
-      'fr-FR': "Cette reconnaissance vocale demande un GPU NVIDIA, et aucun n'a été trouvé sur cet ordinateur. Utilisez Whisper dans le navigateur à la place.",
-      'de-DE': 'Diese Spracherkennung braucht eine NVIDIA-GPU, und auf diesem Computer wurde keine gefunden. Verwenden Sie stattdessen Whisper im Browser.',
-      'hi-IN': 'इस स्पीच रिकग्निशन के लिए NVIDIA का GPU चाहिए, पर इस कंप्यूटर में नहीं मिला। इसकी जगह ब्राउज़र वाला Whisper इस्तेमाल करें।',
-      'id-ID': 'Pengenalan suara ini butuh GPU NVIDIA, dan tidak ada yang ditemukan di komputer ini. Pakai Whisper dalam browser sebagai gantinya.',
-      'it-IT': 'Questo riconoscimento vocale richiede una GPU NVIDIA, e su questo computer non ne è stata trovata nessuna. Usa invece Whisper nel browser.',
-      'ko-KR': '이 음성 인식에는 NVIDIA GPU가 필요하지만 이 컴퓨터에서 찾지 못했습니다. 대신 브라우저 내 Whisper를 사용하십시오.',
-      'pt-BR': 'Este reconhecimento de fala precisa de uma GPU NVIDIA, e nenhuma foi encontrada neste computador. Use o Whisper no navegador.',
-      'es-419': 'Este reconocimiento de voz necesita una GPU NVIDIA y no se encontró ninguna en esta computadora. Usa Whisper en el navegador en su lugar.',
-      'es-ES': 'Este reconocimiento de voz necesita una GPU NVIDIA y no se ha encontrado ninguna en este ordenador. Usa Whisper en el navegador en su lugar.'
-    },
-    gpuTooOld: {
-      'ja-JP': 'このコンピュータの GPU は古いため、この音声認識を動かせません。GeForce RTX 20 か GTX 16 以降の世代が要ります。ブラウザ内 Whisper を使ってください。',
-      'en-US': 'The GPU in this computer is too old for this speech recognition, which needs the GeForce RTX 20 or GTX 16 generation or later. Use in-browser Whisper instead.',
-      'fr-FR': 'Le GPU de cet ordinateur est trop ancien pour cette reconnaissance vocale, qui demande la génération GeForce RTX 20 ou GTX 16 ou plus récente. Utilisez Whisper dans le navigateur à la place.',
-      'de-DE': 'Die GPU dieses Computers ist für diese Spracherkennung zu alt; nötig ist die Generation GeForce RTX 20 oder GTX 16 oder neuer. Verwenden Sie stattdessen Whisper im Browser.',
-      'hi-IN': 'इस कंप्यूटर का GPU इस स्पीच रिकग्निशन के लिए पुराना है। इसके लिए GeForce RTX 20 या GTX 16 या उसके बाद की पीढ़ी चाहिए। इसकी जगह ब्राउज़र वाला Whisper इस्तेमाल करें।',
-      'id-ID': 'GPU di komputer ini terlalu lama untuk pengenalan suara ini, yang butuh generasi GeForce RTX 20 atau GTX 16 atau yang lebih baru. Pakai Whisper dalam browser sebagai gantinya.',
-      'it-IT': 'La GPU di questo computer è troppo vecchia per questo riconoscimento vocale, che richiede la generazione GeForce RTX 20 o GTX 16 o successiva. Usa invece Whisper nel browser.',
-      'ko-KR': '이 컴퓨터의 GPU는 오래되어 이 음성 인식을 실행할 수 없습니다. GeForce RTX 20 또는 GTX 16 세대 이후가 필요합니다. 대신 브라우저 내 Whisper를 사용하십시오.',
-      'pt-BR': 'A GPU deste computador é antiga demais para este reconhecimento de fala, que precisa da geração GeForce RTX 20 ou GTX 16 ou mais recente. Use o Whisper no navegador.',
-      'es-419': 'La GPU de esta computadora es demasiado antigua para este reconocimiento de voz, que necesita la generación GeForce RTX 20 o GTX 16 o una posterior. Usa Whisper en el navegador en su lugar.',
-      'es-ES': 'La GPU de este ordenador es demasiado antigua para este reconocimiento de voz, que necesita la generación GeForce RTX 20 o GTX 16 o una posterior. Usa Whisper en el navegador en su lugar.'
-    },
-    driverTooOld: {
-      'ja-JP': 'NVIDIA のドライバーが古いため、この音声認識を動かせません。バージョン 580 以降に更新して、ASIST を起動し直してください。',
-      'en-US': 'The NVIDIA driver is too old for this speech recognition. Update it to version 580 or later, then start ASIST again.',
-      'fr-FR': 'Le pilote NVIDIA est trop ancien pour cette reconnaissance vocale. Mettez-le à jour vers la version 580 ou ultérieure, puis relancez ASIST.',
-      'de-DE': 'Der NVIDIA-Treiber ist für diese Spracherkennung zu alt. Aktualisieren Sie ihn auf Version 580 oder neuer und starten Sie ASIST dann neu.',
-      'hi-IN': 'इस स्पीच रिकग्निशन के लिए NVIDIA ड्राइवर पुराना है। इसे वर्ज़न 580 या उसके बाद वाले पर अपडेट करें, फिर ASIST दोबारा शुरू करें।',
-      'id-ID': 'Driver NVIDIA terlalu lama untuk pengenalan suara ini. Perbarui ke versi 580 atau yang lebih baru, lalu jalankan ulang ASIST.',
-      'it-IT': 'Il driver NVIDIA è troppo vecchio per questo riconoscimento vocale. Aggiornalo alla versione 580 o successiva, poi riavvia ASIST.',
-      'ko-KR': 'NVIDIA 드라이버가 오래되어 이 음성 인식을 실행할 수 없습니다. 버전 580 이상으로 업데이트한 뒤 ASIST를 다시 시작하십시오.',
-      'pt-BR': 'O driver da NVIDIA é antigo demais para este reconhecimento de fala. Atualize-o para a versão 580 ou mais recente e inicie o ASIST de novo.',
-      'es-419': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.',
-      'es-ES': 'El controlador de NVIDIA es demasiado antiguo para este reconocimiento de voz. Actualízalo a la versión 580 o posterior y vuelve a iniciar ASIST.'
-    },
     gpuCheckFailed: {
-      'ja-JP': 'NVIDIA の GPU を確かめられなかったため、この音声認識を使えません。NVIDIA のドライバーが動いているか確かめて ASIST を起動し直すか、ブラウザ内 Whisper を使ってください。',
-      'en-US': "Couldn't check the NVIDIA GPU, so this speech recognition is unavailable. Make sure the NVIDIA driver is working and start ASIST again, or use in-browser Whisper.",
-      'fr-FR': "Impossible de vérifier le GPU NVIDIA, cette reconnaissance vocale n'est donc pas disponible. Vérifiez que le pilote NVIDIA fonctionne et relancez ASIST, ou utilisez Whisper dans le navigateur.",
-      'de-DE': 'Die NVIDIA-GPU ließ sich nicht prüfen, daher ist diese Spracherkennung nicht verfügbar. Prüfen Sie, ob der NVIDIA-Treiber läuft, und starten Sie ASIST neu, oder verwenden Sie Whisper im Browser.',
-      'hi-IN': 'NVIDIA GPU की जाँच नहीं हो सकी, इसलिए यह स्पीच रिकग्निशन उपलब्ध नहीं है। देखें कि NVIDIA ड्राइवर चल रहा है और ASIST दोबारा शुरू करें, या ब्राउज़र वाला Whisper इस्तेमाल करें।',
-      'id-ID': 'GPU NVIDIA tidak bisa diperiksa, jadi pengenalan suara ini tidak tersedia. Pastikan driver NVIDIA berjalan lalu jalankan ulang ASIST, atau pakai Whisper dalam browser.',
-      'it-IT': 'Impossibile verificare la GPU NVIDIA, quindi questo riconoscimento vocale non è disponibile. Controlla che il driver NVIDIA funzioni e riavvia ASIST, oppure usa Whisper nel browser.',
-      'ko-KR': 'NVIDIA GPU를 확인할 수 없어 이 음성 인식을 사용할 수 없습니다. NVIDIA 드라이버가 동작하는지 확인하고 ASIST를 다시 시작하거나, 브라우저 내 Whisper를 사용하십시오.',
-      'pt-BR': 'Não foi possível verificar a GPU NVIDIA, então este reconhecimento de fala não está disponível. Confira se o driver da NVIDIA está funcionando e inicie o ASIST de novo, ou use o Whisper no navegador.',
-      'es-419': 'No se pudo comprobar la GPU NVIDIA, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de NVIDIA funcione y vuelve a iniciar ASIST, o usa Whisper en el navegador.',
-      'es-ES': 'No se ha podido comprobar la GPU NVIDIA, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de NVIDIA funciona y vuelve a iniciar ASIST, o usa Whisper en el navegador.'
+      'ja-JP': 'GPU を確かめられなかったため、この音声認識を使えません。GPU のドライバーが動いているか確かめて ASIST を起動し直すか、ブラウザ内 Whisper を使ってください。',
+      'en-US': "Couldn't check the GPU, so this speech recognition is unavailable. Make sure the GPU driver is working and start ASIST again, or use in-browser Whisper.",
+      'fr-FR': "Impossible de vérifier le GPU, cette reconnaissance vocale n'est donc pas disponible. Vérifiez que le pilote du GPU fonctionne et relancez ASIST, ou utilisez Whisper dans le navigateur.",
+      'de-DE': 'Die GPU ließ sich nicht prüfen, daher ist diese Spracherkennung nicht verfügbar. Prüfen Sie, ob der GPU-Treiber läuft, und starten Sie ASIST neu, oder verwenden Sie Whisper im Browser.',
+      'hi-IN': 'GPU की जाँच नहीं हो सकी, इसलिए यह स्पीच रिकग्निशन उपलब्ध नहीं है। देखें कि GPU ड्राइवर चल रहा है और ASIST दोबारा शुरू करें, या ब्राउज़र वाला Whisper इस्तेमाल करें।',
+      'id-ID': 'GPU tidak bisa diperiksa, jadi pengenalan suara ini tidak tersedia. Pastikan driver GPU berjalan lalu jalankan ulang ASIST, atau pakai Whisper dalam browser.',
+      'it-IT': 'Impossibile verificare la GPU, quindi questo riconoscimento vocale non è disponibile. Controlla che il driver della GPU funzioni e riavvia ASIST, oppure usa Whisper nel browser.',
+      'ko-KR': 'GPU를 확인할 수 없어 이 음성 인식을 사용할 수 없습니다. GPU 드라이버가 동작하는지 확인하고 ASIST를 다시 시작하거나, 브라우저 내 Whisper를 사용하십시오.',
+      'pt-BR': 'Não foi possível verificar a GPU, então este reconhecimento de fala não está disponível. Confira se o driver da GPU está funcionando e inicie o ASIST de novo, ou use o Whisper no navegador.',
+      'es-419': 'No se pudo comprobar la GPU, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de la GPU funcione y vuelve a iniciar ASIST, o usa Whisper en el navegador.',
+      'es-ES': 'No se ha podido comprobar la GPU, así que este reconocimiento de voz no está disponible. Comprueba que el controlador de la GPU funciona y vuelve a iniciar ASIST, o usa Whisper en el navegador.'
+    },
+    noDiscreteGpu: {
+      'ja-JP': 'この音声認識には単体の GPU が要りますが、このコンピュータには見つかりませんでした。ブラウザ内 Whisper を使ってください。',
+      'en-US': 'This speech recognition needs a discrete GPU, and none was found on this computer. Use in-browser Whisper instead.',
+      'fr-FR': "Cette reconnaissance vocale demande un GPU dédié, et aucun n'a été trouvé sur cet ordinateur. Utilisez Whisper dans le navigateur à la place.",
+      'de-DE': 'Diese Spracherkennung braucht eine dedizierte GPU, und auf diesem Computer wurde keine gefunden. Verwenden Sie stattdessen Whisper im Browser.',
+      'hi-IN': 'इस स्पीच रिकग्निशन के लिए अलग (डेडिकेटेड) GPU चाहिए, पर इस कंप्यूटर में नहीं मिला। इसकी जगह ब्राउज़र वाला Whisper इस्तेमाल करें।',
+      'id-ID': 'Pengenalan suara ini butuh GPU diskret, dan tidak ada yang ditemukan di komputer ini. Pakai Whisper dalam browser sebagai gantinya.',
+      'it-IT': 'Questo riconoscimento vocale richiede una GPU dedicata, e su questo computer non ne è stata trovata nessuna. Usa invece Whisper nel browser.',
+      'ko-KR': '이 음성 인식에는 외장 GPU가 필요하지만 이 컴퓨터에서 찾지 못했습니다. 대신 브라우저 내 Whisper를 사용하십시오.',
+      'pt-BR': 'Este reconhecimento de fala precisa de uma GPU dedicada, e nenhuma foi encontrada neste computador. Use o Whisper no navegador.',
+      'es-419': 'Este reconocimiento de voz necesita una GPU dedicada y no se encontró ninguna en esta computadora. Usa Whisper en el navegador en su lugar.',
+      'es-ES': 'Este reconocimiento de voz necesita una GPU dedicada y no se ha encontrado ninguna en este ordenador. Usa Whisper en el navegador en su lugar.'
     }
   }
 })

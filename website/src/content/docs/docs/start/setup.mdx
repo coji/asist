@@ -39,13 +39,15 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
 5. **聞き取りのモデルを準備する**(「声で話す」のとき)
 
-   Mac では、搭載しているメモリに合わせて、Qwen3-ASR か、MLX で動く Whisper を勧めます。Windows では、NVIDIA の GPU のメモリに合わせて Qwen3-ASR 1.7B か 0.6B を勧め、初めての準備では CUDA 版 PyTorch の実行環境(約 2GB)もモデルと一緒に取得します。「モデルを準備する」を押すと、モデルを取得してこのコンピュータで動かします。ブラウザの中で動く Whisper も選べます。使える NVIDIA の GPU が無い Windows では、理由が出てモデルを選べないので、ブラウザの中で動く Whisper を選びます。
+   Mac ではメモリが 16GB 以上なら Qwen3-ASR 1.7B を、それより少なければ Qwen3-ASR 0.6B を勧めます。Windows では、単体の GPU のメモリが 6GB 以上なら 1.7B を、それより少なければ 0.6B を勧めます。「モデルを準備する」を押すと、モデル(1.7B は約 2.5GB、0.6B は約 1.0GB)を取得して、このコンピュータの GPU で動かします。ブラウザの中で動く Whisper も選べます。単体の GPU が無い Windows では、理由が出てモデルを選べないので、ブラウザの中で動く Whisper を選びます。
+
+   Windows では、新しいバージョンの ASIST を初めて起動したときと、GPU のドライバーを更新したあとの最初の起動で、ドライバーが GPU で動かすためのプログラムを作ります。そのときだけ、準備にいつもより時間がかかります。
 
    ![おすすめのモデルの準備が終わった画面](/screens/ja/setup-4-listening.webp)
 
 6. **読み上げを選ぶ**(「声で話す」か「文字で打ち、返事は声で聞く」のとき)
 
-   会話の言語を話せるものだけが出ます。日本語なら、Mac では「macOS の音声合成」、Qwen3-TTS、VOICEVOX、AivisSpeech、Windows では「Windows の音声合成」、VOICEVOX、AivisSpeech です。Qwen3-TTS は Mac だけで、16GB 以上のメモリがあるときに選べます。モデル(約 1.9GB)を取得して、この Mac で動かします。OS の音声合成を選んだときは、その言語の声が入っているかを調べ、無ければシステム設定か Windows の設定のどこで足すかを案内します。
+   会話の言語を話せるものだけが出ます。日本語なら、Mac では「macOS の音声合成」、Qwen3-TTS、VOICEVOX、AivisSpeech、Windows では「Windows の音声合成」、Qwen3-TTS、VOICEVOX、AivisSpeech です。Qwen3-TTS は、メモリが 16GB 以上の Mac と、単体の GPU のメモリが 8GB 以上の Windows で出ます。0.6B のモデル(約 1.2GB)を取得して、このコンピュータの GPU で動かします。メモリが 24GB 以上の Mac と、GPU のメモリが 10GB 以上の Windows では、あとから設定の「声」の「読み上げ」にある「モデル」で 1.7B(約 2.3GB)に変えられます。変えたときは、設定の「モデル」で新しいモデルを準備します。OS の音声合成を選んだときは、その言語の声が入っているかを調べ、無ければシステム設定か Windows の設定のどこで足すかを案内します。
 
    ![読み上げの準備ができた画面](/screens/ja/setup-5-speech.webp)
 

@@ -16,18 +16,20 @@ ASIST は Mac と Windows で動きます。
 
 Apple Silicon の Mac と、macOS 14 以降が要ります。Intel の Mac では動きません。
 
-声の聞き取りなどのモデルは、この Mac の中で動きます。すべてを使うと、合わせて約 4.1GB のメモリを使い、読み上げに Qwen3-TTS を選ぶとさらに約 2GB を使います。Qwen3-TTS は 16GB 以上のメモリの Mac で選べます。内訳は[メモリの目安](/docs/reference/memory/)にあります。
+声の聞き取りなどのモデルは、この Mac の中で動きます。聞き取りと読み上げの Qwen3-TTS は、アプリに同梱したプログラムが Mac の GPU で動かします。すべてを使うと、合わせて約 5.1GB のメモリを使います。メモリが 16GB より少ない Mac では聞き取りに小さいモデルを勧めるので、約 3.5GB です。読み上げに Qwen3-TTS を選ぶと、さらに約 2.3GB を使います。Qwen3-TTS は、16GB 以上のメモリの Mac で勧めます。内訳は[メモリの目安](/docs/reference/memory/)にあります。
 
 </TabItem>
 <TabItem label="Windows">
 
 x64 の CPU の PC と、Windows 11 が要ります。Arm の CPU の Windows には対応していません。
 
-声の聞き取りをこのコンピュータの中で動かすには、NVIDIA の GPU が要ります。GPU は GeForce RTX 20 か GTX 16 以降の世代のもので、ドライバーはバージョン 580 以降が要ります。GPU のメモリが 6GB 以上なら Qwen3-ASR 1.7B を、それより少なければ Qwen3-ASR 0.6B を勧めます。初回の準備で、実行環境とモデルを合わせて約 3.6〜6.1GB 取得します。
+声の聞き取りと読み上げの Qwen3-TTS をこのコンピュータの中で動かすには、単体の GPU が要ります。NVIDIA、AMD、Intel Arc のどれでも、Vulkan のドライバーが認識する単体の GPU なら使えます。CPU に内蔵された GPU は使いません。単体の GPU が複数あるときは、メモリのいちばん多いものを使います。
+
+GPU のメモリが 6GB 以上なら、聞き取りに Qwen3-ASR 1.7B を勧めます。それより少なければ、聞き取りに Qwen3-ASR 0.6B を勧めます。読み上げの Qwen3-TTS は、GPU のメモリが 8GB 以上なら勧めます。初回の準備で取得するモデルは、聞き取りが約 1.0〜2.5GB、Qwen3-TTS が約 1.2GB です。
 
 使える GPU が無くても、ASIST は使えます。聞き取りにブラウザの中で動く Whisper を使うか、声のエンジンに GPT-Live か Gemini Live を選ぶか、文字で話しかけます。
 
-Windows 版では、カレンダーと、読み上げの Qwen3-TTS はまだ使えません。
+Windows 版では、カレンダーはまだ使えません。
 
 </TabItem>
 </Tabs>
@@ -50,7 +52,7 @@ Windows 版では、カレンダーと、読み上げの Qwen3-TTS はまだ使�
 | `codex` か `claude` の CLI | Agent のジョブと、記憶の整理。使うほうをインストールして、認証を済ませておきます。くわしくは [Agent の準備](/docs/start/agent-cli/)にあります。 |
 | VOICEVOX か AivisSpeech | 日本語の読み上げ。Mac では「アプリケーション」に、Windows ではインストール先を変えずに入れておくと、ASIST が裏で起動してつなぎます。 |
 
-このコンピュータで動かすモデルの Python の環境は、アプリに同梱した uv が作ります。Python もそのときに uv が取得するので、あらかじめ入れておくものはありません。
+記憶の意味検索、相槌の種類の判定、MaAI が使う Python の環境は、アプリに同梱した uv が作ります。Python もそのときに uv が取得するので、あらかじめ入れておくものはありません。
 
 ## 使い始める前に
 

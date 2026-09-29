@@ -18,7 +18,7 @@ import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer
 import { useViewStore } from '../src/renderer/src/state/view'
 import { asrModelSpec, offeredAsrModels } from '@shared/asr-models'
 import { CREDITS } from '@shared/credits'
-import type { PlatformCapabilities, SpeechRuntime } from '@shared/platform'
+import type { PlatformCapabilities } from '@shared/platform'
 import type { AppUpdateState } from '@shared/app-update'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, setCapabilities } from './helpers/platform'
 
@@ -48,6 +48,8 @@ const settings = {
   region: 'JP',
   conversationLogRetentionDays: 90,
   ttsEngine: 'system',
+  qwenTtsSize: '0.6b',
+  qwenTtsVoice: 'ono_anna',
   voicevoxSpeaker: 1,
   aivisSpeaker: null,
   bargeIn: true,
@@ -100,10 +102,9 @@ const api = {
       selectedModel: 'auto',
       resolvedModel: 'qwen3-asr-1.7b',
       recommendedModel: 'qwen3-asr-1.7b',
-      label: 'Qwen3-ASR 1.7B 8-bit MLX',
+      label: 'Qwen3-ASR 1.7B',
       recommendationReason: '32GBメモリではQwen3-ASRを推奨します。',
       totalMemoryGb: 32,
-      runtimeInstalled: false,
       modelInstalled: false,
       ready: false
     }
@@ -836,9 +837,9 @@ describe('settings dialog with the conversation held in another language', () =>
   })
 })
 
-describe('settings dialog on Windows with an NVIDIA GPU', () => {
+describe('settings dialog on Windows with a discrete GPU', () => {
   const macSetup = api.getSetupStatus.getMockImplementation()!
-  const label = asrModelSpec('cuda', 'qwen3-asr-1.7b')!.label
+  const label = asrModelSpec('qwen3-asr-1.7b').label
   const hint = (view: HTMLElement, rowLabel: string): string | null | undefined =>
     [...view.querySelectorAll('.st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === rowLabel)?.querySelector('.st-row-hint')?.textContent
 
@@ -847,7 +848,7 @@ describe('settings dialog on Windows with an NVIDIA GPU', () => {
     // As main reports it on an 8 GB RTX 2080 with nothing downloaded yet.
     api.getSetupStatus.mockImplementation(async () => ({
       ...(await macSetup()),
-      asr: { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b', recommendedModel: 'qwen3-asr-1.7b', label, totalMemoryGb: 8, runtimeInstalled: false, modelInstalled: false, downloadGb: 6.13, ready: false }
+      asr: { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b', recommendedModel: 'qwen3-asr-1.7b', label, totalMemoryGb: 8, modelInstalled: false, downloadGb: 2.52, ready: false }
     }) as never)
   })
   afterEach(() => {
@@ -855,17 +856,17 @@ describe('settings dialog on Windows with an NVIDIA GPU', () => {
     api.getSetupStatus.mockImplementation(macSetup)
   })
 
-  it('offers the CUDA builds of Qwen3-ASR on the voice page, explained by the GPU memory', async () => {
+  it('offers the Qwen3-ASR models on the voice page, explained by the GPU memory', async () => {
     const view = await render()
     await act(async () => nav(view, 'voice').click())
     const select = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.recognition.modelLabel')}"]`)!
     expect([...select.options].map((option) => option.textContent)).toEqual([
-      t('settingsVoice.recognition.automatic.cuda'),
+      t('settingsVoice.recognition.automatic.vulkan'),
       label,
-      asrModelSpec('cuda', 'qwen3-asr-0.6b')!.label
+      asrModelSpec('qwen3-asr-0.6b').label
     ])
     expect(hint(view, t('settingsVoice.recognition.model'))).toBe(
-      t('settingsVoice.recognition.modelHint', { memoryGb: 8, model: label, reason: t('speechRecognition.recommendation.cuda.larger', { memoryGb: 8 }) })
+      t('settingsVoice.recognition.modelHint', { memoryGb: 8, model: label, reason: t('speechRecognition.recommendation.vulkan.larger', { memoryGb: 8 }) })
     )
   })
 
@@ -873,9 +874,47 @@ describe('settings dialog on Windows with an NVIDIA GPU', () => {
     const view = await render()
     await act(async () => nav(view, 'models').click())
     const card = view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)!
-    expect(card.querySelector('p')?.textContent).toBe(t('settingsModels.asr.needsRuntimeAndModel', { memoryGb: 8, model: label }))
+    expect(card.querySelector('p')?.textContent).toBe(t('settingsModels.asr.needsModel', { memoryGb: 8, model: label }))
     expect(card.textContent).toContain(t('settingsModels.asr.chooseModel'))
     expect([...card.querySelectorAll('button')].map((button) => button.textContent)).toContain(t('settingsModels.prepare'))
+  })
+})
+
+describe('the size of Qwen3-TTS on the voice page', () => {
+  const sizeSelect = (view: HTMLElement): HTMLSelectElement | null => view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.model')}"]`)
+  const openVoicePage = async (): Promise<HTMLElement> => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts' } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    return view
+  }
+  afterEach(() => setCapabilities(MACOS))
+
+  it('offers 1.7B beside 0.6B on a Mac with 32 GB and saves the chosen size', async () => {
+    const view = await openVoicePage()
+    const select = sizeSelect(view)!
+    expect([...select.options].map((option) => option.value)).toEqual(['0.6b', '1.7b'])
+    await act(async () => {
+      select.value = '1.7b'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(api.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ qwenTtsSize: '1.7b' }))
+  })
+
+  it('offers no choice on an 8 GB GPU, where only 0.6B fits beside the speech recognition', async () => {
+    setCapabilities(WINDOWS)
+    const view = await openVoicePage()
+    expect(sizeSelect(view)).toBeNull()
+  })
+
+  it('keeps a saved 1.7B that an 8 GB GPU does not offer in the list, so that 0.6B can be picked in its place', async () => {
+    setCapabilities(WINDOWS)
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts', qwenTtsSize: '1.7b' } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const select = sizeSelect(view)!
+    expect(select.value).toBe('1.7b')
+    expect([...select.options].map((option) => option.value)).toEqual(['0.6b', '1.7b'])
   })
 })
 
@@ -900,7 +939,7 @@ describe('settings dialog on a machine without the local models, the native micr
     await act(async () => nav(view, 'voice').click())
     const engines = [...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)
     expect(engines).not.toContain('qwen3tts')
-    expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t('speechRecognition.unavailable.noNvidiaGpu'))
+    expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t('speechRecognition.unavailable.noDiscreteGpu'))
     expect(view.querySelector(`[aria-label="${t('settingsVoice.recognition.modelLabel')}"]`)).toBeNull()
     const labels = rowLabels(view)
     expect(labels).not.toContain(t('settingsVoice.mic.echoCancellation'))
@@ -909,11 +948,9 @@ describe('settings dialog on a machine without the local models, the native micr
     expect(hint(view, t('settingsVoice.mic.hotkey'))).toBe(t('settingsVoice.mic.hotkeyHint', { hotkey: shortcutLabel(WINDOWS_WITHOUT_GPU.os, WINDOWS_WITHOUT_GPU.hotkey) }))
   })
 
-  it.each([
-    ['gpu-too-old', 'speechRecognition.unavailable.gpuTooOld'],
-    ['driver-too-old', 'speechRecognition.unavailable.driverTooOld']
-  ] as const)('says on the voice and models pages why a machine whose GPU is %s cannot run the model', async (reason, key) => {
-    setCapabilities({ ...WINDOWS_WITHOUT_GPU, speechRuntime: { kind: null, reason } })
+  it('says on the voice and models pages that the GPU could not be checked when listing the devices failed', async () => {
+    const key = 'speechRecognition.unavailable.gpuCheckFailed'
+    setCapabilities({ ...WINDOWS_WITHOUT_GPU, localSpeech: { backend: null, reason: 'gpu-check-failed' } })
     const view = await render()
     await act(async () => nav(view, 'voice').click())
     expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t(key))
@@ -936,7 +973,7 @@ describe('settings dialog on a machine without the local models, the native micr
       [t('settingsModels.backchannel.title'), 'missing'],
       [t('settingsModels.semanticSearch.title'), 'ready']
     ])
-    expect(cards[0].querySelector('p')?.textContent).toBe(t('speechRecognition.unavailable.noNvidiaGpu'))
+    expect(cards[0].querySelector('p')?.textContent).toBe(t('speechRecognition.unavailable.noDiscreteGpu'))
     expect(cards[0].textContent).not.toContain(t('settingsModels.asr.chooseModel'))
   })
 
@@ -1005,7 +1042,6 @@ describe('the global hotkey on the voice page', () => {
 describe('the models the about page credits', () => {
   const row = (view: HTMLElement, label: string): Element | undefined =>
     [...view.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === label)
-  const builds = (runtime: SpeechRuntime) => offeredAsrModels(runtime).map((model) => asrModelSpec(runtime, model)!)
   const about = async (capabilities: PlatformCapabilities): Promise<HTMLElement> => {
     setCapabilities(capabilities)
     const view = await render()
@@ -1016,21 +1052,21 @@ describe('the models the about page credits', () => {
   afterEach(() => setCapabilities(MACOS))
 
   it.each([
-    ['a Mac', MACOS, 'mlx', 'cuda'],
-    ['Windows with an NVIDIA GPU', WINDOWS, 'cuda', 'mlx']
-  ] as const)('credits on %s the speech recognition models of its own runtime and not those of the other', async (_machine, capabilities, runtime, other) => {
+    ['a Mac', MACOS],
+    ['Windows with a discrete GPU', WINDOWS]
+  ] as const)('credits on %s the speech recognition models it runs, linked to their GGUF', async (_machine, capabilities) => {
     const view = await about(capabilities)
-    for (const build of builds(runtime)) {
-      const credit = row(view, build.label)
-      expect(credit?.querySelector('.st-row-hint')?.textContent).toBe(t(`settingsAbout.use.asr.${runtime}`))
-      expect(credit?.querySelector('a')?.getAttribute('href')).toBe(`https://huggingface.co/${build.id}`)
+    for (const id of offeredAsrModels()) {
+      const spec = asrModelSpec(id)
+      const credit = row(view, `${spec.label} (GGUF)`)
+      expect(credit?.querySelector('.st-row-hint')?.textContent).toBe(t('settingsAbout.use.asr'))
+      expect(credit?.querySelector('a')?.getAttribute('href')).toBe(`https://huggingface.co/${spec.model.repo}`)
     }
-    for (const build of builds(other)) expect(row(view, build.label)).toBeUndefined()
   })
 
   it('credits no local speech recognition model on Windows without a GPU, and still the Whisper that runs in the window', async () => {
     const view = await about(WINDOWS_WITHOUT_GPU)
-    for (const build of [...builds('mlx'), ...builds('cuda')]) expect(row(view, build.label)).toBeUndefined()
+    for (const id of offeredAsrModels()) expect(row(view, `${asrModelSpec(id).label} (GGUF)`)).toBeUndefined()
     const whisperInWindow = CREDITS.find((credit) => credit.id === 'asrWhisperOnnx')!
     expect(row(view, whisperInWindow.name)?.querySelector('.st-row-hint')?.textContent).toBe(t('settingsAbout.use.asrWhisperOnnx'))
   })
