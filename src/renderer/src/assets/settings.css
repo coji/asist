@@ -624,6 +624,16 @@ textarea.st-input.st-roots {
   gap: 8px;
   margin-top: auto;
 }
+/*
+ * The bar takes the whole width of its row, on a line of its own beside buttons. Sized by its label, it
+ * grew and shrank as the label's text changed during a download.
+ */
+.st-progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
 .st-progress {
   position: relative;
   height: 4px;

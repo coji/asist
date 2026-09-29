@@ -123,7 +123,7 @@ export function Advanced({ title, note, children }: { title: string; note?: stri
 
 export function Progress({ percent, label }: { percent: number; label?: string }): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="st-progress-block">
       <div className="st-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
         <i style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
       </div>
