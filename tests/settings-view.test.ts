@@ -105,8 +105,7 @@ const api = {
       label: 'Qwen3-ASR 1.7B',
       recommendationReason: '32GBメモリではQwen3-ASRを推奨します。',
       totalMemoryGb: 32,
-      modelInstalled: false,
-      ready: false
+      modelInstalled: false
     }
   })),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false })),
@@ -848,7 +847,7 @@ describe('settings dialog on Windows with a discrete GPU', () => {
     // As main reports it on an 8 GB RTX 2080 with nothing downloaded yet.
     api.getSetupStatus.mockImplementation(async () => ({
       ...(await macSetup()),
-      asr: { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b', recommendedModel: 'qwen3-asr-1.7b', label, totalMemoryGb: 8, modelInstalled: false, downloadGb: 2.52, ready: false }
+      asr: { selectedModel: 'auto', resolvedModel: 'qwen3-asr-1.7b', recommendedModel: 'qwen3-asr-1.7b', label, totalMemoryGb: 8, modelInstalled: false, downloadGb: 2.52 }
     }) as never)
   })
   afterEach(() => {
@@ -877,6 +876,31 @@ describe('settings dialog on Windows with a discrete GPU', () => {
     expect(card.querySelector('p')?.textContent).toBe(t('settingsModels.asr.needsModel', { memoryGb: 8, model: label }))
     expect(card.textContent).toContain(t('settingsModels.asr.chooseModel'))
     expect([...card.querySelectorAll('button')].map((button) => button.textContent)).toContain(t('settingsModels.prepare'))
+  })
+})
+
+describe('the state of the speech models while the settings are open', () => {
+  const asrCard = (view: HTMLElement): HTMLElement => view.querySelector<HTMLElement>(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)!
+
+  it('shows speech recognition as ready once main pushes that it answers, without the settings being opened again', async () => {
+    const view = await render()
+    await act(async () => nav(view, 'models').click())
+    expect(asrCard(view).dataset.state).not.toBe('ready')
+    await act(async () => useStatusStore.setState({ status: { ...status, asr: true } }))
+    expect(asrCard(view).dataset.state).toBe('ready')
+  })
+
+  it('reads what is installed again when the Qwen3-TTS size changes, whose files may not be there', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts' } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const reads = api.getSetupStatus.mock.calls.length
+    const select = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.model')}"]`)!
+    await act(async () => {
+      select.value = '1.7b'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(api.getSetupStatus.mock.calls.length).toBe(reads + 1)
   })
 })
 

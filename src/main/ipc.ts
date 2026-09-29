@@ -188,8 +188,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       asr: asrStatus,
       qwenTts: {
         recommended: recommendQwenTts(platformCapabilities().localSpeech),
-        ...qwenInstalled,
-        ready: qwenTts.available()
+        ...qwenInstalled
       }
     }
   })

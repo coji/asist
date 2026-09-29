@@ -56,7 +56,7 @@ const setupStatus = (): SetupStatus =>
     services: status,
     asr: asrStatus(),
     // This Mac has too little memory for the local speech model, so the setup does not offer it.
-    qwenTts: { recommended: qwenTtsRecommended, modelInstalled: false, ready: false }
+    qwenTts: { recommended: qwenTtsRecommended, modelInstalled: false }
   }) as SetupStatus
 
 const api = {

@@ -102,8 +102,7 @@ function demoAsrStatus(): SetupStatus['asr'] {
     label: spec.label,
     totalMemoryGb: localSpeech.memoryGb,
     modelInstalled: false,
-    downloadGb: asrDownloadGb(spec, false),
-    ready: false
+    downloadGb: asrDownloadGb(spec, false)
   }
 }
 
@@ -580,8 +579,7 @@ export const mockApi: RendererApi = {
     asr: demoAsrStatus(),
     qwenTts: {
       recommended: recommendQwenTts(capabilities.localSpeech),
-      modelInstalled: false,
-      ready: false
+      modelInstalled: false
     }
   }),
   completeSetup: async (request) => {

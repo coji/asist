@@ -55,8 +55,7 @@ export async function installationStatus(selected: AsrModel = getSettings().asrM
     label: spec.label,
     totalMemoryGb: recommendation.totalMemoryGb,
     ...installed,
-    downloadGb: asrDownloadGb(spec, installed.modelInstalled),
-    ready: await local.available(spec)
+    downloadGb: asrDownloadGb(spec, installed.modelInstalled)
   }
 }
 

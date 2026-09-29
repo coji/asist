@@ -42,7 +42,7 @@ function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
 
 /** The voice page: speech, recognition, responses and the microphone. Preparing the models and runtimes belongs to the models page. */
 export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
-  const { settings, status, setup, vap, set, save, refreshSetup, refreshStatus, go } = ctx
+  const { settings, status, setup, vap, set, save, refreshStatus, go } = ctx
   const toast = useToastStore((s) => s.push)
   const t = useT()
   const engine = settings.ttsEngine
@@ -65,7 +65,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   // that runs, until a smaller one is picked.
   const offeredSizes = offeredQwenTtsSizes(localSpeech)
   const qwenTtsSizes = QWEN_TTS_SIZES.filter((size) => offeredSizes.includes(size) || size === settings.qwenTtsSize)
-  const asrReady = setup?.asr?.ready === true
+  const asrReady = status?.asr === true
   const asrChoices = localSpeech.backend === null ? [] : asrModelChoices()
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
   const ttsMissing = engineUsable && speechReadiness(engine, status, localSpeech) === 'missing'
@@ -237,7 +237,6 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
                 onChange={(event) => {
                   const asrModel = event.target.value as AsrModel
                   void save({ asrModel })
-                    .then(() => refreshSetup())
                     .then(() => refreshStatus())
                     .catch((err: unknown) => toast({ kind: 'error', title: t('settingsVoice.recognition.changeFailed'), body: displayError(err) }))
                 }}

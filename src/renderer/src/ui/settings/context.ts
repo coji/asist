@@ -70,16 +70,16 @@ export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts
 
 /**
  * Whether speech recognition is ready, which the models card shows and the page list counts: the local
- * model where the machine runs one, Whisper in the browser where it does not. Null while the
- * state of the local model is still being read.
+ * model where the machine runs one, as main last pushed its status, and Whisper in the browser where it
+ * does not. Null while the status is still being read.
  */
 export function speechRecognitionReady(
   settings: AppSettings,
-  setup: SetupStatus | null,
+  status: AppStatus | null,
   localSpeech: PlatformCapabilities['localSpeech']
 ): boolean | null {
   if (localSpeech.backend === null) return settings.localAsrEnabled
-  return setup ? setup.asr?.ready === true : null
+  return status ? status.asr : null
 }
 
 /**
@@ -89,10 +89,10 @@ export function speechRecognitionReady(
  */
 export function cascadeListeningReady(
   settings: AppSettings,
-  setup: SetupStatus | null,
+  status: AppStatus | null,
   localSpeech: PlatformCapabilities['localSpeech']
 ): boolean | null {
-  return settings.localAsrEnabled || speechRecognitionReady(settings, setup, localSpeech)
+  return settings.localAsrEnabled || speechRecognitionReady(settings, status, localSpeech)
 }
 
 /** How the replies of the cascade engine are read aloud, as speechReadiness tells it. */

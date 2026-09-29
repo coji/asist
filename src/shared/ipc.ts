@@ -685,10 +685,13 @@ export interface AppStatus {
   live: LiveConnection
 }
 
-/** What first-time setup shows about installation progress, as opposed to plain liveness. */
+/**
+ * What is installed and recommended, which changes with the settings and a preparation. Whether a service
+ * answers is in `services`, the same AppStatus main pushes whenever it changes.
+ */
 export interface SetupStatus {
   services: AppStatus
-  /** The local speech recognition, or null on a machine that has no runtime for it. */
+  /** The local speech recognition, or null on a machine that cannot run it. */
   asr: {
     selectedModel: AsrModel
     resolvedModel: ResolvedAsrModel
@@ -699,13 +702,11 @@ export interface SetupStatus {
     modelInstalled: boolean
     /** What preparing the resolved model downloads: nothing once it is installed. */
     downloadGb: number
-    ready: boolean
   } | null
   /** The Qwen3-TTS size the settings name. `recommended` is whether this machine has the memory to run it beside the speech recognition. */
   qwenTts: {
     recommended: boolean
     modelInstalled: boolean
-    ready: boolean
   }
 }
 

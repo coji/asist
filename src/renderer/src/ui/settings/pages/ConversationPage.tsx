@@ -295,10 +295,10 @@ const SPEECH_CHIP = {
  * both, so a switch to this engine shows here what is still missing.
  */
 function CascadeEngineRows({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
-  const { settings, status, setup, go } = ctx
+  const { settings, status, go } = ctx
   const t = useT()
   const { os, localSpeech } = platformCapabilities()
-  const listening = cascadeListeningReady(settings, setup, localSpeech)
+  const listening = cascadeListeningReady(settings, status, localSpeech)
   const engine = settings.ttsEngine
   const speech = speechReadiness(engine, status, localSpeech)
   const engineName = ttsEngineLabel(t, engine)

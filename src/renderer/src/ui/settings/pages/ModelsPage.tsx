@@ -23,7 +23,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
   const formatLocale = useFormatLocale()
   const { localSpeech, os } = platformCapabilities()
   const asr = setup?.asr ?? null
-  const asrReady = asr?.ready === true
+  const asrReady = status?.asr === true
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
   const embeddingReady = embedding?.runtimeInstalled === true && embedding.modelInstalled
   const classifierReady = aizuchiClassifier?.runtimeInstalled === true && aizuchiClassifier.modelInstalled
@@ -49,7 +49,7 @@ export function ModelsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
       : !asr
         ? t('settingsModels.asr.checking')
         : t(asr.modelInstalled ? 'settingsModels.asr.model' : 'settingsModels.asr.needsModel', { memoryGb: asr.totalMemoryGb, model: asr.label })
-  const recognitionReady = speechRecognitionReady(settings, setup, localSpeech)
+  const recognitionReady = speechRecognitionReady(settings, status, localSpeech)
   const asrState = recognitionReady === null ? 'unknown' : recognitionReady ? 'ready' : 'missing'
   const engineRuns = ttsEngineRuns(engine, localSpeech)
 

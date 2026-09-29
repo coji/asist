@@ -97,9 +97,14 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     applyStatus(next.services)
   }
   const refreshEmbedding = async (): Promise<void> => setEmbedding(await window.api.embeddingStatus())
+  // What is installed and recommended follows the models the settings name, so it is read again whenever
+  // one of them changes, from whichever page changed it.
   useEffect(() => {
     if (!open) return
     void refreshSetup().catch(() => setSetup(null))
+  }, [open, settings?.asrModel, settings?.ttsEngine, settings?.qwenTtsSize])
+  useEffect(() => {
+    if (!open) return
     void window.api.vapStatus().then(setVap).catch(() => setVap(null))
     void window.api.embeddingStatus().then(setEmbedding).catch(() => setEmbedding(null))
     void window.api.aizuchiClassifierStatus().then(setAizuchiClassifier).catch(() => setAizuchiClassifier(null))
@@ -224,7 +229,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const { calendar, localSpeech } = platformCapabilities()
   const engineRuns = ttsEngineRuns(settings.ttsEngine, localSpeech)
   const missing = [
-    speechRecognitionReady(settings, setup, localSpeech) === false,
+    speechRecognitionReady(settings, status, localSpeech) === false,
     status !== null && engineRuns && ttsNeedsPreparation(settings.ttsEngine) && !status.tts,
     status !== null && status.agent !== 'found',
     features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),

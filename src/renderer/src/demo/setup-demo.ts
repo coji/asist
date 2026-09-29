@@ -63,7 +63,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return {
       ...setup,
       services: await api.getStatus(),
-      asr: setup.asr && { ...setup.asr, modelInstalled: state.asrReady, downloadGb: state.asrReady ? 0 : setup.asr.downloadGb, ready: state.asrReady }
+      asr: setup.asr && { ...setup.asr, modelInstalled: state.asrReady, downloadGb: state.asrReady ? 0 : setup.asr.downloadGb }
     }
   }
   api.saveApiKey = async (provider) => {
