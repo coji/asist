@@ -16,6 +16,7 @@ import * as asr from './services/asr'
 import * as tts from './services/tts'
 import * as aizuchi from './services/aizuchi'
 import * as aizuchiClassifier from './services/aizuchi-classifier'
+import * as watchdog from './services/watchdog'
 import { initJobReporting } from './services/brain/job-reporting'
 import { compactionJob, initMaintenance } from './services/maintenance'
 import * as memory from './services/memory'
@@ -159,8 +160,8 @@ if (!hasSingleInstanceLock) {
     createWindow()
 
     // The sidecars are warmed up here, and a failure does not stop the app from starting.
-    void asr.ensureServer()
-    void tts.ensureEngine().then(() => aizuchi.getBank()).catch((error) => console.error('TTS preparation failed:', error))
+    watchdog.checkAfter(asr.ensureServer().catch((error) => console.error('speech recognition failed to start:', error)))
+    watchdog.checkAfter(tts.ensureEngine().then(() => aizuchi.getBank()).catch((error) => console.error('TTS preparation failed:', error)))
     // The aizuchi classifier stays resident when it is prepared and aizuchi are wanted; without it no
     // aizuchi plays at the head of a turn.
     if (aizuchiClassifier.wanted(getSettings())) void aizuchiClassifier.ensureStarted()

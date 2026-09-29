@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   settings: { aizuchi: true, vapEnabled: true, conversationLocale: 'ja-JP', voiceEngine: 'cascade', uiLocale: 'en-US' },
   startEmbedding: vi.fn(async () => false),
   ttsAnswered: vi.fn(),
-  ttsUp: true
+  ttsUp: true,
+  asrAvailable: async () => true
 }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
@@ -17,7 +18,7 @@ vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn()
 } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
-vi.mock('../src/main/services/asr', () => ({ available: async () => true, revive: async () => true }))
+vi.mock('../src/main/services/asr', () => ({ available: () => mocks.asrAvailable(), revive: async () => true }))
 vi.mock('../src/main/services/tts', () => ({ available: async () => mocks.ttsUp, ensureEngine: async () => true }))
 vi.mock('../src/main/services/aizuchi', () => ({ ttsAnswered: mocks.ttsAnswered }))
 vi.mock('../src/main/services/memory', () => ({ startEmbeddingIfEnabled: mocks.startEmbedding }))
@@ -53,6 +54,7 @@ beforeEach(async () => {
   mocks.startEmbedding.mockClear()
   mocks.ttsAnswered.mockClear()
   mocks.ttsUp = true
+  mocks.asrAvailable = async () => true
   children = []
   mocks.spawn.mockReset().mockImplementation((_python: string, args: string[]) => {
     const child = fakeChild(args[0])
@@ -105,6 +107,43 @@ describe('the watchdog', () => {
     expect(mocks.ttsAnswered).toHaveBeenCalledWith(true)
     await vi.advanceTimersByTimeAsync(30_000)
     expect(mocks.ttsAnswered).toHaveBeenLastCalledWith(false)
+  })
+
+  it('reports a TTS engine that has become ready when asked to check, without waiting for the next periodic check', async () => {
+    mocks.ttsUp = false
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false })
+    mocks.ttsUp = true
+    await watchdog.checkHealth()
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true })
+  })
+
+  it('checks once the start of an engine has settled, whether it succeeded or failed', async () => {
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    mocks.ttsUp = false
+    watchdog.checkAfter(Promise.reject(new Error('the worker exited')))
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false })
+  })
+
+  it('checks again once a check that was under way when asked has ended, since that one may have read the old state', async () => {
+    let release!: () => void
+    mocks.asrAvailable = () => new Promise<boolean>((resolve) => { release = () => resolve(true) })
+    mocks.ttsUp = false
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    mocks.asrAvailable = async () => true
+    mocks.ttsUp = true
+    await watchdog.checkHealth()
+    expect(onChange).not.toHaveBeenCalled()
+    release()
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true })
   })
 
   it('starts the aizuchi classifier again after a timeout stopped it', async () => {

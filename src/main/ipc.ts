@@ -508,12 +508,12 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
         // The clips exist for Japanese only, so the language decides whether there is a bank at all.
         before.conversationLocale !== after.conversationLocale
       ) {
-        void tts.ensureEngine().catch((error) => console.error('TTS engine failed to start:', error))
+        watchdog.checkAfter(tts.ensureEngine().catch((error) => console.error('TTS engine failed to start:', error)))
         aizuchi.rebuild()
       }
       if (before.globalHotkey !== after.globalHotkey) refreshHotkey()
       if (before.uiLocale !== after.uiLocale) refreshTrayMenu()
-      if (before.asrModel !== after.asrModel) void asr.switchModel()
+      if (before.asrModel !== after.asrModel) watchdog.checkAfter(asr.switchModel().catch((error) => console.error('speech recognition failed to start:', error)))
       if (before.memoryEmbeddingEnabled !== after.memoryEmbeddingEnabled) {
         if (after.memoryEmbeddingEnabled) {
           void memory.startEmbeddingIfEnabled().catch((err) => console.error('memory embedding:', err))
