@@ -15,9 +15,11 @@ The settings open on "Overview".
 - "Needs preparing" lists what is turned on but doesn't work yet. Each row holds the step that fixes it, such as downloading a model, the installation guide for the Agent CLI, or registering an API key.
 - "Features you can add" lists semantic search, turn-taking (MaAI) and in-browser Whisper when they are off. The conversation works without them. "Prepare and turn on" downloads what the feature needs and turns it on.
 
+![The Overview page in the settings, with the current setup and what needs preparing](/screens/en/settings-overview.webp)
+
 You can also download a model in the row of the item that uses it: speech recognition and speech on the "Voice" page, and semantic search on the "Memory" page. The progress appears in the row of the button you pressed. Only one download runs at a time.
 
-![The Overview page in the settings, with the current setup and what needs preparing](/screens/en/settings-overview.webp)
+![The Voice page in the settings, with a note under the speech recognition model that it has not been downloaded, and "Prepare"](/screens/en/settings-voice.webp)
 
 ## API costs
 
