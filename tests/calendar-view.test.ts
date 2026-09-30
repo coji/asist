@@ -55,12 +55,13 @@ beforeEach(() => {
   calendarChange.mockReset()
   window.api = {
     calendarStatus: async () => ({
-      authorization: 'fullAccess',
+      signIn: 'signedIn',
       calendars: [
-        { id: 'work', title: '仕事', source: 'Google', writable: true },
-        { id: 'home', title: '自宅', source: 'iCloud', writable: true },
-        { id: 'other', title: '見ない', source: 'iCloud', writable: true }
-      ]
+        { id: 'work', title: '仕事', writable: true },
+        { id: 'home', title: '自宅', writable: true },
+        { id: 'other', title: '見ない', writable: true }
+      ],
+      account: 'me@example.com'
     }),
     calendarEvents,
     calendarChange
@@ -166,8 +167,8 @@ it('shows why the events could not be listed while the calendar is ready, and li
   expect(text('.cal-ev.is-bar')).toEqual(['箱根'])
 })
 
-describe('a repeating event, whose occurrences share one id', () => {
-  const standup = (d: number): CalendarEvent => ({ ...event({ title: '朝会', recurring: true }), id: 'weekly', start: day(d, 9), end: day(d, 9, 30) })
+describe('a repeating event, each of whose occurrences Google gives an id of its own', () => {
+  const standup = (d: number): CalendarEvent => ({ ...event({ title: '朝会', recurring: true }), id: `me@example.com weekly_202609${d}T000000Z`, start: day(d, 9), end: day(d, 9, 30) })
 
   it('opens the details of the occurrence that was pressed', async () => {
     calendarEvents.mockResolvedValue([standup(15), standup(22)])
@@ -177,10 +178,10 @@ describe('a repeating event, whose occurrences share one id', () => {
     expect(container.querySelector('.cal-pop.is-event .cal-pop-when')?.textContent).toContain('2026年9月22日')
   })
 
-  it('opens the occurrence on the day it was asked for from outside the screen', async () => {
+  it('opens the occurrence asked for from outside the screen', async () => {
     calendarEvents.mockResolvedValue([standup(15), standup(22)])
     await render()
-    await act(async () => useViewStore.getState().openApp({ app: 'calendar', view: 'month', date: '2026-09-22', eventId: 'weekly' }))
+    await act(async () => useViewStore.getState().openApp({ app: 'calendar', view: 'month', date: '2026-09-22', eventId: standup(22).id }))
     await act(async () => {})
     expect(container.querySelector('.cal-pop.is-event .cal-pop-when')?.textContent).toContain('2026年9月22日')
   })
@@ -200,7 +201,7 @@ describe('the draft of the event editor', () => {
     const onSubmit = vi.fn()
     const open = async (draft: Draft): Promise<void> => {
       onSubmit.mockReset()
-      await act(async () => root.render(React.createElement(EditorCard, { initial: draft, calendarLabel: 'Google / 仕事', onSubmit, onClose: vi.fn() })))
+      await act(async () => root.render(React.createElement(EditorCard, { initial: draft, calendarLabel: '仕事', onSubmit, onClose: vi.fn() })))
     }
     const dates = (): HTMLInputElement[] => [...container.querySelectorAll<HTMLInputElement>('input[type=date]')]
     const times = (): HTMLInputElement[] => [...container.querySelectorAll<HTMLInputElement>('input[type=time]')]

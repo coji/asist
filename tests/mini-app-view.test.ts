@@ -112,7 +112,7 @@ const api = {
   mailChange: vi.fn(async () => ({ saved: true, operation: 'markRead', id: 'x', summary: '' })),
   mailStatus: vi.fn(async () => demoMailStatus(DEMO_MAIL_MESSAGES)),
   mailDraftList: vi.fn(async () => DEMO_MAIL_DRAFTS),
-  calendarStatus: vi.fn(async () => ({ authorization: 'fullAccess', calendars: [{ id: 'work', title: '仕事', source: 'Google', writable: true }] })),
+  calendarStatus: vi.fn(async () => ({ signIn: 'signedIn', calendars: [{ id: 'work', title: '仕事', writable: true }], account: 'me@example.com' })),
   calendarEvents: vi.fn(async ({ start, end }: { start: string; end: string }) =>
     [review, release].filter((e) => e.start < Date.parse(end) && e.end > Date.parse(start))
   ),

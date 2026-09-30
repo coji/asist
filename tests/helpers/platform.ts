@@ -19,16 +19,8 @@ const noMicCheck = (): never => {
   throw new Error('the microphone check is not run on a Mac')
 }
 
-/** Only ASIST_CALENDAR_BACKEND=google asks whether the build has Google's OAuth client. */
-const noGoogleClient = (): never => {
-  throw new Error('the Google client is asked for only when Google Calendar is')
-}
-
-/** No ASIST_CALENDAR_BACKEND. */
-const osCalendar = { calendarBackend: undefined, googleClient: noGoogleClient }
-
 /** The capabilities of a 32 GB Apple Silicon Mac. */
-export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, speechDevices: noDeviceList, micCancelsEcho: noMicCheck, ...osCalendar })
+export const MACOS = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 32 * GIB, speechDevices: noDeviceList, micCancelsEcho: noMicCheck })
 
 /**
  * An x64 Windows PC with an 8 GB RTX 2080, the machine the local speech was measured on, whose microphone
@@ -39,8 +31,7 @@ export const WINDOWS = deriveCapabilities({
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
   speechDevices: () => RTX_2080_DEVICES,
-  micCancelsEcho: () => false,
-  ...osCalendar
+  micCancelsEcho: () => false
 })
 
 /** An x64 Windows PC with no discrete GPU, so that it has no local speech models. */
@@ -49,8 +40,7 @@ export const WINDOWS_WITHOUT_GPU = deriveCapabilities({
   arch: 'x64',
   totalMemoryBytes: 32 * GIB,
   speechDevices: () => RTX_2080_DEVICES.filter((device) => device.kind !== 'gpu'),
-  micCancelsEcho: () => false,
-  ...osCalendar
+  micCancelsEcho: () => false
 })
 
 /**

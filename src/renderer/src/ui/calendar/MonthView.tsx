@@ -10,7 +10,7 @@ import {
   weekLayout
 } from '@shared/calendar-layout'
 import { useT, useFormatLocale } from '@/i18n'
-import { BarChip, TimedChip, occurrenceKey, type OpenEvent } from './EventChips'
+import { BarChip, TimedChip, type OpenEvent } from './EventChips'
 import { dayClasses, fmtDateWd, fmtMonthDay, weekHead } from './format'
 import { colorOf } from './palette'
 
@@ -94,7 +94,7 @@ export function MonthView({
                     </button>
                     {plan.shown.map((event, i) => (
                       <TimedChip
-                        key={occurrenceKey(event)}
+                        key={event.id}
                         event={event}
                         color={colorOf(colors, event.calendarId)}
                         style={{ gridColumn: column, gridRow: day.firstFree + i + 2 }}

@@ -63,10 +63,6 @@ export const AGENT_INSTALL_GUIDE = { codex: 'https://developers.openai.com/codex
 /** Where each speech application that is installed separately is downloaded. */
 export const TTS_SITE = { voicevox: 'https://voicevox.hiroshiba.jp/', aivisspeech: 'https://aivis-project.com/' } as const
 
-/** The name of the calendar and mail page. A machine without a calendar has mail alone there and names the page so. */
-export const connectionsTitle = (t: Translate, calendar: PlatformCapabilities['calendar']): string =>
-  calendar === null ? t('settingsMail.title') : t('settings.pages.connections')
-
 const TTS_ENGINE_NAME = { voicevox: 'VOICEVOX', aivisspeech: 'AivisSpeech', qwen3tts: 'Qwen3-TTS' } as const
 
 /** The name of a speech engine. The three engines named after their product keep that name in every language. */

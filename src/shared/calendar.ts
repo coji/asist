@@ -11,27 +11,20 @@ export const calendarSettingsSchema = z.strictObject({
     .refine((ids) => new Set(ids).size === ids.length),
   writeCalendarId: z.string().min(1).nullable()
 })
-export const calendarAccountSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  source: z.string(),
-  writable: z.boolean()
-})
-export const calendarStatusSchema = z.object({
-  authorization: z.enum([
-    'notDetermined',
-    'denied',
-    'restricted',
-    'writeOnly',
-    'fullAccess',
-    // A Google sign-in is saved but another build encrypted it, so this one cannot read it.
-    'unreadable'
-  ]),
-  calendars: z.array(calendarAccountSchema),
-  /** The Google account signed in. EventKit has none, since it reads every account added to macOS. */
-  account: z.string().nullable()
-})
-export type CalendarStatus = z.infer<typeof calendarStatusSchema>
+/** One calendar of the Google account. */
+export interface CalendarAccount {
+  id: string
+  title: string
+  writable: boolean
+}
+export interface CalendarStatus {
+  /** `unreadable`: a sign-in is saved, but another build encrypted it, so this one cannot read it. */
+  signIn: 'signedIn' | 'signedOut' | 'unreadable'
+  /** The calendars of the account, empty unless signed in. */
+  calendars: CalendarAccount[]
+  /** The address of the account, which is the id of its primary calendar, or null when it has none or is signed out. */
+  account: string | null
+}
 export const calendarEventSchema = z.object({
   id: z.string(),
   calendarId: z.string(),

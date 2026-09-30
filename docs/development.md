@@ -29,7 +29,7 @@ git clone git@github.com:nyosegawa/asist.git
 
 ## ソースから起動する
 
-Node.js、npm、Xcode Command Line Tools が要ります。マイクとカレンダーのネイティブのヘルパーと git をコンパイルし、uv を取得して、アプリに同梱します。
+Node.js、npm、Xcode Command Line Tools が要ります。マイクのネイティブのヘルパーと git をコンパイルし、uv を取得して、アプリに同梱します。
 
 ```bash
 npm install
@@ -58,25 +58,20 @@ RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY=...
 
 このキーは iframe の URL に載るので、配布したアプリから取り出せます。キーの「API の制限」で Maps Embed API だけを許可し、同じプロジェクトでほかの有料の API を有効にしないでください。本番のアプリは `file://` から開くので Referer が送られず、ウェブサイトによる制限は使えません。Google の規約で地図の帰属表示を変えられないため、カードの地図には色のフィルターをかけていません。
 
-### Google カレンダーで動かす
+### Google カレンダーにつなぐ
 
-カレンダーは、macOS では EventKit、Windows ではなし、が既定です。Google のアプリの審査が通るまでは、開発のときだけ、環境変数 `ASIST_CALENDAR_BACKEND=google` で macOS と Windows のどちらも Google Calendar API を使えます。値は `google` だけを受け付け、ほかの値では起動を止めます。
-
-1. Google Cloud のプロジェクト(issue #81 の手順で作ったもの)で、自分のアカウントが Google Auth Platform の「対象」のテストユーザーに入っていることを確かめます。テストユーザーでないアカウントではログインできません。
-2. リポジトリ直下の `.env` に、デスクトップ アプリのクライアントの値と切り替えを書きます。
+カレンダーは、macOS でも Windows でも Google Calendar API で読み書きします。ログインに使う OAuth のクライアントは、ビルドのときにアプリへ埋め込みます。リポジトリから動かすときは、Google Cloud のプロジェクト(issue #81 の手順で作ったもの)のデスクトップ アプリのクライアントの値を、リポジトリ直下の `.env` に書きます。
 
 ```bash
 ASIST_GOOGLE_CLIENT_ID=...apps.googleusercontent.com
 ASIST_GOOGLE_CLIENT_SECRET=...
-ASIST_CALENDAR_BACKEND=google
 ```
 
-3. `npm run dev` で起動し、設定の「カレンダーとメール」の「カレンダー」で「Google でログイン」を押します。ブラウザで同意の画面が開き、「Google はこのアプリを確認していません」と出たら「続行」で進みます。権限の2つの項目は、両方にチェックを入れます。
-4. ログインしたら、カレンダー連携をオンにし、表示するカレンダーと新規予定の保存先を選びます。
+`npm run dev` で起動し、設定の「カレンダーとメール」の「カレンダー」で「Google でログイン」を押します。ブラウザで同意の画面が開くので、権限の 2 つの項目の両方にチェックを入れます。ログインしたら、カレンダー連携をオンにし、表示するカレンダーと新規予定の保存先を選びます。
 
-クライアント ID とシークレットは、`electron.vite.config.ts` がビルドのときに main プロセスへ埋め込みます。`npm run dev` では起動するときの `.env` を、`npm run dist:mac` などでは実行したシェルの環境変数か `.env` を読みます。CI では、アプリを作る `build` と `build-windows` の job にだけ、リポジトリの secret から同じ名前で渡します。クライアントがないまま `ASIST_CALENDAR_BACKEND=google` で起動すると、起動はそのことを伝えるエラーで止まります。`ASIST_CALENDAR_BACKEND` は起動するときに読むので、ビルドし直さずに切り替えられます。
+クライアント ID とシークレットは、`electron.vite.config.ts` がビルドのときに main プロセスへ埋め込みます。`npm run dev` では起動するときの `.env` を、`npm run dist:mac` などでは実行したシェルの環境変数か `.env` を読みます。CI では、アプリを作る `build` と `build-windows` の job にだけ、リポジトリの secret から同じ名前で渡します。クライアントがないままビルドしたアプリも起動し、カレンダーの画面も出ますが、カレンダーを最初に使ったとき(設定のカレンダーの項目を開いたときなど)に、クライアントがないことを伝えるエラーになります。配布するアプリは、`npm run release` と Windows のリリースのワークフローが、クライアントがあることを確かめてからビルドします。
 
-ログインの refresh token は、API キーと同じく safeStorage で暗号化して `userData/google-calendar.json` に保存します。開発版とインストールしたアプリでは macOS の鍵が違うので、一方でログインしたものはもう一方では読めません。設定には読めないことが出るので、ログインし直すか、ログアウトします。アプリが審査の前の「テスト中」のあいだは、Google がログインを7日で切るので、そのあとは設定から再びログインします。
+ログインの refresh token は、API キーと同じく safeStorage で暗号化して `userData/google-calendar.json` に保存します。macOS では、開発版とインストールしたアプリで鍵が違うので、一方でログインしたものはもう一方では読めません。設定には読めないことが出るので、ログインし直すか、ログアウトします。
 
 ## CI
 
@@ -167,7 +162,7 @@ npm run promo:thumbnail      # YouTube のサムネイルを promotions/launch-v
 CSC_NAME="<氏名> (<Team ID>)" npm run dist:mac
 ```
 
-証明書には、配布するバージョンと同じ Developer ID Application を使います。macOS はマイクとカレンダーの許可を署名に結び付けるので、別の証明書で署名したアプリに入れ替えると、許可がやり直しになります。アプリはライブラリの検証を有効にしているので、自己署名の証明書で署名すると、アプリ本体と Electron Framework の Team ID が一致せず、起動した直後に終了します。`CSC_NAME` には、`security find-identity -v -p codesigning` に出る名前から「Developer ID Application: 」を除いた部分を渡します。前置きを付けると electron-builder は止まり、付けなければ Developer ID Application の証明書を自分で選びます。`CSC_NAME` を省くと electron-builder がキーチェーンから証明書を選ぶので、自己署名の証明書があるときは必ず指定します。
+証明書には、配布するバージョンと同じ Developer ID Application を使います。macOS はマイクの許可を署名に結び付けるので、別の証明書で署名したアプリに入れ替えると、許可がやり直しになります。アプリはライブラリの検証を有効にしているので、自己署名の証明書で署名すると、アプリ本体と Electron Framework の Team ID が一致せず、起動した直後に終了します。`CSC_NAME` には、`security find-identity -v -p codesigning` に出る名前から「Developer ID Application: 」を除いた部分を渡します。前置きを付けると electron-builder は止まり、付けなければ Developer ID Application の証明書を自分で選びます。`CSC_NAME` を省くと electron-builder がキーチェーンから証明書を選ぶので、自己署名の証明書があるときは必ず指定します。
 
 このビルドは dmg も zip も作らないので、自動更新の設定(`app-update.yml`)を持たず、リリースから自分を更新しません。
 
@@ -175,7 +170,7 @@ CSC_NAME="<氏名> (<Team ID>)" npm run dist:mac
 
 署名なしでビルドするには `npm run dist:mac:unsigned` を使います。署名なしでは、マイクの許可が再起動のあとに残らないことがあるので、音声の実機確認には署名付きのアプリを使います。配布の前には `npm audit --omit=dev` で依存関係も確かめます。
 
-ビルドしたアプリは、Electron の fuse(`electron-builder.yml` の `electronFuses`)で `ELECTRON_RUN_AS_NODE`、`NODE_OPTIONS`、`--inspect` を受け付けず、`app.asar` 以外からアプリのコードを読み込まず、`app.asar` の中身が変わっていれば起動しません。どれも、ほかのプロセスが ASIST の署名のまま、ユーザーが許可したマイクやカレンダーを使うことを防ぐためです。ビルドのあとに `npx @electron/fuses read --app dist/mac-arm64/ASIST.app` で値を確かめられます。`--remote-debugging-port` は fuse では止まらないので、CDP でアプリを動かすときだけ付けて起動します。
+ビルドしたアプリは、Electron の fuse(`electron-builder.yml` の `electronFuses`)で `ELECTRON_RUN_AS_NODE`、`NODE_OPTIONS`、`--inspect` を受け付けず、`app.asar` 以外からアプリのコードを読み込まず、`app.asar` の中身が変わっていれば起動しません。どれも、ほかのプロセスが ASIST の署名のまま、ユーザーが許可したマイクを使うことを防ぐためです。ビルドのあとに `npx @electron/fuses read --app dist/mac-arm64/ASIST.app` で値を確かめられます。`--remote-debugging-port` は fuse では止まらないので、CDP でアプリを動かすときだけ付けて起動します。
 
 開発機の `/Applications` に入れて確かめるまでの手順は、[インストールの手順](../skills/install-mac-app/SKILL.md)にあります。
 
@@ -208,7 +203,7 @@ xcrun notarytool store-credentials asist-notary --apple-id <Apple ID> --team-id 
 npm run release
 ```
 
-`npm run release` は、main が origin/main と同じで変更が無いことと、そのバージョンがまだ出ていないことを確かめます。次に、地図のキー(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`)があることと `npm audit --omit=dev` を確かめてから、dmg と zip をビルドして署名と公証をし、Gatekeeper が受け付けることを確かめます。そのうえで、dmg(`ASIST-arm64.dmg`。名前にバージョンを含めないので、`releases/latest/download/ASIST-arm64.dmg` がいつも最新を指します)、zip、`latest-mac.yml`、同梱した git のソース(`scripts/resources/git-macos.mjs` のバージョンの tarball)を Release に置きます。証明書を選ぶ `CSC_NAME` と、notarytool のプロファイルを選ぶ `APPLE_KEYCHAIN_PROFILE`(省くと `asist-notary`)で、どちらも変えられます。
+`npm run release` は、main が origin/main と同じで変更が無いことと、そのバージョンがまだ出ていないことを確かめます。次に、地図のキーと Google の OAuth クライアント(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`、`ASIST_GOOGLE_CLIENT_ID`、`ASIST_GOOGLE_CLIENT_SECRET`)があることと `npm audit --omit=dev` を確かめてから、dmg と zip をビルドして署名と公証をし、Gatekeeper が受け付けることを確かめます。そのうえで、dmg(`ASIST-arm64.dmg`。名前にバージョンを含めないので、`releases/latest/download/ASIST-arm64.dmg` がいつも最新を指します)、zip、`latest-mac.yml`、同梱した git のソース(`scripts/resources/git-macos.mjs` のバージョンの tarball)を Release に置きます。証明書を選ぶ `CSC_NAME` と、notarytool のプロファイルを選ぶ `APPLE_KEYCHAIN_PROFILE`(省くと `asist-notary`)で、どちらも変えられます。
 
 Mac のファイルを置いた Release は、まだ下書きのままです。`npm run release` は次に、`.github/workflows/windows-release.yml` をタグとコミットを渡して動かし、`gh run watch --exit-status` で終わるのを待ちます。このワークフローは、まず Release が下書きで、そのコミットから作ったものであることを確かめます。次に windows-latest で、`package.json` のバージョンがタグと同じであることを確かめ、リポジトリの Secrets にある地図のキーと Google の OAuth クライアント(`RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY`、`ASIST_GOOGLE_CLIENT_ID`、`ASIST_GOOGLE_CLIENT_SECRET`)を入れて NSIS のインストーラーをビルドします。npm とリポジトリのスクリプトはこのビルドの job だけで動かし、その job のトークンには読む権限しか与えません。Release に書き込めるトークンを持つ job は、何も checkout せず、gh だけを動かします。GitHub の公開の設定は、このときだけコマンドラインで渡すので、自動更新の設定(`app-update.yml`)と `latest.yml` を持つのは、このインストーラーだけです。できたインストーラー(`ASIST-Setup-x64.exe`。名前にバージョンを含めないので、`releases/latest/download/ASIST-Setup-x64.exe` がいつも最新を指します)、その blockmap、`latest.yml`、同梱した Git for Windows のソース(`git-for-windows-<バージョン>.tar.gz`)は、Actions の artifact として Release に書き込める job に渡します。その job は、Release がまだ下書きで、同じコミットから作ったものであることをもう一度確かめてから、これらを下書きに置きます。`npm run release` は、下書きに Windows のファイルがすべてそろったことを確かめてから、Release を公開します。ワークフローが失敗したときは、下書きのまま止まり、次にすることを表示します。
 
@@ -227,12 +222,12 @@ Mac のファイルを置いた Release は、まだ下書きのままです。`
 - **記憶。** 前日の会話を整理し、記憶の取り込み、`instruction.md` が次の会話に載ること、再起動のあとの検索、0 時を過ぎてから起動したときに整理が始まることを確かめます。
 - **Agent。** 検証用のフォルダで、会話から頼んだジョブの開始、継続、取り込みのたびに確認画面が出て、キャンセルすると何も始まらないことを確かめます。worktree の差分の取り込みと破棄も確かめます。コミットしていない変更や衝突があるときは、取り込みが止まることを確かめます。取り込み先のブランチの名前が、カードの差分の上と会話からの取り込みの確認画面に出ること、差分を見たあとで同じコミットから作った別のブランチを開くと取り込みが止まることを確かめます。サブモジュールの中でコミットしたジョブは取り込めず、カードに worktree の場所が出て、カードの「捨てる」で確認画面が出ることを確かめます。HEAD がブランチを指していないとき(bisect の途中など)は取り込みが止まり、ジョブのブランチと worktree が残ることを確かめます。Agent の画面で、選んだジョブのログの下に成果物が並び、押すとファイルのカードが開くことを確かめます。成果物の HTML がページとして開き、同じフォルダの CSS と画像が効くこと、ページの中の外部リンクがアプリの中で開かないことを確かめます。
 - **常駐。** 通信や音声のサービスが戻ったときの復帰、30 分使ったときの CPU とメモリ、スリープからの復帰、トレイと呼び出しのショートカット(macOS は ⌥Space、Windows は Alt+Shift+Space)、完全に終了したあとに子プロセスが残らないことを確かめます。
-- **カレンダー。** 許可、拒否、再許可、表示するカレンダーと保存先の選択、再起動のあとも設定が残ることを確かめます。検証用の予定で追加、変更、削除を試し、キャンセルで何も変わらないこと、Google にも反映されることを確かめます。月の表示で日をまたぐ終日の予定が 1 本の帯になること、週の表示で重なる予定が左右に分かれ、現在時刻の線が今日に出ることを確かめます。
+- **カレンダー。** Google へのログイン、同意の画面で権限の片方を外したときにログインにならないこと、ログアウトで Google のアカウントの「サードパーティ製のアプリとサービス」から ASIST が消えること、表示するカレンダーと保存先の選択、再起動のあとも設定とログインが残ることを確かめます。検証用の予定で追加、変更、削除を試し、キャンセルで何も変わらないこと、Google カレンダーにも反映されることを確かめます。月の表示で日をまたぐ終日の予定が 1 本の帯になること、週の表示で重なる予定が左右に分かれ、現在時刻の線が今日に出ることを確かめます。
 - **メール。** Gmail のアプリパスワードでアカウントを足し、受信箱の取り込み、IDLE での新着、再起動のあとの接続を確かめます。検証用のメールで「未読メールある?」「読んで」「返信して」を試し、返信が下書きのカードになり、「捨てる」で送らないこと、「送信」で相手に届いて送信済みに残ること、アーカイブとゴミ箱が確認画面を通ってサーバーにも反映されることを確かめます。メールの画面で、箱の切り替え、検索、スレッドの表示、作成からの送信と下書きの保存、まとめて既読にする操作を確かめます。
 - **マイクの許可。** 署名付きのアプリを 2 回再起動して、許可が残り、ネイティブのマイクが動くことを確かめます。音声認識、読み上げ、Agent の CLI が無い構成でも、設定の方法や失敗の理由が表示されることを確かめます。
 - **live のエンジン。** GPT-Live と Gemini Live をそれぞれ選び、話し始めでセッションが開くこと、返事が provider の声で鳴ること、天気や予定でカードが出ること、読み上げ中に話しかけると止まること、文字の入力に答えること、会話が止まると設定の秒数で閉じて次の声で開き直すこと、マイクを OFF にするとセッションが閉じることを確かめます。Gemini Live では会話ログに転写が残ること、GPT-Live では会話のモデルの返事が画面に出て、会話ログにも一度だけ残ることも確かめます。
 
-Windows では、インストーラーで入れたアプリで、カレンダーを除く上の項目を確かめます。Windows には無い、または Windows だけの動きがあるので、次の項目も確かめます。
+Windows では、インストーラーで入れたアプリで、上の項目を確かめます。Windows には無い、または Windows だけの動きがあるので、次の項目も確かめます。
 
 - **インストール。** 署名の無いインストーラーで SmartScreen の警告が出て、「詳細情報」から「実行」で入ること、管理者の権限を求めずに `%LOCALAPPDATA%\Programs\asist` に入ること、スタートメニューから起動できることを確かめます。
 - **ウィンドウとトレイ。** タイトルバーのボタンがトップバーの右に重なり、テーマを変えるとボタンの色も変わること、最大化と元に戻すでドックの高さが崩れないことを確かめます。トレイのアイコンが出て、メニューから表示、マイクの切り替え、終了ができること、ジョブの完了などの通知が出て、押すとアプリが前に出ることを確かめます。

@@ -9,8 +9,6 @@ import type { MessageKey } from '@shared/i18n'
 import { useT } from '@/i18n'
 import { useJobStore, useMailStore, useSettingsStore, useTaskStore, useToastStore } from '@/state/stores'
 import { activeMiniApp, useViewStore } from '@/state/view'
-import { platformCapabilities } from '@/platform'
-import { miniAppAvailable } from '@shared/mini-apps'
 import asistIcon from '@/assets/holo/asist.png'
 import agentIcon from '@/assets/holo/agent.png'
 import tasksIcon from '@/assets/holo/tasks.png'
@@ -85,8 +83,6 @@ export function NavigationDock(): React.JSX.Element {
   }
 
   const badges: Record<DockItem, number> = { jobs: runningJobs, tasks: dueTasks, notes: 0, mail: recentMail, memory: 0, calendar: 0, settings: 0 }
-  // A screen this machine lacks keeps its place in the saved order, so a drag moves only the ones shown.
-  const shown = order.filter((item) => miniAppAvailable(item, platformCapabilities()))
 
   return (
     <nav aria-label={t('navigation.label')} className="navigation-dock glass">
@@ -96,8 +92,8 @@ export function NavigationDock(): React.JSX.Element {
       </button>
       <span className="dock-divider" aria-hidden />
       <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[horizontalOnly]} onDragEnd={onDragEnd}>
-        <SortableContext items={shown} strategy={horizontalListSortingStrategy}>
-          {shown.map((item) => (
+        <SortableContext items={order as DockItem[]} strategy={horizontalListSortingStrategy}>
+          {order.map((item) => (
             <DockButton key={item} item={item} pressed={open === item} badge={badges[item]} toggle={() => toggleApp(item)} />
           ))}
         </SortableContext>

@@ -51,7 +51,7 @@ The landing page is `website/src/components/Landing.astro`, its style `website/s
   - The labels are `macOS` and `Windows`, in that order and spelled the same in both languages, since the tabs of every page are matched by label. A page with tabs is `.mdx`.
   - Write `<TabItem>` and `</TabItem>` at the start of the line with a blank line inside. satteri 0.10.5, Astro's MDX parser, panics with "byte index … is not a char boundary" or "out of bounds" when an indented closing tag follows a list (2026-09-27).
   - Keep headings outside the tabs: a heading inside one still appears in the table of contents when the other tab is shown.
-  - Say plainly what one system does not have (on Windows, the calendar and Qwen3-TTS) on the page of that feature, rather than leaving it out.
+  - Say plainly what one system does not have (on a Windows PC without a discrete GPU, the local speech models and Qwen3-TTS) on the page of that feature, rather than leaving it out.
   - The app words some screens differently on each system; quote the `.macos` or `.windows` key of the dictionary in its tab.
 - Screens of the app come from the demo: `npm run demo:docs-shots` writes them to `public/screens/{ja,en}/`. Pages refer to `/screens/ja/…` and `/screens/en/…`. Write the Japanese in plain words (see the `ui-text` skill's writing guide).
   - Take them again after any change to what one of them shows, text included, even when the change came later in the same pull request. Every run also redraws the orb in another frame, so look at the images and keep the ones whose content changed.

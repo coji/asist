@@ -38,7 +38,7 @@ When fetching card data and models, ASIST sends `ASIST/<version> (https://github
 | Data | Connects to | Notes |
 |---|---|---|
 | Mail | The IMAP and SMTP servers of the accounts you set up | Fetched mail is kept on this computer. |
-| Calendar (macOS only) | The macOS calendar | macOS does the syncing with Google and iCloud. ASIST doesn't connect to those services directly. |
+| Calendar | The Google Calendar API (`www.googleapis.com`), and getting and revoking the sign-in tokens (`oauth2.googleapis.com`) | You sign in on Google's page (`accounts.google.com`), which opens in your browser. ASIST reads and writes the events of the Google account you signed in to when it uses them. The sign-in is stored encrypted on this computer. |
 
 ## Models, runtimes and updates
 

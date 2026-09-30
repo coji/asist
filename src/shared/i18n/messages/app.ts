@@ -233,32 +233,6 @@ export const app = defineMessages({
       'pt-BR': 'O ASIST não funciona no {platform} em {arch}.',
       'es-419': 'ASIST no funciona en {platform} con {arch}.',
       'es-ES': 'ASIST no funciona en {platform} con {arch}.'
-    },
-    calendarBackendUnknown: {
-      'ja-JP': '{variable} の値 {value} は使えません。指定できるのは google だけです。',
-      'en-US': "{variable} can't be {value}. The only value it takes is google.",
-      'fr-FR': '{variable} ne peut pas valoir {value}. La seule valeur acceptée est google.',
-      'de-DE': '{variable} kann nicht {value} sein. Der einzige mögliche Wert ist google.',
-      'hi-IN': '{variable} का मान {value} नहीं हो सकता। सिर्फ़ google दिया जा सकता है।',
-      'id-ID': '{variable} tidak bisa bernilai {value}. Satu-satunya nilai yang diterima adalah google.',
-      'it-IT': "{variable} non può valere {value}. L'unico valore accettato è google.",
-      'ko-KR': '{variable}의 값으로 {value}는 쓸 수 없습니다. 지정할 수 있는 값은 google뿐입니다.',
-      'pt-BR': '{variable} não pode ser {value}. O único valor aceito é google.',
-      'es-419': '{variable} no puede ser {value}. El único valor que acepta es google.',
-      'es-ES': '{variable} no puede ser {value}. El único valor que acepta es google.'
-    },
-    googleClientMissing: {
-      'ja-JP': '{variable}=google ですが、Google の OAuth クライアントがありません。ASIST_GOOGLE_CLIENT_ID と ASIST_GOOGLE_CLIENT_SECRET を .env かビルドの環境に書いてください。',
-      'en-US': "{variable}=google is set, but there is no Google OAuth client. Put ASIST_GOOGLE_CLIENT_ID and ASIST_GOOGLE_CLIENT_SECRET in .env or in the build's environment.",
-      'fr-FR': "{variable}=google est défini, mais il n'y a pas de client OAuth Google. Placez ASIST_GOOGLE_CLIENT_ID et ASIST_GOOGLE_CLIENT_SECRET dans .env ou dans l'environnement de la compilation.",
-      'de-DE': '{variable}=google ist gesetzt, aber es gibt keinen OAuth-Client von Google. Tragen Sie ASIST_GOOGLE_CLIENT_ID und ASIST_GOOGLE_CLIENT_SECRET in .env oder in die Umgebung des Builds ein.',
-      'hi-IN': '{variable}=google सेट है, पर Google का OAuth क्लाइंट नहीं है। ASIST_GOOGLE_CLIENT_ID और ASIST_GOOGLE_CLIENT_SECRET को .env या बिल्ड के एनवायरनमेंट में डालें।',
-      'id-ID': '{variable}=google sudah diatur, tetapi klien OAuth Google tidak ada. Tulis ASIST_GOOGLE_CLIENT_ID dan ASIST_GOOGLE_CLIENT_SECRET di .env atau di lingkungan build.',
-      'it-IT': "{variable}=google è impostato, ma manca il client OAuth di Google. Inserisci ASIST_GOOGLE_CLIENT_ID e ASIST_GOOGLE_CLIENT_SECRET in .env o nell'ambiente della build.",
-      'ko-KR': '{variable}=google로 지정했지만 Google OAuth 클라이언트가 없습니다. ASIST_GOOGLE_CLIENT_ID와 ASIST_GOOGLE_CLIENT_SECRET을 .env나 빌드 환경에 적으십시오.',
-      'pt-BR': '{variable}=google está definido, mas não há cliente OAuth do Google. Coloque ASIST_GOOGLE_CLIENT_ID e ASIST_GOOGLE_CLIENT_SECRET no .env ou no ambiente do build.',
-      'es-419': '{variable}=google está definido, pero no hay cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación.',
-      'es-ES': '{variable}=google está definido, pero no hay cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación.'
     }
   },
   status: {

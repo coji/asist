@@ -349,17 +349,17 @@ export const calendar = defineMessages({
       'es-ES': 'Este calendario es de solo lectura.'
     },
     lockedHint: {
-      'ja-JP': '繰り返しと招待付きの予定は ASIST から変更できません。Mac のカレンダーで操作してください。',
-      'en-US': 'ASIST cannot change a repeating event or one with guests. Change it in Calendar on your Mac.',
-      'fr-FR': 'ASIST ne peut modifier ni un événement récurrent ni un événement avec des invités. Modifiez-le dans Calendrier sur votre Mac.',
-      'de-DE': 'Einen wiederkehrenden Termin oder einen mit Gästen kann ASIST nicht ändern. Ändern Sie ihn in Kalender auf Ihrem Mac.',
-      'hi-IN': 'दोहराव वाले और मेहमानों वाले इवेंट ASIST से नहीं बदले जा सकते। इन्हें अपने Mac के कैलेंडर में बदलें।',
-      'id-ID': 'ASIST tidak bisa mengubah acara berulang atau acara yang ada tamunya. Ubah lewat Kalender di Mac Anda.',
-      'it-IT': 'ASIST non può cambiare un evento che si ripete o che ha invitati. Modificalo in Calendario sul tuo Mac.',
-      'ko-KR': '반복 일정과 참석자가 있는 일정은 ASIST에서 변경할 수 없습니다. Mac의 캘린더에서 변경하십시오.',
-      'pt-BR': 'O ASIST não pode alterar um evento que se repete ou que tem convidados. Altere no Calendário do seu Mac.',
-      'es-419': 'ASIST no puede cambiar un evento que se repite ni uno con invitados. Cámbialo en Calendario, en tu Mac.',
-      'es-ES': 'ASIST no puede cambiar un evento que se repite ni uno con invitados. Cámbialo en Calendario, en tu Mac.'
+      'ja-JP': '繰り返しと招待付きの予定は ASIST から変更できません。Google カレンダーで操作してください。',
+      'en-US': 'ASIST cannot change a repeating event or one with guests. Change it in Google Calendar.',
+      'fr-FR': 'ASIST ne peut modifier ni un événement récurrent ni un événement avec des invités. Modifiez-le dans Google Agenda.',
+      'de-DE': 'Einen wiederkehrenden Termin oder einen mit Gästen kann ASIST nicht ändern. Ändern Sie ihn in Google Kalender.',
+      'hi-IN': 'दोहराव वाले और मेहमानों वाले इवेंट ASIST से नहीं बदले जा सकते। इन्हें Google कैलेंडर में बदलें।',
+      'id-ID': 'ASIST tidak bisa mengubah acara berulang atau acara yang ada tamunya. Ubah lewat Google Kalender.',
+      'it-IT': 'ASIST non può cambiare un evento che si ripete o che ha invitati. Modificalo in Google Calendar.',
+      'ko-KR': '반복 일정과 참석자가 있는 일정은 ASIST에서 변경할 수 없습니다. Google 캘린더에서 변경하십시오.',
+      'pt-BR': 'O ASIST não pode alterar um evento que se repete ou que tem convidados. Altere no Google Agenda.',
+      'es-419': 'ASIST no puede cambiar un evento que se repite ni uno con invitados. Cámbialo en Google Calendar.',
+      'es-ES': 'ASIST no puede cambiar un evento que se repite ni uno con invitados. Cámbialo en Google Calendar.'
     },
     approvalHint: {
       'ja-JP': '変更と削除は、実行前に macOS の確認画面で承認します。',
@@ -536,19 +536,6 @@ export const calendar = defineMessages({
       'es-419': 'No se pudo cambiar el calendario',
       'es-ES': 'No se ha podido cambiar el calendario'
     },
-    toMac: {
-      'ja-JP': 'Mac に保存しました。外部サービスへの同期が終わったかは分かりません',
-      'en-US': 'Saved to your Mac. Whether it has reached your other services is unknown',
-      'fr-FR': "Enregistré sur votre Mac. La synchronisation avec vos autres services n'est pas confirmée",
-      'de-DE': 'Auf Ihrem Mac gespeichert. Ob es Ihre anderen Dienste erreicht hat, ist unbekannt',
-      'hi-IN': 'आपके Mac पर सेव किया। यह आपकी दूसरी सेवाओं तक पहुँचा या नहीं, यह पता नहीं',
-      'id-ID': 'Tersimpan di Mac Anda. Belum diketahui apakah sudah sampai ke layanan Anda yang lain',
-      'it-IT': 'Salvato sul tuo Mac. Non si sa se è arrivato agli altri servizi',
-      'ko-KR': 'Mac에 저장했습니다. 다른 서비스로 동기화가 끝났는지는 알 수 없습니다',
-      'pt-BR': 'Salvo no seu Mac. Não se sabe se já chegou aos seus outros serviços',
-      'es-419': 'Se guardó en tu Mac. No se sabe si ya llegó a tus otros servicios',
-      'es-ES': 'Guardado en tu Mac. No se sabe si ha llegado a tus otros servicios'
-    },
     toGoogle: {
       'ja-JP': 'Google カレンダーに保存しました',
       'en-US': 'Saved to Google Calendar',
@@ -578,17 +565,17 @@ export const calendar = defineMessages({
       'es-ES': 'Abrir los ajustes'
     },
     disabled: {
-      'ja-JP': 'カレンダー連携はオフです。設定でオンにすると、Mac に登録したカレンダーの予定を表示します。',
-      'en-US': 'The calendar integration is off. Turn it on in the settings to see the events of the calendars on your Mac.',
-      'fr-FR': "L'intégration du calendrier est désactivée. Activez-la dans les réglages pour voir les événements des calendriers de votre Mac.",
-      'de-DE': 'Die Kalender-Integration ist aus. Schalten Sie sie in den Einstellungen ein, um die Termine der Kalender auf Ihrem Mac zu sehen.',
-      'hi-IN': 'कैलेंडर इंटीग्रेशन बंद है। सेटिंग्ज़ में इसे चालू करें, फिर आपके Mac के कैलेंडर के इवेंट यहाँ दिखेंगे।',
-      'id-ID': 'Integrasi kalender nonaktif. Aktifkan di pengaturan untuk melihat acara dari kalender di Mac Anda.',
-      'it-IT': "L'integrazione del calendario è disattivata. Attivala nelle impostazioni per vedere gli eventi dei calendari sul tuo Mac.",
-      'ko-KR': '캘린더 연동이 꺼져 있습니다. 설정에서 켜면 Mac에 등록한 캘린더의 일정을 표시합니다.',
-      'pt-BR': 'A integração com o calendário está desativada. Ative nos ajustes para ver os eventos dos calendários do seu Mac.',
-      'es-419': 'La integración con Calendario está desactivada. Actívala en la configuración para ver los eventos de los calendarios de tu Mac.',
-      'es-ES': 'La integración del calendario está desactivada. Actívala en los ajustes para ver los eventos de los calendarios de tu Mac.'
+      'ja-JP': 'カレンダー連携はオフです。設定で Google にログインしてオンにすると、Google カレンダーの予定を表示します。',
+      'en-US': 'The calendar integration is off. Sign in to Google and turn it on in the settings to see the events in Google Calendar.',
+      'fr-FR': "L'intégration du calendrier est désactivée. Connectez-vous à Google et activez-la dans les réglages pour voir les événements de Google Agenda.",
+      'de-DE': 'Die Kalender-Integration ist aus. Melden Sie sich in den Einstellungen bei Google an und schalten Sie sie ein, um die Termine aus Google Kalender zu sehen.',
+      'hi-IN': 'कैलेंडर इंटीग्रेशन बंद है। सेटिंग्ज़ में Google में साइन इन करके इसे चालू करें, फिर Google कैलेंडर के इवेंट यहाँ दिखेंगे।',
+      'id-ID': 'Integrasi kalender nonaktif. Masuk ke Google dan aktifkan di pengaturan untuk melihat acara dari Google Kalender.',
+      'it-IT': "L'integrazione del calendario è disattivata. Accedi a Google e attivala nelle impostazioni per vedere gli eventi di Google Calendar.",
+      'ko-KR': '캘린더 연동이 꺼져 있습니다. 설정에서 Google에 로그인하고 켜면 Google 캘린더의 일정을 표시합니다.',
+      'pt-BR': 'A integração com o calendário está desativada. Entre na sua conta do Google e ative nos ajustes para ver os eventos do Google Agenda.',
+      'es-419': 'La integración con Calendario está desactivada. Inicia sesión en Google y actívala en la configuración para ver los eventos de Google Calendar.',
+      'es-ES': 'La integración del calendario está desactivada. Inicia sesión en Google y actívala en los ajustes para ver los eventos de Google Calendar.'
     },
     checking: {
       'ja-JP': 'アクセスの状態を確かめています',
@@ -616,32 +603,6 @@ export const calendar = defineMessages({
       'es-419': 'No hay ningún calendario elegido. Elige al menos uno en la configuración.',
       'es-ES': 'No hay ningún calendario elegido. Elige al menos uno en los ajustes.'
     },
-    requestAccess: {
-      'ja-JP': 'アクセスを許可する',
-      'en-US': 'Grant access',
-      'fr-FR': "Autoriser l'accès",
-      'de-DE': 'Zugriff erlauben',
-      'hi-IN': 'एक्सेस दें',
-      'id-ID': 'Izinkan akses',
-      'it-IT': "Consenti l'accesso",
-      'ko-KR': '접근 허용하기',
-      'pt-BR': 'Permitir o acesso',
-      'es-419': 'Conceder el acceso',
-      'es-ES': 'Dar acceso'
-    },
-    openPrivacy: {
-      'ja-JP': 'macOS のアクセス許可',
-      'en-US': 'macOS privacy settings',
-      'fr-FR': 'Réglages de confidentialité de macOS',
-      'de-DE': 'Datenschutzeinstellungen von macOS',
-      'hi-IN': 'macOS की प्राइवेसी सेटिंग्ज़',
-      'id-ID': 'Pengaturan privasi macOS',
-      'it-IT': 'Impostazioni di privacy di macOS',
-      'ko-KR': 'macOS 접근 권한',
-      'pt-BR': 'Privacidade nos Ajustes do Sistema',
-      'es-419': 'Privacidad en macOS',
-      'es-ES': 'Privacidad de macOS'
-    },
     signIn: {
       'ja-JP': 'Google でログイン',
       'en-US': 'Sign in with Google',
@@ -657,71 +618,6 @@ export const calendar = defineMessages({
     }
   },
   access: {
-    notDetermined: {
-      'ja-JP': 'カレンダーへのアクセスをまだ許可していません。',
-      'en-US': 'Access to your calendars has not been granted yet.',
-      'fr-FR': "L'accès à vos calendriers n'a pas encore été autorisé.",
-      'de-DE': 'Der Zugriff auf Ihre Kalender ist noch nicht erlaubt.',
-      'hi-IN': 'कैलेंडर का एक्सेस अभी तक नहीं दिया गया है।',
-      'id-ID': 'Akses ke kalender Anda belum diizinkan.',
-      'it-IT': "L'accesso ai tuoi calendari non è ancora stato consentito.",
-      'ko-KR': '캘린더 접근을 아직 허용하지 않았습니다.',
-      'pt-BR': 'O acesso aos seus calendários ainda não foi permitido.',
-      'es-419': 'Todavía no concediste el acceso a tus calendarios.',
-      'es-ES': 'Todavía no has dado acceso a tus calendarios.'
-    },
-    denied: {
-      'ja-JP': 'カレンダーへのアクセスを拒否しています。macOS の設定で許可してください。',
-      'en-US': 'Access to your calendars is denied. Allow it in the macOS settings.',
-      'fr-FR': "L'accès à vos calendriers est refusé. Autorisez-le dans les réglages de macOS.",
-      'de-DE': 'Der Zugriff auf Ihre Kalender ist verweigert. Erlauben Sie ihn in den Einstellungen von macOS.',
-      'hi-IN': 'कैलेंडर का एक्सेस बंद है। macOS की सेटिंग्ज़ में इसकी इजाज़त दें।',
-      'id-ID': 'Akses ke kalender Anda ditolak. Izinkan di pengaturan macOS.',
-      'it-IT': "L'accesso ai tuoi calendari è negato. Consentilo nelle impostazioni di macOS.",
-      'ko-KR': '캘린더 접근을 거부하고 있습니다. macOS 설정에서 허용하십시오.',
-      'pt-BR': 'O acesso aos seus calendários está negado. Permita nos Ajustes do Sistema.',
-      'es-419': 'El acceso a tus calendarios está denegado. Permítelo en la configuración de macOS.',
-      'es-ES': 'El acceso a tus calendarios está denegado. Permítelo en los ajustes de macOS.'
-    },
-    restricted: {
-      'ja-JP': 'この Mac ではカレンダーへのアクセスが制限されています。',
-      'en-US': 'Access to calendars is restricted on this Mac.',
-      'fr-FR': "L'accès aux calendriers est limité sur ce Mac.",
-      'de-DE': 'Auf diesem Mac ist der Zugriff auf Kalender eingeschränkt.',
-      'hi-IN': 'इस Mac पर कैलेंडर का एक्सेस सीमित है।',
-      'id-ID': 'Akses ke kalender dibatasi di Mac ini.',
-      'it-IT': "Su questo Mac l'accesso ai calendari è limitato.",
-      'ko-KR': '이 Mac에서는 캘린더 접근이 제한되어 있습니다.',
-      'pt-BR': 'O acesso aos calendários está restrito neste Mac.',
-      'es-419': 'El acceso a los calendarios está restringido en esta Mac.',
-      'es-ES': 'El acceso a los calendarios está restringido en este Mac.'
-    },
-    writeOnly: {
-      'ja-JP': '予定の表示にはフルアクセスの許可が要ります。',
-      'en-US': 'Showing events needs full access.',
-      'fr-FR': "L'affichage des événements demande un accès complet.",
-      'de-DE': 'Um Termine zu zeigen, ist voller Zugriff nötig.',
-      'hi-IN': 'इवेंट दिखाने के लिए पूरा एक्सेस चाहिए।',
-      'id-ID': 'Menampilkan acara perlu akses penuh.',
-      'it-IT': "Per mostrare gli eventi serve l'accesso completo.",
-      'ko-KR': '일정을 표시하려면 전체 접근 권한이 필요합니다.',
-      'pt-BR': 'Exibir eventos exige acesso completo.',
-      'es-419': 'Para mostrar los eventos hace falta el acceso completo.',
-      'es-ES': 'Para mostrar los eventos hace falta acceso completo.'
-    },
-    googleSignedOut: {
-      'ja-JP': 'Google にログインしていません。',
-      'en-US': 'Not signed in to Google.',
-      'fr-FR': "Vous n'êtes pas connecté à Google.",
-      'de-DE': 'Sie sind nicht bei Google angemeldet.',
-      'hi-IN': 'आप Google में साइन इन नहीं हैं।',
-      'id-ID': 'Anda belum masuk ke Google.',
-      'it-IT': "Non hai eseguito l'accesso a Google.",
-      'ko-KR': 'Google에 로그인하지 않았습니다.',
-      'pt-BR': 'Você não entrou na sua conta do Google.',
-      'es-419': 'No iniciaste sesión en Google.',
-      'es-ES': 'No has iniciado sesión en Google.'
-    },
     unreadable: {
       'ja-JP': '保存した Google のログインを読めません。ログアウトするか、もう一度ログインしてください。',
       'en-US': "The saved Google sign-in can't be read. Sign out, or sign in again.",
@@ -734,6 +630,19 @@ export const calendar = defineMessages({
       'pt-BR': 'Não é possível ler o login do Google salvo. Saia ou entre de novo.',
       'es-419': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.',
       'es-ES': 'No se puede leer el inicio de sesión de Google guardado. Cierra sesión o vuelve a iniciarla.'
+    },
+    signedOut: {
+      'ja-JP': 'Google にログインしていません。',
+      'en-US': 'Not signed in to Google.',
+      'fr-FR': "Vous n'êtes pas connecté à Google.",
+      'de-DE': 'Sie sind nicht bei Google angemeldet.',
+      'hi-IN': 'आप Google में साइन इन नहीं हैं।',
+      'id-ID': 'Anda belum masuk ke Google.',
+      'it-IT': "Non hai eseguito l'accesso a Google.",
+      'ko-KR': 'Google에 로그인하지 않았습니다.',
+      'pt-BR': 'Você não entrou na sua conta do Google.',
+      'es-419': 'No iniciaste sesión en Google.',
+      'es-ES': 'No has iniciado sesión en Google.'
     }
   },
   card: {
@@ -1078,32 +987,17 @@ export const calendar = defineMessages({
       'es-ES': 'Obtenido a las {time}'
     },
     source: {
-      eventkit: {
-        'ja-JP': 'macOS カレンダー',
-        'en-US': 'macOS Calendar',
-        'fr-FR': 'Calendrier macOS',
-        'de-DE': 'Kalender von macOS',
-        'hi-IN': 'macOS कैलेंडर',
-        'id-ID': 'Kalender macOS',
-        'it-IT': 'Calendario di macOS',
-        'ko-KR': 'macOS 캘린더',
-        'pt-BR': 'Calendário do macOS',
-        'es-419': 'Calendario de macOS',
-        'es-ES': 'Calendario de macOS'
-      },
-      google: {
-        'ja-JP': 'Google カレンダー',
-        'en-US': 'Google Calendar',
-        'fr-FR': 'Google Agenda',
-        'de-DE': 'Google Kalender',
-        'hi-IN': 'Google कैलेंडर',
-        'id-ID': 'Google Kalender',
-        'it-IT': 'Google Calendar',
-        'ko-KR': 'Google 캘린더',
-        'pt-BR': 'Google Agenda',
-        'es-419': 'Google Calendar',
-        'es-ES': 'Google Calendar'
-      }
+      'ja-JP': 'Google カレンダー',
+      'en-US': 'Google Calendar',
+      'fr-FR': 'Google Agenda',
+      'de-DE': 'Google Kalender',
+      'hi-IN': 'Google कैलेंडर',
+      'id-ID': 'Google Kalender',
+      'it-IT': 'Google Calendar',
+      'ko-KR': 'Google 캘린더',
+      'pt-BR': 'Google Agenda',
+      'es-419': 'Google Calendar',
+      'es-ES': 'Google Calendar'
     }
   },
   confirm: {
@@ -1262,61 +1156,9 @@ export const calendar = defineMessages({
       'pt-BR': 'Nenhum',
       'es-419': 'Ninguna',
       'es-ES': 'Ninguna'
-    },
-    syncNote: {
-      'ja-JP': '保存したあと、Google などへの同期は macOS が行います。',
-      'en-US': 'After it is saved, macOS syncs it to Google and your other services.',
-      'fr-FR': "Une fois l'événement enregistré, macOS se charge de le synchroniser avec Google et vos autres services.",
-      'de-DE': 'Nach dem Speichern gleicht macOS den Termin mit Google und Ihren anderen Diensten ab.',
-      'hi-IN': 'सेव होने के बाद macOS इसे Google और आपकी दूसरी सेवाओं तक पहुँचाता है।',
-      'id-ID': 'Setelah tersimpan, macOS yang menyinkronkannya ke Google dan layanan Anda yang lain.',
-      'it-IT': 'Dopo il salvataggio, macOS lo sincronizza con Google e con gli altri servizi.',
-      'ko-KR': '저장한 뒤 Google 등으로 동기화하는 일은 macOS가 합니다.',
-      'pt-BR': 'Depois de salvar, o macOS sincroniza com o Google e os seus outros serviços.',
-      'es-419': 'Después de guardarlo, macOS lo sincroniza con Google y tus otros servicios.',
-      'es-ES': 'Después de guardarlo, macOS lo sincroniza con Google y con tus otros servicios.'
     }
   },
   errors: {
-    macOnly: {
-      'ja-JP': 'カレンダー連携は macOS でだけ使えます。',
-      'en-US': 'The calendar integration runs only on macOS.',
-      'fr-FR': "L'intégration du calendrier ne fonctionne que sur macOS.",
-      'de-DE': 'Die Kalender-Integration läuft nur unter macOS.',
-      'hi-IN': 'कैलेंडर इंटीग्रेशन सिर्फ़ macOS पर चलता है।',
-      'id-ID': 'Integrasi kalender hanya berjalan di macOS.',
-      'it-IT': "L'integrazione del calendario funziona solo su macOS.",
-      'ko-KR': '캘린더 연동은 macOS에서만 쓸 수 있습니다.',
-      'pt-BR': 'A integração com o calendário só funciona no macOS.',
-      'es-419': 'La integración con Calendario solo funciona en macOS.',
-      'es-ES': 'La integración del calendario solo funciona en macOS.'
-    },
-    helperFailed: {
-      'ja-JP': 'カレンダーを読み取るプログラムを実行できません。macOS のアクセス許可を確かめてください。',
-      'en-US': "Couldn't run the program that reads the calendar. Check the permission in the macOS settings.",
-      'fr-FR': "Impossible d'exécuter le programme qui lit le calendrier. Vérifiez l'autorisation dans les réglages de macOS.",
-      'de-DE': 'Das Programm, das den Kalender liest, ließ sich nicht ausführen. Prüfen Sie die Erlaubnis in den Einstellungen von macOS.',
-      'hi-IN': 'कैलेंडर पढ़ने वाला प्रोग्राम नहीं चल सका। macOS की सेटिंग्ज़ में इजाज़त देखें।',
-      'id-ID': 'Tidak bisa menjalankan program yang membaca kalender. Periksa izinnya di pengaturan macOS.',
-      'it-IT': 'Impossibile eseguire il programma che legge il calendario. Controlla il permesso nelle impostazioni di macOS.',
-      'ko-KR': '캘린더를 읽는 프로그램을 실행할 수 없습니다. macOS 설정에서 접근 권한을 확인하십시오.',
-      'pt-BR': 'Não foi possível executar o programa que lê o calendário. Confira a permissão nos Ajustes do Sistema.',
-      'es-419': 'No se pudo ejecutar el programa que lee el calendario. Revisa el permiso en la configuración de macOS.',
-      'es-ES': 'No se puede ejecutar el programa que lee el calendario. Comprueba el permiso en los ajustes de macOS.'
-    },
-    helperBadResponse: {
-      'ja-JP': 'カレンダーから受け取った内容を読めません。',
-      'en-US': "Couldn't read what the calendar returned.",
-      'fr-FR': 'Impossible de lire ce que le calendrier a renvoyé.',
-      'de-DE': 'Was der Kalender zurückgegeben hat, ließ sich nicht lesen.',
-      'hi-IN': 'कैलेंडर से जो मिला, वह पढ़ा नहीं जा सका।',
-      'id-ID': 'Tidak bisa membaca apa yang dikembalikan kalender.',
-      'it-IT': 'Impossibile leggere quello che ha restituito il calendario.',
-      'ko-KR': '캘린더에서 받은 내용을 읽을 수 없습니다.',
-      'pt-BR': 'Não foi possível ler o que o calendário retornou.',
-      'es-419': 'No se pudo leer lo que devolvió el calendario.',
-      'es-ES': 'No se ha podido leer lo que ha devuelto el calendario.'
-    },
     disabled: {
       'ja-JP': 'カレンダー連携はオフです。設定でオンにしてください。',
       'en-US': 'The calendar integration is off. Turn it on in the settings.',
@@ -1329,19 +1171,6 @@ export const calendar = defineMessages({
       'pt-BR': 'A integração com o calendário está desativada. Ative nos ajustes.',
       'es-419': 'La integración con Calendario está desactivada. Actívala en la configuración.',
       'es-ES': 'La integración del calendario está desactivada. Actívala en los ajustes.'
-    },
-    needsFullAccess: {
-      'ja-JP': 'カレンダーを使えません。macOS の設定でフルアクセスを許可してください。',
-      'en-US': 'ASIST cannot use your calendars. Allow full access in the macOS settings.',
-      'fr-FR': "ASIST ne peut pas utiliser vos calendriers. Autorisez l'accès complet dans les réglages de macOS.",
-      'de-DE': 'ASIST kann Ihre Kalender nicht verwenden. Erlauben Sie vollen Zugriff in den Einstellungen von macOS.',
-      'hi-IN': 'ASIST आपके कैलेंडर इस्तेमाल नहीं कर सकता। macOS की सेटिंग्ज़ में पूरा एक्सेस दें।',
-      'id-ID': 'ASIST tidak bisa memakai kalender Anda. Izinkan akses penuh di pengaturan macOS.',
-      'it-IT': "ASIST non può usare i tuoi calendari. Consenti l'accesso completo nelle impostazioni di macOS.",
-      'ko-KR': '캘린더를 쓸 수 없습니다. macOS 설정에서 전체 접근을 허용하십시오.',
-      'pt-BR': 'O ASIST não pode usar os seus calendários. Permita o acesso completo nos Ajustes do Sistema.',
-      'es-419': 'ASIST no puede usar tus calendarios. Concede el acceso completo en la configuración de macOS.',
-      'es-ES': 'ASIST no puede usar tus calendarios. Da acceso completo en los ajustes de macOS.'
     },
     noReadCalendars: {
       'ja-JP': '表示するカレンダーが選ばれていません。設定で 1 つ以上選んでください。',
@@ -1513,17 +1342,17 @@ export const calendar = defineMessages({
       'es-ES': 'Un evento de un calendario que no has elegido mostrar no se puede cambiar.'
     },
     locked: {
-      'ja-JP': '繰り返しの予定と招待付きの予定は変更できません。Mac のカレンダーで操作してください。',
-      'en-US': 'A repeating event or one with guests cannot be changed here. Change it in Calendar on your Mac.',
-      'fr-FR': 'Un événement récurrent ou un événement avec des invités ne peut pas être modifié ici. Modifiez-le dans Calendrier sur votre Mac.',
-      'de-DE': 'Ein wiederkehrender Termin oder einer mit Gästen lässt sich hier nicht ändern. Ändern Sie ihn in Kalender auf Ihrem Mac.',
-      'hi-IN': 'दोहराव वाला इवेंट और मेहमानों वाला इवेंट यहाँ नहीं बदला जा सकता। इसे अपने Mac के कैलेंडर में बदलें।',
-      'id-ID': 'Acara berulang atau acara yang ada tamunya tidak bisa diubah di sini. Ubah lewat Kalender di Mac Anda.',
-      'it-IT': 'Un evento che si ripete o che ha invitati non si può cambiare qui. Modificalo in Calendario sul tuo Mac.',
-      'ko-KR': '반복 일정과 참석자가 있는 일정은 변경할 수 없습니다. Mac의 캘린더에서 변경하십시오.',
-      'pt-BR': 'Um evento que se repete ou que tem convidados não pode ser alterado aqui. Altere no Calendário do seu Mac.',
-      'es-419': 'Un evento que se repite o uno con invitados no se puede cambiar aquí. Cámbialo en Calendario, en tu Mac.',
-      'es-ES': 'Un evento que se repite o uno con invitados no se puede cambiar aquí. Cámbialo en Calendario, en tu Mac.'
+      'ja-JP': '繰り返しの予定と招待付きの予定は変更できません。Google カレンダーで操作してください。',
+      'en-US': 'A repeating event or one with guests cannot be changed here. Change it in Google Calendar.',
+      'fr-FR': 'Un événement récurrent ou un événement avec des invités ne peut pas être modifié ici. Modifiez-le dans Google Agenda.',
+      'de-DE': 'Ein wiederkehrender Termin oder einer mit Gästen lässt sich hier nicht ändern. Ändern Sie ihn in Google Kalender.',
+      'hi-IN': 'दोहराव वाला इवेंट और मेहमानों वाला इवेंट यहाँ नहीं बदला जा सकता। इसे Google कैलेंडर में बदलें।',
+      'id-ID': 'Acara berulang atau acara yang ada tamunya tidak bisa diubah di sini. Ubah lewat Google Kalender.',
+      'it-IT': 'Un evento che si ripete o che ha invitati non si può cambiare qui. Modificalo in Google Calendar.',
+      'ko-KR': '반복 일정과 참석자가 있는 일정은 변경할 수 없습니다. Google 캘린더에서 변경하십시오.',
+      'pt-BR': 'Um evento que se repete ou que tem convidados não pode ser alterado aqui. Altere no Google Agenda.',
+      'es-419': 'Un evento que se repite o uno con invitados no se puede cambiar aquí. Cámbialo en Google Calendar.',
+      'es-ES': 'Un evento que se repite o uno con invitados no se puede cambiar aquí. Cámbialo en Google Calendar.'
     },
     destinationUnwritable: {
       'ja-JP': '保存先のカレンダーが見つからないか、書き込めません。設定で保存先を選び直してください。',
@@ -1552,43 +1381,43 @@ export const calendar = defineMessages({
       'es-ES': 'Los ajustes del calendario han cambiado mientras la confirmación estaba abierta. Empieza de nuevo.'
     },
     resultUnknown: {
-      'ja-JP': '保存できたかどうか分かりません。Mac のカレンダーで結果を確かめてください。',
-      'en-US': 'Whether it was saved is unknown. Check the result in Calendar on your Mac.',
-      'fr-FR': "L'enregistrement n'est pas confirmé. Vérifiez le résultat dans Calendrier sur votre Mac.",
-      'de-DE': 'Ob es gespeichert wurde, ist unbekannt. Prüfen Sie das Ergebnis in Kalender auf Ihrem Mac.',
-      'hi-IN': 'सेव हुआ या नहीं, यह पता नहीं। नतीजा अपने Mac के कैलेंडर में देखें।',
-      'id-ID': 'Tidak diketahui apakah acaranya tersimpan. Periksa hasilnya di Kalender pada Mac Anda.',
-      'it-IT': 'Non si sa se è stato salvato. Controlla il risultato in Calendario sul tuo Mac.',
-      'ko-KR': '저장되었는지 알 수 없습니다. Mac의 캘린더에서 결과를 확인하십시오.',
-      'pt-BR': 'Não se sabe se foi salvo. Confira o resultado no Calendário do seu Mac.',
-      'es-419': 'No se sabe si se guardó. Revisa el resultado en Calendario, en tu Mac.',
-      'es-ES': 'No se sabe si se ha guardado. Comprueba el resultado en Calendario, en tu Mac.'
+      'ja-JP': '保存できたかどうか分かりません。Google カレンダーで結果を確かめてください。',
+      'en-US': 'Whether it was saved is unknown. Check the result in Google Calendar.',
+      'fr-FR': "L'enregistrement n'est pas confirmé. Vérifiez le résultat dans Google Agenda.",
+      'de-DE': 'Ob es gespeichert wurde, ist unbekannt. Prüfen Sie das Ergebnis in Google Kalender.',
+      'hi-IN': 'सेव हुआ या नहीं, यह पता नहीं। नतीजा Google कैलेंडर में देखें।',
+      'id-ID': 'Tidak diketahui apakah acaranya tersimpan. Periksa hasilnya di Google Kalender.',
+      'it-IT': 'Non si sa se è stato salvato. Controlla il risultato in Google Calendar.',
+      'ko-KR': '저장되었는지 알 수 없습니다. Google 캘린더에서 결과를 확인하십시오.',
+      'pt-BR': 'Não se sabe se foi salvo. Confira o resultado no Google Agenda.',
+      'es-419': 'No se sabe si se guardó. Revisa el resultado en Google Calendar.',
+      'es-ES': 'No se sabe si se ha guardado. Comprueba el resultado en Google Calendar.'
     },
     calendarNotFound: {
-      'ja-JP': '表示するカレンダーに選んだカレンダーが Mac にありません。設定で選び直してください。',
-      'en-US': 'A calendar chosen to be shown is no longer on this Mac. Choose the calendars again in the settings.',
-      'fr-FR': "Un calendrier choisi pour l'affichage n'est plus sur ce Mac. Choisissez à nouveau les calendriers dans les réglages.",
-      'de-DE': 'Ein zur Anzeige gewählter Kalender ist nicht mehr auf diesem Mac. Wählen Sie die Kalender in den Einstellungen neu.',
-      'hi-IN': 'दिखाने के लिए चुना गया एक कैलेंडर अब इस Mac पर नहीं है। सेटिंग्ज़ में कैलेंडर फिर से चुनें।',
-      'id-ID': 'Salah satu kalender yang dipilih untuk ditampilkan tidak ada lagi di Mac ini. Pilih ulang kalendernya di pengaturan.',
-      'it-IT': 'Un calendario scelto da mostrare non è più su questo Mac. Scegli di nuovo i calendari nelle impostazioni.',
-      'ko-KR': '표시하도록 선택한 캘린더가 이 Mac에 없습니다. 설정에서 캘린더를 다시 선택하십시오.',
-      'pt-BR': 'Um calendário escolhido para ser exibido não está mais neste Mac. Escolha os calendários de novo nos ajustes.',
-      'es-419': 'Un calendario elegido para mostrarse ya no está en esta Mac. Vuelve a elegir los calendarios en la configuración.',
-      'es-ES': 'Un calendario elegido para mostrarse ya no está en este Mac. Vuelve a elegir los calendarios en los ajustes.'
+      'ja-JP': '表示するカレンダーに選んだカレンダーが Google アカウントにありません。設定で選び直してください。',
+      'en-US': 'A calendar chosen to be shown is no longer in the Google account. Choose the calendars again in the settings.',
+      'fr-FR': "Un agenda choisi pour l'affichage n'est plus dans le compte Google. Choisissez à nouveau les agendas dans les réglages.",
+      'de-DE': 'Ein zur Anzeige gewählter Kalender ist nicht mehr im Google-Konto. Wählen Sie die Kalender in den Einstellungen neu.',
+      'hi-IN': 'दिखाने के लिए चुना गया एक कैलेंडर अब Google खाते में नहीं है। सेटिंग्ज़ में कैलेंडर फिर से चुनें।',
+      'id-ID': 'Salah satu kalender yang dipilih untuk ditampilkan tidak ada lagi di akun Google. Pilih ulang kalendernya di pengaturan.',
+      'it-IT': "Un calendario scelto da mostrare non è più nell'account Google. Scegli di nuovo i calendari nelle impostazioni.",
+      'ko-KR': '표시하도록 선택한 캘린더가 Google 계정에 없습니다. 설정에서 캘린더를 다시 선택하십시오.',
+      'pt-BR': 'Uma agenda escolhida para ser exibida não está mais na conta do Google. Escolha as agendas de novo nos ajustes.',
+      'es-419': 'Un calendario elegido para mostrarse ya no está en la cuenta de Google. Vuelve a elegir los calendarios en la configuración.',
+      'es-ES': 'Un calendario elegido para mostrarse ya no está en la cuenta de Google. Vuelve a elegir los calendarios en los ajustes.'
     },
     eventNotFound: {
-      'ja-JP': 'その予定は Mac のカレンダーに見つかりません。予定を表示し直してください。',
-      'en-US': "That event isn't in the calendar on this Mac. Show the events again.",
-      'fr-FR': "Cet événement n'est pas dans le calendrier de ce Mac. Affichez de nouveau les événements.",
-      'de-DE': 'Dieser Termin ist nicht im Kalender dieses Mac. Zeigen Sie die Termine erneut an.',
-      'hi-IN': 'यह इवेंट इस Mac के कैलेंडर में नहीं है। इवेंट फिर से दिखाएँ।',
-      'id-ID': 'Acara itu tidak ada di kalender Mac ini. Tampilkan lagi acaranya.',
-      'it-IT': 'Questo evento non è nel calendario di questo Mac. Mostra di nuovo gli eventi.',
-      'ko-KR': '그 일정은 이 Mac의 캘린더에 없습니다. 일정을 다시 표시하십시오.',
-      'pt-BR': 'Esse evento não está no calendário deste Mac. Mostre os eventos de novo.',
-      'es-419': 'Ese evento no está en el calendario de esta Mac. Vuelve a mostrar los eventos.',
-      'es-ES': 'Ese evento no está en el calendario de este Mac. Vuelve a mostrar los eventos.'
+      'ja-JP': 'その予定は Google カレンダーに見つかりません。予定を表示し直してください。',
+      'en-US': "That event isn't in Google Calendar. Show the events again.",
+      'fr-FR': "Cet événement n'est pas dans Google Agenda. Affichez de nouveau les événements.",
+      'de-DE': 'Dieser Termin ist nicht in Google Kalender. Zeigen Sie die Termine erneut an.',
+      'hi-IN': 'यह इवेंट Google कैलेंडर में नहीं है। इवेंट फिर से दिखाएँ।',
+      'id-ID': 'Acara itu tidak ada di Google Kalender. Tampilkan lagi acaranya.',
+      'it-IT': 'Questo evento non è in Google Calendar. Mostra di nuovo gli eventi.',
+      'ko-KR': '그 일정은 Google 캘린더에 없습니다. 일정을 다시 표시하십시오.',
+      'pt-BR': 'Esse evento não está no Google Agenda. Mostre os eventos de novo.',
+      'es-419': 'Ese evento no está en Google Calendar. Vuelve a mostrar los eventos.',
+      'es-ES': 'Ese evento no está en Google Calendar. Vuelve a mostrar los eventos.'
     },
     changedSinceConfirm: {
       'ja-JP': '確認のあとで予定が変わりました。予定を表示し直してから、もう一度変更してください。',
@@ -1602,32 +1431,6 @@ export const calendar = defineMessages({
       'pt-BR': 'O evento mudou depois da confirmação. Mostre os eventos de novo e faça a alteração outra vez.',
       'es-419': 'El evento cambió después de la confirmación. Vuelve a mostrar los eventos y haz el cambio otra vez.',
       'es-ES': 'El evento ha cambiado después de la confirmación. Vuelve a mostrar los eventos y haz el cambio otra vez.'
-    },
-    helperBadRequest: {
-      'ja-JP': 'カレンダーを読み取るプログラムが、ASIST からの依頼を読めませんでした。',
-      'en-US': "The program that reads the calendar couldn't read the request from ASIST.",
-      'fr-FR': "Le programme qui lit le calendrier n'a pas pu lire la demande d'ASIST.",
-      'de-DE': 'Das Programm, das den Kalender liest, konnte die Anfrage von ASIST nicht lesen.',
-      'hi-IN': 'कैलेंडर पढ़ने वाला प्रोग्राम ASIST का अनुरोध नहीं पढ़ सका।',
-      'id-ID': 'Program yang membaca kalender tidak bisa membaca permintaan dari ASIST.',
-      'it-IT': 'Il programma che legge il calendario non è riuscito a leggere la richiesta di ASIST.',
-      'ko-KR': '캘린더를 읽는 프로그램이 ASIST의 요청을 읽지 못했습니다.',
-      'pt-BR': 'O programa que lê o calendário não conseguiu ler o pedido do ASIST.',
-      'es-419': 'El programa que lee el calendario no pudo leer la solicitud de ASIST.',
-      'es-ES': 'El programa que lee el calendario no ha podido leer la solicitud de ASIST.'
-    },
-    eventKitFailed: {
-      'ja-JP': 'Mac のカレンダーを読み書きできませんでした。カレンダーのアクセス許可と同期の状態を確かめてください。',
-      'en-US': "Couldn't read or write the calendar on this Mac. Check the calendar permission and the sync status.",
-      'fr-FR': "Impossible de lire ou d'écrire le calendrier de ce Mac. Vérifiez l'autorisation du calendrier et l'état de la synchronisation.",
-      'de-DE': 'Der Kalender dieses Mac ließ sich nicht lesen oder schreiben. Prüfen Sie die Kalender-Erlaubnis und den Stand der Synchronisierung.',
-      'hi-IN': 'इस Mac का कैलेंडर पढ़ा या लिखा नहीं जा सका। कैलेंडर की इजाज़त और सिंक की स्थिति देखें।',
-      'id-ID': 'Tidak bisa membaca atau menulis kalender di Mac ini. Periksa izin kalender dan status sinkronisasinya.',
-      'it-IT': 'Impossibile leggere o scrivere il calendario di questo Mac. Controlla il permesso del calendario e lo stato della sincronizzazione.',
-      'ko-KR': '이 Mac의 캘린더를 읽거나 쓰지 못했습니다. 캘린더 접근 권한과 동기화 상태를 확인하십시오.',
-      'pt-BR': 'Não foi possível ler nem gravar o calendário deste Mac. Confira a permissão do calendário e o estado da sincronização.',
-      'es-419': 'No se pudo leer ni escribir el calendario de esta Mac. Revisa el permiso del calendario y el estado de la sincronización.',
-      'es-ES': 'No se ha podido leer ni escribir el calendario de este Mac. Comprueba el permiso del calendario y el estado de la sincronización.'
     },
     googleSignedOut: {
       'ja-JP': 'Google にログインしていません。設定の「カレンダーとメール」でログインしてください。',
@@ -1720,19 +1523,6 @@ export const calendar = defineMessages({
       'es-419': 'Google Calendar devolvió un error (HTTP {status}).',
       'es-ES': 'Google Calendar ha devuelto un error (HTTP {status}).'
     },
-    googleOnly: {
-      'ja-JP': 'ログアウトは Google カレンダーにだけあります。',
-      'en-US': 'Only Google Calendar has a sign-out.',
-      'fr-FR': 'Seul Google Agenda propose la déconnexion.',
-      'de-DE': 'Nur Google Kalender hat eine Abmeldung.',
-      'hi-IN': 'साइन आउट सिर्फ़ Google Calendar में होता है।',
-      'id-ID': 'Hanya Google Kalender yang bisa keluar.',
-      'it-IT': 'Solo Google Calendar prevede la disconnessione.',
-      'ko-KR': '로그아웃은 Google 캘린더에만 있습니다.',
-      'pt-BR': 'Só o Google Agenda tem a opção de sair.',
-      'es-419': 'Solo Google Calendar permite cerrar sesión.',
-      'es-ES': 'Solo Google Calendar permite cerrar sesión.'
-    },
     tokenEncryptionUnavailable: {
       'ja-JP': 'このコンピュータでは暗号化が使えないため、Google のログインを保存できません。',
       'en-US': 'Encryption is unavailable on this computer, so the Google sign-in cannot be saved.',
@@ -1797,6 +1587,19 @@ export const calendar = defineMessages({
       'pt-BR': 'O Google retornou uma resposta que o ASIST não consegue ler.',
       'es-419': 'Google devolvió una respuesta que ASIST no puede leer.',
       'es-ES': 'Google ha devuelto una respuesta que ASIST no puede leer.'
+    },
+    googleClientMissing: {
+      'ja-JP': 'このビルドには Google の OAuth クライアントが入っていません。ASIST_GOOGLE_CLIENT_ID と ASIST_GOOGLE_CLIENT_SECRET を .env かビルドの環境に書いて、ビルドし直してください。',
+      'en-US': "This build has no Google OAuth client. Put ASIST_GOOGLE_CLIENT_ID and ASIST_GOOGLE_CLIENT_SECRET in .env or in the build's environment, then build again.",
+      'fr-FR': "Cette compilation n'a pas de client OAuth Google. Placez ASIST_GOOGLE_CLIENT_ID et ASIST_GOOGLE_CLIENT_SECRET dans .env ou dans l'environnement de la compilation, puis recompilez.",
+      'de-DE': 'Dieser Build hat keinen OAuth-Client von Google. Tragen Sie ASIST_GOOGLE_CLIENT_ID und ASIST_GOOGLE_CLIENT_SECRET in .env oder in die Umgebung des Builds ein und bauen Sie neu.',
+      'hi-IN': 'इस बिल्ड में Google का OAuth क्लाइंट नहीं है। ASIST_GOOGLE_CLIENT_ID और ASIST_GOOGLE_CLIENT_SECRET को .env या बिल्ड के एनवायरनमेंट में डालें, फिर दोबारा बिल्ड करें।',
+      'id-ID': 'Build ini tidak punya klien OAuth Google. Tulis ASIST_GOOGLE_CLIENT_ID dan ASIST_GOOGLE_CLIENT_SECRET di .env atau di lingkungan build, lalu build ulang.',
+      'it-IT': "Questa build non ha il client OAuth di Google. Inserisci ASIST_GOOGLE_CLIENT_ID e ASIST_GOOGLE_CLIENT_SECRET in .env o nell'ambiente della build, poi rifai la build.",
+      'ko-KR': '이 빌드에는 Google OAuth 클라이언트가 없습니다. ASIST_GOOGLE_CLIENT_ID와 ASIST_GOOGLE_CLIENT_SECRET을 .env나 빌드 환경에 적은 뒤 다시 빌드하십시오.',
+      'pt-BR': 'Este build não tem cliente OAuth do Google. Coloque ASIST_GOOGLE_CLIENT_ID e ASIST_GOOGLE_CLIENT_SECRET no .env ou no ambiente do build e gere o build de novo.',
+      'es-419': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.',
+      'es-ES': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.'
     }
   },
   google: {

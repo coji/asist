@@ -142,16 +142,21 @@ export function existingRelease(tag, { isDraft, targetCommitish }) {
 }
 
 /**
- * The map card needs the Maps Embed key at build time; electron-vite reads it from the environment or from
- * .env. A release built without it would ship map cards that never load.
+ * The values electron-vite embeds at build time, read from the environment or from .env, with what a release
+ * built without each would ship.
  */
-function checkMapsKey() {
-  const name = 'RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY'
-  const inFile = ['.env', '.env.production'].some((file) => {
-    const full = path.join(root, file)
-    return fs.existsSync(full) && new RegExp(`^${name}=.+`, 'm').test(fs.readFileSync(full, 'utf8'))
-  })
-  if (!process.env[name] && !inFile) fail(`${name} is not set; the map cards of the release would not load`)
+const BUILD_VALUES = {
+  RENDERER_VITE_GOOGLE_MAPS_EMBED_KEY: 'map cards that never load',
+  ASIST_GOOGLE_CLIENT_ID: 'a calendar that cannot sign in to Google',
+  ASIST_GOOGLE_CLIENT_SECRET: 'a calendar that cannot sign in to Google'
+}
+
+function checkBuildValues() {
+  const files = ['.env', '.env.production'].map((file) => path.join(root, file)).filter((file) => fs.existsSync(file)).map((file) => fs.readFileSync(file, 'utf8'))
+  for (const [name, without] of Object.entries(BUILD_VALUES)) {
+    const inFile = files.some((content) => new RegExp(`^${name}=.+`, 'm').test(content))
+    if (!process.env[name] && !inFile) fail(`${name} is not set; the release would ship ${without}`)
+  }
 }
 
 function checkApp(app) {
@@ -173,7 +178,7 @@ async function main() {
   const identity = developerIdIdentity()
   const profile = process.env.APPLE_KEYCHAIN_PROFILE ?? 'asist-notary'
   run('xcrun', ['notarytool', 'history', '--keychain-profile', profile], { stdio: 'ignore' })
-  checkMapsKey()
+  checkBuildValues()
   run('npm', ['audit', '--omit=dev'])
 
   fs.rmSync(dist, { recursive: true, force: true })

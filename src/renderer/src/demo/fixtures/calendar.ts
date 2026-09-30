@@ -7,22 +7,11 @@ import type { CalendarEvent, CalendarStatus } from '@shared/calendar'
  */
 
 export const DEMO_CALENDAR_STATUS: CalendarStatus = {
-  authorization: 'fullAccess',
+  signIn: 'signedIn',
   calendars: [
-    { id: 'demo-work', title: '仕事', source: 'Google', writable: true },
-    { id: 'demo-home', title: '自宅', source: 'iCloud', writable: true },
-    { id: 'demo-holiday', title: '日本の祝日', source: 'Google', writable: false }
-  ],
-  account: null
-}
-
-/** The same calendars read from one Google account, as ASIST_CALENDAR_BACKEND=google shows them. */
-export const DEMO_GOOGLE_CALENDAR_STATUS: CalendarStatus = {
-  authorization: 'fullAccess',
-  calendars: [
-    { id: 'demo-work', title: '仕事', source: 'Google', writable: true },
-    { id: 'demo-home', title: '自宅', source: 'Google', writable: true },
-    { id: 'demo-holiday', title: '日本の祝日', source: 'Google', writable: false }
+    { id: 'demo-work', title: '仕事', writable: true },
+    { id: 'demo-home', title: '自宅', writable: true },
+    { id: 'demo-holiday', title: '日本の祝日', writable: false }
   ],
   account: 'demo@example.com'
 }

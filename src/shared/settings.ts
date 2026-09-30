@@ -157,7 +157,7 @@ const V4_ASR_MODELS: Record<string, AsrModel> = {
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 5,
+  version: 6,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -179,7 +179,14 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
         asrModel: typeof asrModel === 'string' && Object.hasOwn(V4_ASR_MODELS, asrModel) ? V4_ASR_MODELS[asrModel] : asrModel,
         qwenTtsSize: '0.6b'
       }
-    }
+    },
+    // Version 6 reads the calendar from Google alone. The calendars version 5 chose on a Mac are the
+    // Mac's own, whose ids no Google calendar has, so they are dropped and the integration is left off
+    // until the account is signed in and the calendars are chosen again.
+    5: (content) => ({
+      ...(content as Record<string, unknown>),
+      calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null }
+    })
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })

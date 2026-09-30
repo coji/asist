@@ -114,12 +114,10 @@ describe('the Swift helpers', () => {
     const helpers = path.join(dir, 'native', 'macos')
     fs.mkdirSync(helpers, { recursive: true })
     const later = new Date(Date.now() + 60_000)
-    for (const source of ['asist-mic.swift', 'asist-calendar.swift', 'calendar-info.plist']) fs.writeFileSync(path.join(helpers, source), '')
-    for (const name of ['asist-mic', 'asist-calendar']) {
-      fs.writeFileSync(path.join(helpers, name), 'current')
-      fs.utimesSync(path.join(helpers, name), later, later)
-      fs.writeFileSync(path.join(dir, 'native', name), 'old')
-    }
+    fs.writeFileSync(path.join(helpers, 'asist-mic.swift'), '')
+    fs.writeFileSync(path.join(helpers, 'asist-mic'), 'current')
+    fs.utimesSync(path.join(helpers, 'asist-mic'), later, later)
+    fs.writeFileSync(path.join(dir, 'native', 'asist-mic'), 'old')
     prepareNativeMacos({ resources: dir })
     expect(fs.readdirSync(path.join(dir, 'native')).sort()).toEqual(['macos'])
     expect(fs.readFileSync(path.join(helpers, 'asist-mic'), 'utf8')).toBe('current')

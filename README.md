@@ -33,7 +33,7 @@ ASIST is an assistant you talk to, and it answers in its own voice. Weather, eve
 
 <table>
   <tr>
-    <td width="50%"><img src="website/public/screens/en/calendar.webp" alt="The Calendar mini app, showing a week of events" /><br /><sub>Calendar, on the Mac for now. Ask “Show me next week’s schedule” to open it.</sub></td>
+    <td width="50%"><img src="website/public/screens/en/calendar.webp" alt="The Calendar mini app, showing a week of events" /><br /><sub>Calendar, which shows, adds and changes the events in Google Calendar. Ask “Show me next week’s schedule” to open it.</sub></td>
     <td width="50%"><img src="website/public/screens/en/agent.webp" alt="The agent jobs screen, with the list of jobs and the log of one" /><br /><sub>Agent jobs. Follow the progress and open what they produce.</sub></td>
   </tr>
   <tr>
@@ -53,13 +53,13 @@ ASIST is an assistant you talk to, and it answers in its own voice. Weather, eve
 
 ## Get started
 
-You need an Apple Silicon Mac with macOS 14 or later, or an x64 PC with Windows 11, and an API key for a conversation model from one of Anthropic, OpenAI, Google or Cerebras. On Windows, speech recognition and Qwen3-TTS on your computer need a discrete GPU that runs Vulkan; without one, talk through Whisper in the browser or a Live API voice engine, or type. The calendar is not in the Windows version yet.
+You need an Apple Silicon Mac with macOS 14 or later, or an x64 PC with Windows 11, and an API key for a conversation model from one of Anthropic, OpenAI, Google or Cerebras. On Windows, speech recognition and Qwen3-TTS on your computer need a discrete GPU that runs Vulkan; without one, talk through Whisper in the browser or a Live API voice engine, or type. The calendar needs a Google account.
 
 1. Download from [Releases](https://github.com/nyosegawa/asist/releases/latest). On a Mac, download `ASIST-arm64.dmg` and drag ASIST into Applications. On Windows, download `ASIST-Setup-x64.exe` and open it; the installer is not signed yet, so click “More info”, then “Run anyway” when SmartScreen warns you.
 2. Open ASIST and pick the language, model, voice and microphone in the first-run setup.
 3. Start talking. New versions arrive on their own and install the next time you quit, on a Mac and on Windows alike.
 
-Step-by-step pages with screenshots, the microphone and calendar permissions, and setting up the agent CLI are in [Getting started](https://asist-agent.com/en/docs/start/).
+Step-by-step pages with screenshots, the microphone permission, connecting the calendar, and setting up the agent CLI are in [Getting started](https://asist-agent.com/en/docs/start/).
 
 ## Using it safely
 

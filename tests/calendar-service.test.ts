@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -13,8 +13,10 @@ beforeAll(() => {
 })
 afterAll(() => rmSync(mocks.userData, { recursive: true, force: true }))
 
+import { openStoredContent } from '../src/shared/stored-format'
+import { SETTINGS_FORMAT } from '../src/shared/settings'
 import { CalendarService } from '../src/main/services/calendar-service'
-import { eventKitBackend } from '../src/main/services/calendar-eventkit'
+import type { CalendarWrite } from '../src/main/services/google-calendar'
 import {
   calendarEventInputSchema,
   calendarWindow,
@@ -22,7 +24,9 @@ import {
   includesNextWeek,
   isoWithOffset,
   resolveCalendarRange,
-  summarizeCalendarEvents
+  summarizeCalendarEvents,
+  type CalendarEvent,
+  type CalendarStatus
 } from '../src/shared/calendar'
 
 const event = {
@@ -58,29 +62,28 @@ function fixture(patch = {}) {
     ...patch
   }
   const current = { ...event }
-  const status = {
-    authorization: 'fullAccess',
-    calendars: [{ id: 'work', title: '仕事', source: 'Google', writable: true }]
+  const status: CalendarStatus = {
+    signIn: 'signedIn',
+    calendars: [{ id: 'work', title: '仕事', writable: true }],
+    account: 'me@example.com'
   }
-  const native = vi.fn(async (input: Record<string, unknown>) =>
-    input.operation === 'status'
-      ? status
-      : input.operation === 'search'
-        ? [current]
-        : current
-  )
+  const calendar = {
+    status: vi.fn(async () => status),
+    requestAccess: vi.fn(async () => status),
+    events: vi.fn(async (_calendarIds: string[], _start: string, _end: string): Promise<CalendarEvent[]> => [current]),
+    event: vi.fn(async () => current),
+    write: vi.fn(async (change: CalendarWrite) => (change.operation === 'delete' ? change.before : current))
+  }
   const confirm = vi.fn(async () => true)
   const service = new CalendarService({
     settings: () => settings,
-    backend: eventKitBackend(native),
+    calendar,
     confirm
   })
   const signal = new AbortController()
-  const writes = () =>
-    native.mock.calls.filter(([input]) =>
-      ['create', 'update', 'delete'].includes(String(input.operation))
-    )
-  return { service, settings, current, status, native, confirm, signal, writes }
+  const writes = () => calendar.write.mock.calls.map(([change]) => change)
+  const untouched = () => Object.values(calendar).every((call) => call.mock.calls.length === 0)
+  return { service, settings, current, status, calendar, confirm, signal, writes, untouched }
 }
 describe('CalendarService', () => {
   it('disabled integration never reads calendar data', async () => {
@@ -88,7 +91,7 @@ describe('CalendarService', () => {
     await expect(
       f.service.search({ start: fields.start, end: fields.end })
     ).rejects.toThrow()
-    expect(f.native).not.toHaveBeenCalled()
+    expect(f.untouched()).toBe(true)
   })
   it('reads only selected calendars and filters search results', async () => {
     const f = fixture()
@@ -99,35 +102,35 @@ describe('CalendarService', () => {
         query: '別件の相談'
       })
     ).toEqual({ events: [], total: 0 })
-    expect(f.native.mock.calls[0][0]).toMatchObject({ calendarIds: ['work'] })
+    expect(f.calendar.events.mock.calls[0][0]).toEqual(['work'])
   })
   it('does not interpret an empty selection as all calendars', async () => {
     const f = fixture({ readCalendarIds: [] })
     await expect(
       f.service.search({ start: fields.start, end: fields.end })
     ).rejects.toThrow()
-    expect(f.native).not.toHaveBeenCalled()
+    expect(f.untouched()).toBe(true)
   })
   it('lists the screen range from selected calendars only, within 62 days', async () => {
     const f = fixture()
-    f.status.calendars.push({ id: 'private', title: '個人', source: 'iCloud', writable: true })
+    f.status.calendars.push({ id: 'private', title: '個人', writable: true })
     const start = '2026-08-31T00:00:00+09:00'
     expect(await f.service.list({ start, end: '2026-10-05T00:00:00+09:00' })).toEqual([f.current])
-    expect(f.native.mock.calls[0][0]).toMatchObject({ operation: 'search', calendarIds: ['work'] })
+    expect(f.calendar.events.mock.calls[0][0]).toEqual(['work'])
     await expect(f.service.list({ start, end: '2026-11-15T00:00:00+09:00' })).rejects.toThrow()
     await expect(fixture({ readCalendarIds: [] }).service.list({ start, end: '2026-09-07T00:00:00+09:00' })).rejects.toThrow()
     await expect(fixture({ enabled: false }).service.list({ start, end: '2026-09-07T00:00:00+09:00' })).rejects.toThrow()
   })
-  it('keeps an event without length at the first instant of the range and trims what the helper finds just outside it', async () => {
+  it('keeps an event without length at the first instant of the range and trims what Google returns just outside it', async () => {
     const f = fixture()
     const start = '2026-09-14T00:00:00+09:00'
     const end = '2026-09-21T00:00:00+09:00'
     const reminder = { ...event, id: 'reminder', start: Date.parse(start), end: Date.parse(start) }
-    // The helper searches from a minute before the range, so it also returns what ends in that minute.
+    // Google is asked from a minute before the range, so it also returns what ends in that minute.
     const endsAtStart = { ...event, id: 'late', start: Date.parse('2026-09-13T22:00:00+09:00'), end: Date.parse(start) }
     const minuteBefore = { ...event, id: 'before', start: Date.parse('2026-09-13T23:59:00+09:00'), end: Date.parse('2026-09-13T23:59:00+09:00') }
     const startsAtEnd = { ...event, id: 'next', start: Date.parse(end), end: Date.parse(end) }
-    f.native.mockImplementation(async () => [endsAtStart, minuteBefore, reminder, f.current, startsAtEnd])
+    f.calendar.events.mockImplementation(async () => [endsAtStart, minuteBefore, reminder, f.current, startsAtEnd])
     expect(await f.service.list({ start, end })).toEqual([reminder, f.current])
     expect((await f.service.search({ start, end })).events).toEqual([reminder, f.current])
   })
@@ -140,11 +143,11 @@ describe('CalendarService', () => {
     await expect(
       f.service.change({ operation: 'create', event: fields }, f.signal.signal)
     ).resolves.toMatchObject({ saved: true })
-    expect(f.confirm.mock.calls[0]?.[0]).toContain('Google / 仕事')
+    expect(f.confirm.mock.calls[0]?.[0]).toContain('仕事')
     expect(f.confirm.mock.calls[0]?.[2]).toBe(false)
-    expect(f.writes()[0][0]).toMatchObject({
+    expect(f.writes()[0]).toMatchObject({
       operation: 'create',
-      calendarId: 'work',
+      calendar: { id: 'work' },
       event: fields
     })
   })
@@ -215,10 +218,24 @@ describe('CalendarService', () => {
       { operation: 'update', eventId: event.id, event: fields },
       f.signal.signal
     )
-    expect(f.writes()[0][0]).toMatchObject({
-      calendarId: 'work',
-      revision: 'r1'
+    expect(f.writes()[0]).toMatchObject({
+      operation: 'update',
+      before: { calendarId: 'work', revision: 'r1' }
     })
+  })
+  it('writes nothing and asks for nothing when Google is not signed in', async () => {
+    const f = fixture()
+    f.status.signIn = 'signedOut'
+    await expect(
+      f.service.change({ operation: 'create', event: fields }, f.signal.signal)
+    ).rejects.toThrow(errorText('calendar.errors.googleSignedOut'))
+    expect(f.confirm).not.toHaveBeenCalled()
+    expect(f.writes()).toHaveLength(0)
+    f.status.signIn = 'unreadable'
+    await expect(
+      f.service.change({ operation: 'create', event: fields }, f.signal.signal)
+    ).rejects.toThrow(errorText('calendar.errors.tokenUnreadable'))
+    expect(f.confirm).not.toHaveBeenCalled()
   })
   it('rejects a read-only destination', async () => {
     const f = fixture()
@@ -230,10 +247,7 @@ describe('CalendarService', () => {
   })
   it('never retries an ambiguous write failure', async () => {
     const f = fixture()
-    f.native.mockImplementation(async (input) => {
-      if (input.operation === 'status') return f.status
-      throw new Error('connection lost')
-    })
+    f.calendar.write.mockRejectedValue(new Error('connection lost'))
     await expect(
       f.service.change({ operation: 'create', event: fields }, f.signal.signal)
     ).rejects.toThrow(errorText('calendar.errors.resultUnknown'))
@@ -259,6 +273,17 @@ describe('CalendarService', () => {
     release(false)
     await first
     expect(f.writes()).toHaveLength(0)
+  })
+})
+describe('the calendar of a settings file from before the calendar was Google alone', () => {
+  it('drops the calendars the Mac chose and leaves the integration off until the account is signed in', () => {
+    const sample = JSON.parse(readFileSync(path.join(__dirname, 'fixtures', 'stored', 'settings.v5.json'), 'utf8')) as Record<string, unknown>
+    const macCalendars = { enabled: true, readCalendarIds: ['6A1F0C2E-3B4D-4E5F-8A9B-0C1D2E3F4A5B'], writeCalendarId: '6A1F0C2E-3B4D-4E5F-8A9B-0C1D2E3F4A5B' }
+    expect(openStoredContent(SETTINGS_FORMAT, { ...sample, calendar: macCalendars }).value.calendar).toEqual({
+      enabled: false,
+      readCalendarIds: [],
+      writeCalendarId: null
+    })
   })
 })
 const JAPANESE = /[぀-ヿ一-鿿]/
@@ -442,11 +467,11 @@ describe('calendar dates', () => {
       else process.env.TZ = previous
     }
   })
-  it('takes back an all-day event, as the helper reports it and show_calendar shows it, in an update', () => {
+  it('takes back an all-day event, as Google Calendar gives it and show_calendar shows it, in an update', () => {
     const previous = process.env.TZ
     try {
       process.env.TZ = 'Asia/Tokyo'
-      // asist-calendar.swift reports the end of an all-day event as midnight after its last day.
+      // An all-day event from Google ends at midnight after its last day.
       const holiday = { ...event, allDay: true, start: Date.parse('2026-09-15T00:00:00+09:00'), end: Date.parse('2026-09-16T00:00:00+09:00') }
       const shown = detailCalendarEvent('ja-JP', holiday)
       expect(shown.date).toBe('2026-09-15(火)')

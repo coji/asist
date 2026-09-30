@@ -60,7 +60,7 @@ export const CARD_GROUPS: Array<{ command: string; label: string; cards: CardFix
     command: '/g3',
     label: '記録・Agent',
     cards: [
-      { type: 'calendar', props: DEMO_CALENDAR_CARD, get source() { return translate('calendar.card.source.eventkit') } },
+      { type: 'calendar', props: DEMO_CALENDAR_CARD, get source() { return translate('calendar.card.source') } },
       { type: 'todo', props: {} },
       { type: 'mail', props: DEMO_MAIL_CARD, source: 'IMAP · 仕事 / 個人' },
       { type: 'mail-message', props: DEMO_MAIL_MESSAGE_CARD, source: 'IMAP · 仕事' },

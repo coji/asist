@@ -96,7 +96,6 @@ export const rendererApiMethods = [
   'calendarEvents',
   'calendarChange',
   'calendarOpenGuide',
-  'calendarOpenPrivacy',
   'ttsVerify',
   'micOpenPrivacy',
   'logsOpenFolder',

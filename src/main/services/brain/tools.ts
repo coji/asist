@@ -1,8 +1,7 @@
 import { resolveWeatherCard, WeatherIssueError } from '../weather'
 import { weatherCardKeyOf, type WeatherData, type WeatherIssue } from '@shared/weather'
-import { PANEL_CATALOG, panelAvailable, panelDescription, type PanelCatalogEntry } from '@shared/panel-catalog'
-import type { PlatformCapabilities } from '@shared/platform'
-import { MINI_APPS, miniAppAvailable } from '@shared/mini-apps'
+import { PANEL_CATALOG, type PanelCatalogEntry } from '@shared/panel-catalog'
+import { MINI_APPS } from '@shared/mini-apps'
 import type { AgentJob, PanelEvent, TurnEvent } from '@shared/ipc'
 import type { SearchSource, ToolSpec } from '@shared/conversation'
 import {
@@ -29,7 +28,6 @@ import { askingFrom } from '../confirm'
 import { t } from '../i18n'
 import * as agentRunner from '../agent'
 import { completePanelProps, fetchPanel } from '../panel-fetchers'
-import { platformCapabilities } from '../platform'
 import * as timers from '../timers'
 import { calendarTools } from './calendar-tools'
 import { taskTools } from './task-tools'
@@ -86,12 +84,12 @@ const WEB_SEARCH_USAGE: PromptText = {
   en: 'Anything you can answer by reading and summarizing: news, what is new, checking a fact. Say one short filler sentence first, such as that you will look it up. If two or three searches are not enough, say you will look into it properly in the background, hand the work to run_agent_task, and do not keep at it in silence.'
 }
 
-function panelTool(entry: PanelCatalogEntry, locale: ConversationLocale, capabilities: PlatformCapabilities): Def {
+function panelTool(entry: PanelCatalogEntry, locale: ConversationLocale): Def {
   const type = entry.type
   const localWrite = LOCAL_WRITE_PANELS.has(type)
   return {
     name: `show_${type.replace(/-/g, '_')}`,
-    description: panelDescription(entry, capabilities),
+    description: entry.description,
     ...(PANEL_USAGE[type] ? { usage: PANEL_USAGE[type] } : {}),
     inputSchema: inputJsonSchema(entry.schema),
     // Showing and fetching only read, while the timer writes locally and therefore runs serially.
@@ -256,18 +254,17 @@ export function toolRegistry(locale: ConversationLocale): ToolRegistry<ToolConte
   const cached = registryCache.get(locale)
   if (cached) return cached
   const language = promptLanguage(locale)
-  const capabilities = platformCapabilities()
   const registry = createToolRegistry<ToolContext>([
-    ...PANEL_CATALOG.filter((e) => e.tool && panelAvailable(e.type, capabilities)).map((entry) => panelTool(entry, locale, capabilities)),
+    ...PANEL_CATALOG.filter((e) => e.tool).map((entry) => panelTool(entry, locale)),
     agentTool(locale),
     ...taskTools(locale),
     ...noteTools(locale),
-    ...(capabilities.calendar !== null ? calendarTools(locale) : []),
+    ...calendarTools(locale),
     ...mailTools(locale),
     ...jobTools(locale),
     ...projectTools(locale),
     ...memoryTools(language),
-    ...miniAppTools(language, MINI_APPS.filter((app) => miniAppAvailable(app, capabilities)))
+    ...miniAppTools(language, MINI_APPS)
   ])
   registryCache.set(locale, registry)
   return registry

@@ -2554,19 +2554,6 @@ export const setup = defineMessages({
       'es-419': 'Calendario',
       'es-ES': 'Calendario'
     },
-    calendarValue: {
-      'ja-JP': 'macOS のカレンダーの予定を見て、追加や変更ができます',
-      'en-US': 'Reads events from the macOS calendar, and adds or changes them',
-      'fr-FR': 'Lit les événements du calendrier de macOS, et peut en ajouter ou en modifier',
-      'de-DE': 'Sieht die Termine aus dem Kalender von macOS und fügt welche hinzu oder ändert sie',
-      'hi-IN': 'macOS के कैलेंडर के इवेंट पढ़ता है, और उन्हें जोड़ता या बदलता है',
-      'id-ID': 'Membaca acara dari kalender macOS, lalu menambah atau mengubahnya',
-      'it-IT': 'Legge gli eventi del calendario di macOS e li aggiunge o li modifica',
-      'ko-KR': 'macOS 캘린더의 일정을 보고, 추가하거나 바꿀 수 있습니다',
-      'pt-BR': 'Lê os eventos do calendário do macOS e adiciona ou altera eventos',
-      'es-419': 'Lee los eventos del calendario de macOS, y los agrega o los cambia',
-      'es-ES': 'Lee los eventos del calendario de macOS, y los añade o los cambia'
-    },
     mail: {
       'ja-JP': 'メール',
       'en-US': 'Mail',
@@ -2619,19 +2606,6 @@ export const setup = defineMessages({
       'es-419': '{engine} (voz: {voice})',
       'es-ES': '{engine} (voz: {voice})'
     },
-    calendarValueGoogle: {
-      'ja-JP': 'Google カレンダーの予定を見て、追加や変更ができます',
-      'en-US': 'Reads events from Google Calendar, and adds or changes them',
-      'fr-FR': 'Lit les événements de Google Agenda, et peut en ajouter ou en modifier',
-      'de-DE': 'Sieht die Termine aus Google Kalender und fügt welche hinzu oder ändert sie',
-      'hi-IN': 'Google Calendar के इवेंट पढ़ता है, और उन्हें जोड़ता या बदलता है',
-      'id-ID': 'Membaca acara dari Google Kalender, lalu menambah atau mengubahnya',
-      'it-IT': 'Legge gli eventi di Google Calendar e li aggiunge o li modifica',
-      'ko-KR': 'Google 캘린더의 일정을 보고, 추가하거나 바꿀 수 있습니다',
-      'pt-BR': 'Lê os eventos do Google Agenda e adiciona ou altera eventos',
-      'es-419': 'Lee los eventos de Google Calendar, y los agrega o los cambia',
-      'es-ES': 'Lee los eventos de Google Calendar, y los añade o los cambia'
-    },
     connectionsWhere: {
       'ja-JP': '設定の「カレンダーとメール」',
       'en-US': 'Calendar and mail page in Settings',
@@ -2645,18 +2619,18 @@ export const setup = defineMessages({
       'es-419': 'Página Calendario y correo de Configuración',
       'es-ES': 'Página “Calendario y correo” de Ajustes'
     },
-    mailWhere: {
-      'ja-JP': '設定の「メール」',
-      'en-US': 'Mail page in Settings',
-      'fr-FR': 'Page Mail des réglages',
-      'de-DE': 'Seite „Mail“ in den Einstellungen',
-      'hi-IN': 'सेटिंग्ज़ का "मेल" पेज',
-      'id-ID': 'Halaman Email di Pengaturan',
-      'it-IT': 'Pagina «Mail» nelle impostazioni',
-      'ko-KR': "설정의 '메일'",
-      'pt-BR': 'Página E-mail dos ajustes',
-      'es-419': 'Página Correo de Configuración',
-      'es-ES': 'Página “Correo” de Ajustes'
+    calendarValue: {
+      'ja-JP': 'Google カレンダーの予定を見て、追加や変更ができます',
+      'en-US': 'Reads events from Google Calendar, and adds or changes them',
+      'fr-FR': 'Lit les événements de Google Agenda, et peut en ajouter ou en modifier',
+      'de-DE': 'Sieht die Termine aus Google Kalender und fügt welche hinzu oder ändert sie',
+      'hi-IN': 'Google Calendar के इवेंट पढ़ता है, और उन्हें जोड़ता या बदलता है',
+      'id-ID': 'Membaca acara dari Google Kalender, lalu menambah atau mengubahnya',
+      'it-IT': 'Legge gli eventi di Google Calendar e li aggiunge o li modifica',
+      'ko-KR': 'Google 캘린더의 일정을 보고, 추가하거나 바꿀 수 있습니다',
+      'pt-BR': 'Lê os eventos do Google Agenda e adiciona ou altera eventos',
+      'es-419': 'Lee los eventos de Google Calendar, y los agrega o los cambia',
+      'es-ES': 'Lee los eventos de Google Calendar, y los añade o los cambia'
     }
   },
   completion: {

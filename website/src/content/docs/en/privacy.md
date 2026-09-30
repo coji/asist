@@ -6,7 +6,7 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
-Last updated: September 29, 2026
+Last updated: October 1, 2026
 
 This privacy policy explains how ASIST, a desktop app for Mac and Windows, and this site (asist-agent.com) handle your information.
 
@@ -59,7 +59,7 @@ The full list, service by service, is in [What ASIST sends out](/en/docs/privacy
 
 ## Google user data
 
-This section describes how ASIST handles the data it receives from Google when it is connected to Google Calendar. The current Mac version of ASIST reads the macOS calendar and does not connect to Google directly.
+This section describes how ASIST handles the data it receives from Google when it is connected to Google Calendar. The calendar of ASIST reads and writes Google Calendar alone, on a Mac and on Windows.
 
 ### Scopes ASIST requests and why
 

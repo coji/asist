@@ -1,22 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '@shared/settings'
 import type { CalendarStatus } from '@shared/calendar'
-import { errorText } from '@shared/i18n/error-text'
 import { HoloSwitch } from '@/components/ui/switch'
 import { useSettingsStore } from '@/state/stores'
 import { Btn, Chip, Group, Row } from './primitives'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
-import { platformCapabilities } from '@/platform'
 
 /**
- * The calendar integration. Turning it on asks for access and saves the setting only once access is
- * granted: macOS asks for EventKit, and with Google the account is signed in first, in the browser.
+ * The calendar integration. The Google account is signed in first, in the browser, and the integration
+ * can be turned on only while it is signed in.
  */
 export function CalendarSettings({ settings }: { settings: AppSettings }): React.JSX.Element {
   const save = useSettingsStore((state) => state.save)
   const t = useT()
-  const google = platformCapabilities().calendar === 'google'
   const [status, setStatus] = useState<CalendarStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
@@ -61,116 +58,71 @@ export function CalendarSettings({ settings }: { settings: AppSettings }): React
       .finally(() => attempt === signInAttempt.current && setSigningIn(false))
   }
   const persist = (patch: Partial<AppSettings['calendar']>): Promise<unknown> => save({ calendar: { ...calendar, ...patch } })
-  const missing = calendar.readCalendarIds.filter(
-    (id) => status?.authorization === 'fullAccess' && !status.calendars.some((item) => item.id === id)
-  )
+  const signedIn = status?.signIn === 'signedIn'
+  const missing = calendar.readCalendarIds.filter((id) => signedIn && !status.calendars.some((item) => item.id === id))
   const missingWrite =
-    calendar.writeCalendarId &&
-    status?.authorization === 'fullAccess' &&
-    !status.calendars.some((item) => item.id === calendar.writeCalendarId && item.writable)
-  const granted = status?.authorization === 'fullAccess'
+    calendar.writeCalendarId && signedIn && !status.calendars.some((item) => item.id === calendar.writeCalendarId && item.writable)
   // A sign-in another build saved can be dropped, as well as replaced by signing in again.
-  const canSignOut = granted || status?.authorization === 'unreadable'
-  const refresh = (
-    <Btn tone="quiet" disabled={busy} onClick={() => void run(async () => setStatus(await window.api.calendarStatus()))}>
-      {t('settingsCalendar.refreshList')}
-    </Btn>
-  )
+  const canSignOut = signedIn || status?.signIn === 'unreadable'
+  // Turning the integration off stays possible after signing out, so that the calendar stops asking for a sign-in.
+  const switchLocked = busy || (!signedIn && !calendar.enabled)
 
   return (
     <Group
       title={t('settingsCalendar.title')}
-      description={t(google ? 'settingsCalendar.google.description' : 'settingsCalendar.description')}
+      description={t('settingsCalendar.description')}
       action={
-        google ? undefined : (
-          <Btn tone="quiet" disabled={busy} onClick={() => void run(() => window.api.calendarOpenGuide())}>
-            {t('settingsCalendar.openGuide')}
-          </Btn>
-        )
+        <Btn tone="quiet" disabled={busy} onClick={() => void run(() => window.api.calendarOpenGuide())}>
+          {t('settingsCalendar.openGuide')}
+        </Btn>
       }
     >
-      {google && (
-        <Row
-          label={t('settingsCalendar.google.account')}
-          hint={
-            signingIn
-              ? t('settingsCalendar.google.signingIn')
-              : !status
-                ? t('settingsCalendar.checkingAccess')
-                : granted
-                  ? status.account ?? undefined
-                  : status.authorization === 'unreadable'
-                    ? t('settingsCalendar.authorization.unreadable')
-                    : t('settingsCalendar.google.signedOutHint')
-          }
-        >
-          <Chip tone={granted ? 'ok' : status ? 'warn' : 'dim'}>
-            {granted ? t('settingsCalendar.google.signedIn') : status ? t('settingsCalendar.google.notSignedIn') : t('settingsCalendar.checking')}
-          </Chip>
-          {!granted && (
-            <Btn tone="primary" disabled={busy || !status} onClick={signIn}>
-              {t('settingsCalendar.google.signIn')}
-            </Btn>
-          )}
-          {canSignOut && (
-            <Btn tone="quiet" disabled={busy} onClick={() => void run(async () => setStatus(await window.api.calendarSignOut()))}>
-              {t('settingsCalendar.google.signOut')}
-            </Btn>
-          )}
-        </Row>
-      )}
       <Row
-        label={t('settingsCalendar.enable')}
+        label={t('settingsCalendar.account')}
         hint={
-          google
-            ? granted
-              ? undefined
-              : t('settingsCalendar.google.enableHint')
-            : status
-              ? t(`settingsCalendar.authorization.${status.authorization}`)
-              : t('settingsCalendar.checkingAccess')
+          signingIn
+            ? t('settingsCalendar.signingIn')
+            : !status
+              ? t('settingsCalendar.checkingAccess')
+              : signedIn
+                ? status.account ?? undefined
+                : status.signIn === 'unreadable'
+                  ? t('settingsCalendar.unreadable')
+                  : t('settingsCalendar.signedOutHint')
         }
       >
-        {!google && (
-          <Chip tone={granted ? 'ok' : status ? 'warn' : 'dim'}>
-            {granted ? t('settingsCalendar.granted') : status ? t('settingsCalendar.notGranted') : t('settingsCalendar.checking')}
-          </Chip>
+        <Chip tone={signedIn ? 'ok' : status ? 'warn' : 'dim'}>
+          {signedIn ? t('settingsCalendar.signedIn') : status ? t('settingsCalendar.notSignedIn') : t('settingsCalendar.checking')}
+        </Chip>
+        {!signedIn && (
+          <Btn tone="primary" disabled={busy || !status} onClick={signIn}>
+            {t('settingsCalendar.signIn')}
+          </Btn>
         )}
+        {canSignOut && (
+          <Btn tone="quiet" disabled={busy} onClick={() => void run(async () => setStatus(await window.api.calendarSignOut()))}>
+            {t('settingsCalendar.signOut')}
+          </Btn>
+        )}
+      </Row>
+      <Row label={t('settingsCalendar.enable')} hint={signedIn ? undefined : t('settingsCalendar.enableHint')}>
         <HoloSwitch
           aria-label={t('settingsCalendar.enable')}
           checked={calendar.enabled}
-          disabled={busy || (google && !granted && !calendar.enabled)}
-          onCheckedChange={(enabled) => {
-            void run(async () => {
-              if (enabled) {
-                const result = await window.api.calendarRequestAccess()
-                setStatus(result)
-                if (result.authorization !== 'fullAccess') throw new Error(errorText(`settingsCalendar.authorization.${result.authorization}`))
-              }
-              await persist({ enabled })
-            })
-          }}
+          disabled={switchLocked}
+          onCheckedChange={(enabled) => void run(() => persist({ enabled }))}
         />
       </Row>
-      {google ? (
-        granted && (
-          <Row label={t('settingsCalendar.google.list')} hint={t('settingsCalendar.google.refreshHint')}>
-            {refresh}
-          </Row>
-        )
-      ) : (
-        <Row label={t('settingsCalendar.access')} hint={t('settingsCalendar.accessHint')}>
-          {refresh}
-          <Btn tone="quiet" disabled={busy} onClick={() => void run(() => window.api.calendarOpenPrivacy())}>
-            {t('settingsCalendar.openPrivacy')}
-          </Btn>
-        </Row>
-      )}
-      {granted && (
+      {signedIn && (
         <>
+          <Row label={t('settingsCalendar.list')} hint={t('settingsCalendar.refreshHint')}>
+            <Btn tone="quiet" disabled={busy} onClick={() => void run(async () => setStatus(await window.api.calendarStatus()))}>
+              {t('settingsCalendar.refreshList')}
+            </Btn>
+          </Row>
           <Row
             label={t('settingsCalendar.shownCalendars')}
-            hint={status.calendars.length === 0 ? t(google ? 'settingsCalendar.google.noCalendars' : 'settingsCalendar.noCalendars') : undefined}
+            hint={status.calendars.length === 0 ? t('settingsCalendar.noCalendars') : undefined}
             wide
           >
             <fieldset disabled={busy || !calendar.enabled} className="disabled:opacity-50">
@@ -186,7 +138,7 @@ export function CalendarSettings({ settings }: { settings: AppSettings }): React
                       void run(() => persist({ readCalendarIds: ids }))
                     }}
                   />
-                  <span>{google ? item.title : `${item.source} / ${item.title}`}</span>
+                  <span>{item.title}</span>
                   {!item.writable && <small>{t('settingsCalendar.readOnly')}</small>}
                 </label>
               ))}
@@ -225,7 +177,7 @@ export function CalendarSettings({ settings }: { settings: AppSettings }): React
                 .filter((item) => item.writable)
                 .map((item) => (
                   <option key={item.id} value={item.id}>
-                    {google ? item.title : `${item.source} / ${item.title}`}
+                    {item.title}
                   </option>
                 ))}
             </select>

@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { addDays, dayKey, daysInMonth, firstOfMonth, mondayOf, sameDay } from '@shared/calendar-layout'
 import { useT, useFormatLocale } from '@/i18n'
 import { dayClasses, fmtMonth, weekHead } from './format'
-import type { CalendarAccount } from './palette'
+import type { CalendarAccount } from '@shared/calendar'
 
 /** The create button, the mini calendar and the list of calendars. */
 export function Sidebar({

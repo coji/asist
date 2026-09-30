@@ -33,7 +33,7 @@ function bundledPackages(): Plugin {
 /**
  * The OAuth client of Google, embedded in the main process from the environment of the build or from .env.
  * CI passes them from its secrets to the jobs that package the app, and they are never in the repository.
- * An empty value leaves the app without Google Calendar, which only ASIST_CALENDAR_BACKEND=google asks for.
+ * An empty value builds an app whose calendar fails when it is first used, saying the client is missing.
  */
 function googleClientDefines(mode: string): Record<string, string> {
   const env = loadEnv(mode, process.cwd(), 'ASIST_GOOGLE_')

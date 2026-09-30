@@ -112,7 +112,7 @@ const api = {
   vapStatus: vi.fn(async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false })),
   embeddingStatus: vi.fn(async (): Promise<EmbeddingStatus> => embeddingReady),
   aizuchiClassifierStatus: vi.fn(async () => ({ runtimeInstalled: true, modelInstalled: false, running: false })),
-  calendarStatus: vi.fn(async () => ({ authorization: 'notDetermined', calendars: [] })),
+  calendarStatus: vi.fn(async () => ({ signIn: 'signedOut', calendars: [], account: null })),
   memoryOverview: vi.fn(async (): Promise<MemoryOverview> => ({ dir: '', units: 0, pages: 0, curatedThrough: null, pendingJobId: null, lastFailure: null, unavailableReason: null })),
   listSpeakers: vi.fn(async () => []),
   hotkeyStatus: vi.fn(async (): Promise<HotkeyStatus> => 'registered'),
@@ -1089,13 +1089,12 @@ describe('settings dialog on a machine without the local models, the native micr
     expect(view.querySelector('.st-advanced')).toBeNull()
   })
 
-  it('names the page after mail alone and leaves the calendar out of it and of its summary', async () => {
+  it('has the calendar on the calendar and mail page and in its summary, as a Mac does', async () => {
     const view = await render()
-    expect(nav(view, 'connections').querySelector('.st-nav-title')?.textContent).toBe(t('settingsMail.title'))
-    expect(sub(view, 'connections')?.textContent).toBe(t('settings.summary.mailAccounts', { count: 0 }))
+    expect(nav(view, 'connections').querySelector('.st-nav-title')?.textContent).toBe(t('settings.pages.connections'))
+    expect(sub(view, 'connections')?.textContent).toBe(`${t('settings.summary.calendarOff')} · ${t('settings.summary.mailAccounts', { count: 0 })}`)
     await act(async () => nav(view, 'connections').click())
-    expect(view.querySelector(`[aria-label="${t('settingsCalendar.title')}"]`)).toBeNull()
-    expect(api.calendarStatus).not.toHaveBeenCalled()
+    expect(view.querySelector(`[aria-label="${t('settingsCalendar.title')}"]`)).not.toBeNull()
   })
 })
 

@@ -110,9 +110,7 @@ describe('Windows with a discrete GPU', () => {
       arch: 'x64',
       totalMemoryBytes: 16 * 1024 ** 3,
       speechDevices: () => [{ name: 'Vulkan0', description: 'NVIDIA GeForce GTX 1650', kind: 'gpu', memoryTotal: 4 * 1024 ** 3 }],
-      micCancelsEcho: () => false,
-      calendarBackend: undefined,
-      googleClient: () => false
+      micCancelsEcho: () => false
     }))
     const asr = await import('../src/main/services/asr')
     expect(await asr.installationStatus()).toMatchObject({ resolvedModel: 'qwen3-asr-0.6b', label: SMALL.label, totalMemoryGb: 4 })

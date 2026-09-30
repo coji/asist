@@ -176,9 +176,8 @@ function demoConfirm(title: string, message: string, detail: string, confirmLabe
 async function demoCalendarChange(change: CalendarChange): Promise<CalendarChangeResult> {
   const format = new Intl.DateTimeFormat(uiLocale(), { dateStyle: 'full', timeStyle: 'short' })
   const detail = [
-    translate(`calendar.confirm.${change.operation}`, { calendar: 'デモ / 仕事' }),
-    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${change.event.title}\n${format.format(Date.parse(change.event.start))} → ${format.format(Date.parse(change.event.end))}`,
-    translate('calendar.confirm.syncNote')
+    translate(`calendar.confirm.${change.operation}`, { calendar: '仕事' }),
+    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${change.event.title}\n${format.format(Date.parse(change.event.start))} → ${format.format(Date.parse(change.event.end))}`
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -187,17 +186,17 @@ async function demoCalendarChange(change: CalendarChange): Promise<CalendarChang
   if (change.operation === 'delete') {
     const index = list.findIndex((e) => e.id === change.eventId)
     const [event] = list.splice(index, 1)
-    return { saved: true, operation: 'delete', event, sync: translate('calendar.saved.toMac') }
+    return { saved: true, operation: 'delete', event, sync: translate('calendar.saved.toGoogle') }
   }
   const fields = { ...change.event, start: Date.parse(change.event.start), end: Date.parse(change.event.end) }
   if (change.operation === 'update') {
     const index = list.findIndex((e) => e.id === change.eventId)
     list[index] = { ...list[index], ...fields }
-    return { saved: true, operation: 'update', event: list[index], sync: translate('calendar.saved.toMac') }
+    return { saved: true, operation: 'update', event: list[index], sync: translate('calendar.saved.toGoogle') }
   }
   const event = demoEvent(settings.calendar.writeCalendarId ?? 'demo-work', fields.title, new Date(fields.start), new Date(fields.end), fields)
   list.push(event)
-  return { saved: true, operation: 'create', event, sync: translate('calendar.saved.toMac') }
+  return { saved: true, operation: 'create', event, sync: translate('calendar.saved.toGoogle') }
 }
 
 let demoMail: MailMessage[] = DEMO_MAIL_MESSAGES.map((message) => ({ ...message }))
@@ -617,7 +616,7 @@ export const mockApi: RendererApi = {
   },
   calendarStatus: async () => DEMO_CALENDAR_STATUS,
   calendarRequestAccess: async () => DEMO_CALENDAR_STATUS,
-  calendarSignOut: async () => ({ authorization: 'notDetermined', calendars: [], account: null }),
+  calendarSignOut: async () => ({ signIn: 'signedOut', calendars: [], account: null }),
   calendarEvents: async ({ start, end }) =>
     demoCalendarEvents().filter((e) => overlaps(e, Date.parse(start), Date.parse(end))),
   calendarChange: async (change) => demoCalendarChange(change),
@@ -628,9 +627,6 @@ export const mockApi: RendererApi = {
   micOpenPrivacy: async () => {},
   logsOpenFolder: async () => {},
   folderChoose: async () => '/Users/demo/Projects',
-  calendarOpenPrivacy: async () => {
-    throw new Error('アクセス許可はmacOSアプリで設定してください')
-  },
   mailStatus: async () => demoMailStatus(demoMail),
   mailProbe: async () => ({ folders: { sent: 'Sent', archive: 'Archive', trash: 'Trash' }, gmail: false, mailboxes: ['INBOX', 'Sent', 'Archive', 'Trash'] }),
   mailAccountAdd: async () => {

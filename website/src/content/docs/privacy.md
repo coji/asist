@@ -6,7 +6,7 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
-最終更新日:2026 年 9 月 29 日
+最終更新日:2026 年 10 月 1 日
 
 このプライバシーポリシーは、Mac と Windows で動くデスクトップアプリ ASIST と、このサイト(asist-agent.com)が、利用者の情報をどう扱うかを説明します。
 
@@ -59,7 +59,7 @@ ASIST が外へ送るのは、次のサービスに、あなたが使う機能�
 
 ## Google のユーザーデータ
 
-ここでは、ASIST を Google カレンダーにつないだときに、Google から受け取るデータをどう扱うかを説明します。いまの Mac 版の ASIST は macOS のカレンダーを読み、Google には直接つなぎません。
+ここでは、ASIST を Google カレンダーにつないだときに、Google から受け取るデータをどう扱うかを説明します。ASIST のカレンダーは、Mac でも Windows でも Google カレンダーだけを読み書きします。
 
 ### 求める権限と使いみち
 

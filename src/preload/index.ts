@@ -123,7 +123,6 @@ const api: RendererApi = {
   calendarEvents: (range) => ipcRenderer.invoke(IpcChannel.CalendarEvents, range),
   calendarChange: (change) => ipcRenderer.invoke(IpcChannel.CalendarChange, change),
   calendarOpenGuide: () => ipcRenderer.invoke(IpcChannel.CalendarOpenGuide),
-  calendarOpenPrivacy: () => ipcRenderer.invoke(IpcChannel.CalendarOpenPrivacy),
   ttsVerify: () => ipcRenderer.invoke(IpcChannel.TtsVerify),
   micOpenPrivacy: () => ipcRenderer.invoke(IpcChannel.MicOpenPrivacy),
   logsOpenFolder: () => ipcRenderer.invoke(IpcChannel.LogsOpenFolder),

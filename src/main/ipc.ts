@@ -432,7 +432,6 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   // An add, edit or delete from the screen takes the same path as the agent's and is saved only after the
   // in-app confirmation is approved.
   handle(IpcChannel.CalendarChange, (_e, change: unknown) => changeCalendar(change, new AbortController().signal))
-  handle(IpcChannel.CalendarOpenPrivacy, () => shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars'))
   handle(IpcChannel.CalendarOpenGuide, () => shell.openExternal(docsUrl('calendar', getSettings().uiLocale)))
   handle(IpcChannel.MailStatus, () => getMailService().status())
   handle(IpcChannel.MailProbe, (_e, input: unknown) => getMailService().probe(input))

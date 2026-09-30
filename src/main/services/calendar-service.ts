@@ -13,11 +13,11 @@ import type { AppSettings } from '@shared/settings'
 import { t } from './i18n'
 import { getSettings } from './settings'
 import { formatLocaleOf } from '@shared/conversation-locale'
-import { CalendarWriteRejected, type CalendarBackend } from './calendar-backend'
+import { CalendarWriteRejected, type GoogleCalendar } from './google-calendar'
 
 interface Dependencies {
   settings: () => AppSettings['calendar']
-  backend: CalendarBackend
+  calendar: Pick<GoogleCalendar, 'status' | 'requestAccess' | 'events' | 'event' | 'write'>
   confirm: (detail: string, signal: AbortSignal, destructive: boolean) => Promise<boolean>
 }
 
@@ -49,7 +49,7 @@ export class CalendarService {
   constructor(private readonly deps: Dependencies) {}
 
   status(requestAccess = false): Promise<CalendarStatus> {
-    return requestAccess ? this.deps.backend.requestAccess() : this.deps.backend.status()
+    return requestAccess ? this.deps.calendar.requestAccess() : this.deps.calendar.status()
   }
 
   private enabled(): AppSettings['calendar'] {
@@ -85,10 +85,10 @@ export class CalendarService {
   private async eventsIn(start: string, end: string, signal?: AbortSignal): Promise<CalendarEvent[]> {
     const settings = this.enabled()
     if (!settings.readCalendarIds.length) throw new Error(errorText('calendar.errors.noReadCalendars'))
-    const events = await this.deps.backend.events(settings.readCalendarIds, start, end, signal)
-    // A backend asks its calendar from a minute before the range, so that an event without length at its
-    // start is matched however the calendar tests overlap, and the range is applied here, by the rule the
-    // calendar screen puts an event on a day with.
+    const events = await this.deps.calendar.events(settings.readCalendarIds, start, end, signal)
+    // Google is asked from a minute before the range, so that an event without length at its start is
+    // matched however Google tests overlap, and the range is applied here, by the rule the calendar screen
+    // puts an event on a day with.
     return events.filter((event) => overlaps(event, Date.parse(start), Date.parse(end)))
   }
 
@@ -101,8 +101,8 @@ export class CalendarService {
       const settings = this.enabled()
       const configuration = JSON.stringify(settings)
       const status = await this.status()
-      if (status.authorization !== 'fullAccess')
-        throw new Error(errorText('calendar.errors.needsFullAccess'))
+      if (status.signIn === 'unreadable') throw new Error(errorText('calendar.errors.tokenUnreadable'))
+      if (status.signIn === 'signedOut') throw new Error(errorText('calendar.errors.googleSignedOut'))
       let before: CalendarEvent | undefined
       let calendarId: string
       if (input.operation === 'create') {
@@ -110,7 +110,7 @@ export class CalendarService {
           throw new Error(errorText('calendar.errors.noWriteCalendar'))
         calendarId = settings.writeCalendarId
       } else {
-        before = await this.deps.backend.event(input.eventId, signal)
+        before = await this.deps.calendar.event(input.eventId, signal)
         if (!settings.readCalendarIds.includes(before.calendarId))
           throw new Error(errorText('calendar.errors.notReadable'))
         if (before.recurring || before.hasAttendees)
@@ -134,10 +134,9 @@ export class CalendarService {
               end: Date.parse(input.event.end)
             }
       const detail = [
-        t(`calendar.confirm.${input.operation}`, { calendar: `${calendar.source} / ${calendar.title}` }),
+        t(`calendar.confirm.${input.operation}`, { calendar: calendar.title }),
         before ? `${t('calendar.confirm.before')}\n${describe(before)}` : '',
-        after ? `${t('calendar.confirm.after')}\n${describe(after)}` : '',
-        this.deps.backend.syncNote ? t(this.deps.backend.syncNote) : ''
+        after ? `${t('calendar.confirm.after')}\n${describe(after)}` : ''
       ]
         .filter(Boolean)
         .join('\n\n')
@@ -150,7 +149,7 @@ export class CalendarService {
       // Once dispatched, do not cancel or retry a write: a lost response cannot prove it was not saved.
       let event: CalendarEvent
       try {
-        event = await this.deps.backend.write(
+        event = await this.deps.calendar.write(
           input.operation === 'create'
             ? { operation: 'create', calendar, event: input.event }
             : input.operation === 'update'
@@ -165,7 +164,7 @@ export class CalendarService {
         saved: true,
         operation: input.operation,
         event,
-        sync: t(this.deps.backend.savedTo)
+        sync: t('calendar.saved.toGoogle')
       }
     } finally {
       this.changing = false

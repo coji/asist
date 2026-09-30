@@ -98,7 +98,7 @@ describe('brain tools registry', () => {
     mocks.windows = false
   })
 
-  it('offers the calendar to the model only on a machine that has one, as a card, as a change and as a mini app', async () => {
+  it('offers the calendar to the model on Windows as on a Mac, as a card, as a change and as a mini app', async () => {
     const calendarTools = async (): Promise<{ names: string[]; apps: unknown }> => {
       const { tools } = await load()
       const specs = tools()
@@ -108,10 +108,11 @@ describe('brain tools registry', () => {
         apps: (openApp.inputSchema as { properties: { app: { enum: string[] } } }).properties.app.enum.includes('calendar')
       }
     }
-    expect(await calendarTools()).toEqual({ names: ['show_calendar', 'change_calendar'], apps: true })
+    const mac = await calendarTools()
+    expect(mac).toEqual({ names: ['show_calendar', 'change_calendar'], apps: true })
     vi.resetModules()
     mocks.windows = true
-    expect(await calendarTools()).toEqual({ names: [], apps: false })
+    expect(await calendarTools()).toEqual(mac)
   })
 
   it('sends the catalog show_ tools and the separately registered ones under unique names, without web search, which the provider owns', async () => {

@@ -24,7 +24,6 @@ import { randomClip as randomAizuchiClip } from '../aizuchi'
 import * as memory from '../memory'
 import { summarizeToolInput, summarizeToolResult, type NoticeKind } from './conversation-log'
 import { openAppNote } from './mini-app-tools'
-import { platformCapabilities } from '../platform'
 import { buildSystemLayers } from './prompt'
 import { currentSpeechRoute, emit, history, lastRequestFingerprint, noteRequestFingerprint, record, turnScheduler } from './session'
 import type { SpeechRoute } from './speech-route'
@@ -285,8 +284,7 @@ async function runTurn(
       toolGuide: toolGuide(locale, toolOptions),
       memoryBlock,
       historySummary: history.summary,
-      voiceLayer: route.kind === 'live' ? 'delegated' : 'self',
-      calendar: platformCapabilities().calendar !== null
+      voiceLayer: route.kind === 'live' ? 'delegated' : 'self'
     })
     signal.throwIfAborted()
   } catch (err) {

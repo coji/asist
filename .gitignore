@@ -2,7 +2,6 @@ node_modules/
 out/
 # The native helpers that scripts/prepare-resources.mjs builds.
 resources/native/macos/asist-mic
-resources/native/macos/asist-calendar
 resources/native/windows/asist-agent-launcher.exe
 resources/native/windows/asist-mic.exe
 dist/

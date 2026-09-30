@@ -26,7 +26,6 @@ export const SCREENS = {
   'settings/memory': { label: '記憶', group: '設定のページ' },
   'settings/agent': { label: 'Agent', group: '設定のページ' },
   'settings/connections': { label: 'カレンダーとメール', group: '設定のページ' },
-  'settings/connections/google': { label: 'カレンダーとメール(Google カレンダーにログイン済み)', group: '設定のページ' },
   'settings/connections/google-signed-out': { label: 'カレンダーとメール(Google カレンダーに未ログイン)', group: '設定のページ' },
   'settings/connections/google-unreadable': { label: 'カレンダーとメール(Google のログインを読めない)', group: '設定のページ' },
   'settings/language': { label: '言語と地域', group: '設定のページ' },

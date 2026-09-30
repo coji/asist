@@ -11,13 +11,12 @@ const mocks = vi.hoisted(() => ({
   conversationLocale: 'ja-JP',
   region: 'JP',
   roots: [] as string[],
-  searchCalendar: vi.fn(async (_query: { start: string; end: string }) => ({ events: [] })),
-  calendarKind: 'eventkit' as 'eventkit' | 'google'
+  searchCalendar: vi.fn(async (_query: { start: string; end: string }) => ({ events: [] }))
 }))
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({ uiLocale: 'ja-JP', conversationLocale: mocks.conversationLocale, region: mocks.region })
 }))
-vi.mock('../src/main/services/calendar', () => ({ searchCalendar: mocks.searchCalendar, calendarKind: () => mocks.calendarKind }))
+vi.mock('../src/main/services/calendar', () => ({ searchCalendar: mocks.searchCalendar }))
 vi.mock('electron', () => ({ app: { getVersion: () => '9.9.9' } }))
 vi.mock('../src/main/services/agent', () => ({ allowedFileRoots: () => mocks.roots }))
 
@@ -241,14 +240,6 @@ describe('the calendar card', () => {
     vi.useRealTimers()
     if (zone === undefined) delete process.env.TZ
     else process.env.TZ = zone
-  })
-
-  it('names the calendar the events come from, Google Calendar or the calendar of macOS', async () => {
-    const t = createTranslator('ja-JP')
-    mocks.calendarKind = 'google'
-    expect((await fetchPanel('calendar', { range: 'week' })).source).toBe(t('calendar.card.source.google'))
-    mocks.calendarKind = 'eventkit'
-    expect((await fetchPanel('calendar', { range: 'week' })).source).toBe(t('calendar.card.source.eventkit'))
   })
 
   it('searches next week up to its last midnight when this week is asked for at the weekend, across a change of the clocks', async () => {

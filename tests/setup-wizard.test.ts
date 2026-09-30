@@ -597,11 +597,11 @@ describe('first-run setup on Windows with an NVIDIA GPU', () => {
   })
 })
 
-describe('first-run setup on a machine without the local models or a calendar', () => {
+describe('first-run setup on a machine without the local models', () => {
   beforeEach(() => setCapabilities(WINDOWS_WITHOUT_GPU))
   afterEach(() => setCapabilities(MACOS))
 
-  it('gives the reason in place of the local speech recognition, offers no Qwen3-TTS, offers the extras and names no calendar', async () => {
+  it('gives the reason in place of the local speech recognition, offers no Qwen3-TTS, and offers the extras and the calendar', async () => {
     // Qwen3-TTS left in the settings is still not offered on a machine that cannot run it.
     settings = { ...settings, ttsEngine: 'qwen3tts' } as AppSettings
     await render()
@@ -628,6 +628,6 @@ describe('first-run setup on a machine without the local models or a calendar', 
     expect(extraNames()).toEqual([ja('setup.extras.models.embedding.label'), ja('setup.extras.models.modernbert.label'), ja('setup.extras.models.maai.label')])
     await press(ja('setup.next'))
     expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.summary.title'))
-    expect(container.querySelector('.su-summary.is-quiet')?.textContent).not.toContain(ja('setup.summary.calendar'))
+    expect(container.querySelector('.su-summary.is-quiet')?.textContent).toContain(ja('setup.summary.calendarValue'))
   })
 })

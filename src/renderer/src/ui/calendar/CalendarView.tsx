@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { MessageKey } from '@shared/i18n'
-import type { CalendarChange, CalendarEvent, CalendarStatus } from '@shared/calendar'
+import type { CalendarAccount, CalendarChange, CalendarEvent, CalendarStatus } from '@shared/calendar'
 import type { CalendarViewMode } from '@shared/mini-apps'
 import {
   HOUR_PX,
@@ -10,7 +10,6 @@ import {
   firstOfMonth,
   dayKey,
   daysInMonth,
-  eventsOn,
   mondayOf,
   parseDayKey,
   sameMonth,
@@ -31,11 +30,10 @@ import {
   type Anchor,
   type Draft
 } from './cards'
-import { occurrenceKey } from './EventChips'
 import { fmtMonth } from './format'
 import { MonthView } from './MonthView'
 import { Notice } from './Notice'
-import { calendarColors, colorOf, type CalendarAccount } from './palette'
+import { calendarColors, colorOf } from './palette'
 import { ScheduleView } from './ScheduleView'
 import { Sidebar } from './Sidebar'
 import { WeekView } from './WeekView'
@@ -97,12 +95,8 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
   const [miniCursor, setMiniCursor] = useState(cursor)
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
   const [popover, setPopover] = useState<Popover | null>(null)
-  /**
-   * The occurrence whose details are open and where they are placed. EventKit gives every occurrence of
-   * a repeating event the same id, so the store's eventId says which event is open and this says which
-   * of its occurrences.
-   */
-  const [shown, setShown] = useState<{ eventId: string; occurrence: string; anchor: Anchor } | null>(null)
+  /** The event whose details are open, which the store names, and where they are placed. */
+  const [shown, setShown] = useState<{ eventId: string; anchor: Anchor } | null>(null)
   const weekScroll = useRef(7 * HOUR_PX)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -112,7 +106,7 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
   )
   const colors = useMemo(() => calendarColors(calendars), [calendars])
   const writeCalendar = status?.calendars.find((c) => c.id === settings?.writeCalendarId) ?? null
-  const ready = Boolean(settings?.enabled) && status?.authorization === 'fullAccess' && calendars.length > 0
+  const ready = Boolean(settings?.enabled) && status?.signIn === 'signedIn' && calendars.length > 0
   const range = useMemo(() => visibleRange(view, cursor, selected), [view, cursor, selected])
   // The range the events were listed for, which tells whether an event missing from them is outside the range.
   const [eventsRange, setEventsRange] = useState<typeof range | null>(null)
@@ -174,30 +168,27 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
     if (status && !ready && eventId) update('calendar', { eventId: null })
   }, [status, ready, eventId, update])
 
-  // Details opened from outside the screen have no chip that was pressed. They show the occurrence on
-  // the day the calendar is placed on, or the first one listed, and are placed beside its chip, or over
-  // the middle of the view when the chip is not drawn, as in a full month cell.
+  // Details opened from outside the screen have no chip that was pressed. They are placed beside the
+  // event's first chip, or over the middle of the view when no chip of it is drawn, as in a full month cell.
   useLayoutEffect(() => {
     if (!eventId) {
       if (shown) setShown(null)
       return
     }
-    const occurrences = events.filter((e) => e.id === eventId)
-    if (shown?.eventId === eventId || occurrences.length === 0) return
-    const occurrence = occurrenceKey(eventsOn(occurrences, selected)[0] ?? occurrences[0])
+    if (shown?.eventId === eventId || !events.some((e) => e.id === eventId)) return
     const root = rootRef.current
     if (!root) return
-    const chip = [...root.querySelectorAll<HTMLElement>('[data-occurrence]')].find((el) => el.dataset.occurrence === occurrence)
+    const chip = [...root.querySelectorAll<HTMLElement>('[data-event-id]')].find((el) => el.dataset.eventId === eventId)
     if (chip) {
       chip.scrollIntoView({ block: 'nearest' })
-      setShown({ eventId, occurrence, anchor: anchorOf(chip) })
+      setShown({ eventId, anchor: anchorOf(chip) })
       return
     }
     const body = root.querySelector<HTMLElement>('.cal-view')
     if (!body) return
     const rect = body.getBoundingClientRect()
-    setShown({ eventId, occurrence, anchor: anchorOf(body, new DOMRect(rect.left + rect.width / 2, rect.top + rect.height / 4, 0, 0)) })
-  }, [eventId, shown, events, selected])
+    setShown({ eventId, anchor: anchorOf(body, new DOMRect(rect.left + rect.width / 2, rect.top + rect.height / 4, 0, 0)) })
+  }, [eventId, shown, events])
 
   const closeCards = (): void => {
     setPopover(null)
@@ -237,7 +228,7 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
   const step = (n: number): void => goTo(view === 'week' ? addDays(selected, 7 * n) : shiftMonths(selected, n))
   const openEvent = (event: CalendarEvent, el: HTMLElement): void => {
     setPopover(null)
-    setShown({ eventId: event.id, occurrence: occurrenceKey(event), anchor: anchorOf(el) })
+    setShown({ eventId: event.id, anchor: anchorOf(el) })
     update('calendar', { eventId: event.id })
   }
   const openDay = (day: string, el: HTMLElement): void => {
@@ -279,7 +270,7 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
   }
 
   const details = shown?.eventId === eventId ? shown : null
-  const popoverEvent = details ? events.find((e) => occurrenceKey(e) === details.occurrence) : undefined
+  const popoverEvent = details ? events.find((e) => e.id === details.eventId) : undefined
   const popoverAnchor = details?.anchor
   // A failure to list the events replaces the view too, since the events drawn would be those of a
   // range that is no longer on screen.
@@ -441,5 +432,5 @@ function editorCalendarLabel(
 ): string | null {
   const calendarId = draft.eventId ? events.find((e) => e.id === draft.eventId)?.calendarId : writeCalendar?.id
   const account = status?.calendars.find((c) => c.id === calendarId)
-  return account ? `${account.source} / ${account.title}` : null
+  return account?.title ?? null
 }

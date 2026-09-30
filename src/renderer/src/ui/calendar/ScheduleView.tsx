@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { CalendarEvent } from '@shared/calendar'
 import { addDays, dayKey, daysInMonth, eventsOn, firstOfMonth } from '@shared/calendar-layout'
 import { useT, useFormatLocale } from '@/i18n'
-import { RowChip, occurrenceKey, type OpenEvent } from './EventChips'
+import { RowChip, type OpenEvent } from './EventChips'
 import { dayClasses, fmtDateWd, fmtMonthName, fmtWeekdayLong } from './format'
 import { colorOf } from './palette'
 
@@ -59,7 +59,7 @@ export function ScheduleView({
             </div>
             <div className="cal-sched-events">
               {list.map((event) => (
-                <RowChip key={occurrenceKey(event)} event={event} color={colorOf(colors, event.calendarId)} onOpen={onOpenEvent} />
+                <RowChip key={event.id} event={event} color={colorOf(colors, event.calendarId)} onOpen={onOpenEvent} />
               ))}
             </div>
           </div>

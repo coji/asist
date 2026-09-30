@@ -12,7 +12,7 @@ import type { ScreenName } from './screens'
 import { prepareSetupDemo } from './setup-demo'
 import { DEMO_NOTES } from './fixtures/notes'
 import { DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGES } from './fixtures/mail'
-import { DEMO_GOOGLE_CALENDAR_STATUS } from './fixtures/calendar'
+import { DEMO_CALENDAR_STATUS } from './fixtures/calendar'
 
 /**
  * How the demo opens each screen and state. The names and how they appear in the list live in
@@ -35,22 +35,17 @@ const view = (): ReturnType<typeof useViewStore.getState> => useViewStore.getSta
 const settingsPage = (page: SettingsPage): DemoView => ({ open: () => view().openApp({ app: 'settings', page }) })
 
 /**
- * The calendar and mail page of a machine whose calendar is Google's: signed in, signed out, or holding a sign-in
- * another build saved. Signing in from the page succeeds at once, and signing out goes back to the page
- * without an account.
+ * The calendar and mail page without a Google sign-in, or holding a sign-in another build saved. Signing
+ * in from the page succeeds at once, and signing out goes back to the page without an account.
  */
-const googleCalendarSettings = (signIn: 'signedIn' | 'signedOut' | 'unreadable'): DemoView => ({
+const googleSignedOutSettings = (signIn: 'signedOut' | 'unreadable'): DemoView => ({
   prepare: (api) => {
-    const capabilities = api.getPlatformCapabilities
-    api.getPlatformCapabilities = async () => ({ ...(await capabilities()), calendar: 'google' })
-    const signedOut: CalendarStatus = { authorization: 'notDetermined', calendars: [], account: null }
-    const signedIn = signIn === 'signedIn'
-    let status: CalendarStatus =
-      signIn === 'signedIn' ? DEMO_GOOGLE_CALENDAR_STATUS : signIn === 'unreadable' ? { ...signedOut, authorization: 'unreadable' } : signedOut
+    const signedOut: CalendarStatus = { signIn: 'signedOut', calendars: [], account: null }
+    let status: CalendarStatus = { ...signedOut, signIn }
     api.calendarStatus = async () => status
-    api.calendarRequestAccess = async () => (status = DEMO_GOOGLE_CALENDAR_STATUS)
+    api.calendarRequestAccess = async () => (status = DEMO_CALENDAR_STATUS)
     api.calendarSignOut = async () => (status = signedOut)
-    if (!signedIn) void api.saveSettings({ calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null } })
+    void api.saveSettings({ calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null } })
   },
   open: () => view().openApp({ app: 'settings', page: 'connections' })
 })
@@ -147,9 +142,8 @@ export const DEMO_VIEWS: Record<ScreenName, DemoView> = {
   'settings/memory': settingsPage('memory'),
   'settings/agent': settingsPage('agent'),
   'settings/connections': settingsPage('connections'),
-  'settings/connections/google': googleCalendarSettings('signedIn'),
-  'settings/connections/google-signed-out': googleCalendarSettings('signedOut'),
-  'settings/connections/google-unreadable': googleCalendarSettings('unreadable'),
+  'settings/connections/google-signed-out': googleSignedOutSettings('signedOut'),
+  'settings/connections/google-unreadable': googleSignedOutSettings('unreadable'),
   'settings/language': settingsPage('language'),
   'settings/appearance': settingsPage('appearance'),
   'settings/api-keys': settingsPage('apiKeys'),

@@ -1,6 +1,5 @@
 import os from 'node:os'
-import { CALENDAR_BACKEND_VARIABLE, deriveCapabilities, type PlatformCapabilities } from '@shared/platform'
-import { googleOAuthClient } from './google-oauth-client'
+import { deriveCapabilities, type PlatformCapabilities } from '@shared/platform'
 import { windowsMicCancelsEcho } from './mic-helper'
 import { listSpeechDevices } from './speech-devices'
 
@@ -17,9 +16,7 @@ export function platformCapabilities(): PlatformCapabilities {
     arch: process.arch,
     totalMemoryBytes: os.totalmem(),
     speechDevices: listSpeechDevices,
-    micCancelsEcho: windowsMicCancelsEcho,
-    calendarBackend: process.env[CALENDAR_BACKEND_VARIABLE],
-    googleClient: () => googleOAuthClient() !== null
+    micCancelsEcho: windowsMicCancelsEcho
   })
   return capabilities
 }

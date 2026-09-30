@@ -562,19 +562,15 @@ export function SetupWizard(): React.JSX.Element | null {
                     : t('setup.summary.agentMissing', { engine: services?.agentEngine ?? '' }),
                   where: t('setup.summary.agentWhere')
                 },
-                ...(capabilities.calendar !== null
-                  ? [
-                      {
-                        label: t('setup.summary.calendar'),
-                        value: t(capabilities.calendar === 'google' ? 'setup.summary.calendarValueGoogle' : 'setup.summary.calendarValue'),
-                        where: t('setup.summary.connectionsWhere')
-                      }
-                    ]
-                  : []),
+                {
+                  label: t('setup.summary.calendar'),
+                  value: t('setup.summary.calendarValue'),
+                  where: t('setup.summary.connectionsWhere')
+                },
                 {
                   label: t('setup.summary.mail'),
                   value: t('setup.summary.mailValue'),
-                  where: t(capabilities.calendar === null ? 'setup.summary.mailWhere' : 'setup.summary.connectionsWhere')
+                  where: t('setup.summary.connectionsWhere')
                 }
               ]}
             />

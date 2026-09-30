@@ -27,7 +27,7 @@ import { useMiniApp, useViewStore } from '@/state/view'
 import { useFormatLocale, useT, useUiLocale } from '@/i18n'
 import { localDate } from '@shared/api-usage'
 import { usageReport } from '@shared/usage-report'
-import { connectionsTitle, ttsEngineLabel, type Preparation, type PreparationTarget, type SettingsContext, type SettingsPage } from './settings/context'
+import { ttsEngineLabel, type Preparation, type PreparationTarget, type SettingsContext, type SettingsPage } from './settings/context'
 import { pendingItems, type Pending } from './settings/pending'
 import { ConversationPage } from './settings/pages/ConversationPage'
 import { PersonaPage } from './settings/pages/PersonaPage'
@@ -247,7 +247,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       )
   }
 
-  const { calendar, localSpeech } = platformCapabilities()
+  const { localSpeech } = platformCapabilities()
   const pending = pendingItems({ settings, status, vap, embedding, aizuchiClassifier, localSpeech })
   const ctx: SettingsContext = { settings, status, setup, vap, embedding, aizuchiClassifier, prep, pending, set, save, refreshStatus, refreshSetup, go: setPage, prepare }
 
@@ -298,7 +298,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     agent: has('agent') ? { text: t('settings.summary.agentMissing', { engine: agentEngine }), tone: 'warn' } : { text: `${agentEngine} · ${AGENT_MODE_NAME[settings.agentEngine][settings.agentMode]}` },
     connections: {
       text: [
-        ...(calendar === null ? [] : [t(settings.calendar.enabled ? 'settings.summary.calendarOn' : 'settings.summary.calendarOff')]),
+        t(settings.calendar.enabled ? 'settings.summary.calendarOn' : 'settings.summary.calendarOff'),
         t('settings.summary.mailAccounts', { count: settings.mail.accounts.length })
       ].join(' · ')
     },
@@ -308,7 +308,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     usage: { text: last30 === null ? '' : t('settings.summary.usage', { amount: formatUsd(last30) }) },
     about: { text: t('settings.summary.about') }
   }
-  const title = (id: SettingsPage): string => (id === 'connections' ? connectionsTitle(t, calendar) : t(`settings.pages.${id}`))
+  const title = (id: SettingsPage): string => t(`settings.pages.${id}`)
 
   const body: Record<SettingsPage, React.JSX.Element> = {
     overview: <OverviewPage ctx={ctx} />,

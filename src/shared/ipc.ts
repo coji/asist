@@ -832,7 +832,6 @@ export const IpcChannel = {
   CalendarEvents: 'calendar-events',
   CalendarChange: 'calendar-change',
   CalendarOpenGuide: 'calendar-open-guide',
-  CalendarOpenPrivacy: 'calendar-open-privacy',
   TtsVerify: 'tts-verify',
   MicOpenPrivacy: 'mic-open-privacy',
   AppVersion: 'app-version',
@@ -1049,16 +1048,15 @@ export interface RendererApi {
   onJobEvent(callback: (event: JobEvent) => void): () => void
 
   calendarStatus(): Promise<CalendarStatus>
-  /** Asks macOS for access to EventKit, or signs in to Google through the browser unless it already has. */
+  /** Signs in to Google through the browser unless it already has. */
   calendarRequestAccess(): Promise<CalendarStatus>
-  /** Takes back ASIST's access to Google Calendar. Only the Google calendar has a sign-in of ASIST's own. */
+  /** Takes back ASIST's access to Google Calendar. */
   calendarSignOut(): Promise<CalendarStatus>
   /** The events in the range the calendar screen shows, at most 62 days, read only from the calendars chosen in the settings. */
   calendarEvents(range: CalendarListRange): Promise<CalendarEvent[]>
   /** Adds, changes or deletes an event. It is saved only when the user approves it in the in-app confirmation. */
   calendarChange(change: CalendarChange): Promise<CalendarChangeResult>
   calendarOpenGuide(): Promise<void>
-  calendarOpenPrivacy(): Promise<void>
   /**
    * Checks whether the selected speech engine can be reached. When VOICEVOX or AivisSpeech is in the
    * Applications folder it is launched in the background and the status is returned only once it

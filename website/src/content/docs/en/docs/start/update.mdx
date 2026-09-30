@@ -19,6 +19,8 @@ If a released version has a problem, a fixed version with a higher number is rel
 
 ## Uninstalling
 
+If you are signed in to Google Calendar, click "Sign out" under "Calendar and mail" in the settings before you uninstall. This withdraws the permission you gave ASIST in Google.
+
 <Tabs syncKey="os">
 <TabItem label="macOS">
 
@@ -29,7 +31,7 @@ If a released version has a problem, a fixed version with a higher number is rel
    - `~/Library/Logs/asist/`
    - `~/Library/Caches/asist-updater/` (the files of new versions that the automatic update downloaded)
 4. To remove the key used to encrypt your saved API keys and mail passwords, find "asist Safe Storage" in Keychain Access and delete it.
-5. To remove the microphone and calendar permissions as well, run the following in Terminal.
+5. To remove the microphone permission as well, run the following in Terminal. If you used the calendar with an earlier Mac version, the second line removes its calendar permission too.
 
    ```bash
    tccutil reset Microphone com.nyosegawa.asist

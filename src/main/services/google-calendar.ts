@@ -1,8 +1,7 @@
 import { z } from 'zod'
-import type { CalendarEvent, CalendarEventInput, CalendarStatus } from '@shared/calendar'
+import type { CalendarAccount, CalendarEvent, CalendarEventInput, CalendarStatus } from '@shared/calendar'
 import { parseDayKey } from '@shared/calendar-layout'
 import { errorText } from '@shared/i18n/error-text'
-import { CalendarWriteRejected, type CalendarBackend, type CalendarWrite } from './calendar-backend'
 import { fetchFailure } from './fetch-failure'
 import { GoogleSignedOut, SignInReplaced, type GoogleAuth } from './google-oauth'
 
@@ -14,6 +13,15 @@ import { GoogleSignedOut, SignInReplaced, type GoogleAuth } from './google-oauth
  */
 
 const API = 'https://www.googleapis.com/calendar/v3'
+
+/** A write the user approved, with the event as it was read before the confirmation. */
+export type CalendarWrite =
+  | { operation: 'create'; calendar: CalendarAccount; event: CalendarEventInput }
+  | { operation: 'update'; before: CalendarEvent; event: CalendarEventInput }
+  | { operation: 'delete'; before: CalendarEvent }
+
+/** A write Google refused before saving anything, so its reason can be shown instead of an unknown result. */
+export class CalendarWriteRejected extends Error {}
 
 /** Whether the account's role on a calendar lets it change the events. */
 const accessWrites = (role: string): boolean => role === 'owner' || role === 'writer'
@@ -86,8 +94,8 @@ const localZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone
 
 /**
  * An event as the rest of ASIST reads it. An all-day event keeps Google's days, whose end is already the
- * day after the last, and is placed at midnight of this computer, as EventKit places one; a timed event
- * keeps its own time zone, or its calendar's when it has none.
+ * day after the last, and is placed at midnight of this computer; a timed event keeps its own time zone,
+ * or its calendar's when it has none.
  */
 export function toCalendarEvent(item: GoogleEvent, calendar: CalendarInfo): CalendarEvent {
   const allDay = item.start.date !== undefined
@@ -187,9 +195,7 @@ export interface GoogleCalendarDependencies {
   fetch: typeof fetch
 }
 
-export class GoogleCalendarBackend implements CalendarBackend {
-  readonly syncNote = null
-  readonly savedTo = 'calendar.saved.toGoogle' as const
+export class GoogleCalendar {
   constructor(private readonly deps: GoogleCalendarDependencies) {}
 
   /**
@@ -258,18 +264,16 @@ export class GoogleCalendarBackend implements CalendarBackend {
   /** Signed out, or signed in with the account's calendars. A saved sign-in Google no longer accepts reads as signed out. */
   async status(signal?: AbortSignal): Promise<CalendarStatus> {
     try {
-      const state = this.deps.auth.signInState()
-      if (state !== 'signedIn') return { authorization: state === 'unreadable' ? 'unreadable' : 'notDetermined', calendars: [], account: null }
+      const signIn = this.deps.auth.signInState()
+      if (signIn !== 'signedIn') return { signIn, calendars: [], account: null }
       const entries = await this.calendarList(signal)
-      // The id of the primary calendar is the address of the account.
-      const account = entries.find((entry) => entry.primary)?.id ?? null
       return {
-        authorization: 'fullAccess',
-        calendars: entries.map((entry) => ({ id: entry.id, title: entry.summary, source: 'Google', writable: accessWrites(entry.accessRole) })),
-        account
+        signIn,
+        calendars: entries.map((entry) => ({ id: entry.id, title: entry.summary, writable: accessWrites(entry.accessRole) })),
+        account: entries.find((entry) => entry.primary)?.id ?? null
       }
     } catch (error) {
-      if (error instanceof GoogleSignedOut) return { authorization: 'notDetermined', calendars: [], account: null }
+      if (error instanceof GoogleSignedOut) return { signIn: 'signedOut', calendars: [], account: null }
       throw error
     }
   }
@@ -290,6 +294,7 @@ export class GoogleCalendarBackend implements CalendarBackend {
     return this.status()
   }
 
+  /** Every event of the calendars that overlaps the range, and possibly some just before it, which the service trims. */
   async events(calendarIds: string[], start: string, end: string, signal?: AbortSignal): Promise<CalendarEvent[]> {
     // Google compares an event's end with timeMin strictly, so an event without length at the start would
     // be missed; the minute before brings it in, and the service trims to the range.
@@ -338,6 +343,11 @@ export class GoogleCalendarBackend implements CalendarBackend {
     return toCalendarEvent(item, { id: entry.id, title: entry.summary, timeZone: entry.timeZone, writable: accessWrites(entry.accessRole) })
   }
 
+  /**
+   * Saves an approved change and returns the event as saved, or as it was for a delete. It throws
+   * CalendarWriteRejected only when Google answered that it saved nothing; any other failure leaves the
+   * result unknown.
+   */
   async write(change: CalendarWrite): Promise<CalendarEvent> {
     if (change.operation === 'create') {
       const saved = await this.send(`/calendars/${encodeURIComponent(change.calendar.id)}/events`, { method: 'POST', body: googleEventBody(change.event, false) })

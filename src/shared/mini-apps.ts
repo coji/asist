@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { dayKey } from './calendar-layout'
 import { MAIL_VIEWS } from './mail'
-import type { PlatformCapabilities } from './platform'
 
 /**
  * ASIST's mini apps: the screens opened from the Dock, each with data of its own. The conversation
@@ -11,10 +10,6 @@ import type { PlatformCapabilities } from './platform'
 
 export const MINI_APPS = ['notes', 'tasks', 'mail', 'calendar', 'jobs', 'memory', 'settings'] as const
 export type MiniApp = (typeof MINI_APPS)[number]
-
-/** Whether this machine has the mini app: the calendar needs a calendar to read. */
-export const miniAppAvailable = (app: MiniApp, capabilities: Pick<PlatformCapabilities, 'calendar'>): boolean =>
-  app !== 'calendar' || capabilities.calendar !== null
 
 /** The pages of the settings mini app, in the order the list on the left shows them. */
 export const SETTINGS_PAGES = [

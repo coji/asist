@@ -266,31 +266,16 @@ export const settingsIntegrations = defineMessages({
     }
   },
   lead: {
-    withCalendar: {
-      'ja-JP': 'カレンダーとメールにつなぎます。予定の変更とメールの送信は、実行する前に確認します。',
-      'en-US': 'Connects to your calendar and mail. Changes to events and sending mail are confirmed before they run.',
-      'fr-FR': "Se connecte à votre agenda et à vos e-mails. Les modifications d'événements et les envois sont confirmés avant d'être exécutés.",
-      'de-DE': 'Verbindet sich mit Kalender und E-Mail. Änderungen an Terminen und das Senden von E-Mails werden vorher bestätigt.',
-      'hi-IN': 'आपके कैलेंडर और मेल से जुड़ता है। इवेंट बदलने और मेल भेजने से पहले पुष्टि ली जाती है।',
-      'id-ID': 'Terhubung ke kalender dan email Anda. Perubahan acara dan pengiriman email dikonfirmasi sebelum dijalankan.',
-      'it-IT': 'Si collega al calendario e alla posta. Le modifiche agli eventi e gli invii vengono confermati prima di eseguirli.',
-      'ko-KR': '캘린더와 메일에 연결합니다. 일정 변경과 메일 보내기는 실행하기 전에 확인합니다.',
-      'pt-BR': 'Conecta à sua agenda e ao seu e-mail. Alterações em eventos e envios de e-mail são confirmados antes de acontecer.',
-      'es-419': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.',
-      'es-ES': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.'
-    },
-    withoutCalendar: {
-      'ja-JP': 'メールにつなぎます。送信、返信、ゴミ箱への移動は、実行する前に確認します。',
-      'en-US': 'Connects to your mail. Sending, replying and moving to the trash are confirmed before they run.',
-      'fr-FR': "Se connecte à vos e-mails. Les envois, réponses et mises à la corbeille sont confirmés avant d'être exécutés.",
-      'de-DE': 'Verbindet sich mit Ihrer E-Mail. Senden, Antworten und Verschieben in den Papierkorb werden vorher bestätigt.',
-      'hi-IN': 'आपके मेल से जुड़ता है। भेजने, जवाब देने और ट्रैश में डालने से पहले पुष्टि ली जाती है।',
-      'id-ID': 'Terhubung ke email Anda. Mengirim, membalas, dan memindahkan ke sampah dikonfirmasi sebelum dijalankan.',
-      'it-IT': 'Si collega alla posta. Invii, risposte e spostamenti nel cestino vengono confermati prima di eseguirli.',
-      'ko-KR': '메일에 연결합니다. 보내기, 답장, 휴지통으로 옮기기는 실행하기 전에 확인합니다.',
-      'pt-BR': 'Conecta ao seu e-mail. Envios, respostas e movimentos para a lixeira são confirmados antes de acontecer.',
-      'es-419': 'Se conecta a tu correo. Los envíos, respuestas y traslados a la papelera se confirman antes de hacerse.',
-      'es-ES': 'Se conecta a tu correo. Los envíos, respuestas y traslados a la papelera se confirman antes de hacerse.'
-    }
+    'ja-JP': 'カレンダーとメールにつなぎます。予定の変更とメールの送信は、実行する前に確認します。',
+    'en-US': 'Connects to your calendar and mail. Changes to events and sending mail are confirmed before they run.',
+    'fr-FR': "Se connecte à votre agenda et à vos e-mails. Les modifications d'événements et les envois sont confirmés avant d'être exécutés.",
+    'de-DE': 'Verbindet sich mit Kalender und E-Mail. Änderungen an Terminen und das Senden von E-Mails werden vorher bestätigt.',
+    'hi-IN': 'आपके कैलेंडर और मेल से जुड़ता है। इवेंट बदलने और मेल भेजने से पहले पुष्टि ली जाती है।',
+    'id-ID': 'Terhubung ke kalender dan email Anda. Perubahan acara dan pengiriman email dikonfirmasi sebelum dijalankan.',
+    'it-IT': 'Si collega al calendario e alla posta. Le modifiche agli eventi e gli invii vengono confermati prima di eseguirli.',
+    'ko-KR': '캘린더와 메일에 연결합니다. 일정 변경과 메일 보내기는 실행하기 전에 확인합니다.',
+    'pt-BR': 'Conecta à sua agenda e ao seu e-mail. Alterações em eventos e envios de e-mail são confirmados antes de acontecer.',
+    'es-419': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.',
+    'es-ES': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.'
   }
 })

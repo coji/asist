@@ -33,7 +33,7 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 <table>
   <tr>
-    <td width="50%"><img src="website/public/screens/ja/calendar.webp" alt="カレンダーのミニアプリ。週の表示に予定が並んでいる" /><br /><sub>カレンダー(いまは Mac だけ)。「来週の予定を見せて」で開きます。</sub></td>
+    <td width="50%"><img src="website/public/screens/ja/calendar.webp" alt="カレンダーのミニアプリ。週の表示に予定が並んでいる" /><br /><sub>Google カレンダーの予定を見て、追加や変更ができます。「来週の予定を見せて」で開きます。</sub></td>
     <td width="50%"><img src="website/public/screens/ja/agent.webp" alt="Agent のジョブの画面。ログの下に成果物が並んでいる" /><br /><sub>Agent のジョブ。進み具合と成果物を見られます。</sub></td>
   </tr>
   <tr>
@@ -53,13 +53,13 @@ ASIST は、話しかけると声で答えるアシスタントです。天気�
 
 ## はじめる
 
-必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りと Qwen3-TTS をこのコンピュータの中で動かすには、Vulkan が動く単体の GPU が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。Windows 版には、カレンダーはまだありません。
+必要なのは、Apple Silicon の Mac(macOS 14 以降)か x64 の Windows 11 の PC と、会話のモデルの API キー(Anthropic、OpenAI、Google、Cerebras のどれか 1 つ)です。Windows で声の聞き取りと Qwen3-TTS をこのコンピュータの中で動かすには、Vulkan が動く単体の GPU が要ります。GPU が無くても、ブラウザの中で動く Whisper か Live API の声のエンジンで話すか、文字で使えます。カレンダーには、Google アカウントが要ります。
 
 1. [Releases](https://github.com/nyosegawa/asist/releases/latest) からダウンロードします。Mac では `ASIST-arm64.dmg` をダウンロードし、ASIST を「アプリケーション」に入れます。Windows では `ASIST-Setup-x64.exe` をダウンロードして開きます。インストーラーにはまだ署名が無いので、SmartScreen の警告が出たら「詳細情報」を押し、そのあと「実行」を押します。
 2. ASIST を開き、初回セットアップで言語、モデル、声、マイクを選びます。
 3. 話しかけます。新しいバージョンは、Mac でも Windows でも自動で届き、次に終了したときに入れ替わります。
 
-画面つきの手順、マイクとカレンダーの許可、Agent の CLI の準備は、ドキュメントの[はじめる](https://asist-agent.com/docs/start/)にあります。
+画面つきの手順、マイクの許可、カレンダーの接続、Agent の CLI の準備は、ドキュメントの[はじめる](https://asist-agent.com/docs/start/)にあります。
 
 ## 安全に使うために
 

@@ -1,77 +1,61 @@
 ---
 title: Connecting your calendar
-description: Connect Google Calendar to ASIST through the Mac's Calendar app.
+description: Sign in to your Google account and connect Google Calendar to ASIST.
 sidebar:
   order: 7
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components'
+import { Steps } from '@astrojs/starlight/components'
 
-<Aside type="note">
-The calendar is available on the Mac only for now. ASIST for Windows has neither the Calendar mini app nor the calendar items in the settings, where the page is called "Mail" rather than "Calendar and mail".
-</Aside>
-
-ASIST reads and writes the calendars registered in macOS. macOS signs in to Google and syncs with it; ASIST does not connect to Google directly. iCloud calendars work with the same steps. If your Google events already appear in the Mac's Calendar app, start from step 4.
+ASIST signs in to your Google account and reads and writes the events in Google Calendar. The steps are the same on a Mac and on Windows. Calendars outside Google, such as iCloud or Exchange, cannot be used.
 
 <Steps>
 
-1. **Add an account to Calendar on your Mac**
+1. **Sign in to Google**
 
-   Open the Calendar app on your Mac, and choose Calendar > Add Account… in the menu bar.
+   Open "Calendar and mail" in the ASIST settings, and click "Sign in with Google" under "Calendar".
 
-   ![The Calendar menu with Add Account chosen](/guides/calendar/01-add-account.png)
+   ![The calendar settings with the "Sign in with Google" button](/screens/en/calendar-sign-in.webp)
 
-2. **Choose Google**
+2. **Allow ASIST in the browser**
 
-   Choose "Google", click "Continue" and sign in to the Google account you want to use.
+   Google's sign-in page opens in your browser. Choose the account to use and allow ASIST to access your calendars. There are two permissions: seeing the list of your calendars, and seeing and editing your events. Check both. If either is left unchecked, the sign-in does not go through.
 
-   ![Google chosen as the account type](/guides/calendar/02-select-google.png)
+   When the page says "ASIST is signed in. Close this tab and go back to ASIST.", close the tab and return to ASIST. Finish the sign-in in the browser within 5 minutes.
 
-3. **Allow macOS to access your Google calendars**
+3. **Turn the calendar integration on**
 
-   When you see "macOS wants to access your Google Account", check the calendar permission and continue. This permission is for macOS; you give ASIST its permission in the next step.
+   Once you are signed in, the address of the account appears under "Google account". Turn on the "Turn the calendar integration on" switch.
 
-   ![The screen where macOS asks for access to the Google account](/guides/calendar/03-google-permission.png)
+4. **Choose the calendars to show and where new events go**
 
-   <Aside>
-   In the image, Gmail and contacts are also selected, but the ASIST calendar does not use mail or contacts. Decide on those based on whether you use them in the Mac's Mail and Contacts apps.
-   </Aside>
+   Under "Calendars to show", choose the calendars whose events ASIST shows and searches. Under "Calendar for new events", choose the calendar where events added from ASIST are saved. Each choice is saved as you make it.
 
-   Once the account is added, check in System Settings > Internet Accounts that "Calendars" is turned on for that account, and wait until your events appear in the Mac's Calendar app.
+   ![The settings with the calendars to show and the calendar for new events chosen](/screens/en/calendar-settings.webp)
 
-4. **Allow ASIST**
+5. **Check it**
 
-   In the ASIST settings, under "Calendar and mail", turn on the "Turn the calendar integration on" switch. In the macOS dialog, click "Allow Full Access".
-
-   ![The macOS dialog where ASIST asks for full access to your calendars](/guides/calendar/04-asist-permission.png)
-
-5. **Choose the calendars to show and where to save**
-
-   Under "Calendars to show", choose the calendars ASIST views and searches. Under "Calendar for new events", choose the calendar where ASIST saves the events it adds. If you want them on Google, choose a Google calendar. Your choice is saved each time you make it.
-
-   ![The settings with Google calendars chosen for Calendars to show and Calendar for new events](/guides/calendar/05-asist-calendars.png)
-
-6. **Check it**
-
-   Say "Show me today's schedule" and check that the same events appear as in the Mac's Calendar app. Next, ask "Add an event called Test from 10 to 10:30 tomorrow", check the calendar, date, time and title on the confirmation screen, and approve it. Once you have confirmed that it also appears in Google Calendar, ask "Delete tomorrow's Test event".
+   Say "Show me today's schedule" and check that the same events appear as in Google Calendar. Next, ask "Add an event called Test from 10 to 10:30 tomorrow", check the calendar, date, time and title on the confirmation screen, and approve it. Once you see it in Google Calendar, ask "Delete tomorrow's Test event".
 
 </Steps>
 
+## After updating from an earlier Mac version
+
+Earlier Mac versions of ASIST read and wrote the macOS calendar. After the update, the calendar integration is off and the calendars you had chosen are cleared. Sign in to Google with the steps above and choose the calendars again. ASIST no longer uses the permission left under System Settings > Privacy & Security > Calendars, so you can turn it off.
+
 ## If it does not connect
 
-- If you did not allow access, open System Settings from "macOS privacy settings" under "Calendar and mail" in the settings, and give ASIST full access. Return to ASIST and click "Refresh the list".
-- If your calendars do not appear, check whether events appear in the Mac's Calendar app. If you added the account again, choose the calendars to show and the calendar for new events again in ASIST as well.
+- If you closed the browser, click "Sign in with Google" again. The earlier sign-in is cancelled and a new one starts.
+- If you did not allow access in the browser, or left one of the permissions unchecked, the sign-in does not go through. Click "Sign in with Google" again and check both.
+- If you see "The saved Google sign-in can't be read", click "Sign out" or sign in again.
+- If a calendar does not appear, check that it is in Google Calendar, then click "Refresh the list".
 - Calendars that cannot be written to, such as shared or subscribed calendars, can only be used for viewing.
-- Repeating events and events with invitations can be viewed and searched, but ASIST cannot change or delete them. Use the Mac's Calendar app for those.
-- If an event does not appear on Google, check your Mac's network connection and the account's sync. If you do not know whether an event was added, do not ask for the same event again and again.
-- If the permission seems to be in a wrong state, remove it in Terminal, then turn the "Turn the calendar integration on" switch on again in ASIST and allow it again.
-
-  ```bash
-  tccutil reset Calendar com.nyosegawa.asist
-  ```
+- Repeating events and events with invitations can be viewed and searched, but ASIST cannot change or delete them. Use Google Calendar for those.
+- If ASIST says it does not know whether an event was saved, check the result in Google Calendar. Do not ask for the same event again and again while the result is unknown.
+- Events changed on another device or in Google Calendar reach ASIST the next time it shows events. A calendar screen left open reads them again when you reopen it or change the period it shows.
 
 ## How ASIST handles your events
 
-The macOS permission covers all your calendars. ASIST searches the calendars you chose to show, and creates new events in the calendar you chose for saving. Turning the integration off stops ASIST from reading and writing them. To remove the macOS permission as well, turn ASIST off in System Settings > Privacy & Security > Calendars.
+ASIST searches the calendars you chose to show in the Google account you signed in to, and creates new events in the calendar you chose for saving. It adds, changes and deletes events only after you approve them on a confirmation screen. Turning the integration off stops ASIST from reading and writing them. To withdraw the permission from Google as well, click "Sign out": ASIST tells Google to revoke it and deletes the saved sign-in.
 
-Events handled in the conversation are sent to the provider of the conversation model you chose, so that it can write a reply. They may also stay in the conversation history and be used in memory curation.
+The sign-in is stored encrypted on this computer. Events handled in the conversation are sent to the provider of the conversation model you chose, so that it can write a reply. They may also stay in the conversation history and be used in memory curation. How ASIST handles the data it receives from Google is described in the [Privacy Policy](/en/privacy/).

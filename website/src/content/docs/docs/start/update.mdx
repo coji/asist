@@ -19,6 +19,8 @@ Windows では、ウィンドウを閉じても ASIST は終了しません。�
 
 ## アンインストール
 
+Google カレンダーにログインしているときは、アンインストールの前に、設定の「カレンダーとメール」で「ログアウト」を押します。Google への許可が取り消されます。
+
 <Tabs syncKey="os">
 <TabItem label="macOS">
 
@@ -29,7 +31,7 @@ Windows では、ウィンドウを閉じても ASIST は終了しません。�
    - `~/Library/Logs/asist/`
    - `~/Library/Caches/asist-updater/`(自動更新で取得した新しいバージョンのファイル)
 4. 保存した API キーとメールのパスワードの暗号化に使った鍵を消すときは、「キーチェーンアクセス」で「asist Safe Storage」を探して削除します。
-5. マイクとカレンダーの許可も消すときは、ターミナルで次を実行します。
+5. マイクの許可も消すときは、ターミナルで次を実行します。以前の Mac 版でカレンダーを使っていたときは、2 行目でカレンダーの許可も消えます。
 
    ```bash
    tccutil reset Microphone com.nyosegawa.asist

@@ -51,10 +51,10 @@ if [ ! -d "$app" ]; then
   echo "ビルドがありません: $app(--build を付けてください)" >&2
   exit 1
 fi
-# The released app is signed with Developer ID, and macOS ties the microphone and calendar permissions to
-# that signature, so a build signed otherwise would lose them on every switch between the two.
+# The released app is signed with Developer ID, and macOS ties the microphone permission to that
+# signature, so a build signed otherwise would lose it on every switch between the two.
 if ! codesign -dvv "$app" 2>&1 | grep -q "Authority=Developer ID Application"; then
-  echo "$app は Developer ID で署名されていません。リリース版とマイクやカレンダーの許可を共有できないので入れません" >&2
+  echo "$app は Developer ID で署名されていません。リリース版とマイクの許可を共有できないので入れません" >&2
   exit 1
 fi
 
@@ -73,9 +73,9 @@ ditto "$app" /Applications/ASIST.app
 echo "installed /Applications/ASIST.app from $(git rev-parse --short HEAD) at $(date '+%Y-%m-%d %H:%M')"
 
 if [ $launch = 1 ]; then
-  # Starting the executable directly attaches the calendar and microphone permissions (TCC) to the
-  # parent shell, and they stop working. Starting through open, via LaunchServices, makes them the
-  # app's own. stdout/stderr go to a file to keep the main and renderer logs.
+  # Starting the executable directly attaches the microphone permission (TCC) to the parent shell,
+  # and it stops working. Starting through open, via LaunchServices, makes it the app's own.
+  # stdout/stderr go to a file to keep the main and renderer logs.
   log=${ASIST_LOG:-/tmp/asist-$(date +%Y%m%d-%H%M%S).log}
   if [ $cdp = 1 ]; then
     open -a /Applications/ASIST.app --stdout "$log" --stderr "$log" --args --enable-logging --remote-debugging-port=9222

@@ -31,7 +31,6 @@ import { GptLiveEngine } from './gpt-live'
 import { GeminiLiveEngine } from './gemini-live'
 import { toGeminiFunctionDeclarations } from './gemini-tools'
 import { connectGemini } from './gemini-connect'
-import { platformCapabilities } from '../platform'
 
 /**
  * The entry point of the live engines. It starts GPT-Live or Gemini Live according to the voiceEngine
@@ -110,8 +109,7 @@ function geminiSystemInstruction(startedAt: Date): string {
     memoryBlock: memory.promptBlock(),
     historySummary: history.summary,
     jobContext: agentRunner.contextBlock(),
-    startedAt,
-    calendar: platformCapabilities().calendar !== null
+    startedAt
   })
 }
 

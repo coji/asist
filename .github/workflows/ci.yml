@@ -100,7 +100,7 @@ jobs:
       - uses: ./.github/actions/setup-app
       - run: npm run dist:mac:unsigned
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
-        # gets no secrets and builds without it, which only ASIST_CALENDAR_BACKEND=google would notice.
+        # gets no secrets and builds without it, which only signing in to Google Calendar would notice.
         env:
           ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
           ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}
@@ -143,7 +143,7 @@ jobs:
       - uses: ./.github/actions/setup-app
       - run: npm run dist:win:dir
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
-        # gets no secrets and builds without it, which only ASIST_CALENDAR_BACKEND=google would notice.
+        # gets no secrets and builds without it, which only signing in to Google Calendar would notice.
         env:
           ASIST_GOOGLE_CLIENT_ID: ${{ secrets.ASIST_GOOGLE_CLIENT_ID }}
           ASIST_GOOGLE_CLIENT_SECRET: ${{ secrets.ASIST_GOOGLE_CLIENT_SECRET }}

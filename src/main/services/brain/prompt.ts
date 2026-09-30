@@ -115,41 +115,27 @@ const INPUT_SECTION: Section = [
   }
 ]
 
-/**
- * The daily briefing. On a machine without a calendar the schedule is left out altogether, rather than
- * handled as a calendar that is not connected, because connecting one is not possible there.
- */
-function briefingSection(calendar: boolean): Section {
-  return [
-    { ja: `デイリーブリーフィング`, en: `The daily briefing` },
-    {
-      ja: `- 「おはよう」「今日のブリーフィング」「今日どんな感じ?」と言われたら、${calendar ? 'weather/calendar/news' : 'weather/news'}(メール連携があれば mail、記憶に関心があれば他のパネルも)からパネルを出して1日の要点を話す。ただし**毎回同じ構成・同じ言い回しにしない**:
+const BRIEFING_SECTION: Section = [
+  { ja: `デイリーブリーフィング`, en: `The daily briefing` },
+  {
+    ja: `- 「おはよう」「今日のブリーフィング」「今日どんな感じ?」と言われたら、weather/calendar/news(メール連携があれば mail、記憶に関心があれば他のパネルも)からパネルを出して1日の要点を話す。ただし**毎回同じ構成・同じ言い回しにしない**:
   - 挨拶は時間帯・曜日・季節に合わせて変える(月曜と金曜、朝と昼で言うことは違う)。
-  - 主役はデータで決める: ${calendar ? '予定が詰まっている日は予定中心、' : ''}天気が荒れる日は天気中心、大きなニュースがある日はニュース中心。平凡な項目は一言で流すか省略してよい。
+  - 主役はデータで決める: 予定が詰まっている日は予定中心、天気が荒れる日は天気中心、大きなニュースがある日はニュース中心。平凡な項目は一言で流すか省略してよい。
   - 記憶(関心のある話題や生活の拠点など、あれば)を反映し、履歴で同じ日に既に伝えた内容は繰り返さず、既に伝えたと一言で流す。
-${
-  calendar
-    ? '- カレンダー未設定エラーのときは予定を飛ばして続け、最後に、設定画面でカレンダーをつなげば予定も出せると一言添える。メール未設定も同じ扱い。'
-    : '- メール未設定エラーのときはメールを飛ばして続け、最後に、設定画面でメールをつなげばメールも出せると一言添える。'
-}`,
-      en: `- When the user says good morning, asks for the briefing or asks how today looks, open panels from ${calendar ? 'weather, calendar and news' : 'weather and news'} (mail as well when mail is connected, and another panel when memory says they follow that topic) and talk through the shape of the day. But **do not build it the same way with the same wording every time**:
+- カレンダー未設定エラーのときは予定を飛ばして続け、最後に、設定画面でカレンダーをつなげば予定も出せると一言添える。メール未設定も同じ扱い。`,
+    en: `- When the user says good morning, asks for the briefing or asks how today looks, open panels from weather, calendar and news (mail as well when mail is connected, and another panel when memory says they follow that topic) and talk through the shape of the day. But **do not build it the same way with the same wording every time**:
   - Vary the greeting with the hour, the weekday and the season. A Monday and a Friday, a morning and a midday call for different things.
-  - Let the data decide what leads: ${calendar ? 'a packed day leads with the calendar, rough weather with the weather' : 'rough weather leads with the weather'}, a big story with the news. An unremarkable item can be one line, or left out.
+  - Let the data decide what leads: a packed day leads with the calendar, rough weather with the weather, a big story with the news. An unremarkable item can be one line, or left out.
   - Use what memory holds (the topics they follow, where they live) and do not repeat what the history shows you already told them today; say in a few words that you already covered it.
-${
-  calendar
-    ? '- When the calendar is not connected and returns an error, skip the schedule and carry on, then add one line at the end saying that connecting a calendar on the settings screen brings the schedule in too. Mail that is not connected works the same way.'
-    : '- When mail is not connected and returns an error, skip it and carry on, then add one line at the end saying that connecting mail on the settings screen brings it in too.'
-}`
-    }
-  ]
-}
+- When the calendar is not connected and returns an error, skip the schedule and carry on, then add one line at the end saying that connecting a calendar on the settings screen brings the schedule in too. Mail that is not connected works the same way.`
+  }
+]
 
 /**
  * The sections that do not depend on whether a voice model is in front, in the order they appear.
  * The speaking style, the bridge sentence and the constraints are handled separately.
  */
-const commonSections = (calendar: boolean): readonly Section[] => [
+const COMMON_SECTIONS: readonly Section[] = [
   [
     { ja: `確信度と語尾`, en: `How sure you are` },
     {
@@ -214,7 +200,7 @@ const commonSections = (calendar: boolean): readonly Section[] => [
       en: `- A user message beginning with "{systemNotice}" is not the user speaking: it is the app telling you something, such as a job that finished. Take in what it says and report it to the user in natural spoken words, briefly. Never read the notice out as it is written. When you need the detail, check with get_agent_job before you speak.`
     }
   ],
-  briefingSection(calendar),
+  BRIEFING_SECTION,
   [
     { ja: `メール`, en: `Mail` },
     {
@@ -308,7 +294,7 @@ const section = (locale: ConversationLocale, title: PromptText, text: PromptText
  */
 export type VoiceLayer = 'self' | 'delegated' | 'live'
 
-export function baseSystem(locale: ConversationLocale, voiceLayer: VoiceLayer, calendar: boolean): string {
+export function baseSystem(locale: ConversationLocale, voiceLayer: VoiceLayer): string {
   const bridgeTitle: PromptText = {
     ja: `つなぎ文(時間のかかる操作の前に一文)`,
     en: `The bridge sentence, one line before a slow operation`
@@ -319,7 +305,7 @@ export function baseSystem(locale: ConversationLocale, voiceLayer: VoiceLayer, c
   if (promptLanguage(locale) === 'en') parts.push(LANGUAGE_SECTION)
   if (voiceLayer === 'delegated') parts.push(section(locale, { ja: `声の担当との分担`, en: `Working with the voice` }, DELEGATED_VOICE))
   parts.push(section(locale, styleTitle, voiceLayer === 'delegated' ? STYLE_DELEGATED : STYLE_SELF))
-  for (const [title, text] of commonSections(calendar)) {
+  for (const [title, text] of COMMON_SECTIONS) {
     if (title === INPUT_SECTION[0] && voiceLayer === 'self') parts.push(section(locale, bridgeTitle, BRIDGE_SENTENCE))
     parts.push(section(locale, title, text))
   }
@@ -357,8 +343,6 @@ export interface SystemPromptInput {
   historySummary: string
   /** Who reads the prompt. Leaving it out means self, where the brain's own sentences are spoken. */
   voiceLayer?: VoiceLayer
-  /** Whether this machine has a calendar, which the daily briefing draws on. */
-  calendar: boolean
 }
 
 /**
@@ -370,7 +354,7 @@ export interface SystemPromptInput {
 export function buildSystemLayers(input: SystemPromptInput): SystemLayer[] {
   const { locale } = input
   const persona = input.persona.trim()
-  const base = baseSystem(locale, input.voiceLayer ?? 'self', input.calendar)
+  const base = baseSystem(locale, input.voiceLayer ?? 'self')
   let text = persona ? `${base}\n\n# ${promptText(locale, PERSONA_HEADING)}\n${persona}` : base
   if (input.toolGuide) text += `\n\n${input.toolGuide}`
   const layers: SystemLayer[] = [{ name: 'base', text }]

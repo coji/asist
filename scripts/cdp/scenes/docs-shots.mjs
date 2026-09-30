@@ -213,6 +213,14 @@ function steps({ locale, name }) {
     shot('settings-overview'),
     ...['conversation', 'voice', 'language', 'appearance', 'agent'].flatMap((page) => [view(`settings/${page}`), settle, shot(`settings-${page}`)]),
 
+    // Connecting Google Calendar: the calendar before the account is signed in, and after, with the calendars chosen.
+    view('settings/connections/google-signed-out'),
+    settle,
+    { op: 'shot', value: 'calendar-sign-in.webp', clip: '.st-page > .st-group' },
+    view('settings/connections'),
+    settle,
+    { op: 'shot', value: 'calendar-settings.webp', clip: '.st-page > .st-group' },
+
     // Adding a mail account: a Gmail account with a sample app password, after the connection is checked.
     view('settings/connections'),
     settle,

@@ -1,12 +1,12 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { AlignLeft, CalendarDays, Clock, Lock, MapPin, Pencil, Repeat, Trash2, Users, X } from 'lucide-react'
 import type { Translate } from '@shared/i18n'
-import type { CalendarChange, CalendarEvent } from '@shared/calendar'
+import type { CalendarAccount, CalendarChange, CalendarEvent } from '@shared/calendar'
 import { addDays, dayKey, daysBetween, eventsOn, lastInstant, parseDayKey } from '@shared/calendar-layout'
 import { useT, useFormatLocale } from '@/i18n'
-import { BarChip, TimedChip, occurrenceKey, type OpenEvent } from './EventChips'
+import { BarChip, TimedChip, type OpenEvent } from './EventChips'
 import { dayClasses, fmtDateFull, fmtTime, fmtTimeRange, weekdayNames } from './format'
-import { colorOf, type CalendarAccount } from './palette'
+import { colorOf } from './palette'
 
 /** Where a card is placed, in coordinates relative to the top left corner of the calendar view. */
 export interface Anchor {
@@ -147,7 +147,7 @@ export function EventCard({
       )}
       <div className="cal-pop-row">
         <CalendarDays size={16} />
-        <span>{account ? `${account.source} / ${account.title}` : event.calendarTitle}</span>
+        <span>{account?.title ?? event.calendarTitle}</span>
       </div>
       {(event.recurring || event.hasAttendees || !writable) && (
         <div className="cal-pop-flags">
@@ -213,13 +213,13 @@ export function DayCard({
         {list.map((event) =>
           event.allDay ? (
             <BarChip
-              key={occurrenceKey(event)}
+              key={event.id}
               bar={{ event, c0: 0, c1: 0, contLeft: false, contRight: false, lane: 0 }}
               color={colorOf(colors, event.calendarId)}
               onOpen={onOpenEvent}
             />
           ) : (
-            <TimedChip key={occurrenceKey(event)} event={event} color={colorOf(colors, event.calendarId)} onOpen={onOpenEvent} />
+            <TimedChip key={event.id} event={event} color={colorOf(colors, event.calendarId)} onOpen={onOpenEvent} />
           )
         )}
       </div>

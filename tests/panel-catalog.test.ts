@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { catalogByType, panelDescription } from '@shared/panel-catalog'
-import { MACOS } from './helpers/platform'
+import { catalogByType } from '@shared/panel-catalog'
 
 describe('panel catalog keys', () => {
   it('gives a separate key to weather dates and calendar ranges that fetch different content', () => {
@@ -32,15 +31,5 @@ describe('panel catalog input', () => {
     expect(calendar.schema.safeParse({ from: '2026-09-01', to: '2026-09-31' }).success).toBe(false)
     expect(calendar.schema.safeParse({ from: '2026-02-29', to: '2026-03-01' }).success).toBe(false)
     expect(calendar.schema.safeParse({ from: '2028-02-29', to: '2028-09-30' }).success).toBe(true)
-  })
-})
-
-describe('the calendar card as the model is told of it', () => {
-  it('does not tell the model it reads the macOS calendars when the calendar is Google', () => {
-    const calendar = catalogByType.get('calendar')!
-    const google = panelDescription(calendar, { ...MACOS, calendar: 'google' })
-    expect(`${google.ja}\n${google.en}`).not.toMatch(/macOS/)
-    expect(`${google.ja}\n${google.en}`).toMatch(/Google/)
-    expect(panelDescription(calendar, MACOS).en).not.toBe(google.en)
   })
 })

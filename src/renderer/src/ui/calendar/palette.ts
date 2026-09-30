@@ -1,6 +1,4 @@
-import type { CalendarStatus } from '@shared/calendar'
-
-export type CalendarAccount = CalendarStatus['calendars'][number]
+import type { CalendarAccount } from '@shared/calendar'
 
 /** The colors are theme tokens (themes.css), so each theme draws the same calendar in its own shade. */
 const PALETTE = [1, 2, 3, 4, 5, 6].map((n) => `var(--cal-event-${n})`)
