@@ -1,6 +1,6 @@
 {
   "name": "asist",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "ASIST — realtime voice assistant with speculative panels and agent jobs",
   "main": "./out/main/index.js",
   "scripts": {
