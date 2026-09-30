@@ -54,6 +54,8 @@ The landing page is `website/src/components/Landing.astro`, its style `website/s
   - Say plainly what one system does not have (on Windows, the calendar and Qwen3-TTS) on the page of that feature, rather than leaving it out.
   - The app words some screens differently on each system; quote the `.macos` or `.windows` key of the dictionary in its tab.
 - Screens of the app come from the demo: `npm run demo:docs-shots` writes them to `public/screens/{ja,en}/`. Pages refer to `/screens/ja/…` and `/screens/en/…`. Write the Japanese in plain words (see the `ui-text` skill's writing guide).
+  - Take them again after any change to what one of them shows, text included, even when the change came later in the same pull request. Every run also redraws the orb in another frame, so look at the images and keep the ones whose content changed.
+  - The build fails on a screenshot no page shows; add a new shot together with the page that uses it.
 - The languages of the site, and which of them have a landing page or documentation, are listed once in `src/i18n/languages.mjs`.
 - The landing page is `src/components/Landing.astro`, and its text in each language is `src/i18n/landing/<code>.ts` (Japanese first, with the `LandingText` shape). A language appears once it is marked `landing: true` in `languages.mjs` and registered in `src/i18n/landing/index.ts`; its header menu, hreflang links and page follow from that. A language without documentation links to the English documentation. Social sites get `public/img/og.png` for Japanese and `og-en.png` for the rest (`node website/og/render.mjs [en]`).
 - The dev server keeps the old sidebar after pages are moved or renamed; restart it.

@@ -33,6 +33,7 @@ Read `references/writing-guide.md` before writing text for the screen; it is the
 - A value filled into a message is a name, a number or another message, and the sentence reads without inflecting it. In German, a name that cannot take an article goes in quotation marks.
 - Do not quote what the user should say. What the user says follows the conversation language, not the interface: write 「ASIST にメモを頼むと増えます」, not 「『メモして』と言うと増えます」.
 - A sentence that names a button or a page quotes it exactly as that language shows it (tests/i18n.test.ts checks 「」 quotes).
+- When a page or button is renamed or removed, search every language of the dictionary for its old name. Errors and hints elsewhere quote it, and the 「」 check still passes while some other label has the same text, as 「モデル」 did.
 - Rough widths: a status chip holds about 17 Japanese characters, a note beside a box heading about 36. Shorten the wording first; if one place overflows in several languages, fix the layout instead.
 
 ## 3. Edit the dictionary
