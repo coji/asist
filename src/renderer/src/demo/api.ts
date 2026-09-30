@@ -114,6 +114,7 @@ const settings: AppSettings = {
   safetyNoticeVersion: 1,
   uiLocale: demoLocale,
   theme: THEMES.find((theme) => theme === requestedTheme) ?? DEFAULT_THEME,
+  showHud: false,
   // The conversation stays Japanese, which the sample data is written in; the region follows the interface so
   // that dates and numbers read as they do for someone who uses that language.
   conversationLocale: 'ja-JP',

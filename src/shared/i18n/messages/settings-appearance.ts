@@ -15,17 +15,17 @@ export const settingsAppearance = defineMessages({
     'es-ES': 'Apariencia'
   },
   lead: {
-    'ja-JP': '画面全体の色、背景、カードの見出しを選びます。',
-    'en-US': 'Choose the colors, the background and the card headings of the whole screen.',
-    'fr-FR': "Choisissez les couleurs, l'arrière-plan et les titres des cartes de tout l'écran.",
-    'de-DE': 'Wählen Sie Farben, Hintergrund und Kartenüberschriften für den ganzen Bildschirm.',
-    'hi-IN': 'पूरी स्क्रीन के रंग, बैकग्राउंड और कार्ड के शीर्षक चुनें।',
-    'id-ID': 'Pilih warna, latar belakang, dan judul kartu untuk seluruh layar.',
-    'it-IT': 'Scegli i colori, lo sfondo e i titoli delle schede di tutto lo schermo.',
-    'ko-KR': '화면 전체의 색, 배경, 카드 제목을 고릅니다.',
-    'pt-BR': 'Escolha as cores, o fundo e os títulos dos cartões de toda a tela.',
-    'es-419': 'Elige los colores, el fondo y los títulos de las tarjetas de toda la pantalla.',
-    'es-ES': 'Elige los colores, el fondo y los títulos de las tarjetas de toda la pantalla.'
+    'ja-JP': '画面全体の色、背景、カードの見出しと、上部に処理時間を出すかどうかを選びます。',
+    'en-US': 'Choose the colors, the background and the card headings of the whole screen, and whether processing times appear at the top.',
+    'fr-FR': "Choisissez les couleurs, l'arrière-plan et les titres des cartes de tout l'écran, et si les temps de traitement s'affichent en haut.",
+    'de-DE': 'Wählen Sie Farben, Hintergrund und Kartenüberschriften für den ganzen Bildschirm und ob oben die Verarbeitungszeiten erscheinen.',
+    'hi-IN': 'पूरी स्क्रीन के रंग, बैकग्राउंड और कार्ड के शीर्षक चुनें, और यह भी कि ऊपर प्रोसेसिंग का समय दिखे या नहीं।',
+    'id-ID': 'Pilih warna, latar belakang, dan judul kartu untuk seluruh layar, serta apakah waktu proses tampil di bagian atas.',
+    'it-IT': 'Scegli i colori, lo sfondo e i titoli delle schede di tutto lo schermo, e se in alto compaiono i tempi di elaborazione.',
+    'ko-KR': '화면 전체의 색, 배경, 카드 제목과, 위쪽에 처리 시간을 표시할지를 고릅니다.',
+    'pt-BR': 'Escolha as cores, o fundo e os títulos dos cartões de toda a tela, e se os tempos de processamento aparecem no topo.',
+    'es-419': 'Elige los colores, el fondo y los títulos de las tarjetas de toda la pantalla, y si arriba se muestran los tiempos de procesamiento.',
+    'es-ES': 'Elige los colores, el fondo y los títulos de las tarjetas de toda la pantalla, y si arriba se muestran los tiempos de procesamiento.'
   },
   theme: {
     title: {
@@ -167,6 +167,47 @@ export const settingsAppearance = defineMessages({
         'es-419': 'Una sala oscura de concreto con un rayo de luz',
         'es-ES': 'Una sala oscura de hormigón con un rayo de luz'
       }
+    }
+  },
+  hud: {
+    title: {
+      'ja-JP': '処理時間',
+      'en-US': 'Processing times',
+      'fr-FR': 'Temps de traitement',
+      'de-DE': 'Verarbeitungszeiten',
+      'hi-IN': 'प्रोसेसिंग का समय',
+      'id-ID': 'Waktu proses',
+      'it-IT': 'Tempi di elaborazione',
+      'ko-KR': '처리 시간',
+      'pt-BR': 'Tempos de processamento',
+      'es-419': 'Tiempos de procesamiento',
+      'es-ES': 'Tiempos de procesamiento'
+    },
+    show: {
+      'ja-JP': '画面の上に表示する',
+      'en-US': 'Show at the top of the screen',
+      'fr-FR': "Afficher en haut de l'écran",
+      'de-DE': 'Oben auf dem Bildschirm anzeigen',
+      'hi-IN': 'स्क्रीन के ऊपर दिखाएँ',
+      'id-ID': 'Tampilkan di bagian atas layar',
+      'it-IT': 'Mostra in cima allo schermo',
+      'ko-KR': '화면 위쪽에 표시하기',
+      'pt-BR': 'Mostrar no topo da tela',
+      'es-419': 'Mostrar en la parte superior de la pantalla',
+      'es-ES': 'Mostrar en la parte superior de la pantalla'
+    },
+    hint: {
+      'ja-JP': '直前の返事で、各段階にかかった時間を表示します。',
+      'en-US': 'Shows how long each stage of the last reply took.',
+      'fr-FR': 'Affiche la durée de chaque étape de la dernière réponse.',
+      'de-DE': 'Zeigt, wie lange jeder Schritt der letzten Antwort gedauert hat.',
+      'hi-IN': 'पिछले जवाब के हर चरण में लगा समय दिखाता है।',
+      'id-ID': 'Menampilkan waktu setiap tahap pada balasan terakhir.',
+      'it-IT': "Mostra quanto è durata ogni fase dell'ultima risposta.",
+      'ko-KR': '직전 답변의 단계별 소요 시간을 표시합니다.',
+      'pt-BR': 'Mostra quanto tempo levou cada etapa da última resposta.',
+      'es-419': 'Muestra cuánto tardó cada etapa de la última respuesta.',
+      'es-ES': 'Muestra cuánto ha tardado cada etapa de la última respuesta.'
     }
   }
 })

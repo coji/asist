@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react'
 import { THEMES, type ThemeName } from '@shared/themes'
 import type { SettingsContext } from '../context'
-import { Group, Page } from '../primitives'
+import { Group, Page, Row } from '../primitives'
+import { HoloSwitch } from '@/components/ui/switch'
 import { useT } from '@/i18n'
 
-/** The appearance page: the theme of the whole interface, chosen from the pictures of the themes. */
+/** The appearance page: the theme of the whole interface, chosen from the pictures of the themes, and the processing times at the top. */
 export function AppearancePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, set } = ctx
   const t = useT()
@@ -34,6 +35,11 @@ export function AppearancePage({ ctx }: { ctx: SettingsContext }): React.JSX.Ele
             </button>
           ))}
         </div>
+      </Group>
+      <Group title={t('settingsAppearance.hud.title')}>
+        <Row label={t('settingsAppearance.hud.show')} hint={t('settingsAppearance.hud.hint')}>
+          <HoloSwitch checked={settings.showHud} onCheckedChange={(v) => set({ showHud: v })} />
+        </Row>
       </Group>
     </Page>
   )

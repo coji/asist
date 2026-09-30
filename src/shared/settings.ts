@@ -38,6 +38,8 @@ const fields = {
   uiLocale: z.enum(UI_LOCALES),
   /** The look of the whole interface: its colours, surfaces, background picture and the type of card headings. */
   theme: z.enum(THEMES),
+  /** Whether the top of the screen shows how long each stage of the latest turn took. */
+  showHud: z.boolean(),
   /** The language the user and the assistant speak: prompts, speech recognition and speech follow it. */
   conversationLocale: z.enum(CONVERSATION_LOCALES),
   /** The ISO 3166-1 alpha-2 country whose weather, news, currency and formats apply. */
@@ -157,7 +159,7 @@ const V4_ASR_MODELS: Record<string, AsrModel> = {
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 6,
+  version: 7,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -186,7 +188,11 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
     5: (content) => ({
       ...(content as Record<string, unknown>),
       calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null }
-    })
+    }),
+    // Version 7 lets the times of a turn at the top of the screen be turned off. They matter to someone
+    // tuning the conversation rather than to someone using it, so they are hidden for everyone, including
+    // those who saw them until now.
+    6: (content) => ({ ...(content as Record<string, unknown>), showHud: false })
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })

@@ -23,6 +23,7 @@ export function TopBar(): React.JSX.Element {
   const micProgress = useTurnStore((s) => s.micProgress)
   const closeApp = useViewStore((s) => s.closeApp)
   const engine = useSettingsStore((s) => s.settings?.voiceEngine ?? 'cascade')
+  const showHud = useSettingsStore((s) => s.settings?.showHud === true)
   const liveConnection = useLiveStore((s) => s.connection)
 
   return (
@@ -32,9 +33,8 @@ export function TopBar(): React.JSX.Element {
         <span>ASIST</span>
       </button>
 
-      <div className="hud-wrap">
-        <Hud />
-      </div>
+      {/* The wrap stays when the bar is hidden, because it is what pushes the status dots and the microphone to the right. */}
+      <div className="hud-wrap">{showHud && <Hud />}</div>
 
       {status && (
         <div className="status-dots">

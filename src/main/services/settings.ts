@@ -27,6 +27,7 @@ function defaultSettings(): AppSettings {
     safetyNoticeVersion: 0,
     uiLocale: locale,
     theme: DEFAULT_THEME,
+    showHud: false,
     conversationLocale: locale,
     region: defaultRegion(locale),
     // Choosing a provider during the first setup replaces these with that provider's defaults from
