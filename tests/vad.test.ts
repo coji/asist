@@ -51,11 +51,11 @@ describe('VadSegmenter', () => {
     expect(ms).toBeGreaterThan(500 + 200)
   })
 
-  it('does not run Whisper for a short noise with less than 250 ms of voiced audio', () => {
+  it('does not run speech recognition for a click far shorter than a word', () => {
     const { vad, got } = makeVad()
     pushFrames(vad, SILENT, 10)
-    // 100 ms, standing for a cough or a key press.
-    pushFrames(vad, LOUD, 5)
+    // 60 ms, standing for a key press.
+    pushFrames(vad, LOUD, 3)
     pushFrames(vad, SILENT, 20)
     // The start is detected, but the utterance is never confirmed, and the capture still ends.
     expect(got.starts).toBe(1)
@@ -151,6 +151,21 @@ describe('VadSegmenter', () => {
     pushFrames(vad, SILENT, 18)
     // Nothing is handed to Whisper.
     expect(got.utterances).toHaveLength(0)
+  })
+
+  it('hands a short reply over to speech recognition although Silero confirms little of it', () => {
+    const { vad, got } = makeVad()
+    let prob = 0.9
+    vad.speechProbProvider = () => prob
+    pushFrames(vad, SILENT, 10)
+    // 「はい」: 160 ms of voice, of which Silero takes the first 60 ms for speech.
+    pushFrames(vad, LOUD, 4)
+    prob = 0.2
+    pushFrames(vad, LOUD, 4)
+    // One word does not start the partial transcripts or the aizuchi.
+    expect(vad.speechConfirmed).toBe(false)
+    pushFrames(vad, SILENT, 18)
+    expect(got.utterances).toHaveLength(1)
   })
 
   it('confirms the utterance as usual when the speech probability is high', () => {

@@ -13,10 +13,10 @@ import { VAP_EOT_CONFIRM, VAP_EOT_HOLD_BELOW } from '@shared/maai-thresholds'
  *   conversation and the echo of the assistant's own speech, which raises thresholdBoost while it
  *   plays.
  * - Silero VAD decides whether what was cut out is a human voice. It accumulates into
- *   speechDuration and speechConfirmed, which the decision to send audio to ASR, the partial
- *   transcripts, the aizuchi played while the user speaks and the noise rejection of a confirmed
- *   barge-in all read. A noise such as typing or an object set down has high energy but adds
- *   nothing to speechDuration, which stops Whisper from hallucinating words out of it. While
+ *   speechDuration, which the decision to send audio to ASR and the noise rejection of a confirmed
+ *   barge-in read, and speechConfirmed, a longer stretch that the partial transcripts and the aizuchi
+ *   played while the user speaks wait for. A noise such as typing or an object set down has high
+ *   energy but adds nothing to speechDuration, which stops ASR from hallucinating words out of it. While
  *   speechProbProvider returns null, because Silero is not ready or has failed, audio energy alone
  *   decides, so no failure here can discard speech.
  */
@@ -47,12 +47,28 @@ const MAX_UTTERANCE_MS = 20_000
 const NOISE_FLOOR_INIT = 0.008
 const NOISE_FLOOR_ALPHA = 0.05
 const SPEECH_RATIO = 3.0
+/**
+ * About -38 dBFS. Both captures apply automatic gain: on 2026-09-30 a normal voice reached this VAD at
+ * -12 to -28 dBFS, a softer one down to -26 dBFS, and the assistant's own echo through the native helper
+ * up to -36 dBFS. A lower floor mostly opens captures on echo and room sounds.
+ */
 const MIN_THRESHOLD = 0.012
-const MIN_VOICED_MS = 250
+/**
+ * The shortest capture that goes to ASR is a 「はい」. Measured at this VAD's input on 2026-09-30, with the
+ * built-in microphone and a Bluetooth headset through both captures, the shortest 「はい」 and 「うん」 had
+ * 128 ms voiced, of which Silero confirmed 43 ms; the minimums sit about a frame below that.
+ */
+const MIN_VOICED_MS = 100
 /** A voiced frame counts as speech when Silero VAD's voice probability reaches this. */
 const SPEECH_PROB_THRESHOLD = 0.5
-/** The speech that must accumulate before audio goes to ASR. Noise never reaches it, however loud. */
-const MIN_SPEECH_MS = 150
+/**
+ * The speech Silero has to confirm before audio goes to ASR. Typing, a knock on a desk and a cup set down
+ * got none in the same measurements, however loud; a cough or a cleared throat can get more than a short
+ * 「はい」 does, and is transcribed as 「うん」.
+ */
+const MIN_SPEECH_MS = 30
+/** The speech after which a capture counts as a human voice, for the partial transcripts and the aizuchi, which one word or a cough must not start. */
+const CONFIRMED_SPEECH_MS = 150
 
 /*
  * The VAP moves the hangover. A silence whose EoT, the probability that the turn has ended, stays
@@ -68,6 +84,16 @@ const VAP_EARLY_HANGOVER_MS = 300
 /** The longest hangover an extension can use. */
 const VAP_EXTENDED_HANGOVER_MS = 900
 
+/** The levels a capture opened on, and the loudest frame it held. */
+interface CaptureLevels {
+  loudestRms: number
+  noiseFloor: number
+  threshold: number
+  boost: number
+}
+
+const dbfs = (rms: number): string => `${rms > 0 ? (20 * Math.log10(rms)).toFixed(1) : '-inf'}dBFS`
+
 export class VadSegmenter {
   private preRoll: Float32Array[] = []
   private preRollSamples = 0
@@ -78,6 +104,7 @@ export class VadSegmenter {
   private voicedMs = 0
   private speechMs = 0
   private noiseFloor = NOISE_FLOOR_INIT
+  private levels: CaptureLevels = { loudestRms: 0, noiseFloor: 0, threshold: 0, boost: 1 }
   /** Speech ends once silence lasts this long. The settings can tune it. */
   hangoverMs = 350
   /** While true, every frame is ignored outright. */
@@ -132,7 +159,7 @@ export class VadSegmenter {
 
   /** Whether the captured audio is confirmed as a human voice. The partial transcripts and the aizuchi wait for it. */
   get speechConfirmed(): boolean {
-    return this.speechMs >= MIN_SPEECH_MS
+    return this.speechMs >= CONFIRMED_SPEECH_MS
   }
 
   /** The milliseconds since speech started. */
@@ -155,6 +182,7 @@ export class VadSegmenter {
   push(frame: Float32Array): void {
     if (this.muted) {
       if (this.speaking) {
+        console.log(`vad: capture muted ${this.describeCapture()}`)
         this.reset()
         this.events.onSpeechEnd?.(null)
       }
@@ -181,6 +209,7 @@ export class VadSegmenter {
         this.silenceMs = 0
         this.utterance = [...this.preRoll]
         this.utteranceSamples = this.preRollSamples
+        this.levels = { loudestRms: rms, noiseFloor: this.noiseFloor, threshold, boost: this.thresholdBoost }
         this.events.onSpeechStart?.()
       }
       return
@@ -188,6 +217,7 @@ export class VadSegmenter {
 
     this.utterance.push(frame)
     this.utteranceSamples += frame.length
+    this.levels.loudestRms = Math.max(this.levels.loudestRms, rms)
     if (rms > threshold) {
       this.silenceMs = 0
       this.eotHighMs = 0
@@ -233,30 +263,31 @@ export class VadSegmenter {
   }
 
   private finalize(utteranceMs: number, mode: HangoverMode): void {
-    const samples = this.concat()
-    const voicedMs = this.voicedMs
-    const speechMs = this.speechMs
     const vadMs = Math.round(this.silenceMs)
-    this.reset()
-    // A short noise must not start Whisper, and requiring accumulated voice from Silero on top of
-    // that stops a long noise, such as a run of keystrokes, from being hallucinated into words. The
-    // length is measured without the silence, so an early VAP end that shortens the hangover does
-    // not discard a short utterance.
-    if (
+    // The lengths let a single 「はい」 through, so what keeps a noise, such as a run of keystrokes,
+    // from being transcribed into words is Silero's confirmation. The length is measured without the
+    // silence, so an early VAP end that shortens the hangover does not discard a short utterance.
+    const kept =
       utteranceMs - vadMs >= MIN_UTTERANCE_MS &&
-      voicedMs >= MIN_VOICED_MS &&
-      speechMs >= MIN_SPEECH_MS
-    ) {
-      this.events.onSpeechEnd?.({ samples, vadMs, mode })
-      return
-    }
-    if (voicedMs > 0) {
-      // The breakdown makes it possible to follow up a report that speaking did nothing.
-      console.log(
-        `vad: utterance discarded (utterance=${Math.round(utteranceMs)}ms voiced=${Math.round(voicedMs)}ms speech=${Math.round(speechMs)}ms silence=${vadMs}ms)`
-      )
-    }
-    this.events.onSpeechEnd?.(null)
+      this.voicedMs >= MIN_VOICED_MS &&
+      this.speechMs >= MIN_SPEECH_MS
+    // Every capture is logged with its levels, so that a voice that did nothing, or a noise that
+    // started a turn, can be traced back to the thresholds.
+    console.log(`vad: capture ${kept ? 'kept' : 'discarded'} ${this.describeCapture()}`)
+    const samples = kept ? this.concat() : null
+    this.reset()
+    this.events.onSpeechEnd?.(samples ? { samples, vadMs, mode } : null)
+  }
+
+  private describeCapture(): string {
+    const { loudestRms, noiseFloor, threshold, boost } = this.levels
+    const boosts = boost === this.thresholdBoost ? `${boost}` : `${boost}→${this.thresholdBoost}`
+    const utteranceMs = (this.utteranceSamples / SAMPLE_RATE) * 1000
+    return (
+      `(loudest=${dbfs(loudestRms)} floor=${dbfs(noiseFloor)} threshold=${dbfs(threshold)} boost=${boosts} ` +
+      `utterance=${Math.round(utteranceMs)}ms voiced=${Math.round(this.voicedMs)}ms ` +
+      `speech=${Math.round(this.speechMs)}ms silence=${Math.round(this.silenceMs)}ms)`
+    )
   }
 
   /** Stopping and restarting capture must not carry the previous utterance buffer over. It reports no end, because the owner is stopping. */
