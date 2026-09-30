@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { APP_LOG_RETENTION_DAYS } from '@shared/app-log'
+import { osMessageKey } from '@shared/i18n/os-message'
 import type { AppUpdateState } from '@shared/app-update'
 import { ASIST_LICENSE, creditsOf, type Credit, type CreditGroup } from '@shared/credits'
 import { Btn, Chip, Group, Page, Row } from '../primitives'
@@ -7,7 +9,7 @@ import { platformCapabilities } from '@/platform'
 import { displayError } from '@/display-error'
 import type { Translate } from '@shared/i18n'
 
-/** The about page: the version of the app and every model and data source it uses, with its license. */
+/** The about page: the version of the app, its log, and every model and data source it uses, with its license. */
 export function AboutPage(): React.JSX.Element {
   const t = useT()
   const [version, setVersion] = useState('')
@@ -28,6 +30,11 @@ export function AboutPage(): React.JSX.Element {
         </Row>
         <Row label={t('settingsAbout.notices.label')} hint={t('settingsAbout.notices.hint')}>
           <Btn onClick={() => void window.api.licensesOpen()}>{t('settingsAbout.notices.open')}</Btn>
+        </Row>
+      </Group>
+      <Group title={t('settingsAbout.appLog.title')} description={t('settingsAbout.appLog.description', { days: APP_LOG_RETENTION_DAYS })}>
+        <Row label={t('settingsAbout.appLog.folder')} hint={t(osMessageKey('settingsAbout.appLog.folderHint', platformCapabilities().os))}>
+          <Btn onClick={() => void window.api.logsOpenFolder()}>{t(osMessageKey('settingsAbout.appLog.open', platformCapabilities().os))}</Btn>
         </Row>
       </Group>
       <Credits group="local" t={t} />

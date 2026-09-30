@@ -2319,17 +2319,17 @@ export const setup = defineMessages({
       'es-ES': 'Preparar más tarde'
     },
     laterNote: {
-      'ja-JP': 'あとで準備するものは、設定の「モデル」からいつでも準備できます。',
-      'en-US': 'Anything left for later can be prepared on the Models page in Settings.',
-      'fr-FR': 'Tout ce qui est laissé pour plus tard se prépare à tout moment sur la page Modèles des réglages.',
-      'de-DE': 'Alles, was für später bleibt, können Sie auf der Seite „Modelle“ in den Einstellungen vorbereiten.',
-      'hi-IN': 'जो कुछ बाद के लिए छोड़ा है, उसे सेटिंग्ज़ के "मॉडल" पेज पर तैयार कर सकते हैं।',
-      'id-ID': 'Apa pun yang ditinggalkan untuk nanti bisa disiapkan kapan saja di halaman Model pada Pengaturan.',
-      'it-IT': 'Tutto quello che lasci per dopo si può preparare nella pagina «Modelli» delle impostazioni.',
-      'ko-KR': "나중으로 미룬 것은 설정의 '모델'에서 언제든지 준비할 수 있습니다.",
-      'pt-BR': 'O que ficar para depois pode ser preparado na página Modelos dos ajustes.',
-      'es-419': 'Todo lo que dejes para después se puede preparar en la página Modelos de Configuración.',
-      'es-ES': 'Todo lo que dejes para más tarde se puede preparar en la página “Modelos” de Ajustes.'
+      'ja-JP': 'あとで準備するものは、設定の「概要」からいつでも準備できます。',
+      'en-US': 'Anything left for later can be prepared from the Overview page in Settings.',
+      'fr-FR': "Tout ce qui est laissé pour plus tard se prépare à tout moment depuis la page Vue d'ensemble des réglages.",
+      'de-DE': 'Alles, was für später bleibt, können Sie auf der Seite „Übersicht“ in den Einstellungen vorbereiten.',
+      'hi-IN': 'जो कुछ बाद के लिए छोड़ा है, उसे सेटिंग्ज़ के "अवलोकन" पेज से तैयार कर सकते हैं।',
+      'id-ID': 'Apa pun yang ditinggalkan untuk nanti bisa disiapkan kapan saja dari halaman Ringkasan pada Pengaturan.',
+      'it-IT': 'Tutto quello che lasci per dopo si può preparare dalla pagina «Panoramica» delle impostazioni.',
+      'ko-KR': "나중으로 미룬 것은 설정의 '개요'에서 언제든지 준비할 수 있습니다.",
+      'pt-BR': 'O que ficar para depois pode ser preparado na página Visão geral dos ajustes.',
+      'es-419': 'Todo lo que dejes para después se puede preparar desde la página Resumen de Configuración.',
+      'es-ES': 'Todo lo que dejes para más tarde se puede preparar desde la página “Resumen” de Ajustes.'
     }
   },
   summary: {
@@ -2593,19 +2593,6 @@ export const setup = defineMessages({
       'es-419': 'Lee el correo de Gmail y de iCloud, y escribe borradores',
       'es-ES': 'Lee el correo de Gmail y de iCloud, y escribe borradores'
     },
-    integrationsWhere: {
-      'ja-JP': '設定の「連携」',
-      'en-US': 'Integrations page in Settings',
-      'fr-FR': 'Page Intégrations des réglages',
-      'de-DE': 'Seite „Integrationen“ in den Einstellungen',
-      'hi-IN': 'सेटिंग्ज़ का "इंटीग्रेशन" पेज',
-      'id-ID': 'Halaman Integrasi di Pengaturan',
-      'it-IT': 'Pagina «Integrazioni» nelle impostazioni',
-      'ko-KR': "설정의 '연동'",
-      'pt-BR': 'Página Integrações dos ajustes',
-      'es-419': 'Página Integraciones de Configuración',
-      'es-ES': 'Página “Integraciones” de Ajustes'
-    },
     liveEngine: {
       'ja-JP': '声のエンジン',
       'en-US': 'Voice engine',
@@ -2644,6 +2631,32 @@ export const setup = defineMessages({
       'pt-BR': 'Lê os eventos do Google Agenda e adiciona ou altera eventos',
       'es-419': 'Lee los eventos de Google Calendar, y los agrega o los cambia',
       'es-ES': 'Lee los eventos de Google Calendar, y los añade o los cambia'
+    },
+    connectionsWhere: {
+      'ja-JP': '設定の「カレンダーとメール」',
+      'en-US': 'Calendar and mail page in Settings',
+      'fr-FR': 'Page Agenda et e-mail des réglages',
+      'de-DE': 'Seite „Kalender und E-Mail“ in den Einstellungen',
+      'hi-IN': 'सेटिंग्ज़ का "कैलेंडर और मेल" पेज',
+      'id-ID': 'Halaman Kalender dan email di Pengaturan',
+      'it-IT': 'Pagina «Calendario e posta» nelle impostazioni',
+      'ko-KR': "설정의 '캘린더와 메일'",
+      'pt-BR': 'Página Agenda e e-mail dos ajustes',
+      'es-419': 'Página Calendario y correo de Configuración',
+      'es-ES': 'Página “Calendario y correo” de Ajustes'
+    },
+    mailWhere: {
+      'ja-JP': '設定の「メール」',
+      'en-US': 'Mail page in Settings',
+      'fr-FR': 'Page Mail des réglages',
+      'de-DE': 'Seite „Mail“ in den Einstellungen',
+      'hi-IN': 'सेटिंग्ज़ का "मेल" पेज',
+      'id-ID': 'Halaman Email di Pengaturan',
+      'it-IT': 'Pagina «Mail» nelle impostazioni',
+      'ko-KR': "설정의 '메일'",
+      'pt-BR': 'Página E-mail dos ajustes',
+      'es-419': 'Página Correo de Configuración',
+      'es-ES': 'Página “Correo” de Ajustes'
     }
   },
   completion: {

@@ -197,19 +197,6 @@ export const common = defineMessages({
     'es-419': { one: '{count} más', other: '{count} más' },
     'es-ES': { one: '{count} más', other: '{count} más' }
   },
-  openModels: {
-    'ja-JP': '「モデル」を開く',
-    'en-US': 'Open Models',
-    'fr-FR': 'Ouvrir « Modèles »',
-    'de-DE': '„Modelle“ öffnen',
-    'hi-IN': '"मॉडल" खोलें',
-    'id-ID': 'Buka Model',
-    'it-IT': 'Apri «Modelli»',
-    'ko-KR': "'모델' 열기",
-    'pt-BR': 'Abrir Modelos',
-    'es-419': 'Abrir Modelos',
-    'es-ES': 'Abrir “Modelos”'
-  },
   playSample: {
     'ja-JP': '試聴する',
     'en-US': 'Play sample',

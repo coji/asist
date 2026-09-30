@@ -291,7 +291,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
             {!ready ? (
               <div className="ml-notice">
                 <p>{accounts.length === 0 ? t('mail.empty.noAccounts') : t('mail.empty.disabled')}</p>
-                <button type="button" className="cal-btn" onClick={() => openApp({ app: 'settings' })}>
+                <button type="button" className="cal-btn" onClick={() => openApp({ app: 'settings', page: 'connections' })}>
                   {t('mail.openSettings')}
                 </button>
               </div>

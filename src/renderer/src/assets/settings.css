@@ -2,8 +2,7 @@
  * The settings screen: the list of sections on the left and the body of the selected one on the right.
  * It is built like the memory and calendar screens, and the body has three levels: the page title with
  * one line of explanation, a group drawn as a card, and a row that carries a name, a short note and a
- * control. One-time setup work, such as preparing models and detecting CLIs, is collected on a single
- * "準備" ("preparation") page instead of being mixed into the everyday settings.
+ * control. What a choice needs downloaded is prepared under the row that chose it.
  */
 .st-focus {
   gap: 14px;
@@ -28,7 +27,7 @@
   flex-direction: column;
   gap: 3px;
   overflow-y: auto;
-  padding: 2px 6px 8px 2px;
+  padding: 2px 6px 2px 2px;
   scrollbar-width: none;
 }
 .st-nav {
@@ -37,7 +36,7 @@
   grid-template-columns: 20px minmax(0, 1fr);
   column-gap: 11px;
   align-items: center;
-  padding: 9px 11px;
+  padding: 5px 11px;
   border-radius: var(--ui-control-radius);
   text-align: left;
   transition: background 0.15s;
@@ -57,6 +56,7 @@
 }
 .st-nav-title {
   font-size: 13px;
+  line-height: 1.35;
   color: var(--color-holo-text);
 }
 .st-nav[aria-pressed='true'] .st-nav-title {
@@ -65,6 +65,7 @@
 .st-nav-sub {
   overflow: hidden;
   font-size: 10.5px;
+  line-height: 1.35;
   color: var(--color-holo-dim);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -72,9 +73,21 @@
 .st-nav-sub[data-tone='warn'] {
   color: var(--color-holo-peach);
 }
-.st-nav.is-setup {
-  margin-top: 8px;
-  border: 1px solid var(--color-holo-line);
+.st-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-nav-group + .st-nav-group {
+  margin-top: 5px;
+}
+.st-nav-section {
+  margin: 0;
+  padding: 0 11px 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-holo-dim);
 }
 
 .st-main {
@@ -147,6 +160,102 @@
 }
 .st-group-body {
   padding-bottom: 4px;
+}
+.st-group-body:first-child {
+  padding-top: 4px;
+}
+
+/* What a row still needs before it works, under that row: the reason, the button that fetches it and the
+   progress while it runs. */
+.st-prepline {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0 16px 12px;
+  padding: 9px 12px;
+  border: 1px solid rgb(from var(--color-holo-peach) r g b / 0.35);
+  border-radius: var(--ui-box-radius);
+  background: rgb(from var(--color-holo-peach) r g b / 0.06);
+}
+.st-prepline > svg {
+  color: var(--color-holo-peach);
+}
+.st-prepline-text {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--color-holo-text);
+}
+.st-prepline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.st-prepline > .st-progress-block {
+  grid-column: 1 / -1;
+}
+.st-group-body > .st-progress-block,
+.st-group-body > div > .st-progress-block {
+  margin: 0 16px 12px;
+}
+
+/* The overview's current setup: the path one utterance takes, each step a tile that opens its page. */
+.st-flow {
+  display: flex;
+  padding: 8px 16px 16px;
+}
+.st-flow-step {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+.st-flow-arrow {
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 8px;
+  color: var(--color-holo-dim);
+}
+.st-flow-tile {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-box-radius);
+  background: var(--ui-box);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.st-flow-tile:hover {
+  border-color: var(--ui-line-active);
+}
+.st-flow-title {
+  font-size: 11px;
+  color: var(--color-holo-muted);
+}
+.st-flow-value {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-text-strong);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.st-flow-sub {
+  font-size: 11px;
+  color: var(--color-holo-dim);
+}
+.st-flow-tile .st-chip {
+  margin-top: auto;
+}
+.st-flow-value,
+.st-flow-sub {
+  margin-bottom: 4px;
 }
 
 /* The theme picker: the picture of each theme with its name and a line about it. The chosen one is ringed with
@@ -578,52 +687,6 @@ textarea.st-input.st-roots {
   flex: 1;
 }
 
-.st-prep {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.st-prep-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 15px 16px 14px;
-  border: 1px solid var(--color-holo-line);
-  border-radius: var(--card-radius);
-  background: var(--ui-box);
-}
-.st-prep-card[data-state='ready'] {
-  border-color: rgb(from var(--color-holo-mint) r g b / 0.2);
-}
-.st-prep-card[data-state='missing'] {
-  border-color: rgb(from var(--color-holo-peach) r g b / 0.28);
-}
-.st-prep-card > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.st-prep-card > header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-holo-text);
-}
-.st-prep-card > p {
-  margin: 0;
-  min-height: 34px;
-  font-size: 11.5px;
-  line-height: 1.55;
-  color: var(--color-holo-dim);
-}
-.st-prep-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-}
 /*
  * The bar takes the whole width of its row, on a line of its own beside buttons. Sized by its label, it
  * grew and shrank as the label's text changed during a download.
@@ -657,9 +720,6 @@ textarea.st-input.st-roots {
 @media (max-width: 1400px) {
   .st-side {
     width: 200px;
-  }
-  .st-prep {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

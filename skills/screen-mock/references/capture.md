@@ -7,9 +7,9 @@ The tools are `scripts/cdp/` from the `visual-debugging` skill. This file covers
 ```bash
 OUT=/path/to/scratch/mock-settings
 npm run demo:drive -- --launch --size 1440x900 \
-  --goto /preview/screens/settings --shot page-conversation \
+  --goto /preview/screens/settings --shot page-overview \
   --click '.st-nav[data-page="voice"]' --shot page-voice \
-  --click '.st-nav[data-page="models"]' --shot page-models \
+  --click '.st-nav[data-page="memory"]' --shot page-memory \
   --out "$OUT"
 ```
 

@@ -14,99 +14,6 @@ export const settingsConversation = defineMessages({
     'es-419': 'Conversación',
     'es-ES': 'Conversación'
   },
-  lead: {
-    'ja-JP': '声のエンジン、会話に使うモデル、キャラクター、会話ログを設定します。',
-    'en-US': 'Set the voice engine, the models used in conversation, the persona and the conversation log.',
-    'fr-FR': 'Réglez le moteur vocal, les modèles utilisés dans la conversation, la personnalité et le log des conversations.',
-    'de-DE': 'Stellen Sie die Sprach-Engine, die Modelle für das Gespräch, den Charakter und das Gesprächsprotokoll ein.',
-    'hi-IN': 'वॉइस इंजन, बातचीत में काम आने वाले मॉडल, किरदार और बातचीत का लॉग यहाँ तय करें।',
-    'id-ID': 'Atur mesin suara, model yang dipakai dalam percakapan, karakter, dan log percakapan.',
-    'it-IT': 'Imposta il motore vocale, i modelli usati nella conversazione, la personalità e il registro delle conversazioni.',
-    'ko-KR': '음성 엔진, 대화에 쓸 모델, 캐릭터, 대화 로그를 설정합니다.',
-    'pt-BR': 'Defina o motor de voz, os modelos usados na conversa, a personalidade e o registro da conversa.',
-    'es-419': 'Define el motor de voz, los modelos que se usan en la conversación, la personalidad y el registro de la conversación.',
-    'es-ES': 'Configura el motor de voz, los modelos que se usan en la conversación, la personalidad y el registro de la conversación.'
-  },
-  language: {
-    title: {
-      'ja-JP': '言語と地域',
-      'en-US': 'Language and region',
-      'fr-FR': 'Langue et région',
-      'de-DE': 'Sprache und Region',
-      'hi-IN': 'भाषा और क्षेत्र',
-      'id-ID': 'Bahasa dan wilayah',
-      'it-IT': 'Lingua e regione',
-      'ko-KR': '언어와 지역',
-      'pt-BR': 'Idioma e região',
-      'es-419': 'Idioma y región',
-      'es-ES': 'Idioma y región'
-    },
-    description: {
-      'ja-JP': '話す言葉と、天気やニュースの対象にする国を選びます。画面の言語は右上で変えます。',
-      'en-US': 'Choose the language you talk in and the country weather and news come from. The interface language is at the top right.',
-      'fr-FR': "Choisissez la langue dans laquelle vous parlez et le pays de la météo et des actualités. La langue de l'interface se trouve en haut à droite.",
-      'de-DE': 'Wählen Sie die Sprache, in der Sie sprechen, und das Land für Wetter und Nachrichten. Die Sprache der Oberfläche steht oben rechts.',
-      'hi-IN': 'आप किस भाषा में बात करेंगे और मौसम तथा खबरें किस देश की होंगी, यह चुनें। स्क्रीन की भाषा ऊपर दाईं ओर है।',
-      'id-ID': 'Pilih bahasa yang Anda pakai untuk bicara dan negara asal cuaca serta berita. Bahasa antarmuka ada di kanan atas.',
-      'it-IT': "Scegli la lingua in cui parli e il paese di meteo e notizie. La lingua dell'interfaccia è in alto a destra.",
-      'ko-KR': '말할 언어와, 날씨와 뉴스의 대상이 되는 나라를 고릅니다. 화면의 언어는 오른쪽 위에서 바꿉니다.',
-      'pt-BR': 'Escolha o idioma em que você fala e o país do tempo e das notícias. O idioma da interface fica no canto superior direito.',
-      'es-419': 'Elige el idioma en el que hablas y el país del clima y las noticias. El idioma de la interfaz está arriba a la derecha.',
-      'es-ES': 'Elige el idioma en el que hablas y el país del tiempo y las noticias. El idioma de la interfaz está arriba a la derecha.'
-    },
-    conversation: {
-      'ja-JP': '会話の言語',
-      'en-US': 'Conversation language',
-      'fr-FR': 'Langue de la conversation',
-      'de-DE': 'Gesprächssprache',
-      'hi-IN': 'बातचीत की भाषा',
-      'id-ID': 'Bahasa percakapan',
-      'it-IT': 'Lingua della conversazione',
-      'ko-KR': '대화의 언어',
-      'pt-BR': 'Idioma da conversa',
-      'es-419': 'Idioma de la conversación',
-      'es-ES': 'Idioma de la conversación'
-    },
-    conversationHint: {
-      'ja-JP': '相槌とターンテイキングは日本語だけで動きます。選べる読み上げも言語で変わります。',
-      'en-US': 'Backchannels and turn-taking work in Japanese only. The speech engines on offer change with the language.',
-      'fr-FR': "Les acquiescements et la gestion des tours de parole n'existent qu'en japonais. Les moteurs de synthèse proposés changent selon la langue.",
-      'de-DE': 'Hörersignale und die Sprecherwechsel-Erkennung gibt es nur auf Japanisch. Die angebotenen Sprachausgaben ändern sich mit der Sprache.',
-      'hi-IN': 'हुँकारे और बोलने की बारी का अनुमान सिर्फ़ जापानी में चलते हैं। जो स्पीच इंजन मिलते हैं, वे भी भाषा के साथ बदलते हैं।',
-      'id-ID': 'Tanggapan singkat dan pengaturan giliran bicara hanya jalan dalam bahasa Jepang. Mesin pembaca yang ditawarkan juga berubah mengikuti bahasa.',
-      'it-IT': "I segnali di ascolto e la gestione dei turni esistono solo in giapponese. Anche i motori di lettura offerti cambiano con la lingua.",
-      'ko-KR': '맞장구와 턴테이킹은 일본어에서만 작동합니다. 고를 수 있는 읽어주기 엔진도 언어에 따라 달라집니다.',
-      'pt-BR': 'As interjeições de apoio e a troca de turno funcionam só em japonês. Os motores de leitura oferecidos também mudam com o idioma.',
-      'es-419': 'Las muletillas de escucha y los turnos de habla funcionan solo en japonés. Los motores de lectura disponibles también cambian con el idioma.',
-      'es-ES': 'Las muletillas de escucha y los turnos de habla funcionan solo en japonés. Los motores de lectura disponibles también cambian con el idioma.'
-    },
-    region: {
-      'ja-JP': '地域',
-      'en-US': 'Region',
-      'fr-FR': 'Région',
-      'de-DE': 'Region',
-      'hi-IN': 'क्षेत्र',
-      'id-ID': 'Wilayah',
-      'it-IT': 'Regione',
-      'ko-KR': '지역',
-      'pt-BR': 'Região',
-      'es-419': 'Región',
-      'es-ES': 'Región'
-    },
-    regionHint: {
-      'ja-JP': '天気とニュースの対象になり、日付や数値の書き方も合わせます。',
-      'en-US': 'It decides where weather and news come from, and how dates and numbers are written.',
-      'fr-FR': "Elle détermine la provenance de la météo et des actualités, ainsi que l'écriture des dates et des nombres.",
-      'de-DE': 'Sie bestimmt, woher Wetter und Nachrichten kommen und wie Datum und Zahlen geschrieben werden.',
-      'hi-IN': 'इससे तय होता है कि मौसम और खबरें कहाँ की हों, और तारीख़ तथा संख्याएँ किस तरह लिखी जाएँ।',
-      'id-ID': 'Ini menentukan asal cuaca dan berita, serta cara penulisan tanggal dan angka.',
-      'it-IT': 'Stabilisce da dove arrivano meteo e notizie e come si scrivono date e numeri.',
-      'ko-KR': '날씨와 뉴스의 대상이 되고, 날짜와 숫자의 표기도 여기에 맞춥니다.',
-      'pt-BR': 'Ela define de onde vêm o tempo e as notícias, e como datas e números são escritos.',
-      'es-419': 'Define de dónde vienen el clima y las noticias, y cómo se escriben las fechas y los números.',
-      'es-ES': 'Define de dónde vienen el tiempo y las noticias, y cómo se escriben las fechas y los números.'
-    }
-  },
   engine: {
     title: {
       'ja-JP': '声のエンジン',
@@ -185,19 +92,6 @@ export const settingsConversation = defineMessages({
       'pt-BR': 'Não foi possível alterar o motor de voz',
       'es-419': 'No se pudo cambiar el motor de voz',
       'es-ES': 'No se ha podido cambiar el motor de voz'
-    },
-    recognitionNotReady: {
-      'ja-JP': '準備するまでマイクは使えません。',
-      'en-US': "The microphone can't be used until this is prepared.",
-      'fr-FR': "Le microphone reste inutilisable tant qu'elle n'est pas préparée.",
-      'de-DE': 'Bis sie vorbereitet ist, lässt sich das Mikrofon nicht verwenden.',
-      'hi-IN': 'इसे तैयार करने तक माइक्रोफ़ोन इस्तेमाल नहीं हो सकता।',
-      'id-ID': 'Mikrofon tidak bisa dipakai sampai ini disiapkan.',
-      'it-IT': 'Il microfono non si può usare finché non viene preparato.',
-      'ko-KR': '준비하기 전에는 마이크를 사용할 수 없습니다.',
-      'pt-BR': 'O microfone só pode ser usado depois que o reconhecimento estiver preparado.',
-      'es-419': 'No se puede usar el micrófono hasta que esté preparado.',
-      'es-ES': 'No se puede usar el micrófono hasta que esté preparado.'
     }
   },
   models: {
@@ -465,32 +359,6 @@ export const settingsConversation = defineMessages({
       'es-419': 'Clave de API de {provider}',
       'es-ES': 'Clave de API de {provider}'
     },
-    keyVerified: {
-      'ja-JP': '{envKey} を保存し、API で確かめました。',
-      'en-US': '{envKey} is saved and was checked against the API.',
-      'fr-FR': "{envKey} est enregistrée et a été vérifiée auprès de l'API.",
-      'de-DE': '{envKey} ist gespeichert und wurde gegen die API geprüft.',
-      'hi-IN': '{envKey} सेव है और API से जाँच ली गई है।',
-      'id-ID': '{envKey} tersimpan dan sudah diperiksa lewat API.',
-      'it-IT': "{envKey} è salvato ed è stato verificato con l'API.",
-      'ko-KR': '{envKey} 값을 저장하고 API로 확인했습니다.',
-      'pt-BR': 'A chave {envKey} está salva e foi verificada na API.',
-      'es-419': '{envKey} está guardada y se verificó con la API.',
-      'es-ES': '{envKey} está guardada y se ha comprobado con la API.'
-    },
-    keySaved: {
-      'ja-JP': '{envKey} を保存しています。',
-      'en-US': '{envKey} is saved.',
-      'fr-FR': '{envKey} est enregistrée.',
-      'de-DE': '{envKey} ist gespeichert.',
-      'hi-IN': '{envKey} सेव है।',
-      'id-ID': '{envKey} tersimpan.',
-      'it-IT': '{envKey} è salvato.',
-      'ko-KR': '{envKey} 값이 저장되어 있습니다.',
-      'pt-BR': 'A chave {envKey} está salva.',
-      'es-419': '{envKey} está guardada.',
-      'es-ES': '{envKey} está guardada.'
-    },
     keyMissing: {
       'ja-JP': '{envKey} が設定されていません。保存するまで、このモデルは使えません。',
       'en-US': '{envKey} is not set. This model cannot be used until you save it.',
@@ -504,32 +372,6 @@ export const settingsConversation = defineMessages({
       'es-419': '{envKey} no está definida. Este modelo no se puede usar hasta que la guardes.',
       'es-ES': '{envKey} no está configurada. Este modelo no se puede usar hasta que la guardes.'
     },
-    verified: {
-      'ja-JP': '検証済み',
-      'en-US': 'Verified',
-      'fr-FR': 'Vérifiée',
-      'de-DE': 'Geprüft',
-      'hi-IN': 'जाँची हुई',
-      'id-ID': 'Terverifikasi',
-      'it-IT': 'Verificata',
-      'ko-KR': '검증됨',
-      'pt-BR': 'Verificada',
-      'es-419': 'Verificada',
-      'es-ES': 'Verificada'
-    },
-    saved: {
-      'ja-JP': '保存済み',
-      'en-US': 'Saved',
-      'fr-FR': 'Enregistrée',
-      'de-DE': 'Gespeichert',
-      'hi-IN': 'सेव है',
-      'id-ID': 'Tersimpan',
-      'it-IT': 'Salvata',
-      'ko-KR': '저장됨',
-      'pt-BR': 'Salva',
-      'es-419': 'Guardada',
-      'es-ES': 'Guardada'
-    },
     notSet: {
       'ja-JP': '未設定',
       'en-US': 'Not set',
@@ -542,19 +384,6 @@ export const settingsConversation = defineMessages({
       'pt-BR': 'Não definida',
       'es-419': 'Sin definir',
       'es-ES': 'Sin configurar'
-    },
-    openIntegrations: {
-      'ja-JP': '「連携」を開く',
-      'en-US': 'Open Integrations',
-      'fr-FR': 'Ouvrir « Intégrations »',
-      'de-DE': '„Integrationen“ öffnen',
-      'hi-IN': '"इंटीग्रेशन" खोलें',
-      'id-ID': 'Buka Integrasi',
-      'it-IT': 'Apri «Integrazioni»',
-      'ko-KR': "'연동' 열기",
-      'pt-BR': 'Abrir Integrações',
-      'es-419': 'Abrir Integraciones',
-      'es-ES': 'Abrir “Integraciones”'
     },
     webSearch: {
       'ja-JP': 'Web 検索',
@@ -780,209 +609,17 @@ export const settingsConversation = defineMessages({
       'es-ES': '{envKey} no está configurada. Este motor no se puede usar hasta que la guardes.'
     }
   },
-  persona: {
-    title: {
-      'ja-JP': 'キャラクター',
-      'en-US': 'Character',
-      'fr-FR': 'Personnalité',
-      'de-DE': 'Charakter',
-      'hi-IN': 'किरदार',
-      'id-ID': 'Karakter',
-      'it-IT': 'Personalità',
-      'ko-KR': '캐릭터',
-      'pt-BR': 'Personalidade',
-      'es-419': 'Personalidad',
-      'es-ES': 'Personalidad'
-    },
-    description: {
-      'ja-JP': 'ASIST の人柄と役割です。会話のたびに指示として渡します。',
-      'en-US': "ASIST's character and role. It is given to the model at the start of every conversation.",
-      'fr-FR': "La personnalité et le rôle d'ASIST. Ils sont donnés au modèle au début de chaque conversation.",
-      'de-DE': 'Charakter und Rolle von ASIST. Der Text geht zu Beginn jedes Gesprächs an das Modell.',
-      'hi-IN': 'ASIST का स्वभाव और भूमिका। यह हर बातचीत की शुरुआत में मॉडल को दिया जाता है।',
-      'id-ID': 'Watak dan peran ASIST. Diberikan ke model di awal setiap percakapan.',
-      'it-IT': "La personalità e il ruolo di ASIST. Vengono passati al modello all'inizio di ogni conversazione.",
-      'ko-KR': 'ASIST의 성격과 역할입니다. 대화할 때마다 지시로 전달합니다.',
-      'pt-BR': 'A personalidade e o papel do ASIST. É passada ao modelo no início de cada conversa.',
-      'es-419': 'La personalidad y el rol de ASIST. Se le entrega al modelo al inicio de cada conversación.',
-      'es-ES': 'La personalidad y la función de ASIST. Se le pasa al modelo al empezar cada conversación.'
-    },
-    edit: {
-      'ja-JP': '編集する',
-      'en-US': 'Edit',
-      'fr-FR': 'Modifier',
-      'de-DE': 'Bearbeiten',
-      'hi-IN': 'एडिट करें',
-      'id-ID': 'Edit',
-      'it-IT': 'Modifica',
-      'ko-KR': '편집',
-      'pt-BR': 'Editar',
-      'es-419': 'Editar',
-      'es-ES': 'Editar'
-    }
-  },
-  log: {
-    title: {
-      'ja-JP': '会話ログ',
-      'en-US': 'Conversation log',
-      'fr-FR': 'Log des conversations',
-      'de-DE': 'Gesprächsprotokoll',
-      'hi-IN': 'बातचीत का लॉग',
-      'id-ID': 'Log percakapan',
-      'it-IT': 'Registro delle conversazioni',
-      'ko-KR': '대화 로그',
-      'pt-BR': 'Registro da conversa',
-      'es-419': 'Registro de la conversación',
-      'es-ES': 'Registro de la conversación'
-    },
-    description: {
-      'ja-JP': '会話の全文を日別のファイルに保存します。履歴の要約と記憶の整理は、このログから作ります。',
-      'en-US': 'Saves the whole conversation in one file per day. The history summary and memory curation are built from it.',
-      'fr-FR': "Enregistre l'intégralité de la conversation dans un fichier par jour. Le résumé de l'historique et l'organisation de la mémoire en sont tirés.",
-      'de-DE': 'Speichert das ganze Gespräch in einer Datei pro Tag. Die Zusammenfassung des Verlaufs und die Gedächtnispflege entstehen daraus.',
-      'hi-IN': 'पूरी बातचीत हर दिन की एक फ़ाइल में सेव होती है। पिछली बातों का सारांश और याददाश्त की सफ़ाई इसी से बनते हैं।',
-      'id-ID': 'Menyimpan seluruh percakapan dalam satu file per hari. Ringkasan riwayat dan penataan ingatan disusun dari log ini.',
-      'it-IT': "Salva l'intera conversazione in un file al giorno. Il riassunto dello storico e il riordino della memoria si costruiscono da qui.",
-      'ko-KR': '대화 전문을 날짜별 파일에 저장합니다. 기록 요약과 기억 정리는 이 로그에서 만듭니다.',
-      'pt-BR': 'Salva a conversa inteira em um arquivo por dia. O resumo do histórico e a organização da memória são feitos a partir dele.',
-      'es-419': 'Guarda toda la conversación en un archivo por día. El resumen del historial y la organización de la memoria se construyen a partir de él.',
-      'es-ES': 'Guarda toda la conversación en un archivo por día. El resumen del historial y la organización de la memoria se crean a partir de él.'
-    },
-    retention: {
-      'ja-JP': '保存日数',
-      'en-US': 'Days kept',
-      'fr-FR': 'Jours de conservation',
-      'de-DE': 'Aufbewahrung in Tagen',
-      'hi-IN': 'कितने दिन रखें',
-      'id-ID': 'Jumlah hari disimpan',
-      'it-IT': 'Giorni di conservazione',
-      'ko-KR': '보관 일수',
-      'pt-BR': 'Dias mantidos',
-      'es-419': 'Días que se conserva',
-      'es-ES': 'Días que se conserva'
-    },
-    retentionHint: {
-      'ja-JP': '日付が変わるときに、保存日数を過ぎたファイルを削除します。',
-      'en-US': 'Files older than this are deleted when the date changes.',
-      'fr-FR': 'Au changement de date, les fichiers plus anciens que cette durée sont supprimés.',
-      'de-DE': 'Ältere Dateien werden gelöscht, sobald das Datum wechselt.',
-      'hi-IN': 'इससे पुरानी फ़ाइलें, दिन बदलने पर मिटा दी जाती हैं।',
-      'id-ID': 'File yang lebih tua dari itu dihapus saat tanggalnya berganti.',
-      'it-IT': 'Al cambio di data vengono eliminati i file che superano i giorni di conservazione.',
-      'ko-KR': '날짜가 바뀔 때, 보관 일수가 지난 파일을 삭제합니다.',
-      'pt-BR': 'Os arquivos mais antigos que isso são apagados na virada do dia.',
-      'es-419': 'Los archivos más antiguos que esto se eliminan al cambiar la fecha.',
-      'es-ES': 'Los archivos más antiguos que eso se eliminan al cambiar la fecha.'
-    },
-    retentionLabel: {
-      'ja-JP': '会話ログの保存日数',
-      'en-US': 'Days the conversation log is kept',
-      'fr-FR': 'Jours de conservation du log des conversations',
-      'de-DE': 'Tage, die das Gesprächsprotokoll bleibt',
-      'hi-IN': 'बातचीत का लॉग कितने दिन रखा जाए',
-      'id-ID': 'Jumlah hari log percakapan disimpan',
-      'it-IT': 'Giorni di conservazione del registro delle conversazioni',
-      'ko-KR': '대화 로그의 보관 일수',
-      'pt-BR': 'Dias que o registro da conversa é mantido',
-      'es-419': 'Días que se conserva el registro de la conversación',
-      'es-ES': 'Días que se conserva el registro de la conversación'
-    }
-  },
-  appLog: {
-    title: {
-      'ja-JP': '動作ログ',
-      'en-US': 'App log',
-      'fr-FR': "Log de l'app",
-      'de-DE': 'App-Protokoll',
-      'hi-IN': 'ऐप का लॉग',
-      'id-ID': 'Log aplikasi',
-      'it-IT': "Registro dell'app",
-      'ko-KR': '동작 로그',
-      'pt-BR': 'Registro do app',
-      'es-419': 'Registro de la app',
-      'es-ES': 'Registro de la app'
-    },
-    description: {
-      'ja-JP': 'アプリのエラーや警告を日別のファイルに残します。不具合を報告するときに添付できます。API キーの値は伏せて記録し、{days} 日を過ぎたファイルは削除します。',
-      'en-US': 'Keeps the errors and warnings of the app in one file per day, which you can attach to a bug report. API key values are hidden, and files older than {days} days are deleted.',
-      'fr-FR': "Conserve les erreurs et les avertissements de l'app dans un fichier par jour, que vous pouvez joindre à un rapport d'anomalie. Les valeurs des clés API sont masquées, et les fichiers de plus de {days} jours sont supprimés.",
-      'de-DE': 'Hält Fehler und Warnungen der App in einer Datei pro Tag fest, die Sie einem Fehlerbericht anhängen können. Werte von API-Schlüsseln werden verborgen, und Dateien, die älter als {days} Tage sind, werden gelöscht.',
-      'hi-IN': 'ऐप की एरर और चेतावनियाँ हर दिन की एक फ़ाइल में रहती हैं, जिसे आप किसी गड़बड़ी की रिपोर्ट के साथ भेज सकते हैं। API कुंजी की वैल्यू छिपाकर रखी जाती है, और {days} दिन से पुरानी फ़ाइलें मिटा दी जाती हैं।',
-      'id-ID': 'Menyimpan kesalahan dan peringatan aplikasi dalam satu file per hari, yang bisa Anda lampirkan ke laporan masalah. Nilai kunci API disembunyikan, dan file yang lebih tua dari {days} hari dihapus.',
-      'it-IT': "Conserva gli errori e gli avvisi dell'app in un file al giorno, che puoi allegare a una segnalazione. I valori delle chiavi API vengono nascosti e i file più vecchi di {days} giorni vengono eliminati.",
-      'ko-KR': '앱의 오류와 경고를 날짜별 파일에 남깁니다. 문제를 알릴 때 첨부할 수 있습니다. API 키 값은 가려서 기록하고, {days}일이 지난 파일은 삭제합니다.',
-      'pt-BR': 'Guarda os erros e avisos do app em um arquivo por dia, que você pode anexar a um relato de problema. Os valores das chaves de API ficam ocultos, e os arquivos com mais de {days} dias são apagados.',
-      'es-419': 'Conserva los errores y las advertencias de la app en un archivo por día, que puedes adjuntar a un reporte de fallas. Los valores de las claves de API quedan ocultos, y los archivos de más de {days} días se eliminan.',
-      'es-ES': 'Guarda los errores y los avisos de la app en un archivo por día, que puedes adjuntar a un informe de errores. Los valores de las claves de API se ocultan, y los archivos de más de {days} días se eliminan.'
-    },
-    folder: {
-      'ja-JP': 'ログのフォルダ',
-      'en-US': 'Log folder',
-      'fr-FR': 'Dossier des logs',
-      'de-DE': 'Ordner der Protokolle',
-      'hi-IN': 'लॉग का फ़ोल्डर',
-      'id-ID': 'Folder log',
-      'it-IT': 'Cartella del registro',
-      'ko-KR': '로그 폴더',
-      'pt-BR': 'Pasta dos registros',
-      'es-419': 'Carpeta de registros',
-      'es-ES': 'Carpeta del registro'
-    },
-    folderHint: {
-      macos: {
-        'ja-JP': '~/Library/Logs の下にあります。',
-        'en-US': 'It is under ~/Library/Logs.',
-        'fr-FR': 'Il se trouve sous ~/Library/Logs.',
-        'de-DE': 'Er liegt unter ~/Library/Logs.',
-        'hi-IN': 'यह ~/Library/Logs के नीचे है।',
-        'id-ID': 'Ada di bawah ~/Library/Logs.',
-        'it-IT': 'Si trova sotto ~/Library/Logs.',
-        'ko-KR': '~/Library/Logs 아래에 있습니다.',
-        'pt-BR': 'Fica em ~/Library/Logs.',
-        'es-419': 'Está dentro de ~/Library/Logs.',
-        'es-ES': 'Está dentro de ~/Library/Logs.'
-      },
-      windows: {
-        'ja-JP': '%APPDATA%\\asist\\logs にあります。',
-        'en-US': 'It is in %APPDATA%\\asist\\logs.',
-        'fr-FR': 'Il se trouve dans %APPDATA%\\asist\\logs.',
-        'de-DE': 'Er liegt unter %APPDATA%\\asist\\logs.',
-        'hi-IN': 'यह %APPDATA%\\asist\\logs में है।',
-        'id-ID': 'Ada di %APPDATA%\\asist\\logs.',
-        'it-IT': 'Si trova in %APPDATA%\\asist\\logs.',
-        'ko-KR': '%APPDATA%\\asist\\logs에 있습니다.',
-        'pt-BR': 'Fica em %APPDATA%\\asist\\logs.',
-        'es-419': 'Está en %APPDATA%\\asist\\logs.',
-        'es-ES': 'Está en %APPDATA%\\asist\\logs.'
-      }
-    },
-    open: {
-      macos: {
-        'ja-JP': 'Finder で開く',
-        'en-US': 'Open in Finder',
-        'fr-FR': 'Afficher dans le Finder',
-        'de-DE': 'Im Finder öffnen',
-        'hi-IN': 'Finder में खोलें',
-        'id-ID': 'Buka di Finder',
-        'it-IT': 'Apri nel Finder',
-        'ko-KR': 'Finder에서 열기',
-        'pt-BR': 'Abrir no Finder',
-        'es-419': 'Abrir en el Finder',
-        'es-ES': 'Abrir en el Finder'
-      },
-      windows: {
-        'ja-JP': 'エクスプローラーで開く',
-        'en-US': 'Open in File Explorer',
-        'fr-FR': "Ouvrir dans l'Explorateur de fichiers",
-        'de-DE': 'Im Explorer öffnen',
-        'hi-IN': 'फ़ाइल एक्सप्लोरर में खोलें',
-        'id-ID': 'Buka di Penjelajah File',
-        'it-IT': 'Apri in Esplora file',
-        'ko-KR': '파일 탐색기에서 열기',
-        'pt-BR': 'Abrir no Explorador de Arquivos',
-        'es-419': 'Abrir en el Explorador de archivos',
-        'es-ES': 'Abrir en el Explorador de archivos'
-      }
-    }
+  lead: {
+    'ja-JP': '声のエンジンと、会話に使うモデルを選びます。',
+    'en-US': 'Choose the voice engine and the models the conversation uses.',
+    'fr-FR': 'Choisissez le moteur vocal et les modèles utilisés pour la conversation.',
+    'de-DE': 'Wählen Sie die Sprach-Engine und die Modelle für das Gespräch.',
+    'hi-IN': 'आवाज़ का इंजन और बातचीत में इस्तेमाल होने वाले मॉडल चुनें।',
+    'id-ID': 'Pilih mesin suara dan model yang dipakai untuk percakapan.',
+    'it-IT': 'Scegli il motore vocale e i modelli usati nella conversazione.',
+    'ko-KR': '음성 엔진과 대화에 쓸 모델을 고릅니다.',
+    'pt-BR': 'Escolha o motor de voz e os modelos usados na conversa.',
+    'es-419': 'Elige el motor de voz y los modelos que usa la conversación.',
+    'es-ES': 'Elige el motor de voz y los modelos que usa la conversación.'
   }
 })

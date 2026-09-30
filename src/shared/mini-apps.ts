@@ -17,7 +17,20 @@ export const miniAppAvailable = (app: MiniApp, capabilities: Pick<PlatformCapabi
   app !== 'calendar' || capabilities.calendar !== null
 
 /** The pages of the settings mini app, in the order the list on the left shows them. */
-export const SETTINGS_PAGES = ['conversation', 'persona', 'voice', 'appearance', 'memory', 'agent', 'integrations', 'models', 'usage', 'about'] as const
+export const SETTINGS_PAGES = [
+  'overview',
+  'conversation',
+  'voice',
+  'persona',
+  'memory',
+  'agent',
+  'connections',
+  'language',
+  'appearance',
+  'apiKeys',
+  'usage',
+  'about'
+] as const
 export type SettingsPage = (typeof SETTINGS_PAGES)[number]
 
 export const MAIL_BOXES = [...MAIL_VIEWS, 'drafts'] as const
@@ -116,7 +129,7 @@ export function placeMiniApp(current: MiniAppView | null, target: MiniAppTarget,
       return { app: 'memory', file: target.file ?? base.file }
     }
     case 'settings': {
-      const base = current?.app === 'settings' ? current : { app: 'settings' as const, page: 'conversation' as const }
+      const base = current?.app === 'settings' ? current : { app: 'settings' as const, page: 'overview' as const }
       return { app: 'settings', page: target.page ?? base.page }
     }
   }

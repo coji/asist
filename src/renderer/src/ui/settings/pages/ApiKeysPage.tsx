@@ -6,28 +6,15 @@ import type { MessageKey } from '@shared/i18n'
 import { keyReadable, type ApiKeyState } from '@shared/ipc'
 import { useStatusStore, useToastStore } from '@/state/stores'
 import type { SettingsContext } from '../context'
-import { CalendarSettings } from '../CalendarSettings'
-import { MailSettings } from '../MailSettings'
 import { Btn, Chip, Group, Page, type ChipTone } from '../primitives'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
-import { platformCapabilities } from '@/platform'
 
-/** What the page's lead says it connects to, for each calendar a machine can have. */
-const LEAD = {
-  eventkit: 'settingsIntegrations.lead.withCalendar',
-  google: 'settingsIntegrations.lead.withGoogleCalendar',
-  none: 'settingsIntegrations.lead.withoutCalendar'
-} as const satisfies Record<string, MessageKey>
-
-/** The integrations page: the calendar where this machine has one, mail, and the API key of each provider. */
-export function IntegrationsPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
+/** The API key of each provider, on a page of its own. */
+export function ApiKeysPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const t = useT()
-  const { calendar } = platformCapabilities()
   return (
-    <Page title={t('settingsIntegrations.title')} lead={t(LEAD[calendar ?? 'none'])}>
-      {calendar !== null && <CalendarSettings settings={ctx.settings} />}
-      <MailSettings ctx={ctx} />
+    <Page title={t('settings.pages.apiKeys')} lead={t('settingsIntegrations.apiKeys.description')}>
       <ApiKeys ctx={ctx} />
     </Page>
   )
@@ -52,7 +39,7 @@ function ApiKeys({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   // The key of the provider behind a live engine is needed for that engine too, which the hint names.
   const liveEngine = isLiveEngine(settings.voiceEngine) ? LIVE_ENGINE_INFO[settings.voiceEngine] : null
   return (
-    <Group title={t('settingsIntegrations.apiKeys.title')} description={t('settingsIntegrations.apiKeys.description')}>
+    <Group>
       {LLM_PROVIDERS.map((provider) => {
         const info = LLM_PROVIDER_INFO[provider]
         const state = status?.llmKeys[provider] ?? 'missing'

@@ -288,7 +288,7 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
       settings={settings}
       status={status}
       error={error}
-      onSettings={() => openApp({ app: 'settings' })}
+      onSettings={() => openApp({ app: 'settings', page: 'connections' })}
       onRetry={() => setRevision((v) => v + 1)}
       onRequestAccess={() =>
         window.api

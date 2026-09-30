@@ -106,7 +106,8 @@ const api = {
       recommendationReason: '32GBメモリではQwen3-ASRを推奨します。',
       totalMemoryGb: 32,
       modelInstalled: false
-    }
+    },
+    qwenTts: { recommended: true, modelInstalled: false }
   })),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false })),
   embeddingStatus: vi.fn(async (): Promise<EmbeddingStatus> => embeddingReady),
@@ -116,6 +117,9 @@ const api = {
   listSpeakers: vi.fn(async () => []),
   hotkeyStatus: vi.fn(async (): Promise<HotkeyStatus> => 'registered'),
   embeddingPrepare: vi.fn(async () => ({ ok: true, message: '' })),
+  prepareAsrModel: vi.fn(async (_model: string) => ({ ok: true, message: '' })),
+  cancelAsrPreparation: vi.fn(async () => {}),
+  vapPrepare: vi.fn(async () => ({ ok: true, message: '' })),
   onSetupProgress: vi.fn((_callback: (p: SetupProgress) => void) => () => {}),
   openExternal: vi.fn(async () => {}),
   appVersion: vi.fn(async () => '1.0.0'),
@@ -174,26 +178,62 @@ const type = (field: HTMLInputElement | HTMLTextAreaElement, value: string): voi
 }
 const leave = (field: HTMLElement): void => void field.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
 const title = (view: HTMLElement): string | null | undefined => view.querySelector('.st-page > header h2')?.textContent
+const sub = (view: HTMLElement, page: string): Element | null => nav(view, page).querySelector('.st-nav-sub')
+/** The rows of the overview's list of what is turned on and cannot work yet, by their name. */
+const pendingLabels = (view: HTMLElement): Array<string | null | undefined> =>
+  [...view.querySelectorAll('[data-pending] .st-row-label')].map((label) => label.textContent)
 
 describe('settings dialog', () => {
-  it('lists the pages in order, each with its summary line, and the count of items that still need setup', async () => {
+  it('opens on the overview and lists the pages in order under their headings, each with its summary line', async () => {
     const view = await render()
+    expect(title(view)).toBe(t('settings.pages.overview'))
     expect([...view.querySelectorAll('.st-nav-title')].map((el) => el.textContent)).toEqual(SETTINGS_PAGES.map((page) => t(`settings.pages.${page}`)))
-    expect(nav(view, 'appearance').querySelector('.st-nav-sub')?.textContent).toBe(t('settingsAppearance.themes.future.name'))
-    expect(nav(view, 'usage').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.usage', { amount: '$1.50' }))
-    expect(nav(view, 'conversation').querySelector('.st-nav-sub')?.textContent).toBe('OpenAI · GPT-5.6 Luna')
-    expect(nav(view, 'agent').querySelector('.st-nav-sub')?.textContent).toBe('Codex · Approve for me')
-    expect(nav(view, 'integrations').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.integrationsCalendarOff', { keys: 2, total: 4 }))
-    // Speech recognition, the Agent CLI, MaAI and the aizuchi classifier still need setup. TTS is not counted
-    // because it runs on macOS, and semantic search is ready.
-    const setup = nav(view, 'models').querySelector('.st-nav-sub')
-    expect(setup?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 4 }))
-    expect(setup?.getAttribute('data-tone')).toBe('warn')
+    expect([...view.querySelectorAll('.st-nav-section')].map((el) => el.textContent)).toEqual([
+      t('settings.sections.assistant'),
+      t('settings.sections.features'),
+      t('settings.sections.general')
+    ])
+    expect(sub(view, 'appearance')?.textContent).toBe(t('settingsAppearance.themes.future.name'))
+    expect(sub(view, 'usage')?.textContent).toBe(t('settings.summary.usage', { amount: '$1.50' }))
+    expect(sub(view, 'language')?.textContent).toBe(`日本語 · ${new Intl.DisplayNames(['ja-JP'], { type: 'region' }).of('JP')}`)
+    expect(sub(view, 'connections')?.textContent).toBe(`${t('settings.summary.calendarOff')} · ${t('settings.summary.mailAccounts', { count: 0 })}`)
+    expect(sub(view, 'apiKeys')?.textContent).toBe(t('settings.summary.apiKeys', { keys: 2, total: 4 }))
+  })
+
+  it('warns in the list only about what is turned on and cannot work, and counts on the overview the rows it lists', async () => {
+    const view = await render()
+    // The conversation model needs the OpenAI key, speech recognition is not downloaded and the Codex CLI is
+    // missing. MaAI and the aizuchi classifier are not prepared either, but both are off.
+    expect(pendingLabels(view)).toEqual([t('settingsModels.asr.title'), 'Agent', t('settingsConversation.models.apiKey', { provider: 'OpenAI' })])
+    expect(sub(view, 'overview')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 3 }))
+    const warned = [...view.querySelectorAll('.st-nav')].filter((entry) => entry.querySelector('.st-nav-sub[data-tone="warn"]')).map((entry) => entry.getAttribute('data-page'))
+    expect(warned).toEqual(['overview', 'conversation', 'voice', 'agent', 'apiKeys'])
+    expect(sub(view, 'voice')?.textContent).toBe(t('settings.summary.recognitionNotReady'))
+    expect(sub(view, 'agent')?.textContent).toBe(t('settings.summary.agentMissing', { engine: 'Codex' }))
+
+    // Turning the aizuchi on while its classifier is missing makes one more thing that cannot work.
+    await act(async () => useSettingsStore.setState({ settings: { ...settings, aizuchi: true } }))
+    expect(pendingLabels(view)).toContain(t('settingsVoice.response.aizuchi'))
+    expect(sub(view, 'overview')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 4 }))
+  })
+
+  it('offers on the overview the features that are off, and leaves out the ones already on', async () => {
+    const view = await render()
+    const optional = (): Array<string | null | undefined> =>
+      [...view.querySelectorAll(`[aria-label="${t('settingsOverview.optionalTitle')}"] .st-row-label`)].map((label) => label.textContent)
+    expect(optional()).toEqual([t('settingsMemory.search.title'), t('settingsVoice.mic.turnTaking'), t('settingsModels.asr.browserWhisper')])
+    await act(async () => useSettingsStore.setState({ settings: { ...settings, memoryEmbeddingEnabled: true, localAsrEnabled: true } }))
+    expect(optional()).toEqual([t('settingsVoice.mic.turnTaking')])
+  })
+
+  it('opens the page of a step of the current setup when the step is pressed', async () => {
+    const view = await render()
+    const steps = [...view.querySelectorAll<HTMLButtonElement>('.st-flow-tile')]
+    expect(steps.map((step) => step.getAttribute('data-page'))).toEqual(['voice', 'conversation', 'voice'])
+    expect(steps.map((step) => step.querySelector('.st-chip')?.textContent)).toEqual([t('common.notReady'), t('settingsConversation.models.notSet'), t('common.ready')])
+    await act(async () => steps[1].click())
     expect(title(view)).toBe(t('settingsConversation.title'))
-    const keyRow = [...view.querySelectorAll('.st-page .st-row')].find(
-      (row) => row.querySelector('.st-row-label')?.textContent === t('settingsConversation.models.apiKey', { provider: 'OpenAI' })
-    )
-    expect(keyRow?.querySelector('.st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.notSet'))
+    expect(nav(view, 'conversation').getAttribute('aria-pressed')).toBe('true')
   })
 
   it('writes a small cost the same way in the page list and on the costs page', async () => {
@@ -228,24 +268,65 @@ describe('settings dialog', () => {
     expect(lines[2].querySelector('.st-chip')?.textContent).toBe(t('settingsUsage.unpriced'))
   })
 
-  it('moves from the voice page to the models page, which shows the state of each component', async () => {
+  it('prepares speech recognition from the row that chooses its model, and reads the status again once it is done', async () => {
     const view = await render()
     await act(async () => nav(view, 'voice').click())
-    expect(title(view)).toBe('声')
     const listening = view.querySelector(`[aria-label="${t('settingsVoice.recognition.title')}"]`)!
     expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
-    await act(async () => listening.querySelector<HTMLButtonElement>('.st-link')!.click())
-    expect(title(view)).toBe(t('settingsModels.title'))
-    const cards = [...view.querySelectorAll('.st-prep-card')].map((card) => [card.getAttribute('aria-label'), card.getAttribute('data-state')])
-    expect(cards).toEqual([
-      [t('settingsModels.asr.title'), 'missing'],
-      [t('settingsModels.speech.title'), 'ready'],
-      [t('settingsModels.agent.title'), 'missing'],
-      [t('settingsModels.turnTaking.title'), 'missing'],
-      [t('settingsModels.backchannel.title'), 'missing'],
-      [t('settingsModels.semanticSearch.title'), 'ready']
-    ])
-    expect(nav(view, 'models').getAttribute('aria-pressed')).toBe('true')
+    expect(listening.querySelector('.st-prepline-text')?.textContent).toBe(t('settingsModels.asr.notDownloaded', { model: 'Qwen3-ASR 1.7B' }))
+    const reads = api.getSetupStatus.mock.calls.length
+    await act(async () => listening.querySelector<HTMLButtonElement>('[data-prep="asr"]')!.click())
+    expect(api.prepareAsrModel).toHaveBeenCalledWith('auto')
+    expect(api.getSetupStatus.mock.calls.length).toBe(reads + 1)
+  })
+
+  it('says Whisper in the browser listens while the local model is missing, instead of saying the microphone cannot be used', async () => {
+    useSettingsStore.setState({ settings: { ...settings, localAsrEnabled: true } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const listening = view.querySelector(`[aria-label="${t('settingsVoice.recognition.title')}"]`)!
+    expect(listening.querySelector('.st-prepline-text')?.textContent).toBe(t('settingsModels.asr.notDownloadedWhisper', { model: 'Qwen3-ASR 1.7B' }))
+  })
+
+  it('lets speech recognition that is ready be checked again from its row', async () => {
+    useStatusStore.setState({ status: { ...status, asr: true } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const listening = view.querySelector(`[aria-label="${t('settingsVoice.recognition.title')}"]`)!
+    expect(listening.querySelector('.st-prepline')).toBeNull()
+    const again = listening.querySelector<HTMLButtonElement>('[data-prep="asr"]')!
+    expect(again.textContent).toBe(t('settingsModels.asr.checkAgain'))
+    await act(async () => again.click())
+    expect(api.prepareAsrModel).toHaveBeenCalledWith('auto')
+  })
+
+  it('offers no preparation of turn-taking before its state has been read', async () => {
+    api.vapStatus.mockImplementationOnce(() => new Promise(() => {}))
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const row = [...view.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.turnTaking'))!
+    expect(row.querySelector('[data-prep="vap"]')).toBeNull()
+    expect(row.querySelector('.st-chip')?.textContent).toBe(t('settingsModels.checking'))
+  })
+
+  it('links a missing speech application on the overview to where it is downloaded', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'voicevox' } })
+    const view = await render()
+    const speech = view.querySelector('[data-pending="speech"]')!
+    expect(speech.querySelector('.st-btn')?.textContent).toBe(t('settingsModels.speech.get', { engine: 'VOICEVOX' }))
+    await act(async () => speech.querySelector<HTMLButtonElement>('.st-btn')!.click())
+    expect(api.openExternal).toHaveBeenCalledWith('https://voicevox.hiroshiba.jp/')
+  })
+
+  it('turns turn-taking on once it has been prepared from its own row', async () => {
+    api.vapStatus.mockResolvedValueOnce({ runtimeInstalled: false, modelsInstalled: false, running: false })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const row = [...view.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.turnTaking'))!
+    expect(row.querySelector('[role="switch"]')).toBeNull()
+    await act(async () => row.querySelector<HTMLButtonElement>('[data-prep="vap"]')!.click())
+    expect(api.vapPrepare).toHaveBeenCalledTimes(1)
+    expect(api.saveSettings).toHaveBeenCalledWith({ vapEnabled: true })
   })
 
   it.each([
@@ -259,14 +340,15 @@ describe('settings dialog', () => {
     await act(async () => nav(view, 'agent').click())
     const engineRow = [...view.querySelectorAll('.st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === t('settingsAgent.run.engine'))!
     expect(engineRow.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
-    expect(engineRow.querySelector('.st-row-hint')?.textContent).toBe(t(reason, { engine: 'codex' }))
+    expect(view.querySelector('.st-prepline-text')?.textContent).toBe(t(reason, { engine: 'codex' }))
   })
 
   it('saves the conversation language together with a speech engine that can read it, and the region on its own', async () => {
     // VOICEVOX reads Japanese only, so the engine has to move with the language.
     useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'voicevox' } })
     const view = await render()
-    const language = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsConversation.language.conversation')}"]`)!
+    await act(async () => nav(view, 'language').click())
+    const language = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsLanguage.conversation')}"]`)!
     expect(language.value).toBe('ja-JP')
     expect([...language.options].map((option) => option.value)).toEqual([...CONVERSATION_LOCALES])
     await act(async () => {
@@ -282,7 +364,7 @@ describe('settings dialog', () => {
     })
     expect(api.saveSettings).toHaveBeenLastCalledWith({ conversationLocale: 'ko-KR' })
 
-    const region = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsConversation.language.region')}"]`)!
+    const region = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsLanguage.region')}"]`)!
     expect(region.value).toBe('JP')
     // The countries are named by Intl in the language of the interface, never written by hand.
     expect([...region.options].find((option) => option.value === 'FR')?.textContent).toBe(new Intl.DisplayNames(['ja-JP'], { type: 'region' }).of('FR'))
@@ -335,7 +417,7 @@ describe('settings dialog', () => {
     await act(async () => mic.click())
     expect(api.saveSettings).toHaveBeenCalledWith({ micAutoStart: true })
 
-    await act(async () => nav(view, 'integrations').click())
+    await act(async () => nav(view, 'apiKeys').click())
     const keys = [...view.querySelectorAll('.st-key')].map((row) => [row.getAttribute('data-provider'), row.querySelector('.st-chip')?.textContent])
     expect(keys).toEqual([
       ['anthropic', t('settingsIntegrations.apiKeys.verified')],
@@ -352,39 +434,36 @@ describe('settings dialog', () => {
     useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'unreadable', cerebras: 'unreadable' } } })
     useSettingsStore.setState({ settings: { ...settings, voiceEngine: 'gpt-live' } })
     const view = await render()
-    expect(nav(view, 'integrations').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.integrationsCalendarOff', { keys: 1, total: 4 }))
-    // The conversation model's row and the GPT-Live row both show the OpenAI key.
-    const keyRows = [...view.querySelectorAll('.st-row')].filter(
-      (row) => row.querySelector('.st-row-label')?.textContent === t('settingsConversation.models.apiKey', { provider: 'OpenAI' })
-    )
-    expect(keyRows.map((row) => [row.querySelector('.st-chip')?.textContent, row.querySelector('.st-row-hint')?.textContent])).toEqual([
-      [t('settingsIntegrations.apiKeys.unreadable'), t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: 'OpenAI' })],
+    expect(sub(view, 'apiKeys')?.textContent).toBe(t('settings.summary.apiKeys', { keys: 1, total: 4 }))
+    // GPT-Live and the conversation model both need the OpenAI key, which the conversation page names once.
+    await act(async () => nav(view, 'conversation').click())
+    const lines = [...view.querySelectorAll('.st-prepline')]
+    expect(lines.map((line) => [line.querySelector('.st-chip')?.textContent, line.querySelector('.st-prepline-text')?.textContent])).toEqual([
       [t('settingsIntegrations.apiKeys.unreadable'), t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: 'OpenAI' })]
     ])
-    await act(async () => nav(view, 'integrations').click())
+    await act(async () => lines[0].querySelector<HTMLButtonElement>('.st-btn')!.click())
+    expect(title(view)).toBe(t('settings.pages.apiKeys'))
     const row = view.querySelector('.st-key[data-provider="openai"]')!
     expect(row.querySelector('.st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.unreadable'))
     expect(row.querySelector('.st-btn')?.textContent).toBe(t('settingsIntegrations.apiKeys.register'))
   })
 
-  const pageRow = (view: HTMLElement, label: string): Element | undefined =>
-    [...view.querySelectorAll('.st-page .st-row')].find((row) => row.querySelector('.st-row-label')?.textContent === label)
-
   it.each([
-    // A setup finished for text alone saves the engine that reads nothing.
-    ['none', t('common.off'), t('settingsModels.speech.none'), t('settingsVoice.title')],
+    // A setup finished for text alone saves the engine that reads nothing, which is no missing speech.
+    ['none', [t('settingsModels.asr.title')]],
     // A setup finished with a live engine leaves the default engine, which was never installed.
-    ['voicevox', t('common.notFound'), t('settingsVoice.speech.engineMissing.macos', { engine: 'VOICEVOX' }), t('settingsModels.title')]
+    ['voicevox', [t('settingsModels.asr.title'), t('settingsModels.speech.title')]]
   ] as const)(
-    'says what the cascade engine lacks once it is chosen after a live engine, with the speech engine %s, and leads to where each is prepared',
-    async (ttsEngine, speechChip, speechHint, speechPage) => {
+    'lists on the overview what the cascade engine lacks once it is chosen after a live engine, with the speech engine %s',
+    async (ttsEngine, lacking) => {
       const liveSettings = { ...settings, voiceEngine: 'gpt-live', ttsEngine } as AppSettings
       useSettingsStore.setState({ settings: liveSettings })
-      useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'verified' }, tts: false } })
+      useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'verified' }, agent: 'found', tts: false } })
       api.saveSettings.mockImplementationOnce(async (patch: Partial<AppSettings>) => ({ ...liveSettings, ...patch }))
       const view = await render()
-      expect(pageRow(view, t('settingsModels.asr.title'))).toBeUndefined()
+      expect(pendingLabels(view)).toEqual([])
 
+      await act(async () => nav(view, 'conversation').click())
       const engine = view.querySelector<HTMLSelectElement>(`select[aria-label="${t('settingsConversation.engine.selectLabel')}"]`)!
       await act(async () => {
         engine.value = 'cascade'
@@ -392,32 +471,21 @@ describe('settings dialog', () => {
       })
       await act(async () => {})
       expect(api.saveSettings).toHaveBeenLastCalledWith({ voiceEngine: 'cascade' })
-
-      const listening = pageRow(view, t('settingsModels.asr.title'))!
-      expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.notReady'))
-      expect(listening.querySelector('.st-row-hint')?.textContent).toBe(t('settingsConversation.engine.recognitionNotReady'))
-      const speech = pageRow(view, t('settingsModels.speech.title'))!
-      expect(speech.querySelector('.st-chip')?.textContent).toBe(speechChip)
-      expect(speech.querySelector('.st-row-hint')?.textContent).toBe(speechHint)
-
-      await act(async () => speech.querySelector<HTMLButtonElement>('.st-link')!.click())
-      expect(title(view)).toBe(speechPage)
-      await act(async () => nav(view, 'conversation').click())
-      await act(async () => pageRow(view, t('settingsModels.asr.title'))!.querySelector<HTMLButtonElement>('.st-link')!.click())
-      expect(title(view)).toBe(t('settingsModels.title'))
+      expect(sub(view, 'voice')?.getAttribute('data-tone')).toBe('warn')
+      await act(async () => nav(view, 'overview').click())
+      const voice = [t('settingsModels.asr.title'), t('settingsModels.speech.title')]
+      expect(pendingLabels(view).filter((label) => voice.includes(label!))).toEqual(lacking)
     }
   )
 
   it('counts the cascade engine as able to listen through Whisper in the browser, which the microphone falls back to without the local model', async () => {
     useSettingsStore.setState({ settings: { ...settings, localAsrEnabled: true } })
     const view = await render()
-    const listening = pageRow(view, t('settingsModels.asr.title'))!
-    expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.ready'))
-    expect(listening.querySelector('.st-link')).toBeNull()
-    // The macOS voice needs nothing prepared, so the speech is ready and names the engine.
-    const speech = pageRow(view, t('settingsModels.speech.title'))!
-    expect(speech.querySelector('.st-chip')?.textContent).toBe(t('common.ready'))
-    expect(speech.querySelector('.st-row-hint')?.textContent).toBe(t('settings.ttsEngine.system.macos'))
+    expect(pendingLabels(view)).not.toContain(t('settingsModels.asr.title'))
+    expect(view.querySelector('.st-flow-tile[data-page="voice"] .st-chip')?.textContent).toBe(t('common.ready'))
+    // The macOS voice needs nothing prepared, so the voice page's entry names the engine without a warning.
+    expect(sub(view, 'voice')?.textContent).toBe(t('settings.summary.voiceBackchannelOff', { engine: t('settings.ttsEngine.system.macos') }))
+    expect(sub(view, 'voice')?.getAttribute('data-tone')).toBeNull()
   })
 
   it('reports a status check that fails instead of keeping the last status without a word', async () => {
@@ -480,8 +548,8 @@ describe('settings fields that are saved once the user leaves them', () => {
     const later = (patch: Partial<AppSettings>): Promise<AppSettings> => new Promise((resolve) => answers.push(() => resolve({ ...settings, ...patch })))
     api.saveSettings.mockImplementationOnce(later).mockImplementationOnce(later)
     const view = await render()
-    await act(async () => nav(view, 'conversation').click())
-    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsConversation.log.retentionLabel')}"]`)!
+    await act(async () => nav(view, 'memory').click())
+    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsMemory.log.retentionLabel')}"]`)!
     days.focus()
     await act(async () => type(days, '3'))
     await act(async () => leave(days))
@@ -528,8 +596,8 @@ describe('settings fields that are saved once the user leaves them', () => {
   it('keeps a value whose save failed in the field, marked as not saved, and saves it again when the field is left again', async () => {
     api.saveSettings.mockRejectedValueOnce(new Error('disk full'))
     const view = await render()
-    await act(async () => nav(view, 'conversation').click())
-    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsConversation.log.retentionLabel')}"]`)!
+    await act(async () => nav(view, 'memory').click())
+    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsMemory.log.retentionLabel')}"]`)!
     const hint = (): string | null | undefined => days.closest('.st-row')?.querySelector('.st-row-hint')?.textContent
     days.focus()
     await act(async () => type(days, '30'))
@@ -544,7 +612,7 @@ describe('settings fields that are saved once the user leaves them', () => {
     expect(api.saveSettings.mock.calls).toEqual([[{ conversationLogRetentionDays: 30 }], [{ conversationLogRetentionDays: 30 }]])
     expect(days.value).toBe('30')
     expect(days.getAttribute('aria-invalid')).toBe('false')
-    expect(hint()).toBe(t('settingsConversation.log.retentionHint'))
+    expect(hint()).toBe(t('settingsMemory.log.retentionHint'))
   })
 
   it('lets a text whose save failed give way to folders saved after it, and never writes it back over them', async () => {
@@ -573,8 +641,8 @@ describe('settings fields that are saved once the user leaves them', () => {
 
   it('drops a day count that is not one when the page goes away, as it does when the field is left', async () => {
     const view = await render()
-    await act(async () => nav(view, 'conversation').click())
-    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsConversation.log.retentionLabel')}"]`)!
+    await act(async () => nav(view, 'memory').click())
+    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsMemory.log.retentionLabel')}"]`)!
     days.focus()
     await act(async () => type(days, '0'))
     await act(async () => root.render(React.createElement('div')))
@@ -598,8 +666,8 @@ describe('settings fields that are saved once the user leaves them', () => {
 
   it('saves the days conversation logs are kept only once the field is left, and puts the saved days back for a field left empty', async () => {
     const view = await render()
-    await act(async () => nav(view, 'conversation').click())
-    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsConversation.log.retentionLabel')}"]`)!
+    await act(async () => nav(view, 'memory').click())
+    const days = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsMemory.log.retentionLabel')}"]`)!
     expect(days.value).toBe('90')
     days.focus()
     // Two Backspaces, then 3 and 0. Main deletes the logs older than the saved days at the change of day,
@@ -618,39 +686,36 @@ describe('settings fields that are saved once the user leaves them', () => {
 })
 
 describe('settings dialog while a model is prepared or memories are converted', () => {
-  const card = (view: HTMLElement, key: Parameters<typeof t>[0]): HTMLElement => view.querySelector<HTMLElement>(`.st-prep-card[aria-label="${t(key)}"]`)!
+  const prepButton = (view: HTMLElement, target: string): HTMLButtonElement => view.querySelector<HTMLButtonElement>(`[data-prep="${target}"]`)!
 
-  it('shows the download progress on the card being prepared and on no other card', async () => {
+  it('shows the download progress under the item being prepared and nowhere else, and keeps the others waiting', async () => {
     api.embeddingStatus.mockImplementation(async () => ({ ...embeddingReady, runtimeInstalled: false, modelInstalled: false, embedded: 0, total: 45 }))
     let finish!: (result: { ok: boolean; message: string }) => void
     api.embeddingPrepare.mockImplementation(() => new Promise((resolve) => { finish = resolve }))
     const view = await render()
     const emit = api.onSetupProgress.mock.calls[0][0]
-    await act(async () => nav(view, 'models').click())
 
-    await act(async () => card(view, 'settingsModels.semanticSearch.title').querySelector<HTMLButtonElement>('.st-btn')!.click())
+    await act(async () => prepButton(view, 'embedding').click())
     await act(async () => emit({ status: 'downloading', pct: 40, downloadedMb: 54, totalMb: 135 }))
-    const bars = [...view.querySelectorAll('[role="progressbar"]')].map((bar) => [bar.closest('.st-prep-card')?.getAttribute('aria-label'), bar.getAttribute('aria-valuenow')])
-    expect(bars).toEqual([[t('settingsModels.semanticSearch.title'), '40']])
-    const asrButton = card(view, 'settingsModels.asr.title').querySelector<HTMLButtonElement>('.st-btn')!
-    expect(asrButton.textContent).toBe(t('settingsModels.prepare'))
+    const bars = [...view.querySelectorAll('[role="progressbar"]')].map((bar) => [bar.closest('.st-group')?.getAttribute('aria-label'), bar.getAttribute('aria-valuenow')])
+    expect(bars).toEqual([[t('settingsOverview.optionalTitle'), '40']])
+    expect(prepButton(view, 'embedding').textContent).toBe(t('common.preparing'))
     // Only one preparation runs at a time, so the other items wait until this one ends.
-    expect(asrButton.disabled).toBe(true)
-    expect(card(view, 'settingsModels.semanticSearch.title').querySelector('.st-btn')?.textContent).toBe(t('common.preparing'))
+    expect(prepButton(view, 'asr').textContent).toBe(t('settingsModels.prepare'))
+    expect(prepButton(view, 'asr').disabled).toBe(true)
 
     await act(async () => finish({ ok: true, message: '' }))
     expect(api.saveSettings).toHaveBeenCalledWith({ memoryEmbeddingEnabled: true })
     expect(view.querySelector('[role="progressbar"]')).toBeNull()
-    expect(asrButton.disabled).toBe(false)
+    expect(prepButton(view, 'asr').disabled).toBe(false)
   })
 
   it('ignores progress that arrives while nothing on this screen is being prepared', async () => {
     const view = await render()
     const emit = api.onSetupProgress.mock.calls[0][0]
-    await act(async () => nav(view, 'models').click())
     await act(async () => emit({ status: 'downloading', pct: 10, downloadedMb: 1, totalMb: 10 }))
     expect(view.querySelector('[role="progressbar"]')).toBeNull()
-    expect(card(view, 'settingsModels.asr.title').querySelector<HTMLButtonElement>('.st-btn')!.disabled).toBe(false)
+    expect(prepButton(view, 'asr').disabled).toBe(false)
   })
 
   it('reports the last failed curation on the memory page as a warning with its reason, until a curation is under way', async () => {
@@ -817,22 +882,12 @@ describe('settings dialog with the conversation held in another language', () =>
     expect(api.saveSettings).not.toHaveBeenCalled()
   })
 
-  it('shows no card for MaAI or the backchannel classifier and counts neither as needing preparation', async () => {
-    useSettingsStore.setState({ settings: { ...settings, conversationLocale: 'en-US' } })
+  it('offers no MaAI and counts no backchannel classifier, even with the aizuchi left on', async () => {
+    useSettingsStore.setState({ settings: { ...settings, conversationLocale: 'en-US', aizuchi: true, vapEnabled: true } })
     const view = await render()
-    await act(async () => nav(view, 'models').click())
-
-    expect([...view.querySelectorAll('.st-prep-card')].map((card) => card.getAttribute('aria-label'))).toEqual([
-      t('settingsModels.asr.title'),
-      t('settingsModels.speech.title'),
-      t('settingsModels.agent.title'),
-      t('settingsModels.semanticSearch.title')
-    ])
-    // Only speech recognition and the Agent CLI are left to prepare.
-    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(
-      t('settings.summary.modelsNotPrepared', { count: 2 })
-    )
-    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.ttsEngine.system.macos'))
+    expect(pendingLabels(view)).toEqual([t('settingsModels.asr.title'), 'Agent', t('settingsConversation.models.apiKey', { provider: 'OpenAI' })])
+    const optional = [...view.querySelectorAll(`[aria-label="${t('settingsOverview.optionalTitle')}"] .st-row-label`)].map((label) => label.textContent)
+    expect(optional).not.toContain(t('settingsVoice.mic.turnTaking'))
   })
 })
 
@@ -869,25 +924,24 @@ describe('settings dialog on Windows with a discrete GPU', () => {
     )
   })
 
-  it('lets the models page prepare the speech recognition', async () => {
+  it('offers to download the speech recognition on the voice page, under its model', async () => {
     const view = await render()
-    await act(async () => nav(view, 'models').click())
-    const card = view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)!
-    expect(card.querySelector('p')?.textContent).toBe(t('settingsModels.asr.needsModel', { memoryGb: 8, model: label }))
-    expect(card.textContent).toContain(t('settingsModels.asr.chooseModel'))
-    expect([...card.querySelectorAll('button')].map((button) => button.textContent)).toContain(t('settingsModels.prepare'))
+    await act(async () => nav(view, 'voice').click())
+    const listening = view.querySelector(`[aria-label="${t('settingsVoice.recognition.title')}"]`)!
+    expect(listening.querySelector('.st-prepline-text')?.textContent).toBe(t('settingsModels.asr.notDownloaded', { model: label }))
+    expect(listening.querySelector('[data-prep="asr"]')?.textContent).toBe(t('settingsModels.prepare'))
   })
 })
 
 describe('the state of the speech models while the settings are open', () => {
-  const asrCard = (view: HTMLElement): HTMLElement => view.querySelector<HTMLElement>(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)!
-
   it('shows speech recognition as ready once main pushes that it answers, without the settings being opened again', async () => {
     const view = await render()
-    await act(async () => nav(view, 'models').click())
-    expect(asrCard(view).dataset.state).not.toBe('ready')
+    await act(async () => nav(view, 'voice').click())
+    const listening = view.querySelector(`[aria-label="${t('settingsVoice.recognition.title')}"]`)!
+    expect(listening.querySelector('.st-prepline')).not.toBeNull()
     await act(async () => useStatusStore.setState({ status: { ...status, asr: true } }))
-    expect(asrCard(view).dataset.state).toBe('ready')
+    expect(listening.querySelector('.st-chip')?.textContent).toBe(t('common.ready'))
+    expect(listening.querySelector('.st-prepline')).toBeNull()
   })
 
   it('reads what is installed again when the Qwen3-TTS size changes, whose files may not be there', async () => {
@@ -972,55 +1026,40 @@ describe('settings dialog on a machine without the local models, the native micr
     expect(hint(view, t('settingsVoice.mic.hotkey'))).toBe(t('settingsVoice.mic.hotkeyHint', { hotkey: shortcutLabel(WINDOWS_WITHOUT_GPU.os, WINDOWS_WITHOUT_GPU.hotkey) }))
   })
 
-  it('says on the voice and models pages that the GPU could not be checked when listing the devices failed', async () => {
+  it('says on the voice page and the overview that the GPU could not be checked when listing the devices failed', async () => {
     const key = 'speechRecognition.unavailable.gpuCheckFailed'
     setCapabilities({ ...WINDOWS_WITHOUT_GPU, localSpeech: { backend: null, reason: 'gpu-check-failed' } })
     const view = await render()
+    expect(view.querySelector('[data-pending="browserWhisper"] .st-row-hint')?.textContent).toBe(t(key))
     await act(async () => nav(view, 'voice').click())
     expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t(key))
-    await act(async () => nav(view, 'models').click())
-    expect(view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"] p`)?.textContent).toBe(t(key))
   })
 
-  it('prepares nothing the machine cannot run, and counts only what it can', async () => {
+  it('offers Whisper in the browser as the speech recognition to prepare, and counts it like the rest', async () => {
     const view = await render()
-    // Of what this machine runs, speech recognition, here Whisper in the browser, the Agent CLI, MaAI and
-    // the aizuchi classifier are missing.
-    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 4 }))
-    await act(async () => nav(view, 'models').click())
-    const cards = [...view.querySelectorAll('.st-prep-card')]
-    expect(cards.map((card) => [card.getAttribute('aria-label'), card.getAttribute('data-state')])).toEqual([
-      [t('settingsModels.asr.title'), 'missing'],
-      [t('settingsModels.speech.title'), 'ready'],
-      [t('settingsModels.agent.title'), 'missing'],
-      [t('settingsModels.turnTaking.title'), 'missing'],
-      [t('settingsModels.backchannel.title'), 'missing'],
-      [t('settingsModels.semanticSearch.title'), 'ready']
-    ])
-    expect(cards[0].querySelector('p')?.textContent).toBe(t('speechRecognition.unavailable.noDiscreteGpu'))
-    expect(cards[0].textContent).not.toContain(t('settingsModels.asr.chooseModel'))
+    expect(pendingLabels(view)).toEqual([t('settingsModels.asr.browserWhisper'), 'Agent', t('settingsConversation.models.apiKey', { provider: 'OpenAI' })])
+    expect(sub(view, 'overview')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 3 }))
+    // Whisper is the speech recognition itself here, so it is not offered again as a feature to add.
+    const optional = [...view.querySelectorAll(`[aria-label="${t('settingsOverview.optionalTitle')}"] .st-row-label`)].map((label) => label.textContent)
+    expect(optional).not.toContain(t('settingsModels.asr.browserWhisper'))
   })
 
-  it('counts speech recognition as prepared once Whisper in the browser is, as its card shows', async () => {
+  it('counts speech recognition as prepared once Whisper in the browser is', async () => {
     useSettingsStore.setState({ settings: { ...settings, localAsrEnabled: true } })
     const view = await render()
-    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 3 }))
-    await act(async () => nav(view, 'models').click())
-    expect(view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.asr.title')}"]`)?.getAttribute('data-state')).toBe('ready')
+    expect(pendingLabels(view)).toEqual(['Agent', t('settingsConversation.models.apiKey', { provider: 'OpenAI' })])
+    expect(view.querySelector('.st-flow-tile[data-page="voice"] .st-chip')?.textContent).toBe(t('common.ready'))
   })
 
   it('shows Qwen3-TTS left in the settings as an engine this machine cannot run, never as something to prepare', async () => {
-    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts' } })
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts', localAsrEnabled: true } })
     const view = await render()
     const reason = t('voice.speech.cannotRunHere', { engine: 'Qwen3-TTS' })
-    expect(nav(view, 'models').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.modelsNotPrepared', { count: 4 }))
-    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(reason)
-    expect(nav(view, 'voice').querySelector('.st-nav-sub')?.getAttribute('data-tone')).toBe('warn')
-
-    await act(async () => nav(view, 'models').click())
-    const card = view.querySelector(`.st-prep-card[aria-label="${t('settingsModels.speech.title')}"]`)!
-    expect(card.querySelector('p')?.textContent).toBe(reason)
-    expect([...card.querySelectorAll('button')].map((button) => button.textContent)).not.toContain(t('settingsModels.prepare'))
+    expect(sub(view, 'voice')?.textContent).toBe(reason)
+    expect(sub(view, 'voice')?.getAttribute('data-tone')).toBe('warn')
+    const speech = view.querySelector('[data-pending="speech"]')!
+    expect(speech.querySelector('.st-row-hint')?.textContent).toBe(reason)
+    expect(speech.querySelector('[data-prep]')).toBeNull()
 
     await act(async () => nav(view, 'voice').click())
     expect(hint(view, t('settingsVoice.speech.engine'))).toBe(reason)
@@ -1028,7 +1067,7 @@ describe('settings dialog on a machine without the local models, the native micr
   })
 
   it('offers the aizuchi that open a turn and the memory search, whose workers run on the CPU here too', async () => {
-    useSettingsStore.setState({ settings: { ...settings, aizuchi: true } })
+    useSettingsStore.setState({ settings: { ...settings, aizuchi: true, localAsrEnabled: true } })
     const view = await render()
     expect(nav(view, 'voice').querySelector('.st-nav-sub')?.textContent).toBe(
       t('settings.summary.voiceBackchannelOn', { engine: t('settings.ttsEngine.system.windows') })
@@ -1043,10 +1082,18 @@ describe('settings dialog on a machine without the local models, the native micr
     expect(rowLabels(view)).toContain(t('settingsMemory.search.use'))
   })
 
-  it('leaves the calendar out of the integrations and of their summary', async () => {
+  it('folds away nothing under a live engine, whose only details belong to the native microphone this machine lacks', async () => {
+    useSettingsStore.setState({ settings: { ...settings, voiceEngine: 'gpt-live' } })
     const view = await render()
-    expect(nav(view, 'integrations').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.integrationsKeys', { keys: 2, total: 4 }))
-    await act(async () => nav(view, 'integrations').click())
+    await act(async () => nav(view, 'voice').click())
+    expect(view.querySelector('.st-advanced')).toBeNull()
+  })
+
+  it('names the page after mail alone and leaves the calendar out of it and of its summary', async () => {
+    const view = await render()
+    expect(nav(view, 'connections').querySelector('.st-nav-title')?.textContent).toBe(t('settingsMail.title'))
+    expect(sub(view, 'connections')?.textContent).toBe(t('settings.summary.mailAccounts', { count: 0 }))
+    await act(async () => nav(view, 'connections').click())
     expect(view.querySelector(`[aria-label="${t('settingsCalendar.title')}"]`)).toBeNull()
     expect(api.calendarStatus).not.toHaveBeenCalled()
   })

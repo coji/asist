@@ -1,32 +1,6 @@
 import { defineMessages } from '../message'
 
 export const settingsModels = defineMessages({
-  title: {
-    'ja-JP': 'モデル',
-    'en-US': 'Models',
-    'fr-FR': 'Modèles',
-    'de-DE': 'Modelle',
-    'hi-IN': 'मॉडल',
-    'id-ID': 'Model',
-    'it-IT': 'Modelli',
-    'ko-KR': '모델',
-    'pt-BR': 'Modelos',
-    'es-419': 'Modelos',
-    'es-ES': 'Modelos'
-  },
-  lead: {
-    'ja-JP': '音声認識、読み上げ、Agent の CLI、ターンテイキング、相槌、意味検索に使うモデルと実行環境を準備します。準備が済んだら、「声」「記憶」「Agent」の画面で使い方を決めます。',
-    'en-US': 'Prepare the models and runtimes for speech recognition, speech, the Agent CLI, turn-taking, backchannels and semantic search. Once they are prepared, set how they are used on the Voice, Memory and Agent pages.',
-    'fr-FR': "Préparez les modèles et les environnements d'exécution de la reconnaissance vocale, de la synthèse vocale, du CLI de l'agent, des tours de parole, des acquiescements et de la recherche sémantique. Une fois préparés, réglez leur usage sur les pages Voix, Mémoire et Agent.",
-    'de-DE': 'Bereiten Sie die Modelle und Laufzeitumgebungen für Spracherkennung, Sprachausgabe, die CLI des Agenten, Turn-Taking, Hörersignale und die semantische Suche vor. Sind sie vorbereitet, legen Sie auf den Seiten „Stimme“, „Gedächtnis“ und „Agent“ fest, wie sie verwendet werden.',
-    'hi-IN': 'स्पीच रिकग्निशन, स्पीच, Agent के CLI, बोलने की बारी, हुंकारों और मतलब से खोज के मॉडल तथा रनटाइम यहाँ तैयार करें। तैयार हो जाने पर उनका इस्तेमाल "आवाज़", "याददाश्त" और "Agent" पेज पर तय करें।',
-    'id-ID': 'Siapkan model dan runtime untuk pengenalan suara, pembacaan, CLI Agent, pergantian giliran, gumaman, dan pencarian semantik. Setelah siap, tentukan cara pemakaiannya di halaman Suara, Ingatan, dan Agent.',
-    'it-IT': "Prepara i modelli e gli ambienti di esecuzione per il riconoscimento vocale, la lettura, la CLI di Agent, l'alternanza dei turni, i cenni di ascolto e la ricerca semantica. Una volta pronti, decidi come usarli nelle pagine «Voce», «Memoria» e «Agent».",
-    'ko-KR': "음성 인식, 읽어주기, Agent의 CLI, 턴테이킹, 맞장구, 의미 검색에 쓸 모델과 실행 환경을 준비합니다. 준비가 끝나면 '음성', '기억', 'Agent' 화면에서 쓰는 방법을 정합니다.",
-    'pt-BR': 'Prepare os modelos e os ambientes de execução do reconhecimento de fala, da leitura em voz alta, do CLI do Agent, da alternância de turnos, dos sinais de escuta e da busca por significado. Depois de preparados, defina como são usados nas páginas Voz, Memória e Agent.',
-    'es-419': 'Prepara los modelos y los entornos de ejecución para el reconocimiento de voz, la lectura en voz alta, el CLI del Agent, los turnos de habla, los asentimientos y la búsqueda por significado. Cuando estén listos, define cómo se usan en las páginas Voz, Memoria y Agent.',
-    'es-ES': 'Prepara los modelos y los entornos de ejecución para el reconocimiento de voz, la lectura en voz alta, la CLI de Agent, los turnos de palabra, los asentimientos y la búsqueda semántica. Cuando estén preparados, decide cómo se usan en las páginas “Voz”, “Memoria” y “Agent”.'
-  },
   checking: {
     'ja-JP': '確認中',
     'en-US': 'Checking',
@@ -67,58 +41,6 @@ export const settingsModels = defineMessages({
       'es-419': 'Reconocimiento de voz',
       'es-ES': 'Reconocimiento de voz'
     },
-    checkAgain: {
-      'ja-JP': '再確認する',
-      'en-US': 'Check again',
-      'fr-FR': 'Vérifier de nouveau',
-      'de-DE': 'Erneut prüfen',
-      'hi-IN': 'फिर से देखें',
-      'id-ID': 'Periksa lagi',
-      'it-IT': 'Controlla di nuovo',
-      'ko-KR': '다시 확인',
-      'pt-BR': 'Verificar de novo',
-      'es-419': 'Volver a verificar',
-      'es-ES': 'Volver a comprobar'
-    },
-    model: {
-      'ja-JP': '{memoryGb}GB · {model}。',
-      'en-US': '{memoryGb} GB · {model}.',
-      'fr-FR': '{memoryGb} Go · {model}.',
-      'de-DE': '{memoryGb} GB · {model}.',
-      'hi-IN': '{memoryGb} GB · {model}।',
-      'id-ID': '{memoryGb} GB · {model}.',
-      'it-IT': '{memoryGb} GB · {model}.',
-      'ko-KR': '{memoryGb}GB · {model}.',
-      'pt-BR': '{memoryGb} GB · {model}.',
-      'es-419': '{memoryGb} GB · {model}.',
-      'es-ES': '{memoryGb} GB · {model}.'
-    },
-    needsModel: {
-      'ja-JP': '{memoryGb}GB · {model}。モデルをまだ取得していません。',
-      'en-US': '{memoryGb} GB · {model}. The model is not downloaded yet.',
-      'fr-FR': "{memoryGb} Go · {model}. Le modèle n'est pas encore téléchargé.",
-      'de-DE': '{memoryGb} GB · {model}. Das Modell ist noch nicht geladen.',
-      'hi-IN': '{memoryGb} GB · {model}। मॉडल अभी डाउनलोड नहीं हुआ।',
-      'id-ID': '{memoryGb} GB · {model}. Modelnya belum diunduh.',
-      'it-IT': '{memoryGb} GB · {model}. Il modello non è ancora stato scaricato.',
-      'ko-KR': '{memoryGb}GB · {model}. 모델을 아직 내려받지 않았습니다.',
-      'pt-BR': '{memoryGb} GB · {model}. O modelo ainda não foi baixado.',
-      'es-419': '{memoryGb} GB · {model}. Todavía no se descargó el modelo.',
-      'es-ES': '{memoryGb} GB · {model}. El modelo todavía no se ha descargado.'
-    },
-    chooseModel: {
-      'ja-JP': 'モデルを選ぶ',
-      'en-US': 'Choose a model',
-      'fr-FR': 'Choisir un modèle',
-      'de-DE': 'Modell wählen',
-      'hi-IN': 'मॉडल चुनें',
-      'id-ID': 'Pilih model',
-      'it-IT': 'Scegli un modello',
-      'ko-KR': '모델 선택',
-      'pt-BR': 'Escolher um modelo',
-      'es-419': 'Elegir un modelo',
-      'es-ES': 'Elegir un modelo'
-    },
     browserWhisper: {
       'ja-JP': 'ブラウザ内 Whisper',
       'en-US': 'In-browser Whisper',
@@ -132,31 +54,44 @@ export const settingsModels = defineMessages({
       'es-419': 'Whisper en el navegador',
       'es-ES': 'Whisper en el navegador'
     },
-    browserWhisperHint: {
-      'ja-JP': 'このコンピュータの音声認識が止まったときに、代わりに使います。',
-      'en-US': 'Takes over when speech recognition on this computer stops.',
-      'fr-FR': "Prend le relais quand la reconnaissance vocale de cet ordinateur s'arrête.",
-      'de-DE': 'Springt ein, wenn die Spracherkennung auf diesem Computer stehen bleibt.',
-      'hi-IN': 'इस कंप्यूटर का स्पीच रिकग्निशन रुकने पर यह उसकी जगह ले लेता है।',
-      'id-ID': 'Mengambil alih saat pengenalan suara di komputer ini berhenti.',
-      'it-IT': 'Subentra quando il riconoscimento vocale su questo computer si ferma.',
-      'ko-KR': '이 컴퓨터의 음성 인식이 멈췄을 때 대신 씁니다.',
-      'pt-BR': 'Assume quando o reconhecimento de fala deste computador para.',
-      'es-419': 'Toma el relevo cuando el reconocimiento de voz de esta computadora se detiene.',
-      'es-ES': 'Toma el relevo cuando el reconocimiento de voz de este ordenador se detiene.'
+    notDownloaded: {
+      'ja-JP': '{model} をまだ取得していません。準備するまでマイクは使えません。',
+      'en-US': '{model} has not been downloaded yet. The microphone cannot be used until it is prepared.',
+      'fr-FR': "{model} n'a pas encore été téléchargé. Le micro reste inutilisable tant qu'il n'est pas prêt.",
+      'de-DE': '{model} ist noch nicht heruntergeladen. Bis es vorbereitet ist, lässt sich das Mikrofon nicht verwenden.',
+      'hi-IN': '{model} अभी डाउनलोड नहीं हुआ है। तैयार होने तक माइक्रोफ़ोन इस्तेमाल नहीं हो सकता।',
+      'id-ID': '{model} belum diunduh. Mikrofon tidak bisa dipakai sampai model ini siap.',
+      'it-IT': '{model} non è ancora stato scaricato. Finché non è pronto il microfono non si può usare.',
+      'ko-KR': '{model}을(를) 아직 내려받지 않았습니다. 준비할 때까지 마이크를 쓸 수 없습니다.',
+      'pt-BR': '{model} ainda não foi baixado. O microfone não pode ser usado até ele ficar pronto.',
+      'es-419': '{model} todavía no se descargó. El micrófono no se puede usar hasta prepararlo.',
+      'es-ES': '{model} todavía no se ha descargado. El micrófono no se puede usar hasta prepararlo.'
     },
-    checking: {
-      'ja-JP': '環境を確認しています。',
-      'en-US': 'Checking this computer.',
-      'fr-FR': 'Vérification de cet ordinateur.',
-      'de-DE': 'Dieser Computer wird geprüft.',
-      'hi-IN': 'इस कंप्यूटर को देखा जा रहा है।',
-      'id-ID': 'Memeriksa komputer ini.',
-      'it-IT': 'Controllo di questo computer in corso.',
-      'ko-KR': '이 컴퓨터의 환경을 확인하고 있습니다.',
-      'pt-BR': 'Verificando este computador.',
-      'es-419': 'Verificando esta computadora.',
-      'es-ES': 'Comprobando este ordenador.'
+    checkAgain: {
+      'ja-JP': '再確認する',
+      'en-US': 'Check again',
+      'fr-FR': 'Vérifier de nouveau',
+      'de-DE': 'Erneut prüfen',
+      'hi-IN': 'फिर से देखें',
+      'id-ID': 'Periksa lagi',
+      'it-IT': 'Controlla di nuovo',
+      'ko-KR': '다시 확인',
+      'pt-BR': 'Verificar de novo',
+      'es-419': 'Volver a verificar',
+      'es-ES': 'Volver a comprobar'
+    },
+    notDownloadedWhisper: {
+      'ja-JP': '{model} をまだ取得していません。準備するまでは、ブラウザ内 Whisper で聞き取ります。',
+      'en-US': '{model} has not been downloaded yet. Until it is prepared, in-browser Whisper does the listening.',
+      'fr-FR': "{model} n'a pas encore été téléchargé. Tant qu'il n'est pas prêt, Whisper dans le navigateur assure l'écoute.",
+      'de-DE': '{model} ist noch nicht heruntergeladen. Bis es vorbereitet ist, hört Whisper im Browser zu.',
+      'hi-IN': '{model} अभी डाउनलोड नहीं हुआ है। तैयार होने तक ब्राउज़र वाला Whisper सुनता है।',
+      'id-ID': '{model} belum diunduh. Sampai model ini siap, Whisper dalam browser yang mendengarkan.',
+      'it-IT': '{model} non è ancora stato scaricato. Finché non è pronto, ascolta Whisper nel browser.',
+      'ko-KR': '{model}을(를) 아직 내려받지 않았습니다. 준비할 때까지는 브라우저 내 Whisper가 알아듣습니다.',
+      'pt-BR': '{model} ainda não foi baixado. Até ele ficar pronto, o Whisper no navegador faz a escuta.',
+      'es-419': '{model} todavía no se descargó. Hasta prepararlo, Whisper en el navegador se encarga de escuchar.',
+      'es-ES': '{model} todavía no se ha descargado. Hasta prepararlo, Whisper en el navegador se encarga de escuchar.'
     }
   },
   speech: {
@@ -173,58 +108,6 @@ export const settingsModels = defineMessages({
       'es-419': 'Lectura en voz alta',
       'es-ES': 'Lectura en voz alta'
     },
-    noPreparation: {
-      'ja-JP': '準備不要',
-      'en-US': 'No preparation needed',
-      'fr-FR': 'Aucune préparation nécessaire',
-      'de-DE': 'Keine Vorbereitung nötig',
-      'hi-IN': 'तैयारी की ज़रूरत नहीं',
-      'id-ID': 'Tidak perlu disiapkan',
-      'it-IT': 'Nessuna preparazione',
-      'ko-KR': '준비 불필요',
-      'pt-BR': 'Não precisa preparar',
-      'es-419': 'No requiere preparación',
-      'es-ES': 'No necesita preparación'
-    },
-    running: {
-      'ja-JP': '動作中',
-      'en-US': 'Running',
-      'fr-FR': 'En fonctionnement',
-      'de-DE': 'Läuft',
-      'hi-IN': 'चल रहा है',
-      'id-ID': 'Berjalan',
-      'it-IT': 'In funzione',
-      'ko-KR': '동작 중',
-      'pt-BR': 'Em execução',
-      'es-419': 'En ejecución',
-      'es-ES': 'En marcha'
-    },
-    none: {
-      'ja-JP': '返事は文字だけで出ます。',
-      'en-US': 'Replies appear as text only.',
-      'fr-FR': "Les réponses s'affichent en texte seulement.",
-      'de-DE': 'Antworten erscheinen nur als Text.',
-      'hi-IN': 'जवाब सिर्फ़ टेक्स्ट में दिखेंगे।',
-      'id-ID': 'Jawaban muncul sebagai teks saja.',
-      'it-IT': 'Le risposte compaiono solo come testo.',
-      'ko-KR': '대답은 글자로만 나옵니다.',
-      'pt-BR': 'As respostas aparecem só em texto.',
-      'es-419': 'Las respuestas aparecen solo como texto.',
-      'es-ES': 'Las respuestas aparecen solo como texto.'
-    },
-    system: {
-      'ja-JP': '追加のアプリケーションは要りません。',
-      'en-US': 'No extra application is needed.',
-      'fr-FR': "Aucune application supplémentaire n'est nécessaire.",
-      'de-DE': 'Es ist keine zusätzliche Anwendung nötig.',
-      'hi-IN': 'कोई अलग ऐप्लिकेशन नहीं चाहिए।',
-      'id-ID': 'Tidak perlu aplikasi tambahan.',
-      'it-IT': 'Non serve nessuna applicazione in più.',
-      'ko-KR': '추가 애플리케이션이 필요하지 않습니다.',
-      'pt-BR': 'Não precisa de outro aplicativo.',
-      'es-419': 'No hace falta ninguna aplicación adicional.',
-      'es-ES': 'No hace falta ninguna aplicación más.'
-    },
     qwen: {
       'ja-JP': '{model} をこのコンピュータの GPU で動かします。モデル(約 {sizeGb}GB)を取得します。',
       'en-US': '{model} runs on the GPU of this computer. Downloads the model (about {sizeGb} GB).',
@@ -237,34 +120,6 @@ export const settingsModels = defineMessages({
       'pt-BR': '{model} roda na GPU deste computador. Baixa o modelo (cerca de {sizeGb} GB).',
       'es-419': '{model} funciona en la GPU de esta computadora. Descarga el modelo (unos {sizeGb} GB).',
       'es-ES': '{model} se ejecuta en la GPU de este ordenador. Descarga el modelo (unos {sizeGb} GB).'
-    },
-    external: {
-      macos: {
-        'ja-JP': '{engine} を起動しておくと、その声で読み上げます。見つからない間は macOS の音声合成で読み上げます。',
-        'en-US': 'While {engine} is running, replies are read with its voice. While it is not found, they are read with the macOS voice.',
-        'fr-FR': "Tant que {engine} tourne, les réponses sont lues avec sa voix. Tant qu'il reste introuvable, elles sont lues avec la voix de macOS.",
-        'de-DE': 'Solange {engine} läuft, werden Antworten mit dessen Stimme vorgelesen. Solange es nicht gefunden wird, liest die macOS-Stimme.',
-        'hi-IN': '{engine} चलता रहे तो जवाब उसी की आवाज़ में पढ़े जाते हैं। जब तक वह न मिले, जवाब macOS की आवाज़ में पढ़े जाते हैं।',
-        'id-ID': 'Selama {engine} berjalan, jawaban dibacakan dengan suaranya. Selama tidak ditemukan, jawaban dibacakan dengan suara macOS.',
-        'it-IT': 'Mentre {engine} è in funzione, le risposte vengono lette con la sua voce. Finché non viene trovato, vengono lette con la sintesi vocale di macOS.',
-        'ko-KR': '{engine} 엔진을 실행해 두면 그 목소리로 읽어줍니다. 찾지 못하는 동안에는 macOS 음성 합성으로 읽어줍니다.',
-        'pt-BR': 'Enquanto o {engine} está em execução, as respostas são lidas com a voz dele. Enquanto ele não for encontrado, são lidas com a voz do macOS.',
-        'es-419': 'Mientras {engine} está en ejecución, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.',
-        'es-ES': 'Mientras {engine} está en marcha, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de macOS.'
-      },
-      windows: {
-        'ja-JP': '{engine} を起動しておくと、その声で読み上げます。見つからない間は Windows の音声合成で読み上げます。',
-        'en-US': 'While {engine} is running, replies are read with its voice. While it is not found, they are read with the Windows voice.',
-        'fr-FR': "Tant que {engine} tourne, les réponses sont lues avec sa voix. Tant qu'il reste introuvable, elles sont lues avec la voix de Windows.",
-        'de-DE': 'Solange {engine} läuft, werden Antworten mit dessen Stimme vorgelesen. Solange es nicht gefunden wird, liest die Windows-Stimme.',
-        'hi-IN': '{engine} चलता रहे तो जवाब उसी की आवाज़ में पढ़े जाते हैं। जब तक वह न मिले, जवाब Windows की आवाज़ में पढ़े जाते हैं।',
-        'id-ID': 'Selama {engine} berjalan, jawaban dibacakan dengan suaranya. Selama tidak ditemukan, jawaban dibacakan dengan suara Windows.',
-        'it-IT': 'Mentre {engine} è in funzione, le risposte vengono lette con la sua voce. Finché non viene trovato, vengono lette con la sintesi vocale di Windows.',
-        'ko-KR': '{engine} 엔진을 실행해 두면 그 목소리로 읽어줍니다. 찾지 못하는 동안에는 Windows 음성 합성으로 읽어줍니다.',
-        'pt-BR': 'Enquanto o {engine} está em execução, as respostas são lidas com a voz dele. Enquanto ele não for encontrado, são lidas com a voz do Windows.',
-        'es-419': 'Mientras {engine} está en ejecución, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de Windows.',
-        'es-ES': 'Mientras {engine} está en marcha, las respuestas se leen con su voz. Mientras no se encuentre, se leen con la voz de Windows.'
-      }
     },
     get: {
       'ja-JP': '{engine} を入手する',
@@ -291,19 +146,6 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Escolher um motor',
       'es-419': 'Elegir un motor',
       'es-ES': 'Elegir un motor'
-    },
-    cannotRun: {
-      'ja-JP': '使えません',
-      'en-US': 'Unavailable',
-      'fr-FR': 'Indisponible',
-      'de-DE': 'Nicht verfügbar',
-      'hi-IN': 'उपलब्ध नहीं',
-      'id-ID': 'Tidak tersedia',
-      'it-IT': 'Non disponibile',
-      'ko-KR': '사용할 수 없음',
-      'pt-BR': 'Indisponível',
-      'es-419': 'No disponible',
-      'es-ES': 'No disponible'
     },
     qwenTooLittleMemory: {
       macos: {
@@ -335,45 +177,6 @@ export const settingsModels = defineMessages({
     }
   },
   agent: {
-    title: {
-      'ja-JP': 'Agent の CLI',
-      'en-US': 'Agent CLI',
-      'fr-FR': "CLI de l'agent",
-      'de-DE': 'CLI des Agenten',
-      'hi-IN': 'Agent का CLI',
-      'id-ID': 'CLI Agent',
-      'it-IT': 'CLI di Agent',
-      'ko-KR': 'Agent의 CLI',
-      'pt-BR': 'CLI do Agent',
-      'es-419': 'CLI del Agent',
-      'es-ES': 'CLI de Agent'
-    },
-    detected: {
-      'ja-JP': '検出済み',
-      'en-US': 'Detected',
-      'fr-FR': 'Détecté',
-      'de-DE': 'Gefunden',
-      'hi-IN': 'मिल गया',
-      'id-ID': 'Terdeteksi',
-      'it-IT': 'Rilevata',
-      'ko-KR': '검출됨',
-      'pt-BR': 'Detectado',
-      'es-419': 'Detectado',
-      'es-ES': 'Detectada'
-    },
-    description: {
-      'ja-JP': '{engine} の CLI をこのコンピュータにインストールして、認証しておきます。ジョブと記憶の整理で使います。',
-      'en-US': 'Install the {engine} CLI on this computer and sign in to it. It runs jobs and organizes the memory.',
-      'fr-FR': 'Installez le CLI {engine} sur cet ordinateur et connectez-vous. Il exécute les jobs et organise la mémoire.',
-      'de-DE': 'Installieren Sie die CLI von {engine} auf diesem Computer und melden Sie sich darin an. Sie führt die Jobs aus und pflegt das Gedächtnis.',
-      'hi-IN': '{engine} का CLI इस कंप्यूटर पर इंस्टॉल करके उसमें साइन इन करें। यह जॉब चलाता है और याददाश्त संभालता है।',
-      'id-ID': 'Pasang CLI {engine} di komputer ini lalu masuk ke akunnya. CLI ini menjalankan pekerjaan dan menata ingatan.',
-      'it-IT': 'Installa la CLI di {engine} su questo computer e accedi. Serve per gli incarichi e per il riordino della memoria.',
-      'ko-KR': '{engine} CLI를 이 컴퓨터에 설치하고 로그인해 둡니다. 작업과 기억 정리에서 씁니다.',
-      'pt-BR': 'Instale o CLI do {engine} neste computador e faça login nele. Ele executa os jobs e organiza a memória.',
-      'es-419': 'Instala el CLI de {engine} en esta computadora e inicia sesión en él. Ejecuta los trabajos y organiza la memoria.',
-      'es-ES': 'Instala la CLI de {engine} en este ordenador e inicia sesión en ella. Ejecuta los trabajos y organiza la memoria.'
-    },
     install: {
       'ja-JP': 'インストール手順',
       'en-US': 'Installation guide',
@@ -386,142 +189,51 @@ export const settingsModels = defineMessages({
       'pt-BR': 'Guia de instalação',
       'es-419': 'Guía de instalación',
       'es-ES': 'Guía de instalación'
-    },
-    chooseEngine: {
-      'ja-JP': 'エンジンを選ぶ',
-      'en-US': 'Choose an engine',
-      'fr-FR': 'Choisir un moteur',
-      'de-DE': 'Engine wählen',
-      'hi-IN': 'इंजन चुनें',
-      'id-ID': 'Pilih mesin',
-      'it-IT': 'Scegli un motore',
-      'ko-KR': '엔진 선택',
-      'pt-BR': 'Escolher um motor',
-      'es-419': 'Elegir un motor',
-      'es-ES': 'Elegir un motor'
     }
   },
   turnTaking: {
-    title: {
-      'ja-JP': 'ターンテイキング(MaAI)',
-      'en-US': 'Turn-taking (MaAI)',
-      'fr-FR': 'Tours de parole (MaAI)',
-      'de-DE': 'Turn-Taking (MaAI)',
-      'hi-IN': 'बोलने की बारी (MaAI)',
-      'id-ID': 'Pergantian giliran (MaAI)',
-      'it-IT': 'Alternanza dei turni (MaAI)',
-      'ko-KR': '턴테이킹(MaAI)',
-      'pt-BR': 'Alternância de turnos (MaAI)',
-      'es-419': 'Turnos de habla (MaAI)',
-      'es-ES': 'Turnos de palabra (MaAI)'
-    },
-    description: {
-      'ja-JP': 'Python 環境(PyTorch)と MaAI のモデル(約 245MB)を取得します。話し終わりの早い判定、話の途中の相槌、頷きに使います。',
-      'en-US': 'Downloads the Python environment (PyTorch) and the MaAI models (about 245 MB). Used for detecting the end of speech early, for backchannels while listening, and for nodding.',
-      'fr-FR': "Télécharge l'environnement Python (PyTorch) et les modèles MaAI (environ 245 Mo). Servent à détecter tôt la fin de la parole, aux acquiescements pendant l'écoute et aux hochements de tête.",
-      'de-DE': 'Lädt die Python-Umgebung (PyTorch) und die Modelle von MaAI (rund 245 MB). Dient dem frühen Erkennen des Äußerungsendes, den Hörersignalen beim Zuhören und dem Nicken.',
-      'hi-IN': 'Python एनवायरनमेंट (PyTorch) और MaAI के मॉडल (करीब 245 MB) डाउनलोड होते हैं। ये बोलने के खत्म होने को जल्दी पहचानने, सुनते समय हुंकारे भरने और सिर हिलाने के काम आते हैं।',
-      'id-ID': 'Mengunduh lingkungan Python (PyTorch) dan model MaAI (sekitar 245 MB). Dipakai untuk mendeteksi akhir bicara lebih awal, untuk gumaman saat mendengarkan, dan untuk anggukan.',
-      'it-IT': "Scarica l'ambiente Python (PyTorch) e i modelli MaAI (circa 245 MB). Servono per riconoscere presto la fine del parlato, per i cenni mentre ascolta e per gli assensi.",
-      'ko-KR': 'Python 환경(PyTorch)과 MaAI 모델(약 245MB)을 내려받습니다. 말 끝을 빨리 판정하는 데, 그리고 말하는 도중의 맞장구와 고개 끄덕임에 씁니다.',
-      'pt-BR': 'Baixa o ambiente Python (PyTorch) e os modelos do MaAI (cerca de 245 MB). Serve para detectar cedo o fim da fala, para os sinais de escuta enquanto você fala e para os acenos de cabeça.',
-      'es-419': 'Descarga el entorno de Python (PyTorch) y los modelos de MaAI (unos 245 MB). Se usan para detectar pronto el fin del habla, para los asentimientos mientras escucha y para asentir con la cabeza.',
-      'es-ES': 'Descarga el entorno de Python (PyTorch) y los modelos de MaAI (unos 245 MB). Se usan para detectar pronto el final del habla, para los asentimientos mientras escucha y para asentir con la cabeza.'
-    },
-    enable: {
-      'ja-JP': '「声」の詳細設定でオンにする',
-      'en-US': 'Turn it on under Advanced on the Voice page',
-      'fr-FR': 'Activez-les sous Réglages avancés, sur la page Voix',
-      'de-DE': 'Unter „Erweitert“ auf der Seite „Stimme“ einschalten',
-      'hi-IN': '"आवाज़" पेज पर विस्तृत सेटिंग्ज़ में इसे चालू करें',
-      'id-ID': 'Aktifkan di bagian Lanjutan pada halaman Suara',
-      'it-IT': 'Attivala in «Impostazioni avanzate», nella pagina «Voce»',
-      'ko-KR': "'음성'의 고급 설정에서 켜기",
-      'pt-BR': 'Ativar em Avançado, na página Voz',
-      'es-419': 'Actívalo en Avanzado, en la página Voz',
-      'es-ES': 'Activarlo en los ajustes avanzados de la página “Voz”'
+    hint: {
+      'ja-JP': '声の調子から話し終わりを早く判断します。MaAI のモデル(約 245MB)を取得します。',
+      'en-US': 'Tells from your tone of voice, sooner, that you have finished. Downloads the MaAI model (about 245 MB).',
+      'fr-FR': 'Détecte plus tôt, au ton de la voix, que vous avez fini. Télécharge le modèle MaAI (environ 245 Mo).',
+      'de-DE': 'Erkennt am Tonfall früher, dass Sie fertig sind. Lädt das MaAI-Modell (etwa 245 MB) herunter.',
+      'hi-IN': 'आवाज़ के लहजे से जल्दी पहचानता है कि आपने बोलना खत्म किया। MaAI मॉडल (लगभग 245 MB) डाउनलोड करता है।',
+      'id-ID': 'Mengenali lebih cepat dari nada suara bahwa Anda selesai bicara. Mengunduh model MaAI (sekitar 245 MB).',
+      'it-IT': 'Capisce prima, dal tono della voce, che hai finito. Scarica il modello MaAI (circa 245 MB).',
+      'ko-KR': '목소리의 흐름으로 말이 끝난 것을 더 빨리 알아챕니다. MaAI 모델(약 245MB)을 내려받습니다.',
+      'pt-BR': 'Percebe mais cedo, pelo tom de voz, que você terminou. Baixa o modelo MaAI (cerca de 245 MB).',
+      'es-419': 'Detecta antes, por el tono de voz, que terminaste. Descarga el modelo MaAI (unos 245 MB).',
+      'es-ES': 'Detecta antes, por el tono de voz, que has terminado. Descarga el modelo MaAI (unos 245 MB).'
     }
   },
   backchannel: {
-    title: {
-      'ja-JP': '相槌分類器(ModernBERT-ja 70m)',
-      'en-US': 'Backchannel classifier (ModernBERT-ja 70m)',
-      'fr-FR': "Classificateur d'acquiescements (ModernBERT-ja 70m)",
-      'de-DE': 'Klassifikator für Hörersignale (ModernBERT-ja 70m)',
-      'hi-IN': 'हुंकारा क्लासिफ़ायर (ModernBERT-ja 70m)',
-      'id-ID': 'Pengklasifikasi gumaman (ModernBERT-ja 70m)',
-      'it-IT': 'Classificatore dei cenni (ModernBERT-ja 70m)',
-      'ko-KR': '맞장구 분류기(ModernBERT-ja 70m)',
-      'pt-BR': 'Classificador de sinais de escuta (ModernBERT-ja 70m)',
-      'es-419': 'Clasificador de asentimientos (ModernBERT-ja 70m)',
-      'es-ES': 'Clasificador de asentimientos (ModernBERT-ja 70m)'
-    },
-    description: {
-      'ja-JP': 'Python 環境(ONNX Runtime、意味検索と共有)と相槌の分類モデル(約 77MB)を取得します。話している途中で相槌の種類を決め、言いかけの間は話し終わりを待ちます。準備するまで話した直後の相槌は鳴りません。常駐中は約 330MB のメモリを使います。',
-      'en-US': 'Downloads a backchannel classifier (about 77 MB) and the Python environment (ONNX Runtime) it shares with semantic search. It picks the kind of backchannel while you speak and waits out an unfinished phrase. Until it is prepared, no backchannel follows what you say. It holds about 330 MB of memory while resident.',
-      'fr-FR': "Télécharge un classificateur d'acquiescements (environ 77 Mo) et l'environnement Python (ONNX Runtime) qu'il partage avec la recherche sémantique. Il choisit le type d'acquiescement pendant que vous parlez et attend la fin d'une phrase inachevée. Tant qu'il n'est pas préparé, aucun acquiescement ne suit ce que vous dites. Il occupe environ 330 Mo de mémoire tant qu'il reste chargé.",
-      'de-DE': 'Lädt einen Klassifikator für Hörersignale (rund 77 MB) und die Python-Umgebung (ONNX Runtime), die er mit der semantischen Suche teilt. Er wählt die Art des Hörersignals, während Sie sprechen, und wartet einen unvollendeten Satz ab. Bis er vorbereitet ist, folgt auf das Gesagte kein Hörersignal. Solange er im Speicher bleibt, belegt er rund 330 MB.',
-      'hi-IN': 'एक हुंकारा क्लासिफ़ायर (करीब 77 MB) और मतलब से खोज के साथ साझा Python एनवायरनमेंट (ONNX Runtime) डाउनलोड होते हैं। यह आपके बोलते समय ही हुंकारे की किस्म चुनता है और अधूरे वाक्य के खत्म होने का इंतज़ार करता है। तैयार होने तक, आपकी बात के तुरंत बाद कोई हुंकारा नहीं आता। चलते रहने पर यह करीब 330 MB मेमोरी घेरता है।',
-      'id-ID': 'Mengunduh pengklasifikasi gumaman (sekitar 77 MB) dan lingkungan Python (ONNX Runtime) yang dipakainya bersama pencarian semantik. Pengklasifikasi ini memilih jenis gumaman selagi Anda bicara dan menunggu kalimat yang belum selesai. Sampai disiapkan, tidak ada gumaman setelah Anda bicara. Pengklasifikasi ini menahan sekitar 330 MB memori selama tetap berjalan.',
-      'it-IT': "Scarica un classificatore dei cenni (circa 77 MB) e l'ambiente Python (ONNX Runtime) condiviso con la ricerca semantica. Sceglie il tipo di cenno mentre parli e aspetta la fine di una frase lasciata a metà. Finché non è pronto, dopo quello che dici non arriva nessun cenno. Mentre resta in memoria occupa circa 330 MB.",
-      'ko-KR': 'Python 환경(ONNX Runtime, 의미 검색과 공유)과 맞장구 분류 모델(약 77MB)을 내려받습니다. 말하는 도중에 맞장구의 종류를 정하고, 말이 끝나지 않았을 때는 말 끝을 기다립니다. 준비하기 전에는 말한 직후의 맞장구가 나지 않습니다. 상주 중에는 약 330MB의 메모리를 씁니다.',
-      'pt-BR': 'Baixa um classificador de sinais de escuta (cerca de 77 MB) e o ambiente Python (ONNX Runtime) que ele divide com a busca por significado. Ele escolhe o tipo de sinal de escuta enquanto você fala e espera uma frase interrompida terminar. Até ele ser preparado, nenhum sinal de escuta vem depois do que você diz. Ocupa cerca de 330 MB de memória enquanto fica residente.',
-      'es-419': 'Descarga un clasificador de asentimientos (unos 77 MB) y el entorno de Python (ONNX Runtime) que comparte con la búsqueda por significado. Elige el tipo de asentimiento mientras hablas y espera a que termines una frase inconclusa. Hasta que no esté preparado, no suena ningún asentimiento después de que hablas. Mientras está residente ocupa unos 330 MB de memoria.',
-      'es-ES': 'Descarga un clasificador de asentimientos (unos 77 MB) y el entorno de Python (ONNX Runtime) que comparte con la búsqueda semántica. Decide el tipo de asentimiento mientras hablas y espera a que termines una frase a medias. Hasta que no se prepare, no suena ningún asentimiento justo después de hablar. Mientras está residente ocupa unos 330 MB de memoria.'
-    },
-    enable: {
-      'ja-JP': '「声」でオンにする',
-      'en-US': 'Turn it on on the Voice page',
-      'fr-FR': 'Activez-le sur la page Voix',
-      'de-DE': 'Auf der Seite „Stimme“ einschalten',
-      'hi-IN': '"आवाज़" पेज पर इसे चालू करें',
-      'id-ID': 'Aktifkan di halaman Suara',
-      'it-IT': 'Attivalo nella pagina «Voce»',
-      'ko-KR': "'음성'에서 켜기",
-      'pt-BR': 'Ativar na página Voz',
-      'es-419': 'Actívalo en la página Voz',
-      'es-ES': 'Activarlo en la página “Voz”'
+    notPrepared: {
+      'ja-JP': '相槌分類器(約 77MB)を準備するまで、話し終えた直後の相槌は鳴りません。',
+      'en-US': 'Until the backchannel classifier (about 77 MB) is prepared, no backchannel plays right after you finish.',
+      'fr-FR': "Tant que le classifieur d'acquiescements (environ 77 Mo) n'est pas prêt, aucun acquiescement ne suit la fin de votre phrase.",
+      'de-DE': 'Bis der Klassifikator für Hörersignale (etwa 77 MB) vorbereitet ist, folgt auf Ihren Satz kein Hörersignal.',
+      'hi-IN': 'हुंकारा क्लासिफ़ायर (लगभग 77 MB) तैयार होने तक, बोलना खत्म होते ही हुंकारा नहीं बजेगा।',
+      'id-ID': 'Sampai pengklasifikasi gumaman (sekitar 77 MB) siap, tidak ada gumaman setelah Anda selesai bicara.',
+      'it-IT': 'Finché il classificatore dei cenni (circa 77 MB) non è pronto, dopo che hai finito non si sente alcun cenno.',
+      'ko-KR': '맞장구 분류기(약 77MB)를 준비할 때까지 말을 마친 직후의 맞장구는 나오지 않습니다.',
+      'pt-BR': 'Até o classificador de sinais de escuta (cerca de 77 MB) ficar pronto, nenhum sinal toca logo depois que você termina.',
+      'es-419': 'Hasta que el clasificador de asentimientos (unos 77 MB) esté listo, no suena ningún asentimiento al terminar de hablar.',
+      'es-ES': 'Hasta que el clasificador de asentimientos (unos 77 MB) esté listo, no suena ningún asentimiento al terminar de hablar.'
     }
   },
   semanticSearch: {
-    title: {
-      'ja-JP': '意味検索(multilingual-e5)',
-      'en-US': 'Semantic search (multilingual-e5)',
-      'fr-FR': 'Recherche sémantique (multilingual-e5)',
-      'de-DE': 'Semantische Suche (multilingual-e5)',
-      'hi-IN': 'मतलब से खोज (multilingual-e5)',
-      'id-ID': 'Pencarian semantik (multilingual-e5)',
-      'it-IT': 'Ricerca semantica (multilingual-e5)',
-      'ko-KR': '의미 검색(multilingual-e5)',
-      'pt-BR': 'Busca por significado (multilingual-e5)',
-      'es-419': 'Búsqueda por significado (multilingual-e5)',
-      'es-ES': 'Búsqueda semántica (multilingual-e5)'
-    },
-    description: {
-      'ja-JP': 'Python 環境(ONNX Runtime)と多言語の embedding モデル(約 135MB)を取得します。常駐中は約 730MB のメモリを使います。',
-      'en-US': 'Downloads the Python environment (ONNX Runtime) and a multilingual embedding model (about 135 MB). It holds about 730 MB of memory while resident.',
-      'fr-FR': "Télécharge l'environnement Python (ONNX Runtime) et un modèle d'embedding multilingue (environ 135 Mo). Il occupe environ 730 Mo de mémoire tant qu'il reste chargé.",
-      'de-DE': 'Lädt die Python-Umgebung (ONNX Runtime) und ein mehrsprachiges Embedding-Modell (rund 135 MB). Solange es im Speicher bleibt, belegt es rund 730 MB.',
-      'hi-IN': 'Python एनवायरनमेंट (ONNX Runtime) और एक बहुभाषी embedding मॉडल (करीब 135 MB) डाउनलोड होते हैं। चलते रहने पर यह करीब 730 MB मेमोरी घेरता है।',
-      'id-ID': 'Mengunduh lingkungan Python (ONNX Runtime) dan model embedding multibahasa (sekitar 135 MB). Model ini menahan sekitar 730 MB memori selama tetap berjalan.',
-      'it-IT': "Scarica l'ambiente Python (ONNX Runtime) e un modello di embedding multilingue (circa 135 MB). Mentre resta in memoria occupa circa 730 MB.",
-      'ko-KR': 'Python 환경(ONNX Runtime)과 다국어 embedding 모델(약 135MB)을 내려받습니다. 상주 중에는 약 730MB의 메모리를 씁니다.',
-      'pt-BR': 'Baixa o ambiente Python (ONNX Runtime) e um modelo de embedding multilíngue (cerca de 135 MB). Ocupa cerca de 730 MB de memória enquanto fica residente.',
-      'es-419': 'Descarga el entorno de Python (ONNX Runtime) y un modelo de embeddings multilingüe (unos 135 MB). Mientras está residente ocupa unos 730 MB de memoria.',
-      'es-ES': 'Descarga el entorno de Python (ONNX Runtime) y un modelo de embeddings multilingüe (unos 135 MB). Mientras está residente ocupa unos 730 MB de memoria.'
-    },
-    enable: {
-      'ja-JP': '「記憶」でオンにする',
-      'en-US': 'Turn it on on the Memory page',
-      'fr-FR': 'Activez-la sur la page Mémoire',
-      'de-DE': 'Auf der Seite „Gedächtnis“ einschalten',
-      'hi-IN': '"याददाश्त" पेज पर इसे चालू करें',
-      'id-ID': 'Aktifkan di halaman Ingatan',
-      'it-IT': 'Attivala nella pagina «Memoria»',
-      'ko-KR': "'기억'에서 켜기",
-      'pt-BR': 'Ativar na página Memória',
-      'es-419': 'Actívala en la página Memoria',
-      'es-ES': 'Activarla en la página “Memoria”'
+    hint: {
+      'ja-JP': '言い方が違っても記憶を引けるようにします。多言語のモデル(約 135MB)を取得し、常駐中は約 730MB のメモリを使います。',
+      'en-US': 'Finds memories even when they are worded differently. Downloads a multilingual model (about 135 MB) that uses about 730 MB of memory while running.',
+      'fr-FR': 'Retrouve les souvenirs même formulés autrement. Télécharge un modèle multilingue (environ 135 Mo) qui occupe environ 730 Mo de mémoire en fonctionnement.',
+      'de-DE': 'Findet Erinnerungen auch bei anderer Formulierung. Lädt ein mehrsprachiges Modell (etwa 135 MB), das im Betrieb etwa 730 MB Arbeitsspeicher belegt.',
+      'hi-IN': 'अलग शब्दों में कही बात से भी यादें ढूँढता है। एक बहुभाषी मॉडल (लगभग 135 MB) डाउनलोड करता है, जो चलते समय लगभग 730 MB मेमोरी लेता है।',
+      'id-ID': 'Menemukan ingatan meski diungkapkan dengan kata lain. Mengunduh model multibahasa (sekitar 135 MB) yang memakai sekitar 730 MB memori saat berjalan.',
+      'it-IT': 'Trova i ricordi anche se detti con altre parole. Scarica un modello multilingue (circa 135 MB) che usa circa 730 MB di memoria mentre è attivo.',
+      'ko-KR': '표현이 달라도 기억을 찾을 수 있게 합니다. 다국어 모델(약 135MB)을 내려받으며, 상주하는 동안 약 730MB의 메모리를 씁니다.',
+      'pt-BR': 'Encontra lembranças mesmo ditas de outro jeito. Baixa um modelo multilíngue (cerca de 135 MB) que usa cerca de 730 MB de memória enquanto roda.',
+      'es-419': 'Encuentra recuerdos aunque se digan con otras palabras. Descarga un modelo multilingüe (unos 135 MB) que usa unos 730 MB de memoria mientras funciona.',
+      'es-ES': 'Encuentra recuerdos aunque se digan con otras palabras. Descarga un modelo multilingüe (unos 135 MB) que usa unos 730 MB de memoria mientras funciona.'
     }
   },
   features: {
@@ -774,5 +486,18 @@ export const settingsModels = defineMessages({
       'es-419': 'Descargando {model}',
       'es-ES': 'Descargando {model}'
     }
+  },
+  prepareAndTurnOn: {
+    'ja-JP': '準備してオンにする',
+    'en-US': 'Prepare and turn on',
+    'fr-FR': 'Préparer et activer',
+    'de-DE': 'Vorbereiten und einschalten',
+    'hi-IN': 'तैयार करें और चालू करें',
+    'id-ID': 'Siapkan dan aktifkan',
+    'it-IT': 'Prepara e attiva',
+    'ko-KR': '준비하고 켜기',
+    'pt-BR': 'Preparar e ativar',
+    'es-419': 'Preparar y activar',
+    'es-ES': 'Preparar y activar'
   }
 })

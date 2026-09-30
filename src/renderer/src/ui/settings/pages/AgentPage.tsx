@@ -1,14 +1,16 @@
-import type { SettingsContext } from '../context'
+import { ExternalLink } from 'lucide-react'
+import { AGENT_INSTALL_GUIDE, type SettingsContext } from '../context'
 import { useFieldDraft } from '../field-draft'
-import { Btn, Chip, Group, Link, NotSavedHint, Page, Row } from '../primitives'
+import { Btn, Chip, Group, NotSavedHint, Page, Row } from '../primitives'
+import { PrepLine } from '../preparation'
 import { useT } from '@/i18n'
 import { AGENT_CLI_UNAVAILABLE_TEXT, AGENT_MODE_NAME } from '@shared/agent-cli'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
 
-/** The Agent page: the engine of the working agent, its permissions and the directory it works in. */
+/** The Agent page: the engine of the working agent with the way to install its CLI, its permissions and the directory it works in. */
 export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
-  const { settings, status, set, go } = ctx
+  const { settings, status, set } = ctx
   /** Opens the system's folder dialog at `startAt` and hands the chosen folder on. A dismissed dialog changes nothing. */
   const chooseFolder = (startAt: string | undefined, use: (folder: string) => void): void => {
     void window.api.folderChoose(startAt).then((folder) => {
@@ -26,10 +28,7 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   return (
     <Page title="Agent" lead={t('settingsAgent.lead')}>
       <Group title={t('settingsAgent.run.title')} description={t('settingsAgent.run.description')}>
-        <Row
-          label={t('settingsAgent.run.engine')}
-          hint={unavailable ? t(unavailable.state === 'missing' ? 'settingsAgent.run.engineMissing' : AGENT_CLI_UNAVAILABLE_TEXT[unavailable.state], { engine: unavailable.engine }) : settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}
-        >
+        <Row label={t('settingsAgent.run.engine')} hint={settings.agentEngine === 'claude' ? t('settingsAgent.run.claudeKeyHint') : undefined}>
           {unavailable && <Chip tone="warn">{t(unavailable.state === 'missing' ? 'common.notFound' : 'common.notReady')}</Chip>}
           <select
             className="st-select"
@@ -42,9 +41,14 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           </select>
         </Row>
         {unavailable && (
-          <Row label={t('settingsAgent.run.install')} hint={t('settingsAgent.run.installHint')}>
-            <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
-          </Row>
+          <PrepLine
+            text={t(unavailable.state === 'missing' ? 'settingsAgent.run.engineMissing' : AGENT_CLI_UNAVAILABLE_TEXT[unavailable.state], { engine: unavailable.engine })}
+          >
+            <Btn onClick={() => void window.api.openExternal(AGENT_INSTALL_GUIDE[settings.agentEngine])}>
+              <ExternalLink size={12} />
+              {t('settingsModels.agent.install')}
+            </Btn>
+          </PrepLine>
         )}
         <Row label={t('settingsAgent.run.permissions')} hint={t('settingsAgent.run.permissionsHint', { ...AGENT_MODE_NAME[settings.agentEngine], engine: settings.agentEngine === 'codex' ? 'Codex' : 'Claude Code' })}>
           <select

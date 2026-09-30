@@ -21,6 +21,8 @@ import { notes } from './messages/notes'
 import { panels } from './messages/panels'
 import { settings } from './messages/settings'
 import { settingsAbout } from './messages/settings-about'
+import { settingsLanguage } from './messages/settings-language'
+import { settingsOverview } from './messages/settings-overview'
 import { settingsUsage } from './messages/settings-usage'
 import { settingsAgent } from './messages/settings-agent'
 import { settingsCalendar } from './messages/settings-calendar'
@@ -65,6 +67,8 @@ export interface MessageGroups {
   readonly panels: typeof panels
   readonly settings: typeof settings
   readonly settingsAbout: typeof settingsAbout
+  readonly settingsLanguage: typeof settingsLanguage
+  readonly settingsOverview: typeof settingsOverview
   readonly settingsUsage: typeof settingsUsage
   readonly settingsAgent: typeof settingsAgent
   readonly settingsCalendar: typeof settingsCalendar
@@ -112,6 +116,8 @@ export const MESSAGES: MessageGroups = {
   panels,
   settings,
   settingsAbout,
+  settingsLanguage,
+  settingsOverview,
   settingsUsage,
   settingsAgent,
   settingsCalendar,

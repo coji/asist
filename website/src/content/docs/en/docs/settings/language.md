@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-Choose the interface language at the top right of the settings, and the conversation language and the region under "Conversation". These are three separate settings.
+Choose the interface language, the conversation language and the region on the "Language and region" page of the settings. These are three separate settings.
 
 | Setting | What it decides |
 |---|---|
@@ -23,4 +23,4 @@ The text in the nine languages other than Japanese and English has not been chec
 
 If you change the conversation language to one the current speech engine can't speak, reading aloud switches to the system's voice ("macOS voice" on a Mac, "Windows voice" on Windows).
 
-![The Conversation page in the settings, with language and region, the voice engine and the models](/screens/en/settings-conversation.webp)
+![The Language and region page in the settings](/screens/en/settings-language.webp)

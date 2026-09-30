@@ -1630,17 +1630,17 @@ export const calendar = defineMessages({
       'es-ES': 'No se ha podido leer ni escribir el calendario de este Mac. Comprueba el permiso del calendario y el estado de la sincronización.'
     },
     googleSignedOut: {
-      'ja-JP': 'Google にログインしていません。設定の連携でログインしてください。',
-      'en-US': 'Not signed in to Google. Sign in under Integrations in the settings.',
-      'fr-FR': "Vous n'êtes pas connecté à Google. Connectez-vous dans Intégrations, dans les réglages.",
-      'de-DE': 'Sie sind nicht bei Google angemeldet. Melden Sie sich in den Einstellungen unter Integrationen an.',
-      'hi-IN': 'आप Google में साइन इन नहीं हैं। सेटिंग्ज़ में इंटीग्रेशन के तहत साइन इन करें।',
-      'id-ID': 'Anda belum masuk ke Google. Masuk lewat Integrasi di pengaturan.',
-      'it-IT': "Non hai eseguito l'accesso a Google. Accedi da Integrazioni nelle impostazioni.",
-      'ko-KR': 'Google에 로그인하지 않았습니다. 설정의 연동에서 로그인하십시오.',
-      'pt-BR': 'Você não entrou na sua conta do Google. Entre em Integrações, nos ajustes.',
-      'es-419': 'No iniciaste sesión en Google. Inicia sesión en Integraciones, en la configuración.',
-      'es-ES': 'No has iniciado sesión en Google. Inicia sesión en Integraciones, en los ajustes.'
+      'ja-JP': 'Google にログインしていません。設定の「カレンダーとメール」でログインしてください。',
+      'en-US': 'Not signed in to Google. Sign in under Calendar and mail in the settings.',
+      'fr-FR': "Vous n'êtes pas connecté à Google. Connectez-vous dans Agenda et e-mail, dans les réglages.",
+      'de-DE': 'Sie sind nicht bei Google angemeldet. Melden Sie sich in den Einstellungen unter „Kalender und E-Mail“ an.',
+      'hi-IN': 'आप Google में साइन इन नहीं हैं। सेटिंग्ज़ में "कैलेंडर और मेल" के तहत साइन इन करें।',
+      'id-ID': 'Anda belum masuk ke Google. Masuk lewat Kalender dan email di pengaturan.',
+      'it-IT': "Non hai eseguito l'accesso a Google. Accedi da «Calendario e posta» nelle impostazioni.",
+      'ko-KR': "Google에 로그인하지 않았습니다. 설정의 '캘린더와 메일'에서 로그인하십시오.",
+      'pt-BR': 'Você não entrou na sua conta do Google. Entre em Agenda e e-mail, nos ajustes.',
+      'es-419': 'No iniciaste sesión en Google. Inicia sesión en Calendario y correo, en la configuración.',
+      'es-ES': 'No has iniciado sesión en Google. Inicia sesión en “Calendario y correo”, en los ajustes.'
     },
     googleSignInDenied: {
       'ja-JP': 'Google でのログインが許可されませんでした。',

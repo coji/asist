@@ -14,32 +14,6 @@ export const settingsVoice = defineMessages({
     'es-419': 'Voz',
     'es-ES': 'Voz'
   },
-  lead: {
-    'ja-JP': 'モデルと実行環境は「モデル」の画面で準備します。',
-    'en-US': 'Prepare models and runtimes on the Models page.',
-    'fr-FR': "Les modèles et les environnements d'exécution se préparent sur la page Modèles.",
-    'de-DE': 'Modelle und Laufzeitumgebungen bereiten Sie auf der Seite „Modelle“ vor.',
-    'hi-IN': 'मॉडल और रनटाइम "मॉडल" पेज पर तैयार करें।',
-    'id-ID': 'Model dan runtime disiapkan di halaman Model.',
-    'it-IT': 'I modelli e gli ambienti di esecuzione si preparano nella pagina «Modelli».',
-    'ko-KR': "모델과 실행 환경은 '모델' 화면에서 준비합니다.",
-    'pt-BR': 'Prepare os modelos e os ambientes de execução na página Modelos.',
-    'es-419': 'Los modelos y los entornos de ejecución se preparan en la página Modelos.',
-    'es-ES': 'Los modelos y los entornos de ejecución se preparan en la página “Modelos”.'
-  },
-  openConversation: {
-    'ja-JP': '「会話」を開く',
-    'en-US': 'Open Conversation',
-    'fr-FR': 'Ouvrir « Conversation »',
-    'de-DE': '„Gespräch“ öffnen',
-    'hi-IN': '"बातचीत" खोलें',
-    'id-ID': 'Buka Percakapan',
-    'it-IT': 'Apri «Conversazione»',
-    'ko-KR': "'대화' 열기",
-    'pt-BR': 'Abrir Conversa',
-    'es-419': 'Abrir Conversación',
-    'es-ES': 'Abrir “Conversación”'
-  },
   live: {
     lead: {
       'ja-JP': '{engine} が聞き取り、読み上げ、相槌を受け持ちます。この画面の読み上げ、音声認識、応答の設定は使いません。',
@@ -53,32 +27,6 @@ export const settingsVoice = defineMessages({
       'pt-BR': 'O {engine} cuida de ouvir, falar e dar os sinais de escuta. Os ajustes de leitura, reconhecimento e resposta desta página não são usados.',
       'es-419': '{engine} se encarga de escuchar, de leer en voz alta y de los asentimientos. Los ajustes de lectura, reconocimiento y respuestas de esta página no se usan.',
       'es-ES': '{engine} se encarga de escuchar, de la lectura en voz alta y de los asentimientos. Los ajustes de lectura, reconocimiento y respuestas de esta página no se usan.'
-    },
-    description: {
-      'ja-JP': 'モデルと声は「会話」の「声のエンジン」で選びます。',
-      'en-US': 'Choose the model and voice under Voice engine on the Conversation page.',
-      'fr-FR': 'Le modèle et la voix se choisissent sous Moteur vocal, sur la page Conversation.',
-      'de-DE': 'Modell und Stimme wählen Sie unter „Sprach-Engine“ auf der Seite „Gespräch“.',
-      'hi-IN': 'मॉडल और आवाज़ "बातचीत" पेज पर "वॉइस इंजन" के नीचे चुनें।',
-      'id-ID': 'Pilih model dan suaranya di bagian Mesin suara pada halaman Percakapan.',
-      'it-IT': 'Il modello e la voce si scelgono in «Motore vocale», nella pagina «Conversazione».',
-      'ko-KR': "모델과 목소리는 '대화'의 '음성 엔진'에서 선택합니다.",
-      'pt-BR': 'Escolha o modelo e a voz em Motor de voz, na página Conversa.',
-      'es-419': 'El modelo y la voz se eligen en «Motor de voz», en la página Conversación.',
-      'es-ES': 'El modelo y la voz se eligen en “Motor de voz”, en la página “Conversación”.'
-    },
-    voice: {
-      'ja-JP': '声',
-      'en-US': 'Voice',
-      'fr-FR': 'Voix',
-      'de-DE': 'Stimme',
-      'hi-IN': 'आवाज़',
-      'id-ID': 'Suara',
-      'it-IT': 'Voce',
-      'ko-KR': '목소리',
-      'pt-BR': 'Voz',
-      'es-419': 'Voz',
-      'es-ES': 'Voz'
     },
     micAutoStartHint: {
       'ja-JP': 'マイクをオンにすると、{engine} に音声を送り始めます。',
@@ -469,32 +417,6 @@ export const settingsVoice = defineMessages({
       'es-419': 'No se pudo cambiar el modelo',
       'es-ES': 'No se ha podido cambiar el modelo'
     },
-    prepare: {
-      'ja-JP': 'モデルの準備',
-      'en-US': 'Model preparation',
-      'fr-FR': 'Préparation du modèle',
-      'de-DE': 'Vorbereitung des Modells',
-      'hi-IN': 'मॉडल की तैयारी',
-      'id-ID': 'Penyiapan model',
-      'it-IT': 'Preparazione del modello',
-      'ko-KR': '모델 준비',
-      'pt-BR': 'Preparação do modelo',
-      'es-419': 'Preparación del modelo',
-      'es-ES': 'Preparación del modelo'
-    },
-    prepareHint: {
-      'ja-JP': '選んだモデルの実行環境とファイルを取得します。',
-      'en-US': 'Downloads the runtime and files of the chosen model.',
-      'fr-FR': "Télécharge l'environnement d'exécution et les fichiers du modèle choisi.",
-      'de-DE': 'Lädt die Laufzeitumgebung und die Dateien des gewählten Modells.',
-      'hi-IN': 'चुने हुए मॉडल का रनटाइम और फ़ाइलें डाउनलोड होती हैं।',
-      'id-ID': 'Mengunduh runtime dan file dari model yang dipilih.',
-      'it-IT': "Scarica l'ambiente di esecuzione e i file del modello scelto.",
-      'ko-KR': '선택한 모델의 실행 환경과 파일을 내려받습니다.',
-      'pt-BR': 'Baixa o ambiente de execução e os arquivos do modelo escolhido.',
-      'es-419': 'Descarga el entorno de ejecución y los archivos del modelo elegido.',
-      'es-ES': 'Descarga el entorno de ejecución y los archivos del modelo elegido.'
-    },
     browserWhisper: {
       'ja-JP': 'ブラウザ内 Whisper',
       'en-US': 'In-browser Whisper',
@@ -616,19 +538,6 @@ export const settingsVoice = defineMessages({
       'es-419': 'Asentimientos',
       'es-ES': 'Asentimientos'
     },
-    aizuchiHint: {
-      'ja-JP': '話し終えた直後に相槌を打ち、短い一言で返事までの間をつなぎます。「モデル」で相槌分類器を準備するまでは鳴りません。',
-      'en-US': 'Responds right after you finish speaking and fills the wait with a short phrase. Silent until the backchannel classifier is prepared on the Models page.',
-      'fr-FR': "Répond juste après que vous avez fini de parler et comble l'attente par une courte phrase. Muet tant que le classificateur d'acquiescements n'est pas préparé sur la page Modèles.",
-      'de-DE': 'Antwortet direkt, nachdem Sie ausgesprochen haben, und überbrückt die Wartezeit mit einem kurzen Wort. Bis der Klassifikator für Hörersignale auf der Seite „Modelle“ vorbereitet ist, bleibt es still.',
-      'hi-IN': 'आपके बोलकर चुप होते ही हुंकारा आता है, और असली जवाब तक का इंतज़ार एक छोटे वाक्य से भरता है। "मॉडल" पेज पर हुंकारा क्लासिफ़ायर तैयार होने तक यह चुप रहता है।',
-      'id-ID': 'Menggumam tepat setelah Anda selesai bicara dan mengisi jeda menuju jawaban dengan kalimat pendek. Belum berbunyi sampai pengklasifikasi gumaman disiapkan di halaman Model.',
-      'it-IT': "Risponde subito dopo che hai finito di parlare e riempie l'attesa con una frase breve. Resta in silenzio finché il classificatore dei cenni non è pronto nella pagina «Modelli».",
-      'ko-KR': "말을 마친 직후에 맞장구를 치고, 짧은 한마디로 대답까지의 사이를 메웁니다. '모델'에서 맞장구 분류기를 준비하기 전에는 소리가 나지 않습니다.",
-      'pt-BR': 'Responde logo depois que você termina de falar e preenche a espera com uma frase curta. Fica em silêncio até o classificador de sinais de escuta ser preparado na página Modelos.',
-      'es-419': 'Responde justo después de que terminas de hablar y llena la espera con una frase corta. No suena hasta que el clasificador de asentimientos esté preparado en la página Modelos.',
-      'es-ES': 'Asiente justo después de que termines de hablar y llena la espera con una frase corta. No suena hasta que se prepare el clasificador de asentimientos en la página “Modelos”.'
-    },
     listeningAizuchi: {
       'ja-JP': '話の途中の相槌',
       'en-US': 'Backchannels while listening',
@@ -667,6 +576,19 @@ export const settingsVoice = defineMessages({
       'pt-BR': 'Frequência dos sinais de escuta',
       'es-419': 'Frecuencia de los asentimientos',
       'es-ES': 'Frecuencia de los asentimientos'
+    },
+    aizuchiHint: {
+      'ja-JP': '話し終えた直後に相槌を打ち、短い一言で返事までの間をつなぎます。',
+      'en-US': 'Gives a backchannel right after you finish and fills the wait for the reply with a short phrase.',
+      'fr-FR': "Acquiesce dès que vous avez fini et comble l'attente de la réponse par une courte phrase.",
+      'de-DE': 'Gibt direkt nach Ihrem Satz ein Hörersignal und überbrückt die Wartezeit bis zur Antwort mit einem kurzen Satz.',
+      'hi-IN': 'आपके बोलना खत्म करते ही हुंकारा भरता है और जवाब तक का समय एक छोटे वाक्य से भरता है।',
+      'id-ID': 'Menyahut begitu Anda selesai bicara dan mengisi jeda sebelum jawaban dengan kalimat pendek.',
+      'it-IT': "Dà un cenno di ascolto appena finisci e riempie l'attesa della risposta con una frase breve.",
+      'ko-KR': '말을 마치자마자 맞장구를 치고, 대답까지의 틈을 짧은 한마디로 잇습니다.',
+      'pt-BR': 'Dá um sinal de escuta logo que você termina e preenche a espera pela resposta com uma frase curta.',
+      'es-419': 'Asiente en cuanto terminas y llena la espera de la respuesta con una frase corta.',
+      'es-ES': 'Asiente en cuanto terminas y llena la espera de la respuesta con una frase corta.'
     }
   },
   mic: {
@@ -878,19 +800,6 @@ export const settingsVoice = defineMessages({
       'es-419': 'Detecta pronto el fin del habla a partir de la voz. También se usa para los asentimientos mientras escucha, para asentir con la cabeza y para distinguir un asentimiento de una interrupción mientras se lee una respuesta.',
       'es-ES': 'Detecta pronto el final del habla a partir de la voz. También se usa para los asentimientos mientras escucha, para asentir con la cabeza y para distinguir un asentimiento de una interrupción mientras se lee una respuesta.'
     },
-    turnTakingOff: {
-      'ja-JP': '「モデル」で Python 環境と MaAI のモデルを準備すると使えます。',
-      'en-US': 'Prepare the Python environment and the MaAI models on the Models page to use it.',
-      'fr-FR': "Préparez l'environnement Python et les modèles MaAI sur la page Modèles pour l'utiliser.",
-      'de-DE': 'Bereiten Sie auf der Seite „Modelle“ die Python-Umgebung und die Modelle von MaAI vor, um es zu verwenden.',
-      'hi-IN': 'इसे इस्तेमाल करने के लिए "मॉडल" पेज पर Python एनवायरनमेंट और MaAI के मॉडल तैयार करें।',
-      'id-ID': 'Siapkan lingkungan Python dan model MaAI di halaman Model untuk memakainya.',
-      'it-IT': "Si può usare dopo aver preparato l'ambiente Python e i modelli MaAI nella pagina «Modelli».",
-      'ko-KR': "'모델'에서 Python 환경과 MaAI 모델을 준비하면 쓸 수 있습니다.",
-      'pt-BR': 'Prepare o ambiente Python e os modelos do MaAI na página Modelos para poder usar.',
-      'es-419': 'Prepara el entorno de Python y los modelos de MaAI en la página Modelos para usarlo.',
-      'es-ES': 'Prepara el entorno de Python y los modelos de MaAI en la página “Modelos” para poder usarlo.'
-    },
     hotkeyFailed: {
       'ja-JP': '{hotkey} を登録できませんでした。ほかのアプリが同じキーを使っていると登録できません。',
       'en-US': "Couldn't register {hotkey}. It can't be registered while another app uses the same keys.",
@@ -904,5 +813,18 @@ export const settingsVoice = defineMessages({
       'es-419': 'No se pudo registrar {hotkey}. No se puede registrar mientras otra app usa las mismas teclas.',
       'es-ES': 'No se ha podido registrar {hotkey}. No se puede registrar mientras otra app usa las mismas teclas.'
     }
+  },
+  lead: {
+    'ja-JP': '聞き取り、読み上げ、相槌、マイクを設定します。取得が要るものは、この画面で準備できます。',
+    'en-US': 'Set up listening, speech, backchannels and the microphone. Anything that needs a download is prepared here.',
+    'fr-FR': "Réglez l'écoute, la lecture à voix haute, les acquiescements et le micro. Ce qui doit être téléchargé se prépare ici.",
+    'de-DE': 'Stellen Sie Zuhören, Vorlesen, Hörersignale und das Mikrofon ein. Was heruntergeladen werden muss, bereiten Sie hier vor.',
+    'hi-IN': 'सुनना, पढ़कर सुनाना, हुंकारे और माइक्रोफ़ोन सेट करें। जिसे डाउनलोड करना है, उसे यहीं तैयार करें।',
+    'id-ID': 'Atur pendengaran, pembacaan, gumaman, dan mikrofon. Yang perlu diunduh disiapkan di sini.',
+    'it-IT': 'Imposta ascolto, lettura ad alta voce, cenni di ascolto e microfono. Ciò che va scaricato si prepara qui.',
+    'ko-KR': '듣기, 읽어 주기, 맞장구, 마이크를 설정합니다. 내려받아야 하는 것은 이 화면에서 준비합니다.',
+    'pt-BR': 'Configure a escuta, a leitura em voz alta, os sinais de escuta e o microfone. O que precisa ser baixado é preparado aqui.',
+    'es-419': 'Configura la escucha, la lectura en voz alta, los asentimientos y el micrófono. Lo que hay que descargar se prepara aquí.',
+    'es-ES': 'Configura la escucha, la lectura en voz alta, los asentimientos y el micrófono. Lo que hay que descargar se prepara aquí.'
   }
 })

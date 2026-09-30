@@ -723,5 +723,102 @@ export const settingsAbout = defineMessages({
       'es-419': 'No se pudo buscar una versión nueva',
       'es-ES': 'No se ha podido buscar una versión nueva'
     }
+  },
+  appLog: {
+    title: {
+      'ja-JP': '動作ログ',
+      'en-US': 'App log',
+      'fr-FR': "Log de l'app",
+      'de-DE': 'App-Protokoll',
+      'hi-IN': 'ऐप का लॉग',
+      'id-ID': 'Log aplikasi',
+      'it-IT': "Registro dell'app",
+      'ko-KR': '동작 로그',
+      'pt-BR': 'Registro do app',
+      'es-419': 'Registro de la app',
+      'es-ES': 'Registro de la app'
+    },
+    description: {
+      'ja-JP': 'アプリのエラーや警告を日別のファイルに残します。不具合を報告するときに添付できます。API キーの値は伏せて記録し、{days} 日を過ぎたファイルは削除します。',
+      'en-US': 'Keeps the errors and warnings of the app in one file per day, which you can attach to a bug report. API key values are hidden, and files older than {days} days are deleted.',
+      'fr-FR': "Conserve les erreurs et les avertissements de l'app dans un fichier par jour, que vous pouvez joindre à un rapport d'anomalie. Les valeurs des clés API sont masquées, et les fichiers de plus de {days} jours sont supprimés.",
+      'de-DE': 'Hält Fehler und Warnungen der App in einer Datei pro Tag fest, die Sie einem Fehlerbericht anhängen können. Werte von API-Schlüsseln werden verborgen, und Dateien, die älter als {days} Tage sind, werden gelöscht.',
+      'hi-IN': 'ऐप की एरर और चेतावनियाँ हर दिन की एक फ़ाइल में रहती हैं, जिसे आप किसी गड़बड़ी की रिपोर्ट के साथ भेज सकते हैं। API कुंजी की वैल्यू छिपाकर रखी जाती है, और {days} दिन से पुरानी फ़ाइलें मिटा दी जाती हैं।',
+      'id-ID': 'Menyimpan kesalahan dan peringatan aplikasi dalam satu file per hari, yang bisa Anda lampirkan ke laporan masalah. Nilai kunci API disembunyikan, dan file yang lebih tua dari {days} hari dihapus.',
+      'it-IT': "Conserva gli errori e gli avvisi dell'app in un file al giorno, che puoi allegare a una segnalazione. I valori delle chiavi API vengono nascosti e i file più vecchi di {days} giorni vengono eliminati.",
+      'ko-KR': '앱의 오류와 경고를 날짜별 파일에 남깁니다. 문제를 알릴 때 첨부할 수 있습니다. API 키 값은 가려서 기록하고, {days}일이 지난 파일은 삭제합니다.',
+      'pt-BR': 'Guarda os erros e avisos do app em um arquivo por dia, que você pode anexar a um relato de problema. Os valores das chaves de API ficam ocultos, e os arquivos com mais de {days} dias são apagados.',
+      'es-419': 'Conserva los errores y las advertencias de la app en un archivo por día, que puedes adjuntar a un reporte de fallas. Los valores de las claves de API quedan ocultos, y los archivos de más de {days} días se eliminan.',
+      'es-ES': 'Guarda los errores y los avisos de la app en un archivo por día, que puedes adjuntar a un informe de errores. Los valores de las claves de API se ocultan, y los archivos de más de {days} días se eliminan.'
+    },
+    folder: {
+      'ja-JP': 'ログのフォルダ',
+      'en-US': 'Log folder',
+      'fr-FR': 'Dossier des logs',
+      'de-DE': 'Ordner der Protokolle',
+      'hi-IN': 'लॉग का फ़ोल्डर',
+      'id-ID': 'Folder log',
+      'it-IT': 'Cartella del registro',
+      'ko-KR': '로그 폴더',
+      'pt-BR': 'Pasta dos registros',
+      'es-419': 'Carpeta de registros',
+      'es-ES': 'Carpeta del registro'
+    },
+    folderHint: {
+      macos: {
+        'ja-JP': '~/Library/Logs の下にあります。',
+        'en-US': 'It is under ~/Library/Logs.',
+        'fr-FR': 'Il se trouve sous ~/Library/Logs.',
+        'de-DE': 'Er liegt unter ~/Library/Logs.',
+        'hi-IN': 'यह ~/Library/Logs के नीचे है।',
+        'id-ID': 'Ada di bawah ~/Library/Logs.',
+        'it-IT': 'Si trova sotto ~/Library/Logs.',
+        'ko-KR': '~/Library/Logs 아래에 있습니다.',
+        'pt-BR': 'Fica em ~/Library/Logs.',
+        'es-419': 'Está dentro de ~/Library/Logs.',
+        'es-ES': 'Está dentro de ~/Library/Logs.'
+      },
+      windows: {
+        'ja-JP': '%APPDATA%\\asist\\logs にあります。',
+        'en-US': 'It is in %APPDATA%\\asist\\logs.',
+        'fr-FR': 'Il se trouve dans %APPDATA%\\asist\\logs.',
+        'de-DE': 'Er liegt unter %APPDATA%\\asist\\logs.',
+        'hi-IN': 'यह %APPDATA%\\asist\\logs में है।',
+        'id-ID': 'Ada di %APPDATA%\\asist\\logs.',
+        'it-IT': 'Si trova in %APPDATA%\\asist\\logs.',
+        'ko-KR': '%APPDATA%\\asist\\logs에 있습니다.',
+        'pt-BR': 'Fica em %APPDATA%\\asist\\logs.',
+        'es-419': 'Está en %APPDATA%\\asist\\logs.',
+        'es-ES': 'Está en %APPDATA%\\asist\\logs.'
+      }
+    },
+    open: {
+      macos: {
+        'ja-JP': 'Finder で開く',
+        'en-US': 'Open in Finder',
+        'fr-FR': 'Afficher dans le Finder',
+        'de-DE': 'Im Finder öffnen',
+        'hi-IN': 'Finder में खोलें',
+        'id-ID': 'Buka di Finder',
+        'it-IT': 'Apri nel Finder',
+        'ko-KR': 'Finder에서 열기',
+        'pt-BR': 'Abrir no Finder',
+        'es-419': 'Abrir en el Finder',
+        'es-ES': 'Abrir en el Finder'
+      },
+      windows: {
+        'ja-JP': 'エクスプローラーで開く',
+        'en-US': 'Open in File Explorer',
+        'fr-FR': "Ouvrir dans l'Explorateur de fichiers",
+        'de-DE': 'Im Explorer öffnen',
+        'hi-IN': 'फ़ाइल एक्सप्लोरर में खोलें',
+        'id-ID': 'Buka di Penjelajah File',
+        'it-IT': 'Apri in Esplora file',
+        'ko-KR': '파일 탐색기에서 열기',
+        'pt-BR': 'Abrir no Explorador de Arquivos',
+        'es-419': 'Abrir en el Explorador de archivos',
+        'es-ES': 'Abrir en el Explorador de archivos'
+      }
+    }
   }
 })

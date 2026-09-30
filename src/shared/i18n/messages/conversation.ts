@@ -176,17 +176,17 @@ export const conversation = defineMessages({
       'es-ES': 'Se ha alcanzado el límite de uso de la API. Espera un poco y vuelve a hablarme.'
     },
     authentication: {
-      'ja-JP': 'API キーを認証できませんでした。設定の「連携」でキーを確かめてください。',
-      'en-US': "Couldn't authenticate the API key. Check it on the Integrations page in Settings.",
-      'fr-FR': "Impossible d'authentifier la clé API. Vérifiez-la sur la page Intégrations des réglages.",
-      'de-DE': 'Der API-Schlüssel ließ sich nicht authentifizieren. Prüfen Sie ihn auf der Seite „Integrationen“ in den Einstellungen.',
-      'hi-IN': 'API कुंजी की पुष्टि नहीं हो सकी। इसे सेटिंग्ज़ के "इंटीग्रेशन" पेज पर देखें।',
-      'id-ID': 'Tidak bisa mengautentikasi kunci API. Periksa kuncinya di halaman Integrasi pada Pengaturan.',
-      'it-IT': 'Impossibile autenticare la chiave API. Controllala nella pagina «Integrazioni» delle impostazioni.',
-      'ko-KR': "API 키를 인증하지 못했습니다. 설정의 '연동'에서 키를 확인하십시오.",
-      'pt-BR': 'Não foi possível autenticar a chave de API. Confira na página Integrações dos ajustes.',
-      'es-419': 'No se pudo autenticar la clave de API. Revísala en la página Integraciones de Configuración.',
-      'es-ES': 'No se ha podido autenticar la clave de API. Compruébala en la página “Integraciones” de Ajustes.'
+      'ja-JP': 'API キーを認証できませんでした。設定の「API キー」でキーを確かめてください。',
+      'en-US': "Couldn't authenticate the API key. Check it on the API keys page in Settings.",
+      'fr-FR': "Impossible d'authentifier la clé API. Vérifiez-la sur la page Clés API des réglages.",
+      'de-DE': 'Der API-Schlüssel ließ sich nicht authentifizieren. Prüfen Sie ihn auf der Seite „API-Schlüssel“ in den Einstellungen.',
+      'hi-IN': 'API कुंजी की पुष्टि नहीं हो सकी। इसे सेटिंग्ज़ के "API कुंजी" पेज पर देखें।',
+      'id-ID': 'Tidak bisa mengautentikasi kunci API. Periksa kuncinya di halaman Kunci API pada Pengaturan.',
+      'it-IT': 'Impossibile autenticare la chiave API. Controllala nella pagina «Chiavi API» delle impostazioni.',
+      'ko-KR': "API 키를 인증하지 못했습니다. 설정의 'API 키'에서 키를 확인하십시오.",
+      'pt-BR': 'Não foi possível autenticar a chave de API. Confira na página Chaves de API dos ajustes.',
+      'es-419': 'No se pudo autenticar la clave de API. Revísala en la página Claves de API de Configuración.',
+      'es-ES': 'No se ha podido autenticar la clave de API. Compruébala en la página “Claves de API” de Ajustes.'
     },
     network: {
       'ja-JP': 'ネットワークにつながりませんでした。接続を確かめて、もう一度話しかけてください。',

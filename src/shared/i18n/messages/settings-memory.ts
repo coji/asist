@@ -107,17 +107,17 @@ export const settingsMemory = defineMessages({
       'es-ES': 'Convirtiendo los recuerdos: {embedded} de {total} listos.'
     },
     notPrepared: {
-      'ja-JP': '未準備です。「モデル」で Python 環境と多言語のモデル(約 135MB)を準備すると使えます。',
-      'en-US': 'Not prepared. Prepare the Python environment and the multilingual model (about 135 MB) on the Models page to use it.',
-      'fr-FR': "Non préparée. Préparez l'environnement Python et le modèle multilingue (environ 135 Mo) sur la page Modèles pour l'utiliser.",
-      'de-DE': 'Nicht vorbereitet. Bereiten Sie auf der Seite „Modelle“ die Python-Umgebung und das mehrsprachige Modell (rund 135 MB) vor, um sie zu verwenden.',
-      'hi-IN': 'तैयार नहीं है। इसे इस्तेमाल करने के लिए "मॉडल" पेज पर Python एनवायरनमेंट और बहुभाषी मॉडल (करीब 135 MB) तैयार करें।',
-      'id-ID': 'Belum siap. Siapkan lingkungan Python dan model multibahasa (sekitar 135 MB) di halaman Model untuk memakainya.',
-      'it-IT': "Non pronta. Si può usare dopo aver preparato l'ambiente Python e il modello multilingue (circa 135 MB) nella pagina «Modelli».",
-      'ko-KR': "준비 안 됨. '모델'에서 Python 환경과 다국어 모델(약 135MB)을 준비하면 쓸 수 있습니다.",
-      'pt-BR': 'Não preparado. Prepare o ambiente Python e o modelo multilíngue (cerca de 135 MB) na página Modelos para usar.',
-      'es-419': 'Sin preparar. Prepara el entorno de Python y el modelo multilingüe (unos 135 MB) en la página Modelos para usarla.',
-      'es-ES': 'Sin preparar. Para usarla, prepara el entorno de Python y el modelo multilingüe (unos 135 MB) en la página “Modelos”.'
+      'ja-JP': '多言語のモデル(約 135MB)を取得すると使えます。常駐中は約 730MB のメモリを使います。',
+      'en-US': 'Downloads a multilingual model (about 135 MB) to use it. It uses about 730 MB of memory while running.',
+      'fr-FR': "Télécharge un modèle multilingue (environ 135 Mo) pour l'utiliser. Il occupe environ 730 Mo de mémoire en fonctionnement.",
+      'de-DE': 'Lädt dafür ein mehrsprachiges Modell (etwa 135 MB) herunter. Es belegt im Betrieb etwa 730 MB Arbeitsspeicher.',
+      'hi-IN': 'इसके लिए एक बहुभाषी मॉडल (लगभग 135 MB) डाउनलोड होता है। चलते समय यह लगभग 730 MB मेमोरी लेता है।',
+      'id-ID': 'Mengunduh model multibahasa (sekitar 135 MB) untuk memakainya. Model ini memakai sekitar 730 MB memori saat berjalan.',
+      'it-IT': 'Per usarla scarica un modello multilingue (circa 135 MB). Mentre è attivo usa circa 730 MB di memoria.',
+      'ko-KR': '다국어 모델(약 135MB)을 내려받으면 쓸 수 있습니다. 상주하는 동안 약 730MB의 메모리를 씁니다.',
+      'pt-BR': 'Baixa um modelo multilíngue (cerca de 135 MB) para usar. Ele usa cerca de 730 MB de memória enquanto roda.',
+      'es-419': 'Descarga un modelo multilingüe (unos 135 MB) para usarla. Usa unos 730 MB de memoria mientras funciona.',
+      'es-ES': 'Descarga un modelo multilingüe (unos 135 MB) para usarla. Usa unos 730 MB de memoria mientras funciona.'
     }
   },
   curation: {
@@ -447,6 +447,73 @@ export const settingsMemory = defineMessages({
       'pt-BR': 'Abrir Memória',
       'es-419': 'Abrir Memoria',
       'es-ES': 'Abrir Memoria'
+    }
+  },
+  log: {
+    title: {
+      'ja-JP': '会話ログ',
+      'en-US': 'Conversation log',
+      'fr-FR': 'Log des conversations',
+      'de-DE': 'Gesprächsprotokoll',
+      'hi-IN': 'बातचीत का लॉग',
+      'id-ID': 'Log percakapan',
+      'it-IT': 'Registro delle conversazioni',
+      'ko-KR': '대화 로그',
+      'pt-BR': 'Registro da conversa',
+      'es-419': 'Registro de la conversación',
+      'es-ES': 'Registro de la conversación'
+    },
+    description: {
+      'ja-JP': '会話の全文を日別のファイルに保存します。履歴の要約と記憶の整理は、このログから作ります。',
+      'en-US': 'Saves the whole conversation in one file per day. The history summary and memory curation are built from it.',
+      'fr-FR': "Enregistre l'intégralité de la conversation dans un fichier par jour. Le résumé de l'historique et l'organisation de la mémoire en sont tirés.",
+      'de-DE': 'Speichert das ganze Gespräch in einer Datei pro Tag. Die Zusammenfassung des Verlaufs und die Gedächtnispflege entstehen daraus.',
+      'hi-IN': 'पूरी बातचीत हर दिन की एक फ़ाइल में सेव होती है। पिछली बातों का सारांश और याददाश्त की सफ़ाई इसी से बनते हैं।',
+      'id-ID': 'Menyimpan seluruh percakapan dalam satu file per hari. Ringkasan riwayat dan penataan ingatan disusun dari log ini.',
+      'it-IT': "Salva l'intera conversazione in un file al giorno. Il riassunto dello storico e il riordino della memoria si costruiscono da qui.",
+      'ko-KR': '대화 전문을 날짜별 파일에 저장합니다. 기록 요약과 기억 정리는 이 로그에서 만듭니다.',
+      'pt-BR': 'Salva a conversa inteira em um arquivo por dia. O resumo do histórico e a organização da memória são feitos a partir dele.',
+      'es-419': 'Guarda toda la conversación en un archivo por día. El resumen del historial y la organización de la memoria se construyen a partir de él.',
+      'es-ES': 'Guarda toda la conversación en un archivo por día. El resumen del historial y la organización de la memoria se crean a partir de él.'
+    },
+    retention: {
+      'ja-JP': '保存日数',
+      'en-US': 'Days kept',
+      'fr-FR': 'Jours de conservation',
+      'de-DE': 'Aufbewahrung in Tagen',
+      'hi-IN': 'कितने दिन रखें',
+      'id-ID': 'Jumlah hari disimpan',
+      'it-IT': 'Giorni di conservazione',
+      'ko-KR': '보관 일수',
+      'pt-BR': 'Dias mantidos',
+      'es-419': 'Días que se conserva',
+      'es-ES': 'Días que se conserva'
+    },
+    retentionHint: {
+      'ja-JP': '日付が変わるときに、保存日数を過ぎたファイルを削除します。',
+      'en-US': 'Files older than this are deleted when the date changes.',
+      'fr-FR': 'Au changement de date, les fichiers plus anciens que cette durée sont supprimés.',
+      'de-DE': 'Ältere Dateien werden gelöscht, sobald das Datum wechselt.',
+      'hi-IN': 'इससे पुरानी फ़ाइलें, दिन बदलने पर मिटा दी जाती हैं।',
+      'id-ID': 'File yang lebih tua dari itu dihapus saat tanggalnya berganti.',
+      'it-IT': 'Al cambio di data vengono eliminati i file che superano i giorni di conservazione.',
+      'ko-KR': '날짜가 바뀔 때, 보관 일수가 지난 파일을 삭제합니다.',
+      'pt-BR': 'Os arquivos mais antigos que isso são apagados na virada do dia.',
+      'es-419': 'Los archivos más antiguos que esto se eliminan al cambiar la fecha.',
+      'es-ES': 'Los archivos más antiguos que eso se eliminan al cambiar la fecha.'
+    },
+    retentionLabel: {
+      'ja-JP': '会話ログの保存日数',
+      'en-US': 'Days the conversation log is kept',
+      'fr-FR': 'Jours de conservation du log des conversations',
+      'de-DE': 'Tage, die das Gesprächsprotokoll bleibt',
+      'hi-IN': 'बातचीत का लॉग कितने दिन रखा जाए',
+      'id-ID': 'Jumlah hari log percakapan disimpan',
+      'it-IT': 'Giorni di conservazione del registro delle conversazioni',
+      'ko-KR': '대화 로그의 보관 일수',
+      'pt-BR': 'Dias que o registro da conversa é mantido',
+      'es-419': 'Días que se conserva el registro de la conversación',
+      'es-ES': 'Días que se conserva el registro de la conversación'
     }
   }
 })

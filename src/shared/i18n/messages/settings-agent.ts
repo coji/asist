@@ -94,32 +94,6 @@ export const settingsAgent = defineMessages({
       'es-419': 'Claude Code está pensado para funcionar con una clave de API. ASIST no pasa sus propias claves de API, así que configura una en claude. El inicio de sesión con una suscripción de Claude.ai no puede usarse desde ASIST.',
       'es-ES': 'Claude Code está pensado para funcionar con una clave de API. ASIST no pasa sus propias claves de API, así que configura una en claude. El inicio de sesión con una suscripción de Claude.ai no puede usarse desde ASIST.'
     },
-    install: {
-      'ja-JP': 'CLI のインストール',
-      'en-US': 'Installing the CLI',
-      'fr-FR': 'Installation du CLI',
-      'de-DE': 'Die CLI installieren',
-      'hi-IN': 'CLI इंस्टॉल करना',
-      'id-ID': 'Memasang CLI',
-      'it-IT': 'Installazione della CLI',
-      'ko-KR': 'CLI 설치',
-      'pt-BR': 'Instalação do CLI',
-      'es-419': 'Instalación del CLI',
-      'es-ES': 'Instalación de la CLI'
-    },
-    installHint: {
-      'ja-JP': '手順は「モデル」の画面にあります。',
-      'en-US': 'The steps are on the Models page.',
-      'fr-FR': 'La marche à suivre est sur la page Modèles.',
-      'de-DE': 'Die Schritte stehen auf der Seite „Modelle“.',
-      'hi-IN': 'तरीका "मॉडल" पेज पर है।',
-      'id-ID': 'Langkahnya ada di halaman Model.',
-      'it-IT': 'I passaggi sono nella pagina «Modelli».',
-      'ko-KR': "설치 방법은 '모델' 화면에 있습니다.",
-      'pt-BR': 'Os passos estão na página Modelos.',
-      'es-419': 'Los pasos están en la página Modelos.',
-      'es-ES': 'Los pasos están en la página “Modelos”.'
-    },
     permissions: {
       'ja-JP': '権限',
       'en-US': 'Permissions',

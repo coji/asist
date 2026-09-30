@@ -35,7 +35,7 @@ const view = (): ReturnType<typeof useViewStore.getState> => useViewStore.getSta
 const settingsPage = (page: SettingsPage): DemoView => ({ open: () => view().openApp({ app: 'settings', page }) })
 
 /**
- * The integrations page of a machine whose calendar is Google's: signed in, signed out, or holding a sign-in
+ * The calendar and mail page of a machine whose calendar is Google's: signed in, signed out, or holding a sign-in
  * another build saved. Signing in from the page succeeds at once, and signing out goes back to the page
  * without an account.
  */
@@ -52,11 +52,11 @@ const googleCalendarSettings = (signIn: 'signedIn' | 'signedOut' | 'unreadable')
     api.calendarSignOut = async () => (status = signedOut)
     if (!signedIn) void api.saveSettings({ calendar: { enabled: false, readCalendarIds: [], writeCalendarId: null } })
   },
-  open: () => view().openApp({ app: 'settings', page: 'integrations' })
+  open: () => view().openApp({ app: 'settings', page: 'connections' })
 })
 
 /**
- * Semantic search on the models page while its model downloads. The download stops at 40% and never
+ * Semantic search on the memory page while its model downloads. The download stops at 40% and never
  * finishes, so the progress stays on the screen.
  */
 const semanticSearchPreparing: DemoView = {
@@ -76,8 +76,8 @@ const semanticSearchPreparing: DemoView = {
     }
   },
   open: () => {
-    view().openApp({ app: 'settings', page: 'models' })
-    clickWhenReady(`.st-prep-card[aria-label="${translate('settingsModels.semanticSearch.title')}"] .st-btn`)
+    view().openApp({ app: 'settings', page: 'memory' })
+    clickWhenReady('[data-prep="embedding"]')
   }
 }
 
@@ -141,19 +141,21 @@ export const DEMO_VIEWS: Record<ScreenName, DemoView> = {
   'mail/draft-started': { open: () => view().openApp({ app: 'mail', draftId: DEMO_MAIL_DRAFTS[2].id }) },
   'calendar/event': { open: () => void openCalendarEvent('リリース判定') },
 
-  'settings/persona': settingsPage('persona'),
+  'settings/conversation': settingsPage('conversation'),
   'settings/voice': settingsPage('voice'),
-  'settings/appearance': settingsPage('appearance'),
+  'settings/persona': settingsPage('persona'),
   'settings/memory': settingsPage('memory'),
   'settings/agent': settingsPage('agent'),
-  'settings/integrations': settingsPage('integrations'),
-  'settings/integrations/google': googleCalendarSettings('signedIn'),
-  'settings/integrations/google-signed-out': googleCalendarSettings('signedOut'),
-  'settings/integrations/google-unreadable': googleCalendarSettings('unreadable'),
-  'settings/models': settingsPage('models'),
+  'settings/connections': settingsPage('connections'),
+  'settings/connections/google': googleCalendarSettings('signedIn'),
+  'settings/connections/google-signed-out': googleCalendarSettings('signedOut'),
+  'settings/connections/google-unreadable': googleCalendarSettings('unreadable'),
+  'settings/language': settingsPage('language'),
+  'settings/appearance': settingsPage('appearance'),
+  'settings/api-keys': settingsPage('apiKeys'),
   'settings/usage': settingsPage('usage'),
   'settings/about': settingsPage('about'),
-  'settings/models/preparing': semanticSearchPreparing,
+  'settings/memory/preparing': semanticSearchPreparing,
   'settings/memory/converting': memoriesConverting,
 
   setup: { prepare: (api) => prepareSetupDemo(api, 'fresh') },

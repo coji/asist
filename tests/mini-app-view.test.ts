@@ -32,7 +32,7 @@ describe('placing a mini app at a target', () => {
       [{ app: 'jobs', jobId: 'j1' }, { app: 'jobs', jobId: 'j1' }],
       [{ app: 'memory', file: 'pages/旅行.md' }, { app: 'memory', file: 'pages/旅行.md' }],
       [{ app: 'settings', page: 'voice' }, { app: 'settings', page: 'voice' }],
-      [{ app: 'settings' }, { app: 'settings', page: 'conversation' }]
+      [{ app: 'settings' }, { app: 'settings', page: 'overview' }]
     ]
     for (const [target, expected] of cases) {
       const view = placeMiniApp(null, target, today)
@@ -59,7 +59,7 @@ describe('placing a mini app at a target', () => {
   it('opens and closes through the Dock toggle, one mini app at a time', () => {
     const view = useViewStore.getState()
     view.closeApp()
-    view.openApp({ app: 'settings', page: 'models' })
+    view.openApp({ app: 'settings', page: 'apiKeys' })
     view.toggleApp('notes')
     expect(useViewStore.getState().open).toEqual({ app: 'notes', noteId: null, editing: false })
     useViewStore.getState().toggleApp('notes')

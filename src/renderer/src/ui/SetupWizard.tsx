@@ -567,11 +567,15 @@ export function SetupWizard(): React.JSX.Element | null {
                       {
                         label: t('setup.summary.calendar'),
                         value: t(capabilities.calendar === 'google' ? 'setup.summary.calendarValueGoogle' : 'setup.summary.calendarValue'),
-                        where: t('setup.summary.integrationsWhere')
+                        where: t('setup.summary.connectionsWhere')
                       }
                     ]
                   : []),
-                { label: t('setup.summary.mail'), value: t('setup.summary.mailValue'), where: t('setup.summary.integrationsWhere') }
+                {
+                  label: t('setup.summary.mail'),
+                  value: t('setup.summary.mailValue'),
+                  where: t(capabilities.calendar === null ? 'setup.summary.mailWhere' : 'setup.summary.connectionsWhere')
+                }
               ]}
             />
           )}

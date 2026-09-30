@@ -4,13 +4,18 @@ import { HoloSwitch } from '@/components/ui/switch'
 import { useToastStore } from '@/state/stores'
 import { useViewStore } from '@/state/view'
 import type { SettingsContext } from '../context'
-import { Btn, Chip, Group, Link, Page, Row } from '../primitives'
+import { useFieldDraft } from '../field-draft'
+import { Btn, Chip, Group, Link, NotSavedHint, Page, Row } from '../primitives'
+import { PrepProgress, PrepareButton } from '../preparation'
 import { displayError, errorMessageOf } from '@/display-error'
 import { useFormatLocale, useT } from '@/i18n'
 
-/** The memory page: semantic search, curation of memories, and a link to the memory view. */
+/**
+ * The memory page: semantic search, prepared from its own row, the curation of memories, how long the
+ * conversation log it reads is kept, and a link to the memory view.
+ */
 export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
-  const { settings, embedding, set, go } = ctx
+  const { settings, embedding, prepare, set } = ctx
   const toast = useToastStore((s) => s.push)
   const t = useT()
   const locale = useFormatLocale()
@@ -19,6 +24,14 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
   const [overview, setOverview] = useState<{ read: MemoryOverview } | { error: string } | null>(null)
   const [curating, setCurating] = useState(false)
   const embeddingReady = embedding?.runtimeInstalled === true && embedding.modelInstalled
+  const retention = useFieldDraft(settings.conversationLogRetentionDays, {
+    format: String,
+    parse: (text) => {
+      const days = Number(text)
+      return Number.isInteger(days) && days >= 1 ? days : null
+    },
+    save: (conversationLogRetentionDays) => set({ conversationLogRetentionDays })
+  })
 
   const refresh = async (): Promise<void> => {
     try {
@@ -81,12 +94,15 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
               : t('settingsMemory.search.notPrepared')
           }
         >
-          {embeddingReady ? (
+          {embedding === null ? (
+            <Chip>{t('settingsModels.checking')}</Chip>
+          ) : embeddingReady ? (
             <HoloSwitch checked={settings.memoryEmbeddingEnabled} onCheckedChange={(v) => set({ memoryEmbeddingEnabled: v })} />
           ) : (
-            <Link onClick={() => go('models')}>{t('common.openModels')}</Link>
+            <PrepareButton ctx={ctx} target="embedding" onClick={prepare.embedding} label={t('settingsModels.prepareAndTurnOn')} />
           )}
         </Row>
+        <PrepProgress ctx={ctx} target="embedding" />
       </Group>
 
       <Group
@@ -112,6 +128,19 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
                       ? t('settingsMemory.curation.done')
                       : t('settingsMemory.curation.notRun')}
           </Chip>
+        </Row>
+      </Group>
+
+      <Group title={t('settingsMemory.log.title')} description={t('settingsMemory.log.description')}>
+        <Row label={t('settingsMemory.log.retention')} hint={retention.failed ? <NotSavedHint /> : t('settingsMemory.log.retentionHint')}>
+          <input
+            type="number"
+            min={1}
+            className="st-input is-mono"
+            style={{ width: 88 }}
+            aria-label={t('settingsMemory.log.retentionLabel')}
+            {...retention.props}
+          />
         </Row>
       </Group>
 

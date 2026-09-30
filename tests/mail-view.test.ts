@@ -129,13 +129,13 @@ describe('the message list', () => {
     expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'ok', title: t('mail.list.markedRead', { count: unread.length }) })
   })
 
-  it('loads no list without an account and points at the settings screen', async () => {
+  it('loads no list without an account and opens the settings on the page where accounts are added', async () => {
     useSettingsStore.setState({ settings: { mail: { enabled: true, accounts: [], defaultAccountId: null, syncDays: 30, notifyNewMail: true } } as AppSettings })
     const view = await render()
     expect(api.mailList).not.toHaveBeenCalled()
     expect(view.querySelector('.ml-notice')?.textContent).toContain(t('mail.empty.noAccounts'))
     await act(async () => view.querySelector<HTMLButtonElement>('.ml-notice button')!.click())
-    expect(useViewStore.getState().open?.app).toBe('settings')
+    expect(useViewStore.getState().open).toEqual({ app: 'settings', page: 'connections' })
   })
 })
 

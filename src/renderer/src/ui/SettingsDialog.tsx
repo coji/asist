@@ -1,51 +1,77 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Brain, Cable, ChartColumn, Info, MessageSquare, Mic, Palette, UserRound, Wrench, X, type LucideIcon } from 'lucide-react'
+import {
+  Bot,
+  Brain,
+  CalendarDays,
+  ChartColumn,
+  Info,
+  KeyRound,
+  Languages,
+  LayoutDashboard,
+  MessageSquare,
+  Mic,
+  Palette,
+  UserRound,
+  X,
+  type LucideIcon
+} from 'lucide-react'
 import { keyReadable, type AizuchiClassifierStatus, type EmbeddingStatus, type SetupStatus, type VapStatus } from '@shared/ipc'
 import { LLM_PROVIDERS, modelLabel } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { isDefaultPersona } from '@shared/persona'
-import { UI_LOCALES, UI_LOCALE_NAMES, type UiLocale } from '@shared/i18n'
+import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { voiceController } from '@/voice/VoiceController'
 import { useSettingsStore, useStatusStore, useToastStore } from '@/state/stores'
 import { useMiniApp, useViewStore } from '@/state/view'
-import { useFormatLocale, useT } from '@/i18n'
+import { useFormatLocale, useT, useUiLocale } from '@/i18n'
 import { localDate } from '@shared/api-usage'
 import { usageReport } from '@shared/usage-report'
-import { speechRecognitionReady, ttsEngineLabel, ttsNeedsPreparation, type Preparation, type PreparationTarget, type SettingsContext, type SettingsPage } from './settings/context'
+import { connectionsTitle, ttsEngineLabel, type Preparation, type PreparationTarget, type SettingsContext, type SettingsPage } from './settings/context'
+import { pendingItems, type Pending } from './settings/pending'
 import { ConversationPage } from './settings/pages/ConversationPage'
 import { PersonaPage } from './settings/pages/PersonaPage'
 import { VoicePage } from './settings/pages/VoicePage'
 import { AppearancePage } from './settings/pages/AppearancePage'
 import { MemoryPage } from './settings/pages/MemoryPage'
 import { AgentPage } from './settings/pages/AgentPage'
-import { IntegrationsPage } from './settings/pages/IntegrationsPage'
-import { ModelsPage } from './settings/pages/ModelsPage'
+import { ApiKeysPage } from './settings/pages/ApiKeysPage'
+import { ConnectionsPage } from './settings/pages/ConnectionsPage'
+import { LanguagePage } from './settings/pages/LanguagePage'
+import { OverviewPage } from './settings/pages/OverviewPage'
 import { AboutPage } from './settings/pages/AboutPage'
 import { UsagePage } from './settings/pages/UsagePage'
 import { usdFormatter } from './settings/usage-format'
 import { displayError } from '@/display-error'
 import { platformCapabilities } from '@/platform'
-import { ttsEngineRuns } from '@shared/tts-models'
 import { AGENT_MODE_NAME } from '@shared/agent-cli'
 
 /**
- * The settings screen, with the list of topics on the left and the page of the chosen topic on the
- * right. Saving, reloading the status and the progress of a model preparation belong here and reach
- * the pages as a SettingsContext.
+ * The settings screen, with the list of pages on the left and the chosen page on the right. It opens on
+ * the overview, and the other pages follow under three headings. Saving, reloading the status and the
+ * progress of a model preparation belong here and reach the pages as a SettingsContext.
  */
 
-const PAGES: Array<{ id: SettingsPage; icon: LucideIcon }> = [
-  { id: 'conversation', icon: MessageSquare },
-  { id: 'persona', icon: UserRound },
-  { id: 'voice', icon: Mic },
-  { id: 'appearance', icon: Palette },
-  { id: 'memory', icon: Brain },
-  { id: 'agent', icon: Bot },
-  { id: 'integrations', icon: Cable },
-  { id: 'models', icon: Wrench },
-  { id: 'usage', icon: ChartColumn },
-  { id: 'about', icon: Info }
+const ICONS: Record<SettingsPage, LucideIcon> = {
+  overview: LayoutDashboard,
+  conversation: MessageSquare,
+  voice: Mic,
+  persona: UserRound,
+  memory: Brain,
+  agent: Bot,
+  connections: CalendarDays,
+  language: Languages,
+  appearance: Palette,
+  apiKeys: KeyRound,
+  usage: ChartColumn,
+  about: Info
+}
+
+const SECTIONS: Array<{ title: 'assistant' | 'features' | 'general' | null; pages: SettingsPage[] }> = [
+  { title: null, pages: ['overview'] },
+  { title: 'assistant', pages: ['conversation', 'voice', 'persona'] },
+  { title: 'features', pages: ['memory', 'agent', 'connections'] },
+  { title: 'general', pages: ['language', 'appearance', 'apiKeys', 'usage', 'about'] }
 ]
 
 const IDLE: Preparation = { busy: false, target: null, progress: null, message: '', localAsr: null }
@@ -71,6 +97,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const [aizuchiClassifier, setAizuchiClassifier] = useState<AizuchiClassifierStatus | null>(null)
   const [last30, setLast30] = useState<number | null>(null)
   const formatLocale = useFormatLocale()
+  const uiLocale = useUiLocale()
   const mainRef = useRef<HTMLDivElement>(null)
 
   // A new page starts at the top, because the same frame is reused and keeps the scroll position of
@@ -220,37 +247,43 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       )
   }
 
-  const ctx: SettingsContext = { settings, status, setup, vap, embedding, aizuchiClassifier, prep, set, save, refreshStatus, refreshSetup, go: setPage, prepare }
-
-  // The one-line note beside each entry in the list on the left, which tells the gist and what still
-  // needs preparing without opening the page. Speech can only be missing when a separate engine is
-  // selected, since the macOS speech synthesis needs no preparation.
-  const features = conversationFeatures(settings.conversationLocale)
   const { calendar, localSpeech } = platformCapabilities()
-  const engineRuns = ttsEngineRuns(settings.ttsEngine, localSpeech)
-  const missing = [
-    speechRecognitionReady(settings, status, localSpeech) === false,
-    status !== null && engineRuns && ttsNeedsPreparation(settings.ttsEngine) && !status.tts,
-    status !== null && status.agent !== 'found',
-    features.maai && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled),
-    embedding !== null && !(embedding.runtimeInstalled && embedding.modelInstalled),
-    features.aizuchi &&
-      aizuchiClassifier !== null &&
-      !(aizuchiClassifier.runtimeInstalled && aizuchiClassifier.modelInstalled)
-  ].filter(Boolean).length
-  const keys = LLM_PROVIDERS.filter((provider) => status !== null && keyReadable(status.llmKeys[provider])).length
+  const pending = pendingItems({ settings, status, vap, embedding, aizuchiClassifier, localSpeech })
+  const ctx: SettingsContext = { settings, status, setup, vap, embedding, aizuchiClassifier, prep, pending, set, save, refreshStatus, refreshSetup, go: setPage, prepare }
+
+  // The one-line note beside each entry in the list on the left, which tells the gist without opening
+  // the page. It warns only about what is in use and cannot work yet; a feature left off is no warning.
+  const features = conversationFeatures(settings.conversationLocale)
   const live = isLiveEngine(settings.voiceEngine) ? settings.voiceEngine : null
+  const has = (...kinds: Array<Pending['kind']>): boolean => pending.some((item) => kinds.includes(item.kind))
+  const speechCannotRun = pending.some((item) => item.kind === 'speech' && item.reason === 'cannotRun')
+  const keys = LLM_PROVIDERS.filter((provider) => status !== null && keyReadable(status.llmKeys[provider])).length
   const agentEngine = settings.agentEngine === 'codex' ? 'Codex' : 'Claude Code'
-  const keyCounts = { keys, total: LLM_PROVIDERS.length }
   const formatUsd = usdFormatter(formatLocale)
+  const regionName = new Intl.DisplayNames([uiLocale], { type: 'region' }).of(settings.region) ?? settings.region
   const subs: Record<SettingsPage, { text: string; tone?: 'warn' }> = {
-    conversation: {
-      text: !live
-        ? modelLabel(settings.conversationModel)
-        : live === 'gpt-live'
-          ? t('settings.summary.conversationLive', { engine: LIVE_ENGINE_INFO[live].label, model: modelLabel(settings.conversationModel) })
-          : t('settings.summary.conversationLiveOnly', { engine: LIVE_ENGINE_INFO[live].label })
-    },
+    overview: pending.length > 0 ? { text: t('settings.summary.modelsNotPrepared', { count: pending.length }), tone: 'warn' } : { text: t('settings.summary.modelsAllPrepared') },
+    conversation: has('key')
+      ? { text: t('settingsConversation.models.notSet'), tone: 'warn' }
+      : {
+          text: !live
+            ? modelLabel(settings.conversationModel)
+            : live === 'gpt-live'
+              ? t('settings.summary.conversationLive', { engine: LIVE_ENGINE_INFO[live].label, model: modelLabel(settings.conversationModel) })
+              : t('settings.summary.conversationLiveOnly', { engine: LIVE_ENGINE_INFO[live].label })
+        },
+    voice: live
+      ? { text: t('settings.summary.voiceLive', { engine: LIVE_ENGINE_INFO[live].label }) }
+      : has('recognition', 'browserWhisper')
+        ? { text: t('settings.summary.recognitionNotReady'), tone: 'warn' }
+        : speechCannotRun
+          ? { text: t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, settings.ttsEngine) }), tone: 'warn' }
+          : {
+              text: !features.aizuchi
+                ? ttsEngineLabel(t, settings.ttsEngine)
+                : t(settings.aizuchi ? 'settings.summary.voiceBackchannelOn' : 'settings.summary.voiceBackchannelOff', { engine: ttsEngineLabel(t, settings.ttsEngine) }),
+              tone: has('speech', 'aizuchi', 'turnTaking') ? 'warn' : undefined
+            },
     persona: {
       text: isDefaultPersona(settings.persona)
         ? t('settings.summary.personaDefault')
@@ -258,64 +291,62 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
           ? t('settings.summary.personaEdited')
           : t('settings.summary.personaEmpty')
     },
-    // A saved engine this machine cannot run is not something to prepare; the voice page is where it is chosen again.
-    voice: live
-      ? { text: t('settings.summary.voiceLive', { engine: LIVE_ENGINE_INFO[live].label }) }
-      : !engineRuns
-        ? { text: t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, settings.ttsEngine) }), tone: 'warn' }
-        : {
-            text: !features.aizuchi
-              ? ttsEngineLabel(t, settings.ttsEngine)
-              : t(settings.aizuchi ? 'settings.summary.voiceBackchannelOn' : 'settings.summary.voiceBackchannelOff', {
-                  engine: ttsEngineLabel(t, settings.ttsEngine)
-                })
-          },
-    appearance: { text: t(`settingsAppearance.themes.${settings.theme}.name`) },
-    memory: { text: t(settings.memoryEmbeddingEnabled ? 'settings.summary.memorySemanticOn' : 'settings.summary.memorySemanticOff') },
-    agent: { text: `${agentEngine} · ${AGENT_MODE_NAME[settings.agentEngine][settings.agentMode]}` },
-    integrations: {
-      text: calendar === null
-        ? t('settings.summary.integrationsKeys', keyCounts)
-        : t(settings.calendar.enabled ? 'settings.summary.integrationsCalendarOn' : 'settings.summary.integrationsCalendarOff', keyCounts)
+    memory: {
+      text: t(settings.memoryEmbeddingEnabled ? 'settings.summary.memorySemanticOn' : 'settings.summary.memorySemanticOff'),
+      tone: has('semanticSearch') ? 'warn' : undefined
     },
-    models:
-      missing > 0
-        ? { text: t('settings.summary.modelsNotPrepared', { count: missing }), tone: 'warn' }
-        : { text: t('settings.summary.modelsAllPrepared') },
+    agent: has('agent') ? { text: t('settings.summary.agentMissing', { engine: agentEngine }), tone: 'warn' } : { text: `${agentEngine} · ${AGENT_MODE_NAME[settings.agentEngine][settings.agentMode]}` },
+    connections: {
+      text: [
+        ...(calendar === null ? [] : [t(settings.calendar.enabled ? 'settings.summary.calendarOn' : 'settings.summary.calendarOff')]),
+        t('settings.summary.mailAccounts', { count: settings.mail.accounts.length })
+      ].join(' · ')
+    },
+    language: { text: `${UI_LOCALE_NAMES[settings.conversationLocale]} · ${regionName}` },
+    appearance: { text: t(`settingsAppearance.themes.${settings.theme}.name`) },
+    apiKeys: { text: t('settings.summary.apiKeys', { keys, total: LLM_PROVIDERS.length }), tone: has('key') ? 'warn' : undefined },
     usage: { text: last30 === null ? '' : t('settings.summary.usage', { amount: formatUsd(last30) }) },
     about: { text: t('settings.summary.about') }
   }
+  const title = (id: SettingsPage): string => (id === 'connections' ? connectionsTitle(t, calendar) : t(`settings.pages.${id}`))
 
   const body: Record<SettingsPage, React.JSX.Element> = {
+    overview: <OverviewPage ctx={ctx} />,
     conversation: <ConversationPage ctx={ctx} />,
-    persona: <PersonaPage ctx={ctx} />,
     voice: <VoicePage ctx={ctx} />,
-    appearance: <AppearancePage ctx={ctx} />,
+    persona: <PersonaPage ctx={ctx} />,
     memory: <MemoryPage ctx={ctx} />,
     agent: <AgentPage ctx={ctx} />,
-    integrations: <IntegrationsPage ctx={ctx} />,
-    models: <ModelsPage ctx={ctx} />,
+    connections: <ConnectionsPage ctx={ctx} />,
+    language: <LanguagePage ctx={ctx} />,
+    appearance: <AppearancePage ctx={ctx} />,
+    apiKeys: <ApiKeysPage ctx={ctx} />,
     usage: <UsagePage ctx={ctx} />,
     about: <AboutPage />
   }
+  const navEntry = (id: SettingsPage): React.JSX.Element => {
+    const Icon = ICONS[id]
+    return (
+      <button key={id} type="button" className="st-nav" data-page={id} aria-pressed={page === id} onClick={() => setPage(id)}>
+        <Icon size={18} />
+        <span className="st-nav-title">{title(id)}</span>
+        <span className="st-nav-sub" data-tone={subs[id].tone}>
+          {subs[id].text}
+        </span>
+      </button>
+    )
+  }
+  const notice = prep.message && (
+    <p className="st-notice" role="status">
+      {prep.message}
+    </p>
+  )
 
   return (
     <section className="builtin-focus glass st-focus" aria-label="SETTINGS">
       <header>
         <h2>SETTINGS</h2>
         <div className="st-header-actions">
-          <select
-            className="st-select"
-            aria-label={t('settings.language')}
-            value={settings.uiLocale}
-            onChange={(event) => set({ uiLocale: event.target.value as UiLocale })}
-          >
-            {UI_LOCALES.map((locale) => (
-              <option key={locale} value={locale}>
-                {UI_LOCALE_NAMES[locale]}
-              </option>
-            ))}
-          </select>
           <button onClick={closeApp}>
             {t('common.backToConversation')} <X size={16} />
           </button>
@@ -323,24 +354,15 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       </header>
       <div className="st-root">
         <nav className="st-side" aria-label={t('settings.pageList')}>
-          {PAGES.map(({ id, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={`st-nav${id === 'models' ? ' is-setup' : ''}`}
-              data-page={id}
-              aria-pressed={page === id}
-              onClick={() => setPage(id)}
-            >
-              <Icon size={18} />
-              <span className="st-nav-title">{t(`settings.pages.${id}`)}</span>
-              <span className="st-nav-sub" data-tone={subs[id].tone}>
-                {subs[id].text}
-              </span>
-            </button>
+          {SECTIONS.map((section) => (
+            <div key={section.title ?? 'overview'} className="st-nav-group">
+              {section.title && <h3 className="st-nav-section">{t(`settings.sections.${section.title}`)}</h3>}
+              {section.pages.map(navEntry)}
+            </div>
           ))}
         </nav>
         <div className="st-main" ref={mainRef}>
+          {notice}
           {body[page]}
         </div>
       </div>

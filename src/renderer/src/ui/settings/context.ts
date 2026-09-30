@@ -6,10 +6,11 @@ import type { PlatformCapabilities } from '@shared/platform'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { ttsEngineRuns } from '@shared/tts-models'
 import { platformCapabilities } from '@/platform'
+import type { Pending } from './pending'
 
 export type { SettingsPage }
 
-/** The items on the models page that are prepared by a download in the main process. */
+/** The items that are prepared by a download in the main process. */
 export type PreparationTarget = 'asr' | 'tts' | 'vap' | 'embedding' | 'aizuchiClassifier'
 
 /**
@@ -35,6 +36,8 @@ export interface SettingsContext {
   embedding: EmbeddingStatus | null
   aizuchiClassifier: AizuchiClassifierStatus | null
   prep: Preparation
+  /** What is turned on and cannot work yet, which the overview lists and the list on the left counts. */
+  pending: Pending[]
   /** Saves and reloads the status, reporting a failure as a toast. It resolves to whether the patch was saved. */
   set: (patch: SettingsPatch) => Promise<boolean>
   /** Saves and throws on failure, for a caller that wants to word the message itself. */
@@ -53,6 +56,16 @@ export interface SettingsContext {
     aizuchiClassifier: () => void
   }
 }
+
+/** Where the CLI of each Agent engine is installed from. */
+export const AGENT_INSTALL_GUIDE = { codex: 'https://developers.openai.com/codex/cli', claude: 'https://docs.claude.com/en/docs/claude-code' } as const
+
+/** Where each speech application that is installed separately is downloaded. */
+export const TTS_SITE = { voicevox: 'https://voicevox.hiroshiba.jp/', aivisspeech: 'https://aivis-project.com/' } as const
+
+/** The name of the calendar and mail page. A machine without a calendar has mail alone there and names the page so. */
+export const connectionsTitle = (t: Translate, calendar: PlatformCapabilities['calendar']): string =>
+  calendar === null ? t('settingsMail.title') : t('settings.pages.connections')
 
 const TTS_ENGINE_NAME = { voicevox: 'VOICEVOX', aivisspeech: 'AivisSpeech', qwen3tts: 'Qwen3-TTS' } as const
 

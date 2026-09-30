@@ -207,14 +207,14 @@ function steps({ locale, name }) {
     wait(300),
     setupShot('setup-mic-denied'),
 
-    // Settings opens on its conversation page, which holds the conversation model and the voice engine.
+    // Settings opens on its overview: the current setup, what still needs preparing, and what can be added.
     view('settings'),
     settle,
-    shot('settings-conversation'),
-    ...['appearance', 'agent', 'integrations'].flatMap((page) => [view(`settings/${page}`), settle, shot(`settings-${page}`)]),
+    shot('settings-overview'),
+    ...['conversation', 'voice', 'language', 'appearance', 'agent'].flatMap((page) => [view(`settings/${page}`), settle, shot(`settings-${page}`)]),
 
     // Adding a mail account: a Gmail account with a sample app password, after the connection is checked.
-    view('settings/integrations'),
+    view('settings/connections'),
     settle,
     press('settingsMail.add'),
     wait(400),

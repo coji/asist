@@ -20,26 +20,29 @@ export function Page({ title, lead, children }: { title: string; lead: string; c
   )
 }
 
+/** A group without a title is the only one on its page, whose title and lead already say what it holds. */
 export function Group({
   title,
   description,
   action,
   children
 }: {
-  title: string
+  title?: string
   description?: string
   action?: ReactNode
   children: ReactNode
 }): React.JSX.Element {
   return (
     <section className="st-group" aria-label={title}>
-      <header>
-        <div>
-          <h3>{title}</h3>
-          {description && <p>{description}</p>}
-        </div>
-        {action}
-      </header>
+      {title && (
+        <header>
+          <div>
+            <h3>{title}</h3>
+            {description && <p>{description}</p>}
+          </div>
+          {action}
+        </header>
+      )}
       <div className="st-group-body">{children}</div>
     </section>
   )

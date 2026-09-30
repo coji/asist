@@ -17,7 +17,7 @@ const JAPANESE = /[぀-ヿ一-鿿]/
  */
 const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
   { file: /^src\/renderer\/src\/demo\//, reason: 'sample data and the developer-facing frame of the demo' },
-  { file: /\/ConversationPage\.tsx$/, text: '声のテストです', reason: 'the sentence the bundled voice samples say' },
+  { file: /\/VoicePage\.tsx$/, text: '声のテストです', reason: 'the sentence the bundled voice samples say' },
   { file: /^src\/main\/ipc\.ts$/, text: '音声のテストです', reason: 'the sentence the speech test says, in the language of the conversation' },
   { file: /^src\/main\/services\/brain\//, reason: 'prompts, tool descriptions and tool results, written for the model' },
   { file: /^src\/main\/services\/(bridge-plan|live\/index|live\/gpt-live|live\/gemini-live)\.ts$/, reason: 'prompts and bracketed notes sent to a model' },

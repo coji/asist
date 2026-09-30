@@ -29,7 +29,7 @@ const views: MiniAppView[] = [
   { app: 'calendar', view: 'week', date: '2026-09-22', eventId: 'event-1' },
   { app: 'jobs', jobId: 'job-1' },
   { app: 'memory', file: 'pages/tanaka.md' },
-  { app: 'settings', page: 'integrations' }
+  { app: 'settings', page: 'connections' }
 ]
 
 describe('open_app', () => {
@@ -99,7 +99,7 @@ describe('close_app', () => {
 
 describe('the open mini app', () => {
   it('names the id of what each mini app shows, so the model can pass it to that mini app\'s tools', () => {
-    const shown = ['note-1', 'task-1', 'draft-1', 'event-1', 'job-1', 'pages/tanaka.md', 'integrations']
+    const shown = ['note-1', 'task-1', 'draft-1', 'event-1', 'job-1', 'pages/tanaka.md', 'connections']
     views.forEach((view, index) => expect(describeOpenApp(view, 'en')).toContain(shown[index]))
     expect(describeOpenApp(views[3], 'en')).toContain('2026-09-22')
   })

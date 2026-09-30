@@ -8,7 +8,7 @@ sidebar:
 import { Steps, Aside } from '@astrojs/starlight/components'
 
 <Aside type="note">
-The calendar is available on the Mac only for now. ASIST for Windows has neither the Calendar mini app nor the calendar item under "Integrations" in the settings.
+The calendar is available on the Mac only for now. ASIST for Windows has neither the Calendar mini app nor the calendar items in the settings, where the page is called "Mail" rather than "Calendar and mail".
 </Aside>
 
 ASIST reads and writes the calendars registered in macOS. macOS signs in to Google and syncs with it; ASIST does not connect to Google directly. iCloud calendars work with the same steps. If your Google events already appear in the Mac's Calendar app, start from step 4.
@@ -41,7 +41,7 @@ ASIST reads and writes the calendars registered in macOS. macOS signs in to Goog
 
 4. **Allow ASIST**
 
-   In the ASIST settings, under "Integrations", turn on the "Turn the calendar integration on" switch. In the macOS dialog, click "Allow Full Access".
+   In the ASIST settings, under "Calendar and mail", turn on the "Turn the calendar integration on" switch. In the macOS dialog, click "Allow Full Access".
 
    ![The macOS dialog where ASIST asks for full access to your calendars](/guides/calendar/04-asist-permission.png)
 
@@ -59,7 +59,7 @@ ASIST reads and writes the calendars registered in macOS. macOS signs in to Goog
 
 ## If it does not connect
 
-- If you did not allow access, open System Settings from "macOS privacy settings" under "Integrations" in the settings, and give ASIST full access. Return to ASIST and click "Refresh the list".
+- If you did not allow access, open System Settings from "macOS privacy settings" under "Calendar and mail" in the settings, and give ASIST full access. Return to ASIST and click "Refresh the list".
 - If your calendars do not appear, check whether events appear in the Mac's Calendar app. If you added the account again, choose the calendars to show and the calendar for new events again in ASIST as well.
 - Calendars that cannot be written to, such as shared or subscribed calendars, can only be used for viewing.
 - Repeating events and events with invitations can be viewed and searched, but ASIST cannot change or delete them. Use the Mac's Calendar app for those.

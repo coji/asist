@@ -33,7 +33,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 
 ## API キーを確かめられない
 
-初回セットアップや設定の「連携」で、キーを確かめられなかったと出るときは、キーを写し間違えていないか、提供元のアカウントに残高や利用枠があるかを確かめます。
+初回セットアップや設定の「API キー」で、キーを確かめられなかったと出るときは、キーを写し間違えていないか、提供元のアカウントに残高や利用枠があるかを確かめます。
 
 ![API キーを確かめられなかったときのセットアップの画面](/screens/ja/setup-key-failed.webp)
 
@@ -58,7 +58,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 
 ## MaAI を起動できなかったと出る
 
-設定の「声」で「ターンテイキング(MaAI)」をオンにしていても、MaAI を起動できなかったときは、話し終わりを設定した無音の長さで判断して、会話を続けます。この表示は、MaAI をオンにしてから一度だけ出ます。設定の「モデル」で MaAI を準備し直すと、準備の終わりに MaAI を起動して確かめます。そこでも起動できないときは、ログに原因が書いてあるので、[不具合を知らせる](#不具合を知らせる)ときに添えてください。
+設定の「声」で「ターンテイキング(MaAI)」をオンにしていても、MaAI を起動できなかったときは、話し終わりを設定した無音の長さで判断して、会話を続けます。この表示は、MaAI をオンにしてから一度だけ出ます。設定の「声」の「ターンテイキング(MaAI)」で MaAI を準備し直すと、準備の終わりに MaAI を起動して確かめます。そこでも起動できないときは、ログに原因が書いてあるので、[不具合を知らせる](#不具合を知らせる)ときに添えてください。
 
 ## Windows で音声認識のモデルを選べない
 
@@ -86,4 +86,4 @@ Windows でこのコンピュータの音声認識と Qwen3-TTS を動かすに�
 
 ## 不具合を知らせる
 
-設定の「会話」の「動作ログ」からログのフォルダを開き、その日のファイルを添えて、[GitHub の Issues](https://github.com/nyosegawa/asist/issues) に書いてください。ログのフォルダは、Mac では `~/Library/Logs/asist/`、Windows では `%APPDATA%\asist\logs\` です。ログのキーやパスワードは伏せてあります。脆弱性は、公開の Issue ではなく [SECURITY.md](https://github.com/nyosegawa/asist/blob/main/SECURITY.md) の手順で知らせてください。
+設定の「このアプリについて」の「動作ログ」からログのフォルダを開き、その日のファイルを添えて、[GitHub の Issues](https://github.com/nyosegawa/asist/issues) に書いてください。ログのフォルダは、Mac では `~/Library/Logs/asist/`、Windows では `%APPDATA%\asist\logs\` です。ログのキーやパスワードは伏せてあります。脆弱性は、公開の Issue ではなく [SECURITY.md](https://github.com/nyosegawa/asist/blob/main/SECURITY.md) の手順で知らせてください。

@@ -196,17 +196,17 @@ export const llmModels = defineMessages({
   },
   errors: {
     keyMissing: {
-      'ja-JP': '{provider} の API キー({envKey})がありません。設定の「連携」で保存してください。',
-      'en-US': 'There is no {provider} API key ({envKey}). Save it on the Integrations page in Settings.',
-      'fr-FR': "Il n'y a pas de clé API {provider} ({envKey}). Enregistrez-la sur la page Intégrations des réglages.",
-      'de-DE': 'Es gibt keinen API-Schlüssel von {provider} ({envKey}). Speichern Sie ihn auf der Seite „Integrationen“ in den Einstellungen.',
-      'hi-IN': '{provider} की API कुंजी ({envKey}) नहीं है। इसे सेटिंग्ज़ के "इंटीग्रेशन" पेज पर सेव करें।',
-      'id-ID': 'Tidak ada kunci API {provider} ({envKey}). Simpan kuncinya di halaman Integrasi pada Pengaturan.',
-      'it-IT': 'Manca la chiave API di {provider} ({envKey}). Salvala nella pagina «Integrazioni» delle impostazioni.',
-      'ko-KR': "{provider} API 키가 없습니다({envKey}). 설정의 '연동'에서 저장하십시오.",
-      'pt-BR': 'Não há chave de API de {provider} ({envKey}). Salve na página Integrações dos ajustes.',
-      'es-419': 'No hay clave de API de {provider} ({envKey}). Guárdala en la página Integraciones de Configuración.',
-      'es-ES': 'No hay ninguna clave de API de {provider} ({envKey}). Guárdala en la página “Integraciones” de Ajustes.'
+      'ja-JP': '{provider} の API キー({envKey})がありません。設定の「API キー」で保存してください。',
+      'en-US': 'There is no {provider} API key ({envKey}). Save it on the API keys page in Settings.',
+      'fr-FR': "Il n'y a pas de clé API {provider} ({envKey}). Enregistrez-la sur la page Clés API des réglages.",
+      'de-DE': 'Es gibt keinen API-Schlüssel von {provider} ({envKey}). Speichern Sie ihn auf der Seite „API-Schlüssel“ in den Einstellungen.',
+      'hi-IN': '{provider} की API कुंजी ({envKey}) नहीं है। इसे सेटिंग्ज़ के "API कुंजी" पेज पर सेव करें।',
+      'id-ID': 'Tidak ada kunci API {provider} ({envKey}). Simpan kuncinya di halaman Kunci API pada Pengaturan.',
+      'it-IT': 'Manca la chiave API di {provider} ({envKey}). Salvala nella pagina «Chiavi API» delle impostazioni.',
+      'ko-KR': "{provider} API 키가 없습니다({envKey}). 설정의 'API 키'에서 저장하십시오.",
+      'pt-BR': 'Não há chave de API de {provider} ({envKey}). Salve na página Chaves de API dos ajustes.',
+      'es-419': 'No hay clave de API de {provider} ({envKey}). Guárdala en la página Claves de API de Configuración.',
+      'es-ES': 'No hay ninguna clave de API de {provider} ({envKey}). Guárdala en la página “Claves de API” de Ajustes.'
     },
     keyEmpty: {
       'ja-JP': 'API キーを入れてください。',

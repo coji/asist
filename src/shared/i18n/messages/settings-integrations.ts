@@ -1,74 +1,7 @@
 import { defineMessages } from '../message'
 
 export const settingsIntegrations = defineMessages({
-  title: {
-    'ja-JP': '連携',
-    'en-US': 'Integrations',
-    'fr-FR': 'Intégrations',
-    'de-DE': 'Integrationen',
-    'hi-IN': 'इंटीग्रेशन',
-    'id-ID': 'Integrasi',
-    'it-IT': 'Integrazioni',
-    'ko-KR': '연동',
-    'pt-BR': 'Integrações',
-    'es-419': 'Integraciones',
-    'es-ES': 'Integraciones'
-  },
-  lead: {
-    withCalendar: {
-      'ja-JP': 'macOS のカレンダーとメールにつなぎ、モデルのプロバイダの API キーを登録します。',
-      'en-US': 'Connect the macOS calendar and mail, and register the API key of each model provider.',
-      'fr-FR': 'Connectez le calendrier et la messagerie de macOS, et enregistrez la clé API de chaque fournisseur de modèles.',
-      'de-DE': 'Verbinden Sie Kalender und Mail von macOS und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
-      'hi-IN': 'macOS के कैलेंडर और मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
-      'id-ID': 'Sambungkan kalender dan email macOS, lalu daftarkan kunci API tiap penyedia model.',
-      'it-IT': 'Collega il calendario e la posta di macOS e registra la chiave API di ogni provider di modelli.',
-      'ko-KR': 'macOS의 캘린더와 메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
-      'pt-BR': 'Conecte o calendário e o e-mail do macOS e registre a chave de API de cada provedor de modelos.',
-      'es-419': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.',
-      'es-ES': 'Conecta el calendario y el correo de macOS, y registra la clave de API de cada proveedor de modelos.'
-    },
-    withoutCalendar: {
-      'ja-JP': 'メールにつなぎ、モデルのプロバイダの API キーを登録します。',
-      'en-US': 'Connect your mail, and register the API key of each model provider.',
-      'fr-FR': 'Connectez votre messagerie, et enregistrez la clé API de chaque fournisseur de modèles.',
-      'de-DE': 'Verbinden Sie Ihre Mail und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
-      'hi-IN': 'मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
-      'id-ID': 'Sambungkan email, lalu daftarkan kunci API tiap penyedia model.',
-      'it-IT': 'Collega la posta e registra la chiave API di ogni provider di modelli.',
-      'ko-KR': '메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
-      'pt-BR': 'Conecte o e-mail e registre a chave de API de cada provedor de modelos.',
-      'es-419': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.',
-      'es-ES': 'Conecta el correo y registra la clave de API de cada proveedor de modelos.'
-    },
-    withGoogleCalendar: {
-      'ja-JP': 'Google カレンダーとメールにつなぎ、モデルのプロバイダの API キーを登録します。',
-      'en-US': 'Connect Google Calendar and mail, and register the API key of each model provider.',
-      'fr-FR': 'Connectez Google Agenda et la messagerie, et enregistrez la clé API de chaque fournisseur de modèles.',
-      'de-DE': 'Verbinden Sie Google Kalender und Mail und hinterlegen Sie den API-Schlüssel jedes Anbieters.',
-      'hi-IN': 'Google Calendar और मेल से जोड़ें, और हर मॉडल प्रोवाइडर की API कुंजी दर्ज करें।',
-      'id-ID': 'Sambungkan Google Kalender dan email, lalu daftarkan kunci API tiap penyedia model.',
-      'it-IT': 'Collega Google Calendar e la posta e registra la chiave API di ogni provider di modelli.',
-      'ko-KR': 'Google 캘린더와 메일을 연결하고, 모델 제공업체의 API 키를 등록합니다.',
-      'pt-BR': 'Conecte o Google Agenda e o e-mail e registre a chave de API de cada provedor de modelos.',
-      'es-419': 'Conecta Google Calendar y el correo, y registra la clave de API de cada proveedor de modelos.',
-      'es-ES': 'Conecta Google Calendar y el correo, y registra la clave de API de cada proveedor de modelos.'
-    }
-  },
   apiKeys: {
-    title: {
-      'ja-JP': 'API キー',
-      'en-US': 'API keys',
-      'fr-FR': 'Clés API',
-      'de-DE': 'API-Schlüssel',
-      'hi-IN': 'API कुंजी',
-      'id-ID': 'Kunci API',
-      'it-IT': 'Chiavi API',
-      'ko-KR': 'API 키',
-      'pt-BR': 'Chaves de API',
-      'es-419': 'Claves de API',
-      'es-ES': 'Claves de API'
-    },
     description: {
       'ja-JP': 'キーは暗号化して保存します。会話モデルとつなぎの一言のモデルで選んだプロバイダのキーが必要です。',
       'en-US': 'Keys are saved encrypted. You need the key of the provider chosen for the conversation model and for the bridge phrase model.',
@@ -266,17 +199,17 @@ export const settingsIntegrations = defineMessages({
         'es-ES': 'Este ordenador no puede guardar una clave de API cifrada.'
       },
       keyUnreadable: {
-        'ja-JP': '保存した {provider} の API キーを読み出せません。設定の「連携」で入れ直してください。',
-        'en-US': "Couldn't read the saved {provider} API key. Enter it again on the Integrations page in Settings.",
-        'fr-FR': 'Impossible de lire la clé API {provider} enregistrée. Saisissez-la de nouveau sur la page Intégrations des réglages.',
-        'de-DE': 'Der gespeicherte API-Schlüssel von {provider} ließ sich nicht lesen. Geben Sie ihn auf der Seite „Integrationen“ in den Einstellungen erneut ein.',
-        'hi-IN': 'सेव की गई {provider} की API कुंजी पढ़ी नहीं जा सकी। इसे सेटिंग्ज़ के "इंटीग्रेशन" पेज पर फिर से डालें।',
-        'id-ID': 'Tidak bisa membaca kunci API {provider} yang tersimpan. Masukkan lagi di halaman Integrasi pada Pengaturan.',
-        'it-IT': 'Impossibile leggere la chiave API di {provider} salvata. Inseriscila di nuovo nella pagina «Integrazioni» delle impostazioni.',
-        'ko-KR': "저장한 {provider} API 키를 읽어 올 수 없습니다. 설정의 '연동'에서 다시 입력하십시오.",
-        'pt-BR': 'Não foi possível ler a chave de API de {provider} guardada. Digite de novo na página Integrações dos ajustes.',
-        'es-419': 'No se pudo leer la clave de API de {provider} guardada. Vuelve a escribirla en la página Integraciones de Configuración.',
-        'es-ES': 'No se ha podido leer la clave de API de {provider} guardada. Vuelve a introducirla en la página “Integraciones” de Ajustes.'
+        'ja-JP': '保存した {provider} の API キーを読み出せません。設定の「API キー」で入れ直してください。',
+        'en-US': "Couldn't read the saved {provider} API key. Enter it again on the API keys page in Settings.",
+        'fr-FR': 'Impossible de lire la clé API {provider} enregistrée. Saisissez-la de nouveau sur la page Clés API des réglages.',
+        'de-DE': 'Der gespeicherte API-Schlüssel von {provider} ließ sich nicht lesen. Geben Sie ihn auf der Seite „API-Schlüssel“ in den Einstellungen erneut ein.',
+        'hi-IN': 'सेव की गई {provider} की API कुंजी पढ़ी नहीं जा सकी। इसे सेटिंग्ज़ के "API कुंजी" पेज पर फिर से डालें।',
+        'id-ID': 'Tidak bisa membaca kunci API {provider} yang tersimpan. Masukkan lagi di halaman Kunci API pada Pengaturan.',
+        'it-IT': 'Impossibile leggere la chiave API di {provider} salvata. Inseriscila di nuovo nella pagina «Chiavi API» delle impostazioni.',
+        'ko-KR': "저장한 {provider} API 키를 읽어 올 수 없습니다. 설정의 'API 키'에서 다시 입력하십시오.",
+        'pt-BR': 'Não foi possível ler a chave de API de {provider} guardada. Digite de novo na página Chaves de API dos ajustes.',
+        'es-419': 'No se pudo leer la clave de API de {provider} guardada. Vuelve a escribirla en la página Claves de API de Configuración.',
+        'es-ES': 'No se ha podido leer la clave de API de {provider} guardada. Vuelve a introducirla en la página “Claves de API” de Ajustes.'
       },
       fileUnreadable: {
         'ja-JP': 'API キーのファイルを読めません({file}): {reason}',
@@ -330,6 +263,34 @@ export const settingsIntegrations = defineMessages({
       'pt-BR': 'Ilegível',
       'es-419': 'Ilegible',
       'es-ES': 'Ilegible'
+    }
+  },
+  lead: {
+    withCalendar: {
+      'ja-JP': 'カレンダーとメールにつなぎます。予定の変更とメールの送信は、実行する前に確認します。',
+      'en-US': 'Connects to your calendar and mail. Changes to events and sending mail are confirmed before they run.',
+      'fr-FR': "Se connecte à votre agenda et à vos e-mails. Les modifications d'événements et les envois sont confirmés avant d'être exécutés.",
+      'de-DE': 'Verbindet sich mit Kalender und E-Mail. Änderungen an Terminen und das Senden von E-Mails werden vorher bestätigt.',
+      'hi-IN': 'आपके कैलेंडर और मेल से जुड़ता है। इवेंट बदलने और मेल भेजने से पहले पुष्टि ली जाती है।',
+      'id-ID': 'Terhubung ke kalender dan email Anda. Perubahan acara dan pengiriman email dikonfirmasi sebelum dijalankan.',
+      'it-IT': 'Si collega al calendario e alla posta. Le modifiche agli eventi e gli invii vengono confermati prima di eseguirli.',
+      'ko-KR': '캘린더와 메일에 연결합니다. 일정 변경과 메일 보내기는 실행하기 전에 확인합니다.',
+      'pt-BR': 'Conecta à sua agenda e ao seu e-mail. Alterações em eventos e envios de e-mail são confirmados antes de acontecer.',
+      'es-419': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.',
+      'es-ES': 'Se conecta a tu calendario y a tu correo. Los cambios en eventos y los envíos se confirman antes de hacerse.'
+    },
+    withoutCalendar: {
+      'ja-JP': 'メールにつなぎます。送信、返信、ゴミ箱への移動は、実行する前に確認します。',
+      'en-US': 'Connects to your mail. Sending, replying and moving to the trash are confirmed before they run.',
+      'fr-FR': "Se connecte à vos e-mails. Les envois, réponses et mises à la corbeille sont confirmés avant d'être exécutés.",
+      'de-DE': 'Verbindet sich mit Ihrer E-Mail. Senden, Antworten und Verschieben in den Papierkorb werden vorher bestätigt.',
+      'hi-IN': 'आपके मेल से जुड़ता है। भेजने, जवाब देने और ट्रैश में डालने से पहले पुष्टि ली जाती है।',
+      'id-ID': 'Terhubung ke email Anda. Mengirim, membalas, dan memindahkan ke sampah dikonfirmasi sebelum dijalankan.',
+      'it-IT': 'Si collega alla posta. Invii, risposte e spostamenti nel cestino vengono confermati prima di eseguirli.',
+      'ko-KR': '메일에 연결합니다. 보내기, 답장, 휴지통으로 옮기기는 실행하기 전에 확인합니다.',
+      'pt-BR': 'Conecta ao seu e-mail. Envios, respostas e movimentos para a lixeira são confirmados antes de acontecer.',
+      'es-419': 'Se conecta a tu correo. Los envíos, respuestas y traslados a la papelera se confirman antes de hacerse.',
+      'es-ES': 'Se conecta a tu correo. Los envíos, respuestas y traslados a la papelera se confirman antes de hacerse.'
     }
   }
 })
