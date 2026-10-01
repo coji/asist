@@ -105,17 +105,19 @@ export function cascadeListeningReady(
 }
 
 /** How the replies of the cascade engine are read aloud, as speechReadiness tells it. */
-export type SpeechReadiness = 'ready' | 'off' | 'missing' | 'cannotRun' | 'checking'
+export type SpeechReadiness = 'ready' | 'starting' | 'off' | 'missing' | 'cannotRun' | 'checking'
 
 /**
  * How the replies are read aloud. 'off' is the engine that reads nothing, which leaves a reply as text
- * alone. 'missing' is an engine that cannot be reached or whose model is not prepared, in which case the
- * OS's speech synthesis reads the replies instead.
+ * alone. 'starting' is an engine that is there and still loading, as a local model does for a few seconds
+ * each time its engine is chosen. 'missing' is an engine that cannot be reached or whose model is not
+ * prepared, in which case the OS's speech synthesis reads the replies instead.
  */
 export function speechReadiness(engine: TtsEngine, status: AppStatus | null, localSpeech: PlatformCapabilities['localSpeech']): SpeechReadiness {
   if (engine === 'none') return 'off'
   if (!ttsEngineRuns(engine, localSpeech)) return 'cannotRun'
   if (!ttsNeedsPreparation(engine)) return 'ready'
   if (status === null) return 'checking'
-  return status.tts ? 'ready' : 'missing'
+  if (status.tts) return 'ready'
+  return status.ttsStarting ? 'starting' : 'missing'
 }

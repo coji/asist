@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   startEmbedding: vi.fn(async () => false),
   ttsAnswered: vi.fn(),
   ttsUp: true,
+  ttsStarting: false,
   asrAvailable: async () => true
 }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -19,7 +20,7 @@ vi.mock('electron', () => ({ app: {
 } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 vi.mock('../src/main/services/asr', () => ({ available: () => mocks.asrAvailable(), revive: async () => true }))
-vi.mock('../src/main/services/tts', () => ({ available: async () => mocks.ttsUp, ensureEngine: async () => true }))
+vi.mock('../src/main/services/tts', () => ({ available: async () => mocks.ttsUp, engineStarting: () => mocks.ttsStarting, ensureEngine: async () => true }))
 vi.mock('../src/main/services/aizuchi', () => ({ ttsAnswered: mocks.ttsAnswered }))
 vi.mock('../src/main/services/memory', () => ({ startEmbeddingIfEnabled: mocks.startEmbedding }))
 
@@ -54,6 +55,7 @@ beforeEach(async () => {
   mocks.startEmbedding.mockClear()
   mocks.ttsAnswered.mockClear()
   mocks.ttsUp = true
+  mocks.ttsStarting = false
   mocks.asrAvailable = async () => true
   children = []
   mocks.spawn.mockReset().mockImplementation((_python: string, args: string[]) => {
@@ -114,10 +116,10 @@ describe('the watchdog', () => {
     const onChange = vi.fn()
     watchdog.start(onChange)
     await vi.advanceTimersByTimeAsync(10)
-    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false })
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false, ttsStarting: false })
     mocks.ttsUp = true
     await watchdog.checkHealth()
-    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true })
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true, ttsStarting: false })
   })
 
   it('checks once the start of an engine has settled, whether it succeeded or failed', async () => {
@@ -127,7 +129,33 @@ describe('the watchdog', () => {
     mocks.ttsUp = false
     watchdog.checkAfter(Promise.reject(new Error('the worker exited')))
     await vi.advanceTimersByTimeAsync(10)
-    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false })
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false, ttsStarting: false })
+  })
+
+  it('tells the screens the outcome of a start that failed, though the engine did not answer before it either', async () => {
+    mocks.ttsUp = false
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenCalledTimes(1)
+    // The settings screen read the engine as loading on its own, after it chose the engine again.
+    watchdog.checkAfter(Promise.reject(new Error('the worker exited')))
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false, ttsStarting: false })
+  })
+
+  it('reports an engine that is loading apart from one that is missing, and again once it answers', async () => {
+    mocks.ttsUp = false
+    mocks.ttsStarting = true
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: false, ttsStarting: true })
+    mocks.ttsUp = true
+    mocks.ttsStarting = false
+    await watchdog.checkHealth()
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true, ttsStarting: false })
   })
 
   it('checks again once a check that was under way when asked has ended, since that one may have read the old state', async () => {
@@ -143,7 +171,7 @@ describe('the watchdog', () => {
     expect(onChange).not.toHaveBeenCalled()
     release()
     await vi.advanceTimersByTimeAsync(10)
-    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true })
+    expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true, ttsStarting: false })
   })
 
   it('starts the aizuchi classifier again after a timeout stopped it', async () => {

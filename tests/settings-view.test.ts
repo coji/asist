@@ -82,6 +82,7 @@ const status: AppStatus = {
   conversationModel: { provider: 'openai', id: 'gpt-5.6-luna' },
   llmKeys: { anthropic: 'verified', openai: 'missing', google: 'missing', cerebras: 'saved' },
   tts: false,
+  ttsStarting: false,
   ttsEngine: 'system',
   ttsLabel: 'macOS',
   asr: false,
@@ -956,6 +957,22 @@ describe('the state of the speech models while the settings are open', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
     expect(api.getSetupStatus.mock.calls.length).toBe(reads + 1)
+  })
+
+  it('shows a prepared local engine that is still loading as starting, without offering to download its model', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'irodori' } })
+    useStatusStore.setState({ status: { ...status, ttsEngine: 'irodori', ttsStarting: true } })
+    const view = await render()
+    // The engine is not among the things that cannot work, beside the three this fixture lacks.
+    expect(pendingLabels(view)).toEqual([t('settingsModels.asr.title'), 'Agent', t('settingsConversation.models.apiKey', { provider: 'OpenAI' })])
+    await act(async () => nav(view, 'voice').click())
+    const speech = view.querySelector(`[aria-label="${t('settingsVoice.speech.title')}"]`)!
+    expect(speech.querySelector('.st-chip')?.textContent).toBe(t('settingsModels.starting'))
+    expect(speech.querySelector('.st-prepline')).toBeNull()
+    await act(async () => useStatusStore.setState({ status: { ...status, ttsEngine: 'irodori', tts: true } }))
+    expect(speech.querySelector('.st-chip')).toBeNull()
+    await act(async () => useStatusStore.setState({ status: { ...status, ttsEngine: 'irodori' } }))
+    expect(speech.querySelector('.st-prepline-text')?.textContent).toBe(t('settingsModels.speech.localModel', { model: 'Irodori-TTS', sizeGb: '1.9' }))
   })
 })
 

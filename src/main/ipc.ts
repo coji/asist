@@ -161,6 +161,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       conversationModel: settings.conversationModel,
       llmKeys: llmKeyStates(),
       tts: ttsUp,
+      ttsStarting: !ttsUp && tts.engineStarting(),
       ttsEngine: settings.ttsEngine,
       ttsLabel: tts.engineLabel(),
       asr: asrUp,

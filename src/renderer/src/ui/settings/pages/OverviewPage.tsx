@@ -44,6 +44,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
   const ready = { tone: 'ok', label: t('common.ready') } as const
   const notReady = { tone: 'warn', label: t('common.notReady') } as const
   const checking = { tone: 'dim', label: t('settingsModels.checking') } as const
+  const starting = { tone: 'dim', label: t('settingsModels.starting') } as const
   const keyOf = (provider: keyof typeof LLM_PROVIDER_INFO): Step['chip'] =>
     status === null ? checking : keyReadable(status.llmKeys[provider]) ? ready : { tone: 'warn', label: t('settingsConversation.models.notSet') }
 
@@ -79,7 +80,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
           page: 'voice',
           title: t('settingsModels.speech.title'),
           value: ttsEngineLabel(t, settings.ttsEngine),
-          chip: speech === 'ready' ? ready : speech === 'off' ? { tone: 'dim', label: t('common.off') } : speech === 'checking' ? checking : notReady
+          chip: speech === 'ready' ? ready : speech === 'off' ? { tone: 'dim', label: t('common.off') } : speech === 'checking' ? checking : speech === 'starting' ? starting : notReady
         }
       ]
 

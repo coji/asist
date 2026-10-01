@@ -67,6 +67,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     llmKeys: keys,
     asr: state.asrReady,
     tts: state.tts,
+    ttsStarting: false,
     ttsEngine: (await base.getSettings()).ttsEngine,
     ttsLabel: ttsEngineLabel(translate, (await base.getSettings()).ttsEngine)
   })

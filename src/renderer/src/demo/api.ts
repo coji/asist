@@ -409,6 +409,7 @@ export const mockApi: RendererApi = {
     conversationModel: settings.conversationModel,
     llmKeys: { anthropic: 'verified', openai: 'missing', google: 'missing', cerebras: 'saved' },
     tts: false,
+    ttsStarting: false,
     ttsEngine: 'system',
     ttsLabel: 'DEMO',
     asr: false,

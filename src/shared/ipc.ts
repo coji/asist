@@ -668,6 +668,8 @@ export interface AppStatus {
   conversationModel: ConversationModel
   llmKeys: Record<LlmProvider, ApiKeyState>
   tts: boolean
+  /** The chosen engine is loading in a process this app started, so `tts` turns true once it answers. */
+  ttsStarting: boolean
   ttsEngine: TtsEngine
   ttsLabel: string
   /** Whether the local speech recognition model answers. */

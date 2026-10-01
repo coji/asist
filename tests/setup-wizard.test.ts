@@ -171,6 +171,7 @@ beforeEach(async () => {
     conversationModel: settings.conversationModel,
     llmKeys: { anthropic: 'missing', openai: 'missing', google: 'missing', cerebras: 'missing' },
     tts: false,
+    ttsStarting: false,
     ttsEngine: 'voicevox',
     ttsLabel: 'VOICEVOX',
     asr: false,

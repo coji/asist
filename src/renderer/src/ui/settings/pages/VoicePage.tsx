@@ -194,7 +194,8 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const asrChoices = localSpeech.backend === null ? [] : asrModelChoices()
   const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
   const classifierReady = aizuchiClassifier?.runtimeInstalled === true && aizuchiClassifier.modelInstalled
-  const ttsMissing = engineUsable && speechReadiness(engine, status, localSpeech) === 'missing'
+  const readiness = engineUsable ? speechReadiness(engine, status, localSpeech) : null
+  const ttsMissing = readiness === 'missing'
   const preview = (
     <Btn
       tone="quiet"
@@ -279,6 +280,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
 
       <Group title={t('settingsVoice.speech.title')} description={t(osMessageKey('settingsVoice.speech.description', capabilities.os))}>
         <Row label={t('settingsVoice.speech.engine')} hint={!ttsEngineRuns(engine, localSpeech) ? t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, engine) }) : undefined}>
+          {readiness === 'starting' && <Chip>{t('settingsModels.starting')}</Chip>}
           {ttsMissing && <Chip tone="warn">{isLocalTtsEngine(engine) ? t('common.notReady') : t('common.notFound')}</Chip>}
           <select
             className="st-select"

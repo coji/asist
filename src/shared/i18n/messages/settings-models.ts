@@ -499,5 +499,18 @@ export const settingsModels = defineMessages({
     'pt-BR': 'Preparar e ativar',
     'es-419': 'Preparar y activar',
     'es-ES': 'Preparar y activar'
+  },
+  starting: {
+    'ja-JP': '起動中',
+    'en-US': 'Starting',
+    'fr-FR': 'Démarrage',
+    'de-DE': 'Wird gestartet',
+    'hi-IN': 'शुरू हो रहा है',
+    'id-ID': 'Sedang dimulai',
+    'it-IT': 'Avvio in corso',
+    'ko-KR': '시작하는 중',
+    'pt-BR': 'Iniciando',
+    'es-419': 'Iniciando',
+    'es-ES': 'Iniciando'
   }
 })
