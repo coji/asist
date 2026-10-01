@@ -56,13 +56,13 @@ extraResources:
   # MinGit on Windows, both put there by scripts/prepare-resources.mjs.
   - from: resources/git
     to: git
-  # The local speech: llama.cpp's llama-server for the speech recognition and qwen3-tts-ggml's worker for
+  # The local speech: llama.cpp's llama-server for the speech recognition and speech.cpp's worker for
   # the speech synthesis, the Metal builds on macOS and the Vulkan builds on Windows, both put there by
   # scripts/prepare-resources.mjs.
   - from: resources/llama.cpp
     to: llama.cpp
-  - from: resources/qwen3-tts
-    to: qwen3-tts
+  - from: resources/speech-worker
+    to: speech-worker
 
 # scripts/prepare-resources.mjs prepares git, uv, the speech binaries and the native helpers for the machine it runs on, so an
 # app packaged for another OS or CPU would carry tools that cannot run there. This stops such a build.

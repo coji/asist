@@ -246,12 +246,12 @@ export const CREDITS = [
     url: 'https://github.com/ggml-org/llama.cpp'
   },
   {
-    id: 'qwen3TtsGgml',
+    id: 'speechCpp',
     group: 'software',
-    name: 'qwen3-tts-ggml',
+    name: 'speech.cpp',
     provider: 'Sakasegawa',
     license: 'MIT',
-    url: 'https://github.com/nyosegawa/qwen3-tts-ggml'
+    url: 'https://github.com/nyosegawa/speech.cpp'
   }
 ] as const satisfies readonly Credit[]
 

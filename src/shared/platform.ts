@@ -12,7 +12,7 @@ export type OsFamily = 'macos' | 'windows'
 
 /**
  * The GPU interface the local speech models run on: Metal on an Apple Silicon Mac, Vulkan on Windows.
- * llama-server runs the speech recognition and qwen3-tts-worker the speech synthesis, both built on ggml.
+ * llama-server runs the speech recognition and speech-worker the speech synthesis, both built on ggml.
  */
 export type SpeechBackend = 'metal' | 'vulkan'
 
@@ -58,7 +58,7 @@ export interface Machine {
   platform: string
   arch: string
   totalMemoryBytes: number
-  /** Asked only on Windows, where it runs `qwen3-tts-worker --devices`; null when that failed. */
+  /** Asked only on Windows, where it runs `speech-worker --devices`; null when that failed. */
   speechDevices: () => SpeechDevice[] | null
   /**
    * Whether the Windows microphone helper finds echo cancellation on for the default microphone, which main

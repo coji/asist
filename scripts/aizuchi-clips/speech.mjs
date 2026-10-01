@@ -10,7 +10,7 @@ import { QWEN_TTS_CODEC, QWEN_TTS_MODELS } from '../../src/shared/tts-models.ts'
 import { RATE } from './cut.mjs'
 
 /**
- * The bundled qwen3-tts-worker and llama-server, run on the model files the app has prepared, so that the
+ * The bundled speech-worker and llama-server, run on the model files the app has prepared, so that the
  * clips are read by the same program and model as the rest of a reply.
  */
 
@@ -41,18 +41,18 @@ export const TTS_MODEL = QWEN_TTS_MODELS['0.6b'].talker
 
 /** Starts the worker and resolves to a function that reads a text and resolves to its samples at RATE. */
 export async function startSynthesizer() {
-  const child = spawn(program('qwen3-tts', 'qwen3-tts-worker'), [modelPath(TTS_MODEL), modelPath(QWEN_TTS_CODEC)], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true })
+  const child = spawn(program('speech-worker', 'speech-worker'), [modelPath(TTS_MODEL), modelPath(QWEN_TTS_CODEC)], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true })
   const pending = new Map()
   let ready
   const started = new Promise((resolve, reject) => {
     ready = resolve
-    child.once('exit', (code) => reject(new Error(`qwen3-tts-worker exited (${code})`)))
+    child.once('exit', (code) => reject(new Error(`speech-worker exited (${code})`)))
   })
   readline.createInterface({ input: child.stdout }).on('line', (line) => {
     if (!line.startsWith('ASIST_JSON:')) return
     const message = JSON.parse(line.slice('ASIST_JSON:'.length))
     if (message.type === 'ready') return ready()
-    if (message.type === 'fatal') throw new Error(`qwen3-tts-worker: ${message.error}`)
+    if (message.type === 'fatal') throw new Error(`speech-worker: ${message.error}`)
     const request = pending.get(message.id)
     if (!request) return
     if (message.type === 'chunk') request.chunks.push(Buffer.from(message.pcm, 'base64'))

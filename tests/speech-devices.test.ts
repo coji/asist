@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseSpeechDevices } from '@shared/speech-devices'
 
-/** What qwen3-tts-worker --devices printed on the RTX 2080 test machine, with a warning ggml wrote before it. */
+/** What the speech worker's --devices printed on the RTX 2080 test machine, with a warning ggml wrote before it. */
 const RTX_2080 = [
   'ggml_vulkan: warning: something the driver said',
   'ASIST_JSON:{"type":"devices","devices":[{"name":"Vulkan0","description":"NVIDIA GeForce RTX 2080","kind":"gpu","memoryTotal":8589934592,"memoryFree":7516192768},{"name":"CPU","description":"Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz","kind":"cpu","memoryTotal":34359738368,"memoryFree":34359738368}]}',

@@ -36,7 +36,7 @@ function voiced(seconds = 0.48): string {
   for (let i = 0; i < samples.length; i++) samples[i] = Math.round(Math.sin(i / 10) * 8000)
   return Buffer.from(samples.buffer).toString('base64')
 }
-const REQUEST = { text: 'こんにちは。', voice: 'ono_anna', language: 'japanese' } as const
+const REQUEST = { text: 'こんにちは。', voice: 'ono_anna', language: 'ja' } as const
 
 beforeEach(async () => {
   vi.resetModules()
@@ -47,7 +47,7 @@ beforeEach(async () => {
     const child = fakeChild()
     children.push(child)
     // The worker reports ready as soon as something listens, as a loaded model would.
-    setTimeout(() => say(child, { type: 'ready', sampleRate: RATE, voices: ['ono_anna'], languages: ['japanese'] }), 0)
+    setTimeout(() => say(child, { type: 'ready', sampleRate: RATE, voices: ['ono_anna'], languages: ['ja'] }), 0)
     return child
   })
   qwen = await import('../src/main/services/qwen-tts')
@@ -74,7 +74,7 @@ describe('Qwen3-TTS service', () => {
     await settle()
     const child = children[0]
     const request = child.input.find((message) => message.text === REQUEST.text)!
-    expect(request).toMatchObject({ voice: 'ono_anna', language: 'japanese', speed: 1 })
+    expect(request).toMatchObject({ voice: 'ono_anna', language: 'ja' })
     say(child, { type: 'chunk', id: request.id, seq: 0, pcm: voiced() })
     // The first piece is delivered before the sentence is finished.
     expect((await first).value!.length).toBeGreaterThan(0)
@@ -203,7 +203,7 @@ describe('Qwen3-TTS service', () => {
   it('runs the worker on the talker of the size the setting names, the shared codec and the GPU the capabilities chose', async () => {
     await expect(qwen.ensureWorker()).resolves.toBe(true)
     const [command, args] = mocks.spawn.mock.calls[0] as [string, string[]]
-    expect(path.basename(command)).toMatch(/^qwen3-tts-worker(\.exe)?$/)
+    expect(path.basename(command)).toMatch(/^speech-worker(\.exe)?$/)
     expect(args.map((arg) => (arg.endsWith('.gguf') ? path.basename(arg) : arg))).toEqual([
       QWEN_TTS_MODELS['0.6b'].talker.file, QWEN_TTS_CODEC.file, '--device', 'MTL0'
     ])
@@ -220,10 +220,10 @@ describe('Qwen3-TTS service', () => {
 })
 
 describe('qwenTtsLanguage', () => {
-  it('maps a locale to the model\'s language by its language subtag, and knows which locales the model cannot speak', () => {
-    expect(qwenTtsLanguage('ja-JP')).toBe('japanese')
-    expect(qwenTtsLanguage('pt-BR')).toBe('portuguese')
-    expect(qwenTtsLanguage('es-419')).toBe('spanish')
+  it('names the language of a locale by its language subtag, and knows which locales the model cannot speak', () => {
+    expect(qwenTtsLanguage('ja-JP')).toBe('ja')
+    expect(qwenTtsLanguage('pt-BR')).toBe('pt')
+    expect(qwenTtsLanguage('es-419')).toBe('es')
     expect(qwenTtsLanguage('hi-IN')).toBeNull()
     expect(qwenTtsLanguage('id-ID')).toBeNull()
   })

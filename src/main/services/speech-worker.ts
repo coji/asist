@@ -12,7 +12,7 @@ import { childEnv } from './child-env'
 const PROTOCOL_PREFIX = 'ASIST_JSON:'
 
 /**
- * Loading a model and compiling its GPU kernels comes before `ready`. The first start of qwen3-tts-worker
+ * Loading a model and compiling its GPU kernels comes before `ready`. The first start of the Qwen3-TTS worker
  * after a GPU driver update compiled its Vulkan shaders for 12.6 s on an RTX 2080 (2026-09-29).
  */
 const WORKER_READY_TIMEOUT_MS = 180_000

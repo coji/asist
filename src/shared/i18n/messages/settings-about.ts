@@ -576,18 +576,18 @@ export const settingsAbout = defineMessages({
       'es-419': 'Ejecución de los modelos de reconocimiento de voz en la GPU',
       'es-ES': 'Ejecución de los modelos de reconocimiento de voz en la GPU'
     },
-    qwen3TtsGgml: {
-      'ja-JP': 'Qwen3-TTS を GPU で動かす',
-      'en-US': 'Running Qwen3-TTS on the GPU',
-      'fr-FR': 'Exécution de Qwen3-TTS sur le GPU',
-      'de-DE': 'Ausführung von Qwen3-TTS auf der GPU',
-      'hi-IN': 'Qwen3-TTS को GPU पर चलाना',
-      'id-ID': 'Menjalankan Qwen3-TTS di GPU',
-      'it-IT': 'Esecuzione di Qwen3-TTS sulla GPU',
-      'ko-KR': 'Qwen3-TTS를 GPU에서 실행',
-      'pt-BR': 'Execução do Qwen3-TTS na GPU',
-      'es-419': 'Ejecución de Qwen3-TTS en la GPU',
-      'es-ES': 'Ejecución de Qwen3-TTS en la GPU'
+    speechCpp: {
+      'ja-JP': '読み上げのモデルを GPU で動かす',
+      'en-US': 'Running the speech synthesis models on the GPU',
+      'fr-FR': 'Exécution des modèles de synthèse vocale sur le GPU',
+      'de-DE': 'Ausführung der Sprachsynthesemodelle auf der GPU',
+      'hi-IN': 'वाक् संश्लेषण के मॉडल GPU पर चलाना',
+      'id-ID': 'Menjalankan model sintesis suara di GPU',
+      'it-IT': 'Esecuzione dei modelli di sintesi vocale sulla GPU',
+      'ko-KR': '음성 합성 모델을 GPU에서 실행',
+      'pt-BR': 'Execução dos modelos de síntese de fala na GPU',
+      'es-419': 'Ejecución de los modelos de síntesis de voz en la GPU',
+      'es-ES': 'Ejecución de los modelos de síntesis de voz en la GPU'
     }
   },
   notices: {

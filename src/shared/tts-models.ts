@@ -7,13 +7,13 @@ export const QWEN_TTS_SIZES = ['0.6b', '1.7b'] as const
 
 export type QwenTtsSize = (typeof QWEN_TTS_SIZES)[number]
 
-/** One size of Qwen3-TTS for qwen3-tts-ggml: its talker, which runs with the shared codec. */
+/** One size of Qwen3-TTS for speech.cpp: its talker, which runs with the shared codec. */
 export interface QwenTtsModelSpec {
   label: string
   talker: PinnedFile
 }
 
-const QWEN_TTS_REPO = { repo: 'sakasegawa/qwen3-tts-ggml', revision: 'c014bc3b717c001aa7ac870178656acc30b78f09' }
+const QWEN_TTS_REPO = { repo: 'sakasegawa/qwen3-tts-ggml', revision: '3fa3234ee65c9a70fd23a7b7843722a0284b8027' }
 
 /** The codec decoder every size speaks through. */
 export const QWEN_TTS_CODEC: PinnedFile = {
@@ -24,19 +24,20 @@ export const QWEN_TTS_CODEC: PinnedFile = {
 }
 
 /**
- * The sizes, measured on 2026-09-29 with qwen3-tts-ggml and Q8_0 on Japanese sentences: on an M5 with
- * Metal 0.6B speaks its first audio 0.05 s after the request at 0.35 of real time in 2.3 GB, 1.7B 0.08 s
- * and 0.49 in 3.3 GB; on an RTX 2080 with Vulkan 0.6B takes 0.07 s, 0.31 and 1.6 GB of VRAM, 1.7B 0.08 s,
- * 0.36 and 2.7 GB. 1.7B makes almost no silence before the voice, which 0.6B makes for up to a second.
+ * The sizes, in Q8_0 on Japanese sentences. On an M5 with Metal and speech.cpp v0.3.0 (2026-10-01), 0.6B
+ * speaks its first audio 0.04 s after the request at 0.37 of real time in 1.8 GB, and 1.7B 0.06 s and 0.47
+ * in 2.8 GB. On an RTX 2080 with Vulkan and qwen3-tts-ggml v0.1.1 (2026-09-29), 0.6B took 0.07 s, 0.31 and
+ * 1.6 GB of VRAM, and 1.7B 0.08 s, 0.36 and 2.7 GB. 1.7B makes almost no silence before the voice, which
+ * 0.6B makes for up to a second.
  */
 export const QWEN_TTS_MODELS: Readonly<Record<QwenTtsSize, QwenTtsModelSpec>> = {
   '0.6b': {
     label: 'Qwen3-TTS 0.6B',
-    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-0.6b-customvoice-q8_0.gguf', bytes: 967_979_232, sha256: '11b6d52c4ec154041aee90dbcb10b269f17a27b1643bfa02ca38bb9fb9ee01c1' }
+    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-0.6b-customvoice-q8_0.gguf', bytes: 967_979_712, sha256: '4a819d1c9d9c6358bd5dc1ded15f93db970fbaeac9f0a021dfae62c242682baf' }
   },
   '1.7b': {
     label: 'Qwen3-TTS 1.7B',
-    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-1.7b-customvoice-q8_0.gguf', bytes: 2_042_224_992, sha256: 'c3faf095ecc9b4cf503ffef38ae936eca794fbc4f104fac8c6e9deb72c51b943' }
+    talker: { ...QWEN_TTS_REPO, file: 'qwen3-tts-1.7b-customvoice-q8_0.gguf', bytes: 2_042_225_472, sha256: 'fb6e79b6ae51c1fe5fe8313cf9a69e5c6f4e34a9869b478a576ed954b3d314e1' }
   }
 }
 
@@ -56,41 +57,34 @@ const LARGER_FROM_GB: Readonly<Record<SpeechBackend, number>> = { metal: 24, vul
 
 /**
  * The preset voices of the pinned model. Every voice can speak every language the model supports;
- * `native` is the language the voice was recorded in, where it sounds most natural.
+ * `native` is the BCP 47 tag of the language the voice was recorded in, where it sounds most natural.
  */
 export const QWEN_TTS_VOICES = [
-  { id: 'ono_anna', name: 'Ono Anna', gender: 'female', native: 'japanese' },
-  { id: 'ryan', name: 'Ryan', gender: 'male', native: 'english' },
-  { id: 'aiden', name: 'Aiden', gender: 'male', native: 'english' },
-  { id: 'sohee', name: 'Sohee', gender: 'female', native: 'korean' },
-  { id: 'vivian', name: 'Vivian', gender: 'female', native: 'chinese' },
-  { id: 'serena', name: 'Serena', gender: 'female', native: 'chinese' },
-  { id: 'uncle_fu', name: 'Uncle Fu', gender: 'male', native: 'chinese' },
-  { id: 'dylan', name: 'Dylan', gender: 'male', native: 'chinese' },
-  { id: 'eric', name: 'Eric', gender: 'male', native: 'chinese' }
+  { id: 'ono_anna', name: 'Ono Anna', gender: 'female', native: 'ja' },
+  { id: 'ryan', name: 'Ryan', gender: 'male', native: 'en' },
+  { id: 'aiden', name: 'Aiden', gender: 'male', native: 'en' },
+  { id: 'sohee', name: 'Sohee', gender: 'female', native: 'ko' },
+  { id: 'vivian', name: 'Vivian', gender: 'female', native: 'zh' },
+  { id: 'serena', name: 'Serena', gender: 'female', native: 'zh' },
+  { id: 'uncle_fu', name: 'Uncle Fu', gender: 'male', native: 'zh' },
+  { id: 'dylan', name: 'Dylan', gender: 'male', native: 'zh' },
+  { id: 'eric', name: 'Eric', gender: 'male', native: 'zh' }
 ] as const
 
 export type QwenTtsVoice = (typeof QWEN_TTS_VOICES)[number]['id']
 
 export const QWEN_TTS_VOICE_IDS = QWEN_TTS_VOICES.map((voice) => voice.id) as [QwenTtsVoice, ...QwenTtsVoice[]]
 
-/** The language names the model takes, by the language subtag of a locale. Hindi and Indonesian are not among them. */
-const QWEN_TTS_LANGUAGES: Record<string, string> = {
-  ja: 'japanese',
-  en: 'english',
-  ko: 'korean',
-  zh: 'chinese',
-  fr: 'french',
-  de: 'german',
-  it: 'italian',
-  pt: 'portuguese',
-  es: 'spanish',
-  ru: 'russian'
-}
+/**
+ * The languages the model speaks, as the BCP 47 tags the worker lists in `ready` and takes in a request.
+ * Hindi and Indonesian are not among them.
+ */
+const QWEN_TTS_LANGUAGES: readonly string[] = ['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'zh']
 
-/** The model's name for the language of a locale such as `ja-JP`, or null when the model cannot speak it. */
+/** The tag a request names for the language of a locale such as `ja-JP`, or null when the model cannot speak it. */
 export function qwenTtsLanguage(locale: string): string | null {
-  return QWEN_TTS_LANGUAGES[locale.split('-')[0].toLowerCase()] ?? null
+  const language = locale.split('-')[0].toLowerCase()
+  return QWEN_TTS_LANGUAGES.includes(language) ? language : null
 }
 
 /** Whether this machine can run Qwen3-TTS at all: wherever the local speech runs. */

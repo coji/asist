@@ -10,7 +10,7 @@ import { curate } from './curate.mjs'
  *
  *   node scripts/aizuchi-clips/build.mjs <voice> <review.html> [candidates] [text ...]
  *
- * It runs the bundled qwen3-tts-worker and llama-server (node scripts/prepare-resources.mjs dev) on the
+ * It runs the bundled speech-worker and llama-server (node scripts/prepare-resources.mjs dev) on the
  * Qwen3-TTS 0.6B and Qwen3-ASR 1.7B files the app has prepared. With texts given, only those entries of the
  * bank are rendered again and the other clips are kept. Commit the clips only after listening to the review
  * page; every regeneration adds binary history.
@@ -30,7 +30,7 @@ const unique = defs
   .filter((def, index) => defs.findIndex((other) => JSON.stringify(other) === JSON.stringify(def)) === index)
   .filter((def) => only.length === 0 || only.includes(def.text))
 
-const clips = await curate({ voice, language: 'japanese', outDir, candidates: Number(candidates), defs: unique })
+const clips = await curate({ voice, language: 'ja', outDir, candidates: Number(candidates), defs: unique })
 const escape = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 const rows = clips.map((clip, index) => {
   const cells = clip.candidates.map((candidate, rank) => `

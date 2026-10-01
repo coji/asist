@@ -5,8 +5,8 @@ import { prepareGitWindows } from './git-windows.mjs'
 import { prepareLlamaCpp } from './llama-cpp.mjs'
 import { prepareNativeMacos } from './native-macos.mjs'
 import { prepareNativeWindows } from './native-windows.mjs'
-import { prepareQwen3Tts } from './qwen3-tts.mjs'
 import { run } from './shared.mjs'
+import { prepareSpeechWorker } from './speech-worker.mjs'
 import { prepareUv } from './uv.mjs'
 
 // electron downloads its binary the first time it is required, not on install. Test workers that required
@@ -27,15 +27,15 @@ function preparePermissionTexts({ root }) {
 export const TARGETS = {
   'darwin-arm64': {
     test: [prepareGitMacos, prepareElectron],
-    dev: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeMacos, prepareElectron],
-    build: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeMacos, preparePermissionTexts],
-    check: [prepareUv, prepareLlamaCpp, prepareQwen3Tts]
+    dev: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeMacos, prepareElectron],
+    build: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeMacos, preparePermissionTexts],
+    check: [prepareUv, prepareLlamaCpp, prepareSpeechWorker]
   },
   'win32-x64': {
     test: [prepareGitWindows, prepareNativeWindows, prepareElectron],
-    dev: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeWindows, prepareElectron],
-    build: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts, prepareNativeWindows],
-    check: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareQwen3Tts]
+    dev: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeWindows, prepareElectron],
+    build: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeWindows],
+    check: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker]
   }
 }
 

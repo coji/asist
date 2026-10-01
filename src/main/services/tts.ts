@@ -252,7 +252,10 @@ export interface SynthesisResult {
 }
 
 export interface ProsodyOptions {
-  /** The speaking rate, where 1.0 is normal. Aizuchi are spoken faster and lighter. */
+  /**
+   * The speaking rate, where 1.0 is normal. Aizuchi are spoken faster and lighter. Only the HTTP engines
+   * apply it: speech.cpp's worker accepts a speed and ignores it.
+   */
   speedScale?: number
   /** The volume, where 1.0 is normal. */
   volumeScale?: number
@@ -266,8 +269,8 @@ export interface ProsodyOptions {
   postPhonemeLength?: number
 }
 
-const qwenRequest = (text: string, voice: Extract<TtsVoice, { engine: 'qwen3tts' }>, prosody?: ProsodyOptions): qwenTts.QwenSpeechRequest =>
-  ({ text, voice: voice.voice, language: voice.language, speed: prosody?.speedScale })
+const qwenRequest = (text: string, voice: Extract<TtsVoice, { engine: 'qwen3tts' }>): qwenTts.QwenSpeechRequest =>
+  ({ text, voice: voice.voice, language: voice.language })
 
 /** Synthesizes the whole text. With no engine reachable, or with 'system' selected, audio is null and the renderer speaks through Web Speech. */
 export async function synthesize(
@@ -280,7 +283,7 @@ export async function synthesize(
     const selected = voice ?? await resolveVoice()
     if (selected.engine === 'system') return { audio: null, phonemes: null }
     if (selected.engine === 'qwen3tts') {
-      const wav = await qwenTts.synthesizeWav(qwenRequest(text, selected, prosody), signal, prosody?.volumeScale)
+      const wav = await qwenTts.synthesizeWav(qwenRequest(text, selected), signal, prosody?.volumeScale)
       return { audio: wav.toString('base64'), phonemes: null }
     }
     const { engine, speaker } = selected

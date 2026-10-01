@@ -16,7 +16,7 @@ const MACHINES: Record<OsFamily, DemoMachine> = {
   windows: { platform: 'win32', arch: 'x64', totalMemoryBytes: 32 * 1024 ** 3, micCancelsEcho: () => true }
 }
 
-/** The devices `qwen3-tts-worker --devices` lists on the Windows machine the port was measured on. */
+/** The devices `speech-worker --devices` lists on the Windows machine the port was measured on. */
 const DEMO_DEVICES: SpeechDevice[] = [
   { name: 'Vulkan0', description: 'NVIDIA GeForce RTX 2080', kind: 'gpu', memoryTotal: 8 * 1024 ** 3 },
   { name: 'CPU', description: 'Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz', kind: 'cpu', memoryTotal: 32 * 1024 ** 3 }

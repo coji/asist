@@ -1,6 +1,6 @@
 /**
- * The devices the local speech binaries can run on, as `qwen3-tts-worker --devices` lists them, and the
- * choice of the one to run on. llama-server and qwen3-tts-worker are built on the same ggml, so they list
+ * The devices the local speech binaries can run on, as `speech-worker --devices` lists them, and the
+ * choice of the one to run on. llama-server and speech-worker are built on the same ggml, so they list
  * the devices under the same names in the same order.
  */
 
@@ -15,7 +15,7 @@ export interface SpeechDevice {
 /** The line of the device list, which the worker prints with the prefix of its protocol. */
 const DEVICES_PREFIX = 'ASIST_JSON:'
 
-/** The devices in the output of `qwen3-tts-worker --devices`, or null when it holds no list that reads. */
+/** The devices in the output of `speech-worker --devices`, or null when it holds no list that reads. */
 export function parseSpeechDevices(output: string): SpeechDevice[] | null {
   const line = output.split(/\r?\n/).find((candidate) => candidate.startsWith(DEVICES_PREFIX))
   if (!line) return null

@@ -4,38 +4,38 @@ import { fileURLToPath } from 'node:url'
 import { download, extract, stampCurrent, withTemporaryDir, writeStamp } from './shared.mjs'
 
 /**
- * Puts qwen3-tts-ggml's worker into resources/qwen3-tts, pinned to one release and verified by sha256. The
- * local speech synthesis runs Qwen3-TTS in it: Metal on a Mac, Vulkan on Windows. The worker links ggml
+ * Puts speech.cpp's speech-worker into resources/speech-worker, pinned to one release and verified by sha256.
+ * The local speech synthesis runs in it: Metal on a Mac, Vulkan on Windows. The worker links ggml
  * statically, so it is one file.
  */
 
-const VERSION = 'v0.1.1'
+const VERSION = 'v0.3.0'
 const MODULE = fileURLToPath(import.meta.url)
 
 const ASSETS = {
   'darwin-arm64': {
-    name: 'qwen3-tts-ggml-v0.1.1-macos-arm64-metal.zip',
-    sha256: '2a1703b5b6b0125ebcddd37cbeffcad3384bc8c386e0e57bf838029687053d81',
-    worker: 'qwen3-tts-worker'
+    name: 'speech-worker-v0.3.0-macos-arm64-metal.zip',
+    sha256: '004a7f6ffc0f07ee273b75e622eb082df62ac3fb9df3c3dcd24f20a57c4f62e9',
+    worker: 'speech-worker'
   },
   'win32-x64': {
-    name: 'qwen3-tts-ggml-v0.1.1-windows-x64-vulkan.zip',
-    sha256: 'c33a4a62572b99159ee7faf1b5b56b4f1d5268e7b0512987bd6605c1001a3724',
-    worker: 'qwen3-tts-worker.exe'
+    name: 'speech-worker-v0.3.0-windows-x64-vulkan.zip',
+    sha256: 'f8d868eeb12b08e8ddc8e06d3823da58d63d9f12afd1ac300a852b3a7b62ada7',
+    worker: 'speech-worker.exe'
   }
 }
 
-export async function prepareQwen3Tts({ resources, platform, arch }) {
+export async function prepareSpeechWorker({ resources, platform, arch }) {
   const asset = ASSETS[`${platform}-${arch}`]
-  if (!asset) throw new Error(`qwen3-tts-ggml ${VERSION} is not pinned for ${platform} ${arch}`)
-  const out = path.join(resources, 'qwen3-tts')
+  if (!asset) throw new Error(`speech.cpp ${VERSION} is not pinned for ${platform} ${arch}`)
+  const out = path.join(resources, 'speech-worker')
   const stamp = path.join(out, 'VERSION')
   if (stampCurrent(stamp, VERSION, MODULE)) return
 
-  await withTemporaryDir('asist-qwen3-tts-', async (work) => {
-    const base = 'https://github.com/nyosegawa/qwen3-tts-ggml'
+  await withTemporaryDir('asist-speech-worker-', async (work) => {
+    const base = 'https://github.com/nyosegawa/speech.cpp'
     const archive = path.join(work, asset.name)
-    console.error(`qwen3-tts-ggml: fetching ${VERSION}`)
+    console.error(`speech.cpp: fetching ${VERSION}`)
     await download(`${base}/releases/download/${VERSION}/${asset.name}`, archive, asset.sha256)
     extract(archive, path.join(work, 'unpacked'))
     await download(`${base}/raw/${VERSION}/LICENSE`, path.join(work, 'LICENSE'))

@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # git, uv, llama.cpp and qwen3-tts-ggml are pinned in these modules, and their VERSION stamps record the
+      # git, uv, llama.cpp and speech.cpp are pinned in these modules, and their VERSION stamps record the
       # modules' content, so the modules are the key.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -95,8 +95,8 @@ jobs:
             resources/git
             resources/uv
             resources/llama.cpp
-            resources/qwen3-tts
-          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/qwen3-tts.mjs') }}
+            resources/speech-worker
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/speech-worker.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:mac:unsigned
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
@@ -110,7 +110,7 @@ jobs:
           "$resources/git/bin/git" --version
           "$resources/uv/uv" --version
           "$resources/llama.cpp/llama-server" --version
-          "$resources/qwen3-tts/qwen3-tts-worker" --devices
+          "$resources/speech-worker/speech-worker" --devices
 
   # The checks of test on Windows, except the dictionary's, which does not depend on the OS.
   test-windows:
@@ -138,8 +138,8 @@ jobs:
             resources/git
             resources/uv
             resources/llama.cpp
-            resources/qwen3-tts
-          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/qwen3-tts.mjs') }}
+            resources/speech-worker
+          key: bundled-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/resources/git-*.mjs', 'scripts/resources/uv.mjs', 'scripts/resources/llama-cpp.mjs', 'scripts/resources/speech-worker.mjs') }}
       - uses: ./.github/actions/setup-app
       - run: npm run dist:win:dir
         # electron.vite.config.ts embeds Google's OAuth client in the main process. A pull request from a fork
@@ -154,7 +154,7 @@ jobs:
           "$resources/git/mingw64/bin/git.exe" --version
           "$resources/uv/uv.exe" --version
           "$resources/llama.cpp/llama-server.exe" --version
-          "$resources/qwen3-tts/qwen3-tts-worker.exe" --devices
+          "$resources/speech-worker/speech-worker.exe" --devices
           "$resources/asist-agent-launcher.exe" --version
           "$resources/asist-mic.exe" --version
       # A changed app.asar stops ASIST.exe within a second with "Integrity check failed for asar archive"

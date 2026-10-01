@@ -241,7 +241,7 @@ describe('an engine that cannot speak the conversation language', () => {
     mocks.settings.conversationLocale = 'id-ID'
     await expect(tts.resolveVoice()).rejects.toThrow('Qwen3-TTS')
     mocks.settings.conversationLocale = 'pt-BR'
-    await expect(tts.resolveVoice()).resolves.toMatchObject({ engine: 'qwen3tts', language: 'portuguese' })
+    await expect(tts.resolveVoice()).resolves.toMatchObject({ engine: 'qwen3tts', language: 'pt' })
   })
 
   it('refuses Qwen3-TTS left in the settings on a machine that cannot run it, with that reason', async () => {

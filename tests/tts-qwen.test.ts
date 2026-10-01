@@ -44,7 +44,7 @@ describe('TTS service with Qwen3-TTS', () => {
     for await (const piece of speech.pieces) received.push([...piece])
     expect(received).toEqual([[1, 2], [3]])
     expect(speech.sampleRate).toBe(24_000)
-    expect(mocks.stream).toHaveBeenCalledWith({ text: 'こんにちは。', voice: 'ono_anna', language: 'japanese', speed: undefined }, undefined)
+    expect(mocks.stream).toHaveBeenCalledWith({ text: 'こんにちは。', voice: 'ono_anna', language: 'ja' }, undefined)
   })
 
   it('lets the renderer speak a sentence through Web Speech when the model produces nothing or fails before the first piece', async () => {
@@ -65,12 +65,12 @@ describe('TTS service with Qwen3-TTS', () => {
     await expect(tts.synthesizeSentence('こんにちは。', 'ja-JP', controller.signal)).rejects.toThrow('aborted')
   })
 
-  it('synthesizes a clip as a WAV with the clip\'s speed and volume', async () => {
+  it('synthesizes a clip as a WAV at the clip\'s volume', async () => {
     mocks.synthesizeWav.mockResolvedValue(Buffer.from([1, 2, 3]))
     const tts = await import('../src/main/services/tts')
     const result = await tts.synthesize('うん', undefined, { speedScale: 1.1, volumeScale: 0.8 })
     expect(result).toEqual({ audio: 'AQID', phonemes: null })
-    expect(mocks.synthesizeWav).toHaveBeenCalledWith({ text: 'うん', voice: 'ono_anna', language: 'japanese', speed: 1.1 }, undefined, 0.8)
+    expect(mocks.synthesizeWav).toHaveBeenCalledWith({ text: 'うん', voice: 'ono_anna', language: 'ja' }, undefined, 0.8)
   })
 
   it('frees the worker\'s memory when another engine is chosen', async () => {

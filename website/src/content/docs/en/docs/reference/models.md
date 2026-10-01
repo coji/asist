@@ -21,7 +21,7 @@ Everything that is downloaded is pinned to a version and a sha256.
 | Choosing the kind of backchannel (Japanese) | sbintuitions/modernbert-ja-70m fine-tuned on synthetic data (ONNX int8) | [sakasegawa/asist-aizuchi-ja](https://huggingface.co/sakasegawa/asist-aizuchi-ja) | MIT |
 | Searching the memory by meaning | multilingual-e5 small (ONNX int8) | `Xenova/multilingual-e5-small` (converted from `intfloat/multilingual-e5-small`) | MIT |
 
-Speech recognition and Qwen3-TTS run in llama.cpp and qwen3-tts-ggml, which are bundled with the app. They use the GPU through Metal on a Mac and through Vulkan on Windows. The downloads are about 2.5GB for 1.7B speech recognition, about 1.0GB for 0.6B, about 1.2GB for Qwen3-TTS 0.6B and about 2.3GB for 1.7B. The bundled programs are listed in [What is bundled](/en/docs/reference/bundled/).
+Speech recognition and Qwen3-TTS run in llama.cpp and speech.cpp, which are bundled with the app. They use the GPU through Metal on a Mac and through Vulkan on Windows. The downloads are about 2.5GB for 1.7B speech recognition, about 1.0GB for 0.6B, about 1.2GB for Qwen3-TTS 0.6B and about 2.3GB for 1.7B. The bundled programs are listed in [What is bundled](/en/docs/reference/bundled/).
 
 For reading aloud, you can also use the system's voice ("macOS voice" or "Windows voice"), or VOICEVOX and AivisSpeech, which run as separate apps. The VOICEVOX and AivisSpeech voices each have their own terms of use.
 

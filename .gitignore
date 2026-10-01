@@ -18,11 +18,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-# The uv, git, llama-server and qwen3-tts-worker that scripts/prepare-resources.mjs puts in the app.
+# The uv, git, llama-server and speech-worker that scripts/prepare-resources.mjs puts in the app.
 resources/uv/
 resources/git/
 resources/llama.cpp/
-resources/qwen3-tts/
+resources/speech-worker/
 # The permission texts that scripts/macos/permission-texts.mjs generates.
 build/lproj/
 # The licenses of the bundled packages that scripts/third-party-notices.mjs writes after each build.

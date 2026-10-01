@@ -12,7 +12,7 @@ sidebar:
 | uv | Astral の GitHub のリリース。ハッシュで確かめてから同梱します。 | MIT か Apache-2.0 |
 | git | Mac では kernel.org のソースの tarball。ハッシュで確かめてから、手元の操作に要る部分だけをコンパイルします。ソースには手を加えていません。Windows では Git for Windows が配る MinGit。ハッシュで確かめてから、ASIST が使わない部分を除いて同梱します。 | GPL-2.0 |
 | llama.cpp の llama-server | ggml-org の GitHub のリリース。ハッシュで確かめてから同梱します。音声認識の Qwen3-ASR を動かします。Windows では、同じリリースに入っている LLVM の OpenMP のランタイムも同梱します。 | MIT(OpenMP のランタイムは Apache-2.0 with LLVM exception) |
-| qwen3-tts-ggml | [nyosegawa/qwen3-tts-ggml](https://github.com/nyosegawa/qwen3-tts-ggml) の GitHub のリリース。ハッシュで確かめてから同梱します。読み上げの Qwen3-TTS を動かします。 | MIT |
+| speech.cpp の speech-worker | [nyosegawa/speech.cpp](https://github.com/nyosegawa/speech.cpp) の GitHub のリリース。ハッシュで確かめてから同梱します。読み上げの Qwen3-TTS を動かします。 | MIT |
 
 どれもライセンスの本文をアプリの中に入れています。git のソースは、各バージョンの [Release](https://github.com/nyosegawa/asist/releases) に同じバージョンの tarball を置いています。Windows の git については、同じバージョンの Git for Windows のソースを置いています。
 

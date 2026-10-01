@@ -40,7 +40,7 @@ Windows 11(x64)では、Node.js 22、上の「Windows で clone する」のと�
 
 Windows では、npm のスクリプトは `cmd.exe` で動き、Claude Code の Bash のツールは Git Bash で動きます。Python は入れません。同梱した uv が、決まったバージョンの Python を取得します。Windows のマシンで ASIST の動きまで確かめるときは、次のものも入れておきます。
 
-- **GPU のドライバー。** ローカルの音声認識と Qwen3-TTS は Vulkan で動き、単体の GPU が要ります。`resources\qwen3-tts\qwen3-tts-worker.exe --devices` で、ASIST が見る GPU の名前、種類、メモリを確かめます。GPU のドライバーを更新したあとの最初の起動では、Vulkan のシェーダーを組み立てるので、準備に数十秒かかります。
+- **GPU のドライバー。** ローカルの音声認識と Qwen3-TTS は Vulkan で動き、単体の GPU が要ります。`resources\speech-worker\speech-worker.exe --devices` で、ASIST が見る GPU の名前、種類、メモリを確かめます。GPU のドライバーを更新したあとの最初の起動では、Vulkan のシェーダーを組み立てるので、準備に数十秒かかります。
 - **Claude Code。** 公式のネイティブのインストーラー(`irm https://claude.ai/install.ps1 | iex`)で入れ、入った `%USERPROFILE%\.local\bin` を利用者の PATH に足します。npm で入れた claude は `.cmd` しか無いので ASIST からは起動できず、残っているとターミナルでも先に見つかるので、`npm uninstall -g @anthropic-ai/claude-code` で消します。`Get-Command claude -All` にネイティブのものだけが出ることを確かめます。
 - **Codex CLI。** PowerShell 7(`winget install --id Microsoft.PowerShell --exact`)を入れ、そこから公式のインストーラー(`irm https://chatgpt.com/codex/install.ps1 | iex`)で入れます。`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin` に入ります。2026-09-27 には、Windows に最初からある PowerShell 5.1 ではインストーラーが `OSArchitecture` を読めずに止まり、winget の `OpenAI.Codex`(0.157.1)はリンクから起動されると `the CLI package does not match this platform or executable` で止まりました。入れたら、ターミナルで `codex` を一度起動して、Windows の sandbox を準備します。準備が済むまで、ASIST は codex のジョブを始めません。
 - **GitHub CLI。** `gh auth login` で、git の方式に SSH を選び、ブラウザで認証します。SSH の鍵だけでは gh の API を使えません。
@@ -132,7 +132,7 @@ ASIST_SELFTEST=1 npx electron .
 
 ## 同梱している素材の作り直し
 
-- **Qwen3-TTS の相槌の音声。** アプリは実行時に合成せず、`resources/aizuchi/qwen3tts/<声>/` に同梱したものを使います。Qwen3-TTS は、短い一言だけを読ませると数秒しゃべり続けることがあるためです。相槌の文言(`src/shared/aizuchi-bank.ts`)を変えたときや、声を足したときは、`node scripts/aizuchi-clips/build.mjs <声> <確認用の HTML の出力先>` で作り直します。スクリプトは、相槌を続きの文の前に付けて何度か読ませ、続きの文が音声認識でそのまま聞こえる間で相槌を切り出し、切り出した相槌の文言も音声認識で確かめて、いちばん良い候補を書き出します。読み上げと音声認識には、同梱する qwen3-tts-worker と llama-server(`node scripts/prepare-resources.mjs dev`)を使い、アプリで準備した Qwen3-TTS 0.6B と Qwen3-ASR 1.7B のファイルを読みます。ほかの場所にあるファイルを使うときは、`ASIST_SPEECH_MODELS` でそのフォルダを指定します。相槌は 0.6B で作り、読み上げを 1.7B にしたときも同じものを鳴らします。出力された HTML で全部を聞いて確かめてから、コミットします。
+- **Qwen3-TTS の相槌の音声。** アプリは実行時に合成せず、`resources/aizuchi/qwen3tts/<声>/` に同梱したものを使います。Qwen3-TTS は、短い一言だけを読ませると数秒しゃべり続けることがあるためです。相槌の文言(`src/shared/aizuchi-bank.ts`)を変えたときや、声を足したときは、`node scripts/aizuchi-clips/build.mjs <声> <確認用の HTML の出力先>` で作り直します。スクリプトは、相槌を続きの文の前に付けて何度か読ませ、続きの文が音声認識でそのまま聞こえる間で相槌を切り出し、切り出した相槌の文言も音声認識で確かめて、いちばん良い候補を書き出します。読み上げと音声認識には、同梱する speech-worker と llama-server(`node scripts/prepare-resources.mjs dev`)を使い、アプリで準備した Qwen3-TTS 0.6B と Qwen3-ASR 1.7B のファイルを読みます。ほかの場所にあるファイルを使うときは、`ASIST_SPEECH_MODELS` でそのフォルダを指定します。相槌は 0.6B で作り、読み上げを 1.7B にしたときも同じものを鳴らします。出力された HTML で全部を聞いて確かめてから、コミットします。
 - **live の声の見本。** `npm run gen:live-voices` が、provider の TTS に同じ文を読ませて `src/renderer/src/assets/live-voices/` に置きます。
 - **アイコン。** 元の画像と生成プロンプトは `resources/artwork/` にあり、`python3 scripts/gen-icon.py` で作り直せます(Pillow が要ります)。
 - **天気の画像。** 47 都道府県の風景と 5 種類の空模様を、別々の画像として重ねています。生成プロンプトは `src/renderer/src/assets/weather/` の各 `prompts.json` にあり、`python3 scripts/check-weather-alpha.py` で PNG のアルファを検査します。取得と対応表の更新は[天気の仕様](../src/main/services/weather/SPEC.md)にあります。

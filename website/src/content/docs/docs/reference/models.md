@@ -21,7 +21,7 @@ sidebar:
 | 相槌の種類の判定(日本語) | sbintuitions/modernbert-ja-70m を合成データで fine-tune したもの(ONNX int8) | [sakasegawa/asist-aizuchi-ja](https://huggingface.co/sakasegawa/asist-aizuchi-ja) | MIT |
 | 記憶の意味検索 | multilingual-e5 small(ONNX int8) | `Xenova/multilingual-e5-small`(`intfloat/multilingual-e5-small` を変換したもの) | MIT |
 
-音声認識と Qwen3-TTS は、アプリに同梱した llama.cpp と qwen3-tts-ggml で動かします。Mac では Metal で、Windows では Vulkan で GPU を使います。取得する大きさは、音声認識の 1.7B が約 2.5GB、0.6B が約 1.0GB、Qwen3-TTS の 0.6B が約 1.2GB、1.7B が約 2.3GB です。同梱しているプログラムは[同梱しているもの](/docs/reference/bundled/)にあります。
+音声認識と Qwen3-TTS は、アプリに同梱した llama.cpp と speech.cpp で動かします。Mac では Metal で、Windows では Vulkan で GPU を使います。取得する大きさは、音声認識の 1.7B が約 2.5GB、0.6B が約 1.0GB、Qwen3-TTS の 0.6B が約 1.2GB、1.7B が約 2.3GB です。同梱しているプログラムは[同梱しているもの](/docs/reference/bundled/)にあります。
 
 読み上げには、ほかに OS の音声合成(「macOS の音声合成」か「Windows の音声合成」)と、別のアプリとして動く VOICEVOX、AivisSpeech を使えます。VOICEVOX と AivisSpeech の声には、それぞれの利用規約があります。
 

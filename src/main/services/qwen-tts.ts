@@ -4,13 +4,13 @@ import { QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsFiles, type QwenTtsSize, type Q
 import type { SetupProgress } from '@shared/ipc'
 import { platformCapabilities } from './platform'
 import { getSettings } from './settings'
-import { ttsWorkerPath } from './speech-binaries'
+import { speechWorkerPath } from './speech-binaries'
 import { filesInstalled, modelFilePath, prepareModelFiles } from './speech-models'
 import { SpeechShaper, encodeWav } from './speech-shaper'
 import { startSpeechWorker, type SpeechWorker } from './speech-worker'
 
 /**
- * Speech synthesis with Qwen3-TTS in qwen3-tts-worker, on the GPU the capabilities chose, at the size the
+ * Speech synthesis with Qwen3-TTS in speech.cpp's worker, on the GPU the capabilities chose, at the size the
  * setting names. The worker serves one request at a time in arrival order and returns the audio in pieces
  * while the sentence is still being generated: its first frame alone, then four frames at a time, so a
  * caller can start playback after the first piece.
@@ -19,10 +19,8 @@ import { startSpeechWorker, type SpeechWorker } from './speech-worker'
 export interface QwenSpeechRequest {
   text: string
   voice: QwenTtsVoice
-  /** The model's language name, from `qwenTtsLanguage`. */
+  /** The BCP 47 tag of the language, from `qwenTtsLanguage`. */
   language: string
-  /** The speaking rate, where 1.0 is normal. */
-  speed?: number
 }
 
 /**
@@ -125,9 +123,9 @@ async function startWorker(): Promise<boolean> {
   if (localSpeech.backend === null) throw new Error('Qwen3-TTS cannot run on this machine')
   if (!installationStatus(size).modelInstalled) return false
   // The worker ships with the app, so a missing one is a broken build rather than something to prepare.
-  if (!fs.existsSync(ttsWorkerPath())) throw new Error(`qwen3-tts-worker is missing from ${ttsWorkerPath()}`)
+  if (!fs.existsSync(speechWorkerPath())) throw new Error(`speech-worker is missing from ${speechWorkerPath()}`)
   const started: SpeechWorker = startSpeechWorker(
-    ttsWorkerPath(),
+    speechWorkerPath(),
     [modelFilePath(QWEN_TTS_MODELS[size].talker), modelFilePath(QWEN_TTS_CODEC), '--device', localSpeech.device],
     'qwen3-tts',
     {
@@ -217,7 +215,7 @@ export async function* stream(request: QwenSpeechRequest, signal?: AbortSignal):
   requests.set(id, queue)
   signal?.addEventListener('abort', abort, { once: true })
   try {
-    active.send({ id, text: request.text, voice: request.voice, language: request.language, speed: request.speed ?? 1 })
+    active.send({ id, text: request.text, voice: request.voice, language: request.language })
     armSilenceTimer()
     const shaper = new SpeechShaper(sampleRate())
     const limit = plausibleSeconds(request.text) * sampleRate()

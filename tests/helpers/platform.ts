@@ -8,7 +8,7 @@ const noDeviceList = (): never => {
   throw new Error('the speech devices are not listed on a Mac')
 }
 
-/** What `qwen3-tts-worker --devices` lists on the Windows PC the port was measured on. */
+/** What `speech-worker --devices` lists on the Windows PC the port was measured on. */
 const RTX_2080_DEVICES: SpeechDevice[] = [
   { name: 'Vulkan0', description: 'NVIDIA GeForce RTX 2080', kind: 'gpu', memoryTotal: 8 * GIB },
   { name: 'CPU', description: 'Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz', kind: 'cpu', memoryTotal: 32 * GIB }
