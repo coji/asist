@@ -1,206 +1,283 @@
 {
   "voice": "uncle_fu",
-  "language": "japanese",
-  "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282",
+  "language": "ja",
   "clips": [
     {
       "text": "あ、すみません。",
       "speedScale": 1.1,
-      "file": "f53b3d3b0b0c.wav"
+      "file": "f53b3d3b0b0c.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、そういうことですね。",
       "speedScale": 1.1,
-      "file": "f2477fba639d.wav"
+      "file": "f2477fba639d.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、そうですね。",
       "speedScale": 1.1,
-      "file": "d653c730e942.wav"
+      "file": "d653c730e942.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、そっちですね。",
       "speedScale": 1.1,
-      "file": "f479d85c1b70.wav"
+      "file": "f479d85c1b70.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、それは",
       "speedScale": 1.1,
-      "file": "778e557343f2.wav"
+      "file": "778e557343f2.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、ちょっと待ってくださいね。",
       "speedScale": 1.05,
-      "file": "bb9d24509a2d.wav"
+      "file": "bb9d24509a2d.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、はい。",
       "speedScale": 1.15,
-      "file": "3c62e7ca0304.wav"
+      "file": "3c62e7ca0304.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、わかりました。",
       "speedScale": 1.1,
-      "file": "1a0e95884e39.wav"
+      "file": "1a0e95884e39.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あ、失礼しました。",
       "speedScale": 1.1,
-      "file": "4115fa20f1d4.wav"
+      "file": "4115fa20f1d4.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あー、はい。",
       "speedScale": 1.1,
-      "file": "aceeb17caeed.wav"
+      "file": "aceeb17caeed.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "あー。",
       "speedScale": 1,
-      "file": "955d7def20eb.wav"
+      "file": "955d7def20eb.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "いいですね。",
       "speedScale": 1.1,
-      "file": "d0fe68159fd3.wav"
+      "file": "d0fe68159fd3.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "うん。",
       "speedScale": 1.2,
       "volumeScale": 0.8,
-      "file": "6d41ff5a6c8d.wav"
+      "file": "6d41ff5a6c8d.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "うんうん。",
       "speedScale": 1.2,
       "volumeScale": 0.8,
-      "file": "0170c810ed26.wav"
+      "file": "0170c810ed26.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "うーん、そうですか。",
       "speedScale": 1,
-      "file": "74eb80a3be75.wav"
+      "file": "74eb80a3be75.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "うーん。",
       "speedScale": 1.05,
-      "file": "89f352849419.wav"
+      "file": "89f352849419.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "え、そうなんですか。",
       "speedScale": 1.1,
-      "file": "0a20489d9829.wav"
+      "file": "0a20489d9829.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "え、本当ですか。",
       "speedScale": 1.1,
-      "file": "880d307a2003.wav"
+      "file": "880d307a2003.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "えっ。",
       "speedScale": 1.1,
-      "file": "0f23ec6a8e2a.wav"
+      "file": "0f23ec6a8e2a.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "えっと、",
       "speedScale": 1.1,
-      "file": "54e55465ceac.wav"
+      "file": "54e55465ceac.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "えっとですね、",
       "speedScale": 1.05,
-      "file": "0766a2cb572e.wav"
+      "file": "0766a2cb572e.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "おお、すごい。",
       "speedScale": 1.1,
-      "file": "9354ed9e1d71.wav"
+      "file": "9354ed9e1d71.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "おー。",
       "speedScale": 1.05,
-      "file": "768e43ab1181.wav"
+      "file": "768e43ab1181.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "そうですね、",
       "speedScale": 1.05,
-      "file": "978a2e33ecb8.wav"
+      "file": "978a2e33ecb8.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "そっか。",
       "speedScale": 1.1,
-      "file": "1e3bad434d5f.wav"
+      "file": "1e3bad434d5f.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "そっかぁ。",
       "speedScale": 1,
-      "file": "e383a1b3f4e1.wav"
+      "file": "e383a1b3f4e1.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "それは大変ですね。",
       "speedScale": 1.05,
-      "file": "531111e099c6.wav"
+      "file": "531111e099c6.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "ちょっと見てみますね。",
       "speedScale": 1.05,
-      "file": "c2b94435d9e2.wav"
+      "file": "c2b94435d9e2.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "ですよね。",
       "speedScale": 1.1,
-      "file": "cc178f102199.wav"
+      "file": "cc178f102199.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "なるほど。",
       "speedScale": 1.1,
-      "file": "ff631c914389.wav"
+      "file": "ff631c914389.wav",
+      "model": "sakasegawa/qwen3-tts-ggml@3fa3234ee65c9a70fd23a7b7843722a0284b8027/qwen3-tts-0.6b-customvoice-q8_0.gguf",
+      "reviewed": true
     },
     {
       "text": "なるほどなるほど。",
       "speedScale": 1.15,
-      "file": "b2cbfa40743f.wav"
+      "file": "b2cbfa40743f.wav",
+      "model": "sakasegawa/qwen3-tts-ggml@3fa3234ee65c9a70fd23a7b7843722a0284b8027/qwen3-tts-0.6b-customvoice-q8_0.gguf",
+      "reviewed": true
     },
     {
       "text": "はい、オッケーです。",
       "speedScale": 1.1,
-      "file": "a2f1901520e5.wav"
+      "file": "a2f1901520e5.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "はい。",
       "speedScale": 1.2,
       "volumeScale": 0.8,
-      "file": "63bff28a8d91.wav"
+      "file": "63bff28a8d91.wav",
+      "model": "sakasegawa/qwen3-tts-ggml@3fa3234ee65c9a70fd23a7b7843722a0284b8027/qwen3-tts-0.6b-customvoice-q8_0.gguf",
+      "reviewed": true
     },
     {
       "text": "はいはい。",
       "speedScale": 1.2,
       "volumeScale": 0.8,
-      "file": "a3cd31a91a40.wav"
+      "file": "a3cd31a91a40.wav",
+      "model": "sakasegawa/qwen3-tts-ggml@3fa3234ee65c9a70fd23a7b7843722a0284b8027/qwen3-tts-0.6b-customvoice-q8_0.gguf",
+      "reviewed": true
     },
     {
       "text": "了解です。",
       "speedScale": 1.1,
-      "file": "229a0cad0b84.wav"
+      "file": "229a0cad0b84.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "少々お待ちください。",
       "speedScale": 1.05,
-      "file": "46ccf357b151.wav"
+      "file": "46ccf357b151.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "確かに。",
       "speedScale": 1.1,
-      "file": "e46774016f58.wav"
+      "file": "e46774016f58.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "確認しますね。",
       "speedScale": 1.05,
-      "file": "55cc08d51bbf.wav"
+      "file": "55cc08d51bbf.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     },
     {
       "text": "調べてみますね。",
       "speedScale": 1.05,
-      "file": "d346ab4a2edd.wav"
+      "file": "d346ab4a2edd.wav",
+      "reviewed": true,
+      "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-8bit@049ef77fe8816b536193c0c25f9a214d17921282"
     }
   ]
 }

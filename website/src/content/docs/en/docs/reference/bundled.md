@@ -22,7 +22,7 @@ The license texts of all of them are included in the app. For git, the [Release]
 |---|---|
 | The weather region table (47 prefectures and 1,919 municipalities, matched to forecast areas and weather stations) | From the Japan Meteorological Agency's constant files and the list of municipalities from the Geospatial Information Authority of Japan |
 | Irodori-TTS voices (three) | Speech that Irodori-TTS made from a description of each voice, turned into voice files with speech.cpp and bundled. |
-| Qwen3-TTS backchannel audio (nine voices) | Synthesized with Qwen3-TTS, then trimmed and bundled. |
+| Backchannel audio (the three voices of Irodori-TTS and the nine of Qwen3-TTS) | Synthesized with each model, checked by speech recognition and by ear, and bundled. |
 | Voice samples for Live | Synthesized with the provider's TTS and bundled. |
 
 The list of licenses for the models and data ASIST uses is also shown under "About" in the app's settings.

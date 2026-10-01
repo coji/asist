@@ -6,7 +6,7 @@ import mitt from 'mitt'
 import type { AizuchiClip } from '@shared/ipc'
 import { AIZUCHI_BANK, type AizuchiDef } from '@shared/aizuchi-bank'
 import { pickWeightedClip } from '@shared/aizuchi-clips'
-import type { QwenTtsVoice } from '@shared/tts-models'
+import { isLocalTtsEngine, type LocalTtsEngine } from '@shared/tts-models'
 import { getSettings } from './settings'
 import { features } from './conversation-locale'
 import * as localTts from './local-tts'
@@ -15,10 +15,10 @@ import * as tts from './tts'
 import { voiceKey } from './tts-voice'
 
 /**
- * The aizuchi bank. For the HTTP engines and Irodori-TTS every clip is synthesized ahead of time at startup
- * and whenever the TTS settings change, and cached as a WAV file under userData/aizuchi/; for Qwen3-TTS the
- * clips ship with the app. The renderer keeps all the clips in memory so that it can start one within tens
- * of milliseconds of detecting the end of an utterance.
+ * The aizuchi bank. For the HTTP engines every clip is synthesized ahead of time at startup and whenever
+ * the TTS settings change, and cached as a WAV file under userData/aizuchi/; for the local engines the clips
+ * ship with the app. The renderer keeps all the clips in memory so that it can start one within tens of
+ * milliseconds of detecting the end of an utterance.
  */
 
 /**
@@ -57,7 +57,7 @@ function cacheFile(def: AizuchiDef, voice: Exclude<tts.TtsVoice, { engine: 'syst
 export const events = mitt<{ changed: void }>()
 
 let bank: AizuchiClip[] | null = null
-/** The cached bank has a clip without audio although the engine should have synthesized it. */
+/** The cached bank has a clip without audio although an HTTP engine should have synthesized it. */
 let incomplete = false
 /** Whether the next check that finds the TTS answering builds an incomplete bank again. */
 let retryOnAnswer = false
@@ -125,14 +125,14 @@ interface BundledManifest {
 }
 
 /**
- * The clips of a Qwen3-TTS voice ship with the app instead of being synthesized here. Read alone, a
- * short interjection makes the model ramble for seconds, so the clips are rendered ahead of time in
- * front of a carrier sentence, cut out and checked (scripts/aizuchi-clips). A clip missing for an
- * entry of the bank means the bank changed without rendering the clips again, which is a packaging
- * defect and fails loudly.
+ * The clips of a voice of a local engine ship with the app instead of being synthesized here, so that every
+ * clip played has been checked by speech recognition and by ear (scripts/aizuchi-clips). Read alone, a short
+ * interjection makes Qwen3-TTS ramble for seconds, and a voice of Irodori-TTS may now and then read a word
+ * the bank does not have. A clip missing for an entry of the bank means the bank changed without rendering
+ * the clips again, which is a packaging defect and fails loudly.
  */
-function bundledClips(voice: QwenTtsVoice): (def: AizuchiDef) => string {
-  const dir = resourcePath(path.join('aizuchi', 'qwen3tts', voice))
+function bundledClips(engine: LocalTtsEngine, voice: string): (def: AizuchiDef) => string {
+  const dir = resourcePath(path.join('aizuchi', engine, voice))
   const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as BundledManifest
   return (def) => {
     const entry = manifest.clips.find((clip) => clip.text === def.text && clip.speedScale === def.speedScale && clip.volumeScale === def.volumeScale)
@@ -152,17 +152,18 @@ async function build(): Promise<{ clips: AizuchiClip[]; missingAudio: boolean }>
   let voice: tts.TtsVoice | null = null
   // The shipped clips need no running worker, only the engine the replies will be read with. Asking whether the
   // worker is ready instead would build a silent bank whenever it is still loading, which is every switch to this engine.
-  const bundled = settings.ttsEngine === 'qwen3tts' && localTts.installationStatus('qwen3tts').modelInstalled ? bundledClips(settings.qwenTtsVoice) : null
-  // Irodori-TTS fixes a clip's length before making it, so unlike Qwen3-TTS it reads a lone interjection
-  // without rambling, and its clips are synthesized here like those of the HTTP engines.
-  const synthesizedHere = settings.ttsEngine !== 'system' && settings.ttsEngine !== 'none' && settings.ttsEngine !== 'qwen3tts'
-  if (synthesizedHere && !ttsUp) console.warn(`aizuchi bank built without audio: ${settings.ttsEngine} does not answer`)
+  const engine = settings.ttsEngine
+  const bundled = isLocalTtsEngine(engine) && localTts.installationStatus(engine).modelInstalled
+    ? bundledClips(engine, engine === 'irodori' ? settings.irodoriTtsVoice : settings.qwenTtsVoice)
+    : null
+  const httpEngine = engine !== 'system' && engine !== 'none' && !isLocalTtsEngine(engine)
+  if (httpEngine && !ttsUp) console.warn(`aizuchi bank built without audio: ${engine} does not answer`)
   const clips: AizuchiClip[] = []
   for (const def of AIZUCHI_BANK) {
     let audio: string | null = null
     if (bundled) {
       audio = bundled(def)
-    } else if (ttsUp && settings.ttsEngine !== 'system' && settings.ttsEngine !== 'none') {
+    } else if (httpEngine && ttsUp) {
       try {
         voice ??= await tts.resolveVoice(settings)
         if (voice.engine === 'system') throw new Error('the aizuchi bank resolved to the system voice')
@@ -188,7 +189,7 @@ async function build(): Promise<{ clips: AizuchiClip[]; missingAudio: boolean }>
   }
   pruneStaleClips(dir)
   console.log(`aizuchi bank ready: ${clips.length} clips (audio: ${clips.some((c) => c.audio)})`)
-  return { clips, missingAudio: synthesizedHere && clips.some((clip) => clip.audio === null) }
+  return { clips, missingAudio: httpEngine && clips.some((clip) => clip.audio === null) }
 }
 
 /**
