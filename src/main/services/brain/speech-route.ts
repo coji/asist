@@ -7,15 +7,13 @@ import { SynthQueue } from './synth-queue'
 /**
  * Where the sentences the brain produces are spoken.
  *
- * - tts: the classic setup, which synthesizes each sentence with the chosen speech engine and sends
- *   it to the renderer's playback queue as a segment.
+ * - tts: synthesizes each sentence with the chosen speech engine and sends it to the renderer's
+ *   playback queue as a segment.
  * - silent: text-to-speech is off, so nothing is produced.
- * - live: the sentences go to the voice model (GPT-Live), which reads them in its own voice. It also
- *   produces the aizuchi and the fillers spoken while work is running, so the brain does not.
  *
  * runTurn knows none of this: it pushes sentences into the SpeechSink returned by open() and waits on
- * drain(). A live engine registers the route with the session, and a route can also be overridden for
- * a single turn, which the engines and the tests rely on.
+ * drain(). The session picks the route from the settings, and a caller can fix the route of a single
+ * turn, as job reporting does to judge the delivery by the route the report was spoken through.
  */
 
 export interface SpeechSink {
@@ -33,11 +31,11 @@ export interface SpeechRouteContext {
 }
 
 export interface SpeechRoute {
-  kind: 'tts' | 'live' | 'silent'
+  kind: 'tts' | 'silent'
   open(ctx: SpeechRouteContext): SpeechSink
 }
 
-/** The classic setup. The synthesis time of the first sentence is reported as ttsMs in the metrics. */
+/** The synthesis time of the first sentence is reported as ttsMs in the metrics. */
 export const ttsRoute: SpeechRoute = {
   kind: 'tts',
   open: ({ turnId, signal, emit, locale }) =>
@@ -57,28 +55,4 @@ export const ttsRoute: SpeechRoute = {
 export const silentRoute: SpeechRoute = {
   kind: 'silent',
   open: () => ({ push: () => {}, drain: () => Promise.resolve() })
-}
-
-/**
- * The route that hands sentences to the voice model. `say` sends one sentence and opens the
- * connection first if it is closed. Pushes are chained one after another, because the sentences have
- * to be read in the order they were sent.
- */
-export function liveRoute(say: (sentence: string, signal: AbortSignal) => Promise<void>): SpeechRoute {
-  return {
-    kind: 'live',
-    open: ({ signal }) => {
-      let tail: Promise<void> = Promise.resolve()
-      return {
-        push: (sentence) => {
-          const text = sentence.trim()
-          if (!text) return
-          tail = tail.then(() => (signal.aborted ? undefined : say(text, signal))).catch((err) => {
-            if (!signal.aborted) console.error('live speech route failed:', err)
-          })
-        },
-        drain: () => tail
-      }
-    }
-  }
 }

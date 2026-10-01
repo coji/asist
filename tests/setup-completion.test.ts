@@ -164,32 +164,29 @@ describe('completeSetup', () => {
     })
   })
 
-  it.each([
-    ['gpt-live', 'openai'],
-    ['gemini-live', 'google']
-  ] as const)('completes with %s after checking its provider key, without this computer recognizing or reading anything', async (engine, provider) => {
+  it('completes with Gemini Live after checking its provider key, without this computer recognizing or reading anything', async () => {
     // The speech engine left from before is not installed, which must not hold a live setup back.
     mocks.settings.ttsEngine = 'voicevox'
     mocks.ttsAvailable.mockResolvedValue(false)
-    mocks.keys[provider] = 'live-key'
+    mocks.keys.google = 'live-key'
     const { completeSetup } = await import('../src/main/services/setup-completion')
 
     await expect(
-      completeSetup({ voiceMode: engine, microphoneVerified: true, localAsrVerified: false, systemTtsVerified: false, micAutoStart: true })
-    ).resolves.toMatchObject({ onboardingVersion: 1, voiceEngine: engine })
+      completeSetup({ voiceMode: 'gemini-live', microphoneVerified: true, localAsrVerified: false, systemTtsVerified: false, micAutoStart: true })
+    ).resolves.toMatchObject({ onboardingVersion: 1, voiceEngine: 'gemini-live' })
 
-    expect(mocks.validateProviderKey).toHaveBeenCalledWith(provider, 'live-key')
+    expect(mocks.validateProviderKey).toHaveBeenCalledWith('google', 'live-key')
     expect(mocks.asrAvailable).not.toHaveBeenCalled()
     expect(mocks.ttsEnsure).not.toHaveBeenCalled()
-    expect(mocks.saveSettings).toHaveBeenCalledWith({ onboardingVersion: 1, voiceEngine: engine, localAsrEnabled: false, micAutoStart: true })
+    expect(mocks.saveSettings).toHaveBeenCalledWith({ onboardingVersion: 1, voiceEngine: 'gemini-live', localAsrEnabled: false, micAutoStart: true })
   })
 
   it('does not complete with a live engine whose provider key is missing or refused', async () => {
     const { completeSetup } = await import('../src/main/services/setup-completion')
-    const request = { voiceMode: 'gpt-live', microphoneVerified: true, localAsrVerified: false, systemTtsVerified: true, micAutoStart: false }
+    const request = { voiceMode: 'gemini-live', microphoneVerified: true, localAsrVerified: false, systemTtsVerified: true, micAutoStart: false }
 
-    await expect(completeSetup(request)).rejects.toThrow(errorText('setup.completion.liveKeyMissing', { engine: 'GPT-Live', provider: 'OpenAI' }))
-    mocks.keys.openai = 'refused-key'
+    await expect(completeSetup(request)).rejects.toThrow(errorText('setup.completion.liveKeyMissing', { engine: 'Gemini Live', provider: 'Google' }))
+    mocks.keys.google = 'refused-key'
     mocks.validateProviderKey.mockRejectedValue(new Error('unauthenticated'))
     await expect(completeSetup(request)).rejects.toThrow('unauthenticated')
     expect(mocks.saveSettings).not.toHaveBeenCalled()

@@ -563,7 +563,7 @@ describe('brain tools registry', () => {
     expect(result.isError).toBe(false)
     expect(JSON.parse(result.content)).toMatchObject({ started: true, jobId: 'j1' })
     expect(mocks.agent.start).toHaveBeenCalledWith('調べて', expect.objectContaining({ readonly: false }))
-    // The turn's followers, such as GPT-Live telling its voice model what is on screen, learn of the card from the turn.
+    // The screen following the turn learns of the card from the turn.
     expect(events[0]).toMatchObject({ type: 'panel', event: { op: 'create', key: 'job:j1', type: 'agent-job' } })
   })
 

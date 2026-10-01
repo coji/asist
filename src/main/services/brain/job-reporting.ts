@@ -100,13 +100,12 @@ async function waitForRoomInHistory(): Promise<void> {
 
 /**
  * Whether the report of a turn reached the user. Only the TTS route plays segments in the renderer,
- * so only there does delivery wait for the renderer to say that the body started playing. The other
- * routes produce no segment to wait for: without speech the report reaches the user as text on screen,
- * and with a voice model in front the model has been handed the report, so a turn that ran to its end
- * without an abort has delivered it.
+ * so only there does delivery wait for the renderer to say that the body started playing. Without
+ * speech there is no segment to wait for: the report reaches the user as text on screen, so a turn that
+ * ran to its end without an abort has delivered it.
  */
 async function reportDelivery(handle: TurnHandle, route: SpeechRoute): Promise<PlaybackDeliveryOutcome> {
-  if (route.kind !== 'tts') {
+  if (route.kind === 'silent') {
     try {
       await handle.completion
     } catch (error) {

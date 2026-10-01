@@ -36,7 +36,6 @@ For reading aloud, you can also use the system's voice ("macOS voice" or "Window
 | Same as above | GPT-5.6 Luna, GPT-5.6 Terra, GPT-5.6 Sol | OpenAI |
 | Same as above | Gemini 3.8 Flash, Gemini 3.5 Flash Lite | Google |
 | Same as above | Qwen 3.8 27B, GPT OSS 120B | Cerebras |
-| Voice engine | `gpt-live-1` | OpenAI |
 | Voice engine | `gemini-3.8-live` | Google |
 
 The list of models you can choose for the conversation, and the default, is in [llm-catalog.ts](https://github.com/nyosegawa/asist/blob/main/src/shared/llm-catalog.ts). The codex and claude CLIs decide which models Agent jobs and memory curation use.

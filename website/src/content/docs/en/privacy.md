@@ -46,7 +46,7 @@ ASIST sends only what a feature you use needs, and only to the following service
 |---|---|---|
 | The provider of the conversation model you chose (Anthropic, OpenAI, Google, Cerebras) | The text of the conversation, the prompt, the parts of memory that relate to the conversation, and tool results | Every turn of a conversation |
 | The provider's built-in web search (Anthropic, OpenAI, Google) | The search terms the conversation model decides on | When the conversation model searches |
-| The OpenAI or Google Live API | Microphone audio, the recent conversation history, and tool results | Only when you choose GPT-Live or Gemini Live as the voice engine |
+| The Google Live API | Microphone audio, the recent conversation history, and tool results | Only when you choose Gemini Live as the voice engine |
 | The service behind the codex or claude CLI | The job's prompt and the contents of the working folder the CLI reads; for memory curation, the conversations up to the previous day (what you said, ASIST's replies, and tool names and inputs) | When a job you approved runs, and during the daily memory curation |
 | Weather, world clock, exchange rates, news and maps (the Japan Meteorological Agency, Open-Meteo, ExchangeRate-API, Google News, Google's Maps Embed API) | Place names or latitude and longitude, a currency, topic words, and the place or route to show on the map | When a card is shown |
 | The mail servers you set up (IMAP and SMTP) | Your login details, the mail you pressed "Send" for, and actions such as marking as read or archiving | When mail is fetched, sent or acted on |
@@ -80,7 +80,7 @@ ASIST sends data received from Google only to the following recipients you set u
 | Recipient | What is sent | When |
 |---|---|---|
 | The one conversation model provider you chose in the settings: Anthropic (Claude API), OpenAI (OpenAI API), Google (Gemini API) or Cerebras (Cerebras API) | The title, time, location and description of the events needed for the answer, and the name of their calendar | When you ask about your schedule in conversation, or ask ASIST to add or change an event |
-| The Live API you chose as the voice engine: OpenAI (Live API) or Google (Gemini Live API) | The same as above | Only when GPT-Live or Gemini Live is chosen and the conversation deals with your events |
+| The Live API you chose as the voice engine: Google (Gemini Live API) | The same as above | Only when Gemini Live is chosen and the conversation deals with your events |
 | The codex CLI (OpenAI) or the claude CLI (Anthropic) you signed in to | The conversations up to the previous day: what you said, ASIST's replies, and tool names and inputs. On a day you talked about events or added or changed them, this includes those events. For a job you approved, any event details written into the job's instructions | During the daily memory curation, and when a job you approved runs |
 | The conversation model provider's built-in web search, and the map and weather cards (Google's Maps Embed API, the Japan Meteorological Agency, Open-Meteo) | Search terms or place names the conversation model takes from an event, such as its location | When you ask for it, for example to look up an event's venue or show its map or weather |
 | The Google Calendar API | The creation, change or deletion of an event you approved | When you approve it in the confirmation dialog |

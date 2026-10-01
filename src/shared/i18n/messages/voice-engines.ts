@@ -32,21 +32,6 @@ export const voiceEngines = defineMessages({
       'es-ES': 'Este ordenador convierte en texto lo que dices, el modelo de conversación responde y el motor elegido en la página “Voz” lee la respuesta. ASIST decide los asentimientos y las interrupciones.'
     }
   },
-  gptLive: {
-    hint: {
-      'ja-JP': 'GPT-Live が聞いて話し、答える内容とツールの実行は会話モデルが受け持ちます。セッションが開いている時間で課金されます(1分 $0.05)。',
-      'en-US': 'GPT-Live listens and speaks, while the conversation model decides what to answer and runs the tools. You are billed for the time the session is open ($0.05 per minute).',
-      'fr-FR': 'GPT-Live écoute et parle, tandis que le modèle de conversation décide du contenu de la réponse et exécute les outils. Le temps pendant lequel la session reste ouverte est facturé (0,05 $ la minute).',
-      'de-DE': 'GPT-Live hört zu und spricht, während das Gesprächsmodell den Inhalt der Antwort bestimmt und die Werkzeuge ausführt. Abgerechnet wird die Zeit, in der die Sitzung offen ist (0,05 $ pro Minute).',
-      'hi-IN': 'GPT-Live सुनता और बोलता है, और जवाब में क्या कहना है तथा टूल चलाना बातचीत का मॉडल संभालता है। सेशन जितनी देर खुला रहता है, उतना शुल्क लगता है (1 मिनट $0.05)।',
-      'id-ID': 'GPT-Live mendengarkan dan berbicara, sementara model percakapan menentukan isi jawaban dan menjalankan tool. Anda ditagih selama sesinya terbuka ($0,05 per menit).',
-      'it-IT': 'GPT-Live ascolta e parla, mentre il modello di conversazione decide che cosa rispondere ed esegue gli strumenti. Il costo è calcolato sul tempo in cui la sessione resta aperta ($0,05 al minuto).',
-      'ko-KR': 'GPT-Live가 듣고 말하며, 답할 내용과 도구 실행은 대화 모델이 맡습니다. 세션이 열려 있는 시간만큼 요금이 매겨집니다(1분 $0.05).',
-      'pt-BR': 'O GPT-Live ouve e fala, enquanto o modelo de conversa decide o que responder e executa as ferramentas. A cobrança é pelo tempo com a sessão aberta (US$ 0,05 por minuto).',
-      'es-419': 'GPT-Live escucha y habla, mientras que el modelo de conversación decide qué responder y ejecuta las herramientas. Se cobra por el tiempo que la sesión está abierta ($0.05 por minuto).',
-      'es-ES': 'GPT-Live escucha y habla, mientras que el modelo de conversación decide qué responder y ejecuta las herramientas. Se cobra por el tiempo que la sesión está abierta (0,05 $ por minuto).'
-    }
-  },
   geminiLive: {
     hint: {
       'ja-JP': 'Gemini Live が聞き取り、考え、ツールを呼び、読み上げます。音声の入出力の分数で課金されます(入力 1分 $0.005、出力 1分 $0.018)。',
@@ -63,19 +48,6 @@ export const voiceEngines = defineMessages({
     }
   },
   models: {
-    gptLive1: {
-      'ja-JP': '聞きながら話します。答える内容は会話モデルが決めます。',
-      'en-US': 'Listens and speaks at the same time. The conversation model decides what to answer.',
-      'fr-FR': 'Écoute et parle en même temps. Le modèle de conversation décide du contenu de la réponse.',
-      'de-DE': 'Hört zu und spricht zugleich. Was geantwortet wird, bestimmt das Gesprächsmodell.',
-      'hi-IN': 'सुनते हुए ही बोलता है। जवाब में क्या कहना है, यह बातचीत का मॉडल तय करता है।',
-      'id-ID': 'Mendengarkan dan berbicara sekaligus. Model percakapan yang menentukan isi jawabannya.',
-      'it-IT': 'Ascolta e parla allo stesso tempo. Che cosa rispondere lo decide il modello di conversazione.',
-      'ko-KR': '들으면서 말합니다. 답할 내용은 대화 모델이 정합니다.',
-      'pt-BR': 'Ouve e fala ao mesmo tempo. O modelo de conversa decide o que responder.',
-      'es-419': 'Escucha y habla al mismo tiempo. El modelo de conversación decide qué responder.',
-      'es-ES': 'Escucha y habla a la vez. El modelo de conversación decide qué responder.'
-    },
     gemini38Live: {
       'ja-JP': '標準のモデルです。判断とツールの呼び出しも自分でします。',
       'en-US': 'The standard model. It decides and calls the tools itself.',

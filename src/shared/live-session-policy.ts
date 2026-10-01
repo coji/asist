@@ -1,13 +1,13 @@
 import type { AppSettings } from './settings'
 
 /**
- * When a live session opens and closes. GPT-Live bills for the time a session is open and Gemini for
+ * When a live session opens and closes. An open session is sent the microphone's audio and Gemini bills
  * the minutes of audio sent, so the session is not held open for as long as the microphone is on: it
  * opens when the user starts speaking and closes once the conversation has been quiet for `idleMs`.
  * Audio recorded while it is closed is kept as a pre-roll and sent first when it opens, which delays
  * the reply by the time the connection takes but keeps the beginning of the utterance. The
- * conversation does not count as quiet while the assistant is speaking, while the brain is still
- * producing the reply or while a function call is still running.
+ * conversation does not count as quiet while the assistant is speaking or while a function call is
+ * still running.
  */
 
 /**
@@ -17,12 +17,11 @@ import type { AppSettings } from './settings'
  * button never says LIVE over an engine that is gone.
  */
 export function stopsLiveEngine(
-  before: Pick<AppSettings, 'voiceEngine' | 'gptLive' | 'geminiLive' | 'liveIdleSeconds'>,
-  after: Pick<AppSettings, 'voiceEngine' | 'gptLive' | 'geminiLive' | 'liveIdleSeconds'>
+  before: Pick<AppSettings, 'voiceEngine' | 'geminiLive' | 'liveIdleSeconds'>,
+  after: Pick<AppSettings, 'voiceEngine' | 'geminiLive' | 'liveIdleSeconds'>
 ): boolean {
   return (
     before.voiceEngine !== after.voiceEngine ||
-    JSON.stringify(before.gptLive) !== JSON.stringify(after.gptLive) ||
     JSON.stringify(before.geminiLive) !== JSON.stringify(after.geminiLive) ||
     before.liveIdleSeconds !== after.liveIdleSeconds
   )

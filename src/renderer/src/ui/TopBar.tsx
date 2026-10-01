@@ -40,7 +40,7 @@ export function TopBar(): React.JSX.Element {
         <div className="status-dots">
           <StatusDot ok={status.llm} label="LLM" />
           {isLiveEngine(engine) ? (
-            <StatusDot ok={liveConnection === 'open' || liveConnection === 'idle'} label={engine === 'gpt-live' ? 'GPT-LIVE' : 'GEMINI'} />
+            <StatusDot ok={liveConnection === 'open' || liveConnection === 'idle'} label="GEMINI" />
           ) : (
             <>
               <StatusDot ok={status.asr} label="ASR" />

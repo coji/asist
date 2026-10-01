@@ -48,7 +48,7 @@ function ApiKeys({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
           provider === settings.conversationModel.provider ||
           provider === settings.bridgeModel.provider ||
           liveEngine?.provider === provider
-        const engineOfProvider = provider === 'openai' ? 'GPT-Live' : provider === 'google' ? 'Gemini Live' : null
+        const engineOfProvider = Object.values(LIVE_ENGINE_INFO).find((engine) => engine.provider === provider)?.label ?? null
         return (
           <div key={provider} className="st-key" data-provider={provider}>
             <div className="st-key-name">

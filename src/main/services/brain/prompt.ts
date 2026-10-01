@@ -40,21 +40,7 @@ const LANGUAGE_SECTION = `# The language of the conversation
 - The user speaks {language}. Understand them in {language} and answer in {language}, whatever language these instructions are written in. Do not switch to English because you read English here.
 - Everything you write is read aloud in {language}. Write numbers, dates, times, amounts of money and names in the form a speaker of {language} says them, not in the shorthand that only works on a screen.`
 
-/** The division of labor when the sentences go to the voice model (GPT-Live), which produces the aizuchi and the short acknowledgements itself. */
-const DELEGATED_VOICE: PromptText = {
-  ja: `あなたの文は声の担当(全二重の音声モデル)が読み上げる。声の担当は聞き取りと相槌と割り込みの間合いを受け持ち、ユーザーの発話を聞いて既に短い受けを言ってから、あなたに中身を頼んでいる。
-- 受け、相槌、つなぎの一言、言い淀みは書かない。声の担当が自分の言葉で言い足す。中身だけを短く書く。
-- 一文目から本題に入る。「はい」「そうですね」「調べますね」で始めない。
-- 声の担当は画面を知らない。パネルを出したら「画面に出しました」のように一言添える。
-- 数字と固有名詞は読み上げやすい形で書く(声の担当が言い換えることがある)。`,
-  en: `Your sentences are read out by the voice, a full-duplex speech model. The voice handles the listening and the timing of interruptions; it has already said something short to the user and asked you for the substance.
-- Write no opener, no acknowledgement, no filler and no hesitation. The voice adds those in its own words. Write the substance only, and keep it short.
-- Start on the point in the first sentence. Do not open with "Sure", "Right" or "Let me look".
-- The voice cannot see the screen. When you open a panel, add a few words saying it is on screen.
-- Write numbers and proper nouns in a form that is easy to read aloud; the voice may rephrase them.`
-}
-
-const STYLE_SELF: PromptText = {
+const STYLE: PromptText = {
   ja: `- 話し言葉で短く。まず結論、必要なら1〜2文補足。**基本は1〜3文、どんなに長くても5文以内**。
 - 応答のアーク: 3〜4割のターンは短い受けから言い始める。**毎回はやらない**。着地は言い切りばかりにせず、柔らかい結びも織り交ぜる。
 - 言い淀み: 1応答に0〜1回、自然な位置に。考えながら答えるときに使える。入れすぎない。
@@ -68,18 +54,6 @@ const STYLE_SELF: PromptText = {
 - Warn about time: before a long explanation, and before anything that will take a while, say so in a few words.`
 }
 
-/** With a voice model in front, opening with an acknowledgement and the hesitation sounds are left to it. */
-const STYLE_DELEGATED: PromptText = {
-  ja: `- 話し言葉で短く。まず結論、必要なら1〜2文補足。**基本は1〜3文、どんなに長くても5文以内**。
-- 記号・絵文字・箇条書き・マークダウンは使わない(そのまま音声合成されるため)。
-- 数値や固有名詞は読み上げて自然な形で言う。詳細・列挙はパネルに任せ、読み上げるなら3項目まで。
-- 時間の予告: 長い説明の前と、時間のかかる作業の前は一言添える。`,
-  en: `- Speak, do not write, and keep it short. Conclusion first, then one or two sentences of support if they are needed. **One to three sentences as a rule, five at the very most.**
-- No symbols, emoji, bullet points or markdown: the text is spoken exactly as you write it.
-- Say numbers and proper nouns the way they are spoken. Leave detail and lists to the panels; read out three items at most.
-- Warn about time: before a long explanation, and before anything that will take a while, say so in a few words.`
-}
-
 const BRIDGE_SENTENCE: PromptText = {
   ja: `- web 検索、run_agent_task、recall で深く探すときは、呼ぶ前に「いまから何をするか」を一文だけ言う。パネル1枚の取得のような一瞬の操作には付けない。
 - 短く。ユーザーの依頼を言い直さない。関連する操作が複数あるときは一つにまとめて一言にする。二度目以降は前の結果につなげる。`,
@@ -87,14 +61,9 @@ const BRIDGE_SENTENCE: PromptText = {
 - Keep it short. Do not repeat the request back. When several related calls go together, cover them with one line. From the second time on, tie it to what the last result gave you.`
 }
 
-const CONSTRAINTS_SELF: PromptText = {
+const CONSTRAINTS: PromptText = {
   ja: `- 直前に相槌(フィラー)を発話済みの場合、その続きとして自然に話す。同じ語で言い直さない。
 - わからないことは正直にわからないと言う。`,
-  en: `- Say plainly when you do not know something.`
-}
-
-const CONSTRAINTS_DELEGATED: PromptText = {
-  ja: `- わからないことは正直にわからないと言う。`,
   en: `- Say plainly when you do not know something.`
 }
 
@@ -132,8 +101,8 @@ const BRIEFING_SECTION: Section = [
 ]
 
 /**
- * The sections that do not depend on whether a voice model is in front, in the order they appear.
- * The speaking style, the bridge sentence and the constraints are handled separately.
+ * The sections between the speaking style and the constraints, in the order they appear. The bridge
+ * sentence is not among them, because only the brain's own sentences get it.
  */
 const COMMON_SECTIONS: readonly Section[] = [
   [
@@ -247,7 +216,7 @@ const COMMON_SECTIONS: readonly Section[] = [
 ]
 
 /** The heading the persona from the settings goes under, which the Live instruction points the model at. */
-export const PERSONA_HEADING: PromptText = { ja: `キャラクター設定`, en: `Character` }
+const PERSONA_HEADING: PromptText = { ja: `キャラクター設定`, en: `Character` }
 const SUMMARY_HEADING: PromptText = {
   ja: `これまでの会話の要約(古い部分)`,
   en: `A summary of the conversation so far (the older part)`
@@ -284,15 +253,13 @@ const section = (locale: ConversationLocale, title: PromptText, text: PromptText
 /**
  * Who reads the base prompt.
  * - self: the brain's own sentences are spoken, which is the classic setup.
- * - delegated: the voice model (GPT-Live) reads them. It differs from self only in the opening
- *   section about the division of labor and in the speaking style, bridge sentence and constraints.
  * - live: one model listens, speaks and decides (Gemini Live). It matches self except that the
  *   section asking for one sentence before a slow call is left out, because a function runs while the
  *   model keeps speaking; on 2026-09-16 that section made it say the same preamble before every
  *   function call. The wording of such a preamble is never quoted in the prompt, neither as an
  *   example nor as something to avoid, because the model then reuses that exact phrase.
  */
-export type VoiceLayer = 'self' | 'delegated' | 'live'
+export type VoiceLayer = 'self' | 'live'
 
 export function baseSystem(locale: ConversationLocale, voiceLayer: VoiceLayer): string {
   const bridgeTitle: PromptText = {
@@ -303,13 +270,12 @@ export function baseSystem(locale: ConversationLocale, voiceLayer: VoiceLayer): 
   const constraintsTitle: PromptText = { ja: `制約`, en: `Limits` }
   const parts = [promptText(locale, INTRO)]
   if (promptLanguage(locale) === 'en') parts.push(LANGUAGE_SECTION)
-  if (voiceLayer === 'delegated') parts.push(section(locale, { ja: `声の担当との分担`, en: `Working with the voice` }, DELEGATED_VOICE))
-  parts.push(section(locale, styleTitle, voiceLayer === 'delegated' ? STYLE_DELEGATED : STYLE_SELF))
+  parts.push(section(locale, styleTitle, STYLE))
   for (const [title, text] of COMMON_SECTIONS) {
     if (title === INPUT_SECTION[0] && voiceLayer === 'self') parts.push(section(locale, bridgeTitle, BRIDGE_SENTENCE))
     parts.push(section(locale, title, text))
   }
-  parts.push(section(locale, constraintsTitle, voiceLayer === 'delegated' ? CONSTRAINTS_DELEGATED : CONSTRAINTS_SELF))
+  parts.push(section(locale, constraintsTitle, CONSTRAINTS))
   return fillPrompt(parts.join('\n\n'), promptValues(locale))
 }
 

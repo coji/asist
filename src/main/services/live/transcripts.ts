@@ -1,10 +1,9 @@
 /**
  * Assembles the live transcripts.
  *
- * Both GPT-Live and Gemini stream a transcript in fragments, and GPT-Live gives no signal for the end of
- * an utterance. Fragments are collected and become one final utterance once nothing follows for quietMs.
- * Where there is a signal, as in Gemini, flush finalizes them at once. Gemini Live keeps the final text
- * in the conversation log, while GPT-Live hands the user's to brain with its next turn.
+ * Gemini streams a transcript in fragments. Fragments are collected and become one final utterance once
+ * nothing follows for quietMs, or at once when Gemini signals the end, which flush handles. The final
+ * text is what the conversation log keeps.
  */
 
 export type TranscriptRole = 'user' | 'assistant'
@@ -46,14 +45,6 @@ export class TranscriptTracker {
     const text = this.buffers[role].trim()
     this.buffers[role] = ''
     if (text) this.options.onFinal(role, text)
-    return text
-  }
-
-  /** Takes the collected text without finalizing it, which is how a GPT-Live delegation hands the user's utterance to brain. */
-  take(role: TranscriptRole): string {
-    this.disarm(role)
-    const text = this.buffers[role].trim()
-    this.buffers[role] = ''
     return text
   }
 

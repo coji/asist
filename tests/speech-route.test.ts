@@ -37,16 +37,4 @@ describe('speech route selection', () => {
     expect(mocks.synthesize).toHaveBeenCalledTimes(1)
     expect(emit).toHaveBeenCalledWith(expect.objectContaining({ type: 'segment' }))
   })
-
-  it('hands the sentence to a live engine that registered a speech route, even when reading aloud is off', async () => {
-    mocks.settings.ttsEngine = 'none'
-    const { currentSpeechRoute, setSpeechRoute } = await import('../src/main/services/brain/session')
-    const { liveRoute } = await import('../src/main/services/brain/speech-route')
-    const say = vi.fn().mockResolvedValue(undefined)
-    setSpeechRoute(liveRoute(say))
-    const sink = currentSpeechRoute().open({ turnId: 1, signal: new AbortController().signal, emit: vi.fn(), locale: 'ja-JP' })
-    sink.push('こんにちは。')
-    await sink.drain()
-    expect(say).toHaveBeenCalledWith('こんにちは。', expect.anything())
-  })
 })

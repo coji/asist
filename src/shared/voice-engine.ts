@@ -8,17 +8,14 @@ import type { LlmProvider } from './llm-catalog'
  *
  * - cascade: the renderer's VAD and ASR produce text, brain decides in runTurn, and VOICEVOX or
  *   AivisSpeech speaks.
- * - gpt-live: GPT-Live-1 listens and speaks, and delegates deciding and tools back to brain's runTurn
- *   through client delegation.
  * - gemini-live: Gemini Live listens and speaks and also decides and calls functions itself, using
  *   only brain's parts.
  *
- * With either live engine the audio goes to the provider, the voice is the provider's, and the model
- * decides about aizuchi and barge-in. The prices are the providers' public ones as of 2026-09:
- * GPT-Live bills the time the session is open, Gemini the minutes of audio in and out.
+ * With the live engine the audio goes to the provider, the voice is the provider's, and the model
+ * decides about aizuchi and barge-in. The prices are the provider's public ones as of 2026-09.
  */
 
-export const VOICE_ENGINES = ['cascade', 'gpt-live', 'gemini-live'] as const
+export const VOICE_ENGINES = ['cascade', 'gemini-live'] as const
 export type VoiceEngine = (typeof VOICE_ENGINES)[number]
 export type LiveEngine = Exclude<VoiceEngine, 'cascade'>
 
@@ -65,34 +62,11 @@ export interface LiveEngineInfo {
    * documentation, and is null when the documentation gives none.
    */
   voices: ReadonlyArray<{ id: string; note: VoiceNote | null }>
-  /**
-   * The price in USD per minute. GPT-Live counts the session time, while Gemini counts audio in and
-   * audio out separately.
-   */
-  pricing: { sessionPerMinute?: number; audioInPerMinute?: number; audioOutPerMinute?: number }
-  /**
-   * The sample rate in Hz of the audio round trip. The renderer's microphone sends 16 kHz and the main
-   * process resamples to this rate.
-   */
-  inputRate: 16000 | 24000
-  outputRate: 24000
+  /** The price in USD per minute of audio in and of audio out. */
+  pricing: { audioInPerMinute: number; audioOutPerMinute: number }
 }
 
 export const LIVE_ENGINE_INFO: Record<LiveEngine, LiveEngineInfo> = {
-  'gpt-live': {
-    label: 'GPT-Live',
-    provider: 'openai',
-    models: [{ id: 'gpt-live-1', label: 'GPT-Live 1', note: 'voiceEngines.models.gptLive1' }],
-    // Every BuiltInVoice of the SDK, openai 7.15. The documentation describes none of them, so no
-    // voice carries a note.
-    voices: [
-      'marin', 'cedar', 'alloy', 'ash', 'ballad', 'beacon', 'bossa', 'cinder', 'coral', 'delta', 'echo', 'gleam',
-      'meridian', 'quartz', 'ripple', 'sage', 'shimmer', 'stone', 'tempo', 'verse', 'vesper', 'willow'
-    ].map((id) => ({ id, note: null })),
-    pricing: { sessionPerMinute: 0.05 },
-    inputRate: 24000,
-    outputRate: 24000
-  },
   'gemini-live': {
     label: 'Gemini Live',
     provider: 'google',
@@ -134,14 +108,11 @@ export const LIVE_ENGINE_INFO: Record<LiveEngine, LiveEngineInfo> = {
       { id: 'Sadaltager', note: 'voiceEngines.voices.sadaltager' },
       { id: 'Sulafat', note: 'voiceEngines.voices.sulafat' }
     ],
-    pricing: { audioInPerMinute: 0.005, audioOutPerMinute: 0.018 },
-    inputRate: 16000,
-    outputRate: 24000
+    pricing: { audioInPerMinute: 0.005, audioOutPerMinute: 0.018 }
   }
 }
 
 export const DEFAULT_LIVE_MODELS: Record<LiveEngine, LiveModelSetting> = {
-  'gpt-live': { model: 'gpt-live-1', voice: 'marin' },
   'gemini-live': { model: 'gemini-3.8-live', voice: 'Kore' }
 }
 
@@ -150,13 +121,10 @@ export const DEFAULT_LIVE_MODELS: Record<LiveEngine, LiveModelSetting> = {
  */
 const usd = (value: number): number => Math.round(value * 1e6) / 1e6
 
-/** The cost in USD of a GPT-Live session of the given length. */
-export const gptLiveCost = (seconds: number): number => usd((seconds / 60) * (LIVE_ENGINE_INFO['gpt-live'].pricing.sessionPerMinute ?? 0))
-
 /** The cost in USD of the given seconds of Gemini Live audio in and audio out. */
 export const geminiLiveCost = (inputSeconds: number, outputSeconds: number): number => {
   const pricing = LIVE_ENGINE_INFO['gemini-live'].pricing
-  return usd((inputSeconds / 60) * (pricing.audioInPerMinute ?? 0) + (outputSeconds / 60) * (pricing.audioOutPerMinute ?? 0))
+  return usd((inputSeconds / 60) * pricing.audioInPerMinute + (outputSeconds / 60) * pricing.audioOutPerMinute)
 }
 
 export const voiceEngineLabel = (t: Translate, engine: VoiceEngine): string =>

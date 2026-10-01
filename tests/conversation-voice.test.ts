@@ -68,7 +68,6 @@ const baseSettings = {
   vapEnabled: false,
   hangoverMs: 350,
   liveIdleSeconds: 60,
-  gptLive: { model: 'gpt-live', voice: 'alloy' },
   geminiLive: { model: 'gemini-live', voice: 'Puck' }
 }
 
@@ -599,7 +598,7 @@ describe('the global shortcut and the tray item that turn the microphone on', ()
 
 describe('a change of how long a quiet live session stays open', () => {
   it('turns the microphone off, since main stops the live engine for it', async () => {
-    Object.assign(mocks.settings, { voiceEngine: 'gpt-live' })
+    Object.assign(mocks.settings, { voiceEngine: 'gemini-live' })
     await start({})
     const live = mocks.live as { current: string; disable: Mock }
     live.current = 'on'
@@ -610,30 +609,6 @@ describe('a change of how long a quiet live session stays open', () => {
 
     expect(live.disable).toHaveBeenCalled()
     live.current = 'off'
-  })
-})
-
-describe('the feed under GPT-Live', () => {
-  it('shows what the user says and brain’s text for the turn the voice handed over, and closes both lines', async () => {
-    Object.assign(mocks.settings, { voiceEngine: 'gpt-live' })
-    let onLiveEvent!: (event: unknown) => void
-    const conversation = await start({
-      onLiveEvent: (listener: (event: unknown) => void) => {
-        onLiveEvent = listener
-        return () => {}
-      }
-    })
-    onLiveEvent({ type: 'userTranscript', turnId: 100, text: '明日の', final: false })
-    onLiveEvent({ type: 'userTranscript', turnId: 100, text: '明日の天気は', final: true })
-    conversation.handleTurnEvent({ type: 'started', turnId: 42, origin: 'live' })
-    conversation.handleTurnEvent({ type: 'delta', turnId: 42, text: '明日は晴れです。' })
-    conversation.handleTurnEvent({ type: 'delta', turnId: 42, text: '傘はいりません。' })
-    conversation.handleTurnEvent({ type: 'done', turnId: 42, fullText: '明日は晴れです。傘はいりません。' })
-
-    expect(mocks.feed.lines.filter((line) => line.role !== 'sys').map(({ role, text, streaming }) => [role, text, streaming])).toEqual([
-      ['user', '明日の天気は', false],
-      ['ai', '明日は晴れです。傘はいりません。', false]
-    ])
   })
 })
 

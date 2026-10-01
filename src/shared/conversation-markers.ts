@@ -16,10 +16,6 @@ export const CONVERSATION_MARKERS = {
   typedInput: { ja: '[文字入力]', en: '[Typed]' },
   /** The same, as a note attached to the utterance of a brain turn. */
   typedInputNote: { ja: '[注: 文字入力]', en: '[Note: typed]' },
-  /** The same again, in the context GPT-Live's voice model is given about a turn it did not hear. */
-  typedInputForVoice: { ja: '[ユーザーが文字で入力した]', en: '[The user typed]' },
-  /** The cards on screen, which the voice model cannot see. */
-  screen: { ja: '[画面]', en: '[Screen]' },
   /** The mini app open on screen and what it shows, as a note attached to the utterance. */
   openApp: { ja: '[開いているミニアプリ]', en: '[Open app]' },
   /** The status of the agent jobs and the recent projects, as a note attached to the input when it changed. */

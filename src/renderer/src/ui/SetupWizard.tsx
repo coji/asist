@@ -21,8 +21,8 @@ import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import type { MessageKey } from '@shared/i18n'
 import { osMessageKey } from '@shared/i18n/os-message'
-import { LIVE_ENGINE_INFO, type LiveEngine } from '@shared/voice-engine'
-import { LiveEngineChoice } from './setup/live'
+import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
+import { LiveKey } from './setup/live'
 
 /**
  * The first-run setup. It completes only once every requirement has actually been verified, and it
@@ -54,7 +54,6 @@ export function SetupWizard(): React.JSX.Element | null {
   const [apiBusy, setApiBusy] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<SpeakingMode | null>(null)
-  const [live, setLive] = useState<LiveEngine | null>(null)
   const [liveKey, setLiveKey] = useState('')
   const [listening, setListening] = useState<ListeningChoice | null>(null)
   const [localReady, setLocalReady] = useState(false)
@@ -128,8 +127,8 @@ export function SetupWizard(): React.JSX.Element | null {
   const serverReady = setup?.services.asr === true
   const listeningReady = (listening === 'server' && serverReady) || (listening === 'local' && localReady)
   const ttsReady = setup?.services.tts === true
-  const liveProvider = live ? LIVE_ENGINE_INFO[live].provider : null
-  const liveKeyState = liveProvider ? (setup?.services.llmKeys[liveProvider] ?? 'missing') : 'missing'
+  const liveInfo = LIVE_ENGINE_INFO['gemini-live']
+  const liveKeyState = setup?.services.llmKeys[liveInfo.provider] ?? 'missing'
   const liveKeyVerified = liveKeyState === 'verified'
 
   const needed = (id: StepId, way: SpeakingMode | null = mode): boolean => {
@@ -193,38 +192,26 @@ export function SetupWizard(): React.JSX.Element | null {
   }
 
   /**
-   * Chooses a way of talking. A live engine starts on the one whose provider the model step verified,
-   * so that its key is not asked for twice.
+   * Chooses a way of talking. Main marks a key verified only in its memory, so the live engine's key,
+   * saved in an earlier session or set in the environment, reads as saved until it is checked, and it is
+   * checked here at once rather than asked for again.
    */
   const chooseMode = (next: SpeakingMode): void => {
     setError('')
     setMode(next)
-    if (next === 'live' && !live) setLive(provider === 'openai' ? 'gpt-live' : provider === 'google' ? 'gemini-live' : null)
-  }
-
-  /**
-   * Chooses a live engine. Main marks a key verified only in its memory, so a key saved in an earlier
-   * session or set in the environment reads as saved until it is checked, and it is checked here at once
-   * rather than asked for again.
-   */
-  const chooseLive = (next: LiveEngine): void => {
-    setLive(next)
-    setLiveKey('')
-    setError('')
-    const nextProvider = LIVE_ENGINE_INFO[next].provider
-    if (setup?.services.llmKeys[nextProvider] === 'saved') void verifyLiveKey(nextProvider, null)
+    if (next === 'live' && mode !== 'live' && liveKeyState === 'saved') void verifyLiveKey(null)
   }
 
   /**
    * Verifies the key of the live engine's provider, which the conversation model may not use: the typed
    * key, which is saved once it works, or with null the key main already holds.
    */
-  const verifyLiveKey = async (keyProvider: LlmProvider, key: string | null): Promise<void> => {
+  const verifyLiveKey = async (key: string | null): Promise<void> => {
     if (apiBusy || (key !== null && !key.trim())) return
     setApiBusy(true)
     setError('')
     try {
-      applyStatus(key === null ? await window.api.verifySavedApiKey(keyProvider) : await window.api.saveApiKey(keyProvider, key))
+      applyStatus(key === null ? await window.api.verifySavedApiKey(liveInfo.provider) : await window.api.saveApiKey(liveInfo.provider, key))
       setLiveKey('')
       await refresh()
     } catch (err) {
@@ -328,7 +315,7 @@ export function SetupWizard(): React.JSX.Element | null {
     setFinishing(true)
     setError('')
     try {
-      const voiceMode: SetupVoiceMode = mode === 'voice' && listening ? listening : mode === 'live' && live ? live : 'text'
+      const voiceMode: SetupVoiceMode = mode === 'voice' && listening ? listening : mode === 'live' ? 'gemini-live' : 'text'
       // Text-only use turns the TTS engine off, so a reply is neither synthesized nor played and
       // appears as text alone.
       if (mode === 'text-only' && settings.ttsEngine !== 'none') await saveSettings({ ttsEngine: 'none' })
@@ -375,11 +362,10 @@ export function SetupWizard(): React.JSX.Element | null {
     if (step === 'speaking') {
       if (!mode) return t('setup.guide.speaking.choose')
       if (mode !== 'live' || liveKeyVerified) return t('setup.guide.speaking.chosen')
-      if (!live || !liveProvider) return t('setup.guide.speaking.chooseLive')
       if (apiBusy) return t('setup.guide.model.verifying')
       return liveKey.trim()
         ? t('setup.guide.model.pressVerify')
-        : t('setup.guide.speaking.enterLiveKey', { engine: LIVE_ENGINE_INFO[live].label, provider: LLM_PROVIDER_INFO[liveProvider].label })
+        : t('setup.guide.speaking.enterLiveKey', { engine: liveInfo.label, provider: LLM_PROVIDER_INFO[liveInfo.provider].label })
     }
     if (step === 'listening') {
       if (listeningReady) return t('setup.guide.listening.ready')
@@ -456,21 +442,15 @@ export function SetupWizard(): React.JSX.Element | null {
             <SpeakingStep
               mode={mode}
               onMode={chooseMode}
-              liveChoice={
-                <LiveEngineChoice
-                  engine={live}
-                  onEngine={chooseLive}
+              liveKey={
+                <LiveKey
                   keyVerified={liveKeyVerified}
                   keyConfigured={keyReadable(liveKeyState)}
                   apiKey={liveKey}
                   onApiKey={setLiveKey}
                   busy={apiBusy}
-                  onVerify={() => {
-                    if (liveProvider) void verifyLiveKey(liveProvider, liveKey)
-                  }}
-                  onRecheck={() => {
-                    if (liveProvider) void verifyLiveKey(liveProvider, null)
-                  }}
+                  onVerify={() => void verifyLiveKey(liveKey)}
+                  onRecheck={() => void verifyLiveKey(null)}
                 />
               }
             />
@@ -541,12 +521,12 @@ export function SetupWizard(): React.JSX.Element | null {
             <SummaryStep
               rows={[
                 { label: t('setup.summary.language'), value: UI_LOCALE_NAMES[locale] },
-                // As on the settings screen, Gemini Live decides by itself and no live engine speaks a bridge phrase.
-                ...(mode === 'live' && live === 'gemini-live' ? [] : [{ label: t('setup.summary.conversationModel'), value: modelLabel(settings.conversationModel) }]),
+                // As on the settings screen, Gemini Live decides by itself and speaks no bridge phrase.
+                ...(mode === 'live' ? [] : [{ label: t('setup.summary.conversationModel'), value: modelLabel(settings.conversationModel) }]),
                 ...(mode === 'live' ? [] : [{ label: t('setup.summary.bridgeModel'), value: modelLabel(settings.bridgeModel) }]),
                 { label: t('setup.summary.speaking'), value: t(SPEAKING_TITLE[mode]) },
-                ...(mode === 'live' && live
-                  ? [{ label: t('setup.summary.liveEngine'), value: t('setup.summary.liveEngineValue', { engine: LIVE_ENGINE_INFO[live].label, voice: settings[live === 'gpt-live' ? 'gptLive' : 'geminiLive'].voice }) }]
+                ...(mode === 'live'
+                  ? [{ label: t('setup.summary.liveEngine'), value: t('setup.summary.liveEngineValue', { engine: liveInfo.label, voice: settings.geminiLive.voice }) }]
                   : []),
                 ...(mode === 'voice'
                   ? [{ label: t('setup.summary.listening'), value: listening === 'local' ? t('setup.listening.local.title') : (setup?.asr?.label ?? '') }]

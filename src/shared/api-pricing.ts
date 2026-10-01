@@ -3,7 +3,7 @@ import type { ConversationModel } from './llm-catalog'
 
 /**
  * The list prices of the conversation models, in USD per million tokens, from each provider's pricing
- * page on 2026-09-23 at the standard tier. The live engines' prices are in voice-engine, and the agent
+ * page on 2026-09-23 at the standard tier. The live engine's prices are in voice-engine, and the agent
  * CLIs report their own cost.
  *
  * - Anthropic: the cache write is the five-minute price, because every breakpoint the adapter places

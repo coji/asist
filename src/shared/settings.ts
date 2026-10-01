@@ -27,7 +27,6 @@ const fields = {
    */
   bridgeModel: conversationModelSchema,
   voiceEngine: z.enum(VOICE_ENGINES),
-  gptLive: liveModelSettingSchema,
   geminiLive: liveModelSettingSchema,
   /**
    * How many seconds a live session stays open after the conversation stops. An open session is
@@ -160,7 +159,7 @@ const V4_ASR_MODELS: Record<string, AsrModel> = {
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 8,
+  version: 9,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -196,7 +195,15 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
     6: (content) => ({ ...(content as Record<string, unknown>), showHud: false }),
     // Version 8 adds Irodori-TTS and its voice. The engine chosen until now stays, and the voice starts on the
     // one a new installation starts on.
-    7: (content) => ({ ...(content as Record<string, unknown>), irodoriTtsVoice: 'calm-young-woman' })
+    7: (content) => ({ ...(content as Record<string, unknown>), irodoriTtsVoice: 'calm-young-woman' }),
+    // Version 9 drops GPT-Live and its model and voice. Someone who chose it talks through cascade, which
+    // needs no provider's key; the conversation settings show what cascade still lacks.
+    8: (content) => {
+      const upgraded = { ...(content as Record<string, unknown>) }
+      delete upgraded.gptLive
+      if (upgraded.voiceEngine === 'gpt-live') upgraded.voiceEngine = 'cascade'
+      return upgraded
+    }
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })

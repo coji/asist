@@ -121,7 +121,6 @@ const settings: AppSettings = {
   conversationModel: { provider: 'anthropic', id: 'claude-sonnet-5' },
   bridgeModel: { provider: 'anthropic', id: 'claude-haiku-4-5' },
   voiceEngine: 'cascade',
-  gptLive: { model: 'gpt-live-1', voice: 'marin' },
   geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' },
   liveIdleSeconds: 90,
   persona: defaultPersona('ja-JP'),

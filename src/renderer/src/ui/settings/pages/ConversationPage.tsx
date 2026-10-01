@@ -102,12 +102,9 @@ export function ConversationPage({ ctx }: { ctx: SettingsContext }): React.JSX.E
 
       <Group
         title={t('settingsConversation.models.title')}
-        description={live === 'gemini-live' ? t('settingsConversation.models.geminiLiveDescription') : t('settingsConversation.models.description')}
+        description={live ? t('settingsConversation.models.geminiLiveDescription') : t('settingsConversation.models.description')}
       >
-        <Row
-          label={live === 'gpt-live' ? t('settingsConversation.models.conversationForGptLive') : t('settingsConversation.models.conversation')}
-          hint={noteOf(t, conversation)}
-        >
+        <Row label={t('settingsConversation.models.conversation')} hint={noteOf(t, conversation)}>
           <ModelPicker role="conversationModel" value={conversation} disabled={saving} onChange={(model) => change('conversationModel', model)} />
         </Row>
         {!live && (
@@ -158,15 +155,14 @@ const noteOf = (t: Translate, model: ConversationModel): string => {
 }
 
 const engineHint = (t: Translate, engine: VoiceEngine): string =>
-  engine === 'cascade' ? t('voiceEngines.cascade.hint') : engine === 'gpt-live' ? t('voiceEngines.gptLive.hint') : t('voiceEngines.geminiLive.hint')
+  engine === 'cascade' ? t('voiceEngines.cascade.hint') : t('voiceEngines.geminiLive.hint')
 
 /** The rows of a live engine: its model and how long it waits before closing the session. Its voice is chosen on the voice page. */
 function LiveEngineRows({ engine, ctx, disabled }: { engine: LiveEngine; ctx: SettingsContext; disabled: boolean }): React.JSX.Element {
   const { settings, set } = ctx
   const t = useT()
   const info = LIVE_ENGINE_INFO[engine]
-  const field = engine === 'gpt-live' ? 'gptLive' : 'geminiLive'
-  const current = settings[field]
+  const current = settings.geminiLive
   const model = info.models.find((candidate) => candidate.id === current.model)
   return (
     <>
@@ -176,7 +172,7 @@ function LiveEngineRows({ engine, ctx, disabled }: { engine: LiveEngine; ctx: Se
           aria-label={t('settingsConversation.live.modelLabel', { engine: info.label })}
           value={current.model}
           disabled={disabled}
-          onChange={(e) => set({ [field]: { ...current, model: e.target.value } })}
+          onChange={(e) => set({ geminiLive: { ...current, model: e.target.value } })}
         >
           {info.models.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>

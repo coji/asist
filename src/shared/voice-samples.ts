@@ -1,7 +1,7 @@
 /**
  * What the bundled samples of the voices say, by the BCP 47 tag of the language they are read in. They are
  * spoken and never shown, so they live here rather than in the dictionary: the same three sentences in each
- * language Qwen3-TTS reads for a conversation locale. The voices of the live engines and of Irodori-TTS are
+ * language Qwen3-TTS reads for a conversation locale. The voices of the live engine and of Irodori-TTS are
  * sampled in Japanese alone.
  */
 export const VOICE_SAMPLE_TEXT = {

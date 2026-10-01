@@ -26,4 +26,4 @@ The pictures on the weather and clock cards stay night scenes in every theme.
 
 Turn on "Show at the top of the screen" under "Processing times", and the top of the screen shows how long each stage of the last reply took. It is off by default.
 
-You can see how long speech recognition, generating the reply and reading it aloud took, and the time from the end of what you said to the first sound of the reply (E2E). When the voice engine is GPT-Live or Gemini Live, it shows the state of the connection, the time to respond, the minutes in the session and the estimated cost instead.
+You can see how long speech recognition, generating the reply and reading it aloud took, and the time from the end of what you said to the first sound of the reply (E2E). When the voice engine is Gemini Live, it shows the state of the connection, the time to respond, the minutes in the session and the estimated cost instead.

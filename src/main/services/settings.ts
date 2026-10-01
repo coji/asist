@@ -37,10 +37,9 @@ function defaultSettings(): AppSettings {
     // The cascade voice engine is the default, because a live engine needs its provider's key, which only
     // the first setup or the settings screen can verify; completing the setup saves the engine it chose.
     voiceEngine: 'cascade',
-    gptLive: { ...DEFAULT_LIVE_MODELS['gpt-live'] },
     geminiLive: { ...DEFAULT_LIVE_MODELS['gemini-live'] },
-    // GPT-Live is billed for as long as the session is open, so it is closed after 90 seconds without
-    // conversation. Speaking again reopens it with a pre-roll.
+    // An open session is sent the microphone's audio, which Gemini bills, so it is closed after 90 seconds
+    // without conversation. Speaking again reopens it with a pre-roll.
     liveIdleSeconds: 90,
     persona: defaultPersona(locale),
     conversationLogRetentionDays: 90,

@@ -64,7 +64,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 
 Windows でこのコンピュータの音声認識と、読み上げの Irodori-TTS と Qwen3-TTS を動かすには、単体の GPU が要ります。NVIDIA、AMD、Intel Arc のどれでも使えます。使えないときは、初回セットアップの「聞き取り」と設定の「声」に、モデルの代わりに理由が出ます。このときは、読み上げに Irodori-TTS と Qwen3-TTS も選べません。GPU は、ASIST を起動したときに調べます。
 
-- 「この音声認識には単体の GPU が要りますが、このコンピュータには見つかりませんでした。」と出るときは、Vulkan のドライバーが単体の GPU を認識していません。CPU に内蔵された GPU は使いません。単体の GPU を積んでいるのにこう出るときは、GPU のメーカーのドライバーを入れ直して、ASIST を起動し直します。単体の GPU が無いときは、ブラウザの中で動く Whisper で聞き取るか、声のエンジンに [GPT-Live か Gemini Live](/docs/settings/voice-engine/) を選びます。
+- 「この音声認識には単体の GPU が要りますが、このコンピュータには見つかりませんでした。」と出るときは、Vulkan のドライバーが単体の GPU を認識していません。CPU に内蔵された GPU は使いません。単体の GPU を積んでいるのにこう出るときは、GPU のメーカーのドライバーを入れ直して、ASIST を起動し直します。単体の GPU が無いときは、ブラウザの中で動く Whisper で聞き取るか、声のエンジンに [Gemini Live](/docs/settings/voice-engine/) を選びます。
 - 「GPU を確かめられなかったため、この音声認識を使えません。」と出るときは、ASIST が GPU の一覧を読めませんでした。GPU のドライバーが動いているかを確かめて、ASIST を起動し直します。
 
 新しいバージョンの ASIST を初めて起動したときと、GPU のドライバーを更新したあとの最初の起動では、ドライバーが GPU で動かすためのプログラムを作ります。そのときだけ、音声認識と読み上げ(Irodori-TTS と Qwen3-TTS)の準備や起動にいつもより時間がかかります。2 回目からは、ドライバーが保存したものを使います。

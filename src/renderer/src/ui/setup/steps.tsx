@@ -134,19 +134,19 @@ export function ModelStep({
 export function SpeakingStep({
   mode,
   onMode,
-  liveChoice
+  liveKey
 }: {
   mode: SpeakingMode | null
   onMode: (mode: SpeakingMode) => void
-  /** The choice of the live engine and its key, shown inside the live option once it is chosen. */
-  liveChoice: ReactNode
+  /** The key of the live engine, shown inside the live option once it is chosen. */
+  liveKey: ReactNode
 }): React.JSX.Element {
   const t = useT()
   return (
     <div className="su-stack">
       <Option active={mode === 'voice'} title={t('setup.speaking.voice.title')} detail={t('setup.speaking.voice.detail')} onClick={() => onMode('voice')} />
       <Option active={mode === 'live'} title={t('setup.speaking.live.title')} detail={t('setup.speaking.live.detail')} onClick={() => onMode('live')}>
-        {liveChoice}
+        {liveKey}
       </Option>
       <Option
         active={mode === 'type-and-listen'}

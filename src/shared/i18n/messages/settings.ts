@@ -242,19 +242,6 @@ export const settings = defineMessages({
     }
   },
   summary: {
-    conversationLive: {
-      'ja-JP': '{engine} · 会話モデル {model}',
-      'en-US': '{engine} · Conversation model {model}',
-      'fr-FR': '{engine} · Modèle de conversation {model}',
-      'de-DE': '{engine} · Gesprächsmodell {model}',
-      'hi-IN': '{engine} · बातचीत का मॉडल {model}',
-      'id-ID': '{engine} · Model percakapan {model}',
-      'it-IT': '{engine} · Modello di conversazione {model}',
-      'ko-KR': '{engine} · 대화 모델 {model}',
-      'pt-BR': '{engine} · Modelo de conversa {model}',
-      'es-419': '{engine} · Modelo de conversación {model}',
-      'es-ES': '{engine} · Modelo de conversación {model}'
-    },
     conversationLiveOnly: {
       'ja-JP': '{engine} だけで会話します',
       'en-US': '{engine} handles the conversation',

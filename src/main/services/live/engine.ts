@@ -4,15 +4,14 @@ import { LiveSessionPolicy } from '@shared/live-session-policy'
 import type { LiveEngineInfo } from '@shared/voice-engine'
 import { errMessage } from '@shared/api-errors'
 import { errorText } from '@shared/i18n/error-text'
-import { InputEncoder } from './audio'
+import { encodeInput } from './audio'
 import { TranscriptTracker, type TranscriptRole } from './transcripts'
 
 /**
- * What the live engines have in common. GPT-Live and Gemini share the audio path to and from the
- * renderer, the policy for opening and closing a session (live-session-policy), the assembly of the
- * transcripts, and the usage and cost estimate. What each engine does with a transcript, which decides
- * what the screen shows and what the conversation log keeps, and how each model signals a handover
- * (GPT-Live delegation, Gemini function calling) are not shared.
+ * The part of a live engine that does not depend on the provider's protocol: the audio path to and
+ * from the renderer, the policy for opening and closing a session (live-session-policy), the assembly
+ * of the transcripts, and the usage and cost estimate. What is done with a transcript, which decides
+ * what the screen shows and what the conversation log keeps, belongs to the engine of the provider.
  */
 
 export type LiveEngineEvents = {
@@ -49,7 +48,6 @@ export abstract class LiveEngineBase {
   private opening: Promise<void> | null = null
   /** Lets a close end the opening in progress at once, rather than wait for its setup or its timeout. */
   private openingAbort: AbortController | null = null
-  private readonly encoder: InputEncoder
   /**
    * Whether a session the provider ends reopens at once, because the user is speaking. The start of
    * speech allows one such reopen and its end withdraws it, so a provider that ends every session as
@@ -75,7 +73,6 @@ export abstract class LiveEngineBase {
       preRollMs: PRE_ROLL_MS,
       sampleRate: 16_000
     })
-    this.encoder = new InputEncoder(info.inputRate)
     this.transcripts = new TranscriptTracker({
       quietMs: TRANSCRIPT_QUIET_MS,
       onDelta: (role, text) => this.onTranscriptDelta(role, text),
@@ -116,7 +113,7 @@ export abstract class LiveEngineBase {
       this.policy.buffer(frame)
       return
     }
-    const encoded = this.encoder.encode(frame)
+    const encoded = encodeInput(frame)
     if (encoded) this.transmitAudio(encoded, frame.length / 16_000)
   }
 
@@ -137,12 +134,12 @@ export abstract class LiveEngineBase {
   protected abstract openSession(signal: AbortSignal): Promise<void>
   /** Closes the socket the engine owns, including one whose opening failed or has not finished. */
   protected abstract closeSession(reason: 'idle' | 'stop' | 'error'): Promise<void>
-  /** Sends base64 PCM16 at the input rate. `seconds` is the length of that audio, which the usage counts. */
+  /** Sends base64 PCM16 at 16 kHz. `seconds` is the length of that audio, which the usage counts. */
   protected abstract transmitAudio(base64: string, seconds: number): void
 
   protected async ensureOpen(): Promise<void> {
-    // A brain turn that took over an utterance can still send sentences after a stop, and a session
-    // opened for them would stay open and billed, with no idle close left to end it.
+    // A job report or an interjection can still arrive after a stop, and a session opened for it would
+    // stay open and billed, with no idle close left to end it.
     if (!this.enabled || this.policy.isOpen) return
     if (this.opening) return this.opening
     this.openStartedAt = this.now()
@@ -157,7 +154,7 @@ export abstract class LiveEngineBase {
         const connectMs = Math.round(this.now() - this.openStartedAt)
         this.events.emit('event', { type: 'latency', responseMs: 0, connectMs })
         for (const frame of this.policy.takePreRoll()) {
-          const encoded = this.encoder.encode(frame)
+          const encoded = encodeInput(frame)
           if (encoded) this.transmitAudio(encoded, frame.length / 16_000)
         }
       })
@@ -217,12 +214,9 @@ export abstract class LiveEngineBase {
 
   /**
    * Whether the engine itself still runs something for the conversation, such as a function call waiting
-   * for approval, which gives no sign of life until it ends. An engine that hands its tools to brain turns
-   * has nothing of its own.
+   * for approval, which gives no sign of life until it ends.
    */
-  protected working(): boolean {
-    return false
-  }
+  protected abstract working(): boolean
 
   protected setConnection(state: LiveConnection, detail?: string): void {
     this.connection = state

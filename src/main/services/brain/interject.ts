@@ -3,11 +3,11 @@ import { conversationLocale } from '../conversation-locale'
 import { conversationOwner, currentSpeechRoute, emit, history, record, turnScheduler } from './session'
 
 /**
- * Speaks a prepared sentence without going through the LLM. It goes to the session's speech route:
- * TTS in the classic setup, the voice side in GPT-Live. On an engine where the model itself decides
- * what to say (Gemini Live) the model reads the sentence and records it from its own output
- * transcript. Nothing starts while a user turn is in progress. The sentence reaches the screen as the
- * text of its turn, as a reply does, and is written to the conversation log as an assistant utterance.
+ * Speaks a prepared sentence without going through the LLM. It goes to the session's speech route.
+ * On an engine where the model itself decides what to say (Gemini Live) the model reads the sentence
+ * and records it from its own output transcript. Nothing starts while a user turn is in progress. The
+ * sentence reaches the screen as the text of its turn, as a reply does, and is written to the
+ * conversation log as an assistant utterance.
  */
 export async function interject(text: string): Promise<void> {
   const owner = conversationOwner()
@@ -29,8 +29,7 @@ export async function interject(text: string): Promise<void> {
     for (const s of assembler.flush()) synth.push(s)
     await synth.drain()
     // A newer turn that took over meanwhile leaves unknown how much of the sentence was heard, so it is
-    // not recorded, but the turn still ends: under GPT-Live the newer turn comes from main, and the
-    // screen would otherwise keep the sentence's line open.
+    // not recorded.
     if (!signal.aborted) record({ kind: 'assistant', turnId, text })
     emit({ type: 'done', turnId, fullText: text })
   })

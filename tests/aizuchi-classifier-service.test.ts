@@ -57,7 +57,7 @@ describe('whether the aizuchi classifier is wanted', () => {
   it('is wanted while aizuchi are on, the conversation is Japanese and the engine is not a live one', () => {
     expect(classifier.wanted(settings)).toBe(true)
     expect(classifier.wanted({ ...settings, aizuchi: false })).toBe(false)
-    expect(classifier.wanted({ ...settings, voiceEngine: 'gpt-live' })).toBe(false)
+    expect(classifier.wanted({ ...settings, voiceEngine: 'gemini-live' })).toBe(false)
   })
 
   it('is not wanted in another conversation language, whatever the saved setting says', () => {

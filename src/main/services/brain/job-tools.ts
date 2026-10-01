@@ -38,9 +38,9 @@ const JOB_DETAIL_MAX = 4000
 const CONFIRM_TIMEOUT_MS = 300_000
 
 /**
- * Puts the card of a job the tool started up through the tool's turn, which is how the turn's followers,
- * such as GPT-Live telling its voice model what is on screen, learn of it. main also pushes the card when
- * the job starts, for a screen that has moved on to a newer turn while the user approved the job.
+ * Puts the card of a job the tool started up through the tool's turn, so that the screen following that
+ * turn shows it. main also pushes the card when the job starts, for a screen that has moved on to a
+ * newer turn while the user approved the job.
  */
 function showJobCard(ctx: ToolContext, jobId: string): void {
   ctx.emit({

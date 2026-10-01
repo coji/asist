@@ -45,9 +45,8 @@ export interface HistoryTurn {
   user?: string
   notice?: boolean
   /**
-   * The reply in the assistant record of the log: brain's text, which GPT-Live rewords as it reads it,
-   * or under Gemini Live the transcript of what was spoken. It is what the display and the summary use
-   * for turns that have no messages.
+   * The reply in the assistant record of the log: brain's text, or under Gemini Live the transcript of
+   * what was spoken. It is what the display and the summary use for turns that have no messages.
    */
   assistant?: string
   interrupted?: 'before-reply' | 'while-speaking'

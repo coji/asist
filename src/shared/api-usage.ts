@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { LLM_PROVIDERS, type LlmProvider } from './llm-catalog'
-import type { LiveEngine } from './voice-engine'
 
 /**
  * The paid API use, summed per local day. Each item keeps what was used and what it cost at the price
@@ -8,6 +7,13 @@ import type { LiveEngine } from './voice-engine'
  * recognition and speech synthesis run on this Mac and never appear here; with a live engine they are
  * part of the live engine's price.
  */
+
+/**
+ * The live engines a record can name: Gemini Live, and GPT-Live, which is no longer offered but whose
+ * days keep their cost.
+ */
+const USAGE_LIVE_ENGINES = ['gpt-live', 'gemini-live'] as const
+type UsageLiveEngine = (typeof USAGE_LIVE_ENGINES)[number]
 
 /** What a conversation model call was for. */
 export const LLM_PURPOSES = ['conversation', 'bridge', 'summary'] as const
@@ -28,7 +34,7 @@ export type UsageItem =
       /** Null for a model the price list does not have; such calls are summed apart from the priced ones. */
       costUsd: number | null
     }
-  | { kind: 'live'; engine: LiveEngine; model: string; seconds: number; costUsd: number }
+  | { kind: 'live'; engine: UsageLiveEngine; model: string; seconds: number; costUsd: number }
   /** The cost the agent CLI reports for a job. Only Claude Code reports one. */
   | { kind: 'agent'; engine: 'claude'; jobs: number; costUsd: number }
 
@@ -55,7 +61,7 @@ const usageItemSchema = z.discriminatedUnion('kind', [
     webSearches: count,
     costUsd: count.nullable()
   }),
-  z.strictObject({ kind: z.literal('live'), engine: z.enum(['gpt-live', 'gemini-live']), model: z.string().min(1), seconds: count, costUsd: count }),
+  z.strictObject({ kind: z.literal('live'), engine: z.enum(USAGE_LIVE_ENGINES), model: z.string().min(1), seconds: count, costUsd: count }),
   z.strictObject({ kind: z.literal('agent'), engine: z.literal('claude'), jobs: count, costUsd: count })
 ])
 

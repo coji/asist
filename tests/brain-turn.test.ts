@@ -252,7 +252,6 @@ function unansweredCalls(messages: ConversationMessage[]): string[] {
   })
 }
 
-const liveRoute = { kind: 'live' as const, open: () => ({ push: () => {}, drain: async () => {} }) }
 const weatherPanel = { props: { location: '東京都', weather: { targetDate: '2026-09-16', summary: '晴天' } }, source: 'test' }
 
 describe('brain turn', () => {
@@ -1025,34 +1024,6 @@ describe('brain turn', () => {
     expect(readLog().some((r) => r.text === 'タイマーが終わりました。')).toBe(false)
   })
 
-  it('hands each sentence to the voice route, adds no aizuchi note, puts the division of roles in system, and records its own text as the reply', async () => {
-    mocks.rounds.push(async (round) => {
-      round.text('明日は', '晴天です。')
-      return {}
-    })
-    const { brain, events } = await loadBrain()
-    const spoken: string[] = []
-    const route = { kind: 'live' as const, open: () => ({ push: (sentence: string) => void spoken.push(sentence), drain: async () => {} }) }
-    const handle = brain.beginTurn({ text: '明日の天気は' }, { aizuchi: 'はい。', bridgePending: true }, 'live', false, { route })!
-    await handle.completion
-
-    expect(spoken).toEqual(['明日は晴天です。'])
-    expect(events[0]).toMatchObject({ type: 'started', turnId: handle.turnId, origin: 'live' })
-    expect(events.some((e) => e.type === 'segment')).toBe(false)
-    expect(events.at(-1)).toMatchObject({ type: 'done', fullText: '明日は晴天です。' })
-    const request = mocks.requests[0]
-    expect(JSON.stringify(lastUserParts(request))).not.toContain('相槌')
-    expect(request.system[0].text).toContain('# 声の担当との分担')
-    expect(request.system[0].text).not.toContain('# つなぎ文')
-    // The voice rewords the text as it reads it, and the log keeps brain's text, which the next request sends once.
-    expect(readLog().map((r) => [r.kind, r.text])).toEqual([
-      ['user', '明日の天気は'],
-      ['message', undefined],
-      ['assistant', '明日は晴天です。']
-    ])
-    expect((await historyMessages()).slice(1)).toEqual([said('明日は晴天です。')])
-  })
-
   it('answers the tool call a response finished before the output limit, then asks for the rest, in the request and in the history', async () => {
     mocks.fetchPanel.mockResolvedValue(weatherPanel)
     mocks.rounds.push(async (round) => {
@@ -1099,37 +1070,10 @@ describe('brain turn', () => {
     expect(readLog().map((r) => [r.kind, r.turnId])).toEqual([['user', handle.turnId], ['assistant', handle.turnId]])
   })
 
-  it('sends the tool round trip and the reply of a turn GPT-Live read once each in the next request, with the prefix unchanged', async () => {
-    mocks.fetchPanel.mockResolvedValue(weatherPanel)
-    mocks.rounds.push(async (round) => {
-      round.toolUse('t1', 'show_weather', { location: '東京都' })
-      return { stop: 'tool_calls' }
-    })
-    mocks.rounds.push(async (round) => {
-      round.text('晴天です。')
-      return {}
-    })
-    mocks.rounds.push(async (round) => {
-      round.text('どういたしまして。')
-      return {}
-    })
-    const { brain } = await loadBrain()
-    await brain.beginTurn({ text: '東京の天気' }, {}, 'live', false, { route: liveRoute })!.completion
-    await brain.beginTurn({ text: 'ありがとう' }, {}, 'live', false, { route: liveRoute })!.completion
-    const next = mocks.requests[2].messages
-    expect(next.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant', 'user'])
-    expect(next[1].parts).toEqual([{ type: 'tool_call', id: 't1', name: 'show_weather', input: { location: '東京都' } }])
-    expect(next[3]).toEqual(said('晴天です。'))
-    // The prefix the previous turn sent comes back unchanged, which keeps the prompt cache.
-    expect(next.slice(0, 3)).toEqual(mocks.requests[1].messages)
-  })
-
-  it.each(['silent', 'live'] as const)('reports a finished job once, not once per attempt, when the %s route plays no segment', async (kind) => {
+  it('reports a finished job once, not once per attempt, when reading aloud is off and no segment plays', async () => {
     for (let i = 0; i < 5; i++) mocks.rounds.push(async (round) => { round.text('調査が終わりました。'); return {} })
-    if (kind === 'silent') mocks.ttsEngine = 'none'
+    mocks.ttsEngine = 'none'
     const { brain } = await loadBrain()
-    const { setSpeechRoute } = await import('../src/main/services/brain/session')
-    if (kind === 'live') setSpeechRoute(liveRoute)
     const { initJobReporting, acknowledgePlayback } = await import('../src/main/services/brain/job-reporting')
     acknowledgeLikeTheRenderer(brain, acknowledgePlayback)
     initJobReporting()
@@ -1287,10 +1231,7 @@ describe('brain turn', () => {
     }
   })
 
-  it.each([
-    ['a turn the user started', 'user'],
-    ['a turn GPT-Live handed over', 'live']
-  ] as const)('keeps %s open while its confirmation waits through the next words, and takes those up once the approved job has started', async (_name, origin) => {
+  it('keeps a turn the user started open while its confirmation waits through the next words, and takes those up once the approved job has started', async () => {
     mocks.rounds.push(async (round) => {
       round.text('確認画面で承認してください。')
       round.toolUse('t1', 'run_agent_task', { prompt: '調べて', title: '調べもの' })
@@ -1303,7 +1244,7 @@ describe('brain turn', () => {
     vi.mocked(agent.start).mockReturnValueOnce({ id: 'j1', title: '調べもの', cwd: '/work/asist-jobs/j1' } as never)
     const confirmations: ConfirmEvent[] = []
     confirmEvents.on('event', (event) => confirmations.push(event))
-    const begin = (text: string) => brain.beginTurn({ text }, {}, origin, false, origin === 'live' ? { route: liveRoute } : {})!
+    const begin = (text: string) => brain.beginTurn({ text }, {}, 'user', false)!
 
     const asking = begin('調べておいて')
     await vi.waitFor(() => expect(confirmations).toHaveLength(1))

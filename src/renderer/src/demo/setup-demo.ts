@@ -17,7 +17,7 @@ import { voiceController } from '@/voice/VoiceController'
  * - 'key-failed': starts with a stored key that could not be verified.
  * - 'mic-denied': the microphone permission is refused.
  * - 'tts-missing': neither VOICEVOX nor AivisSpeech is installed, so verification fails.
- * - 'live-key-failed': the OpenAI and Google keys a live engine runs on are refused as unauthenticated.
+ * - 'live-key-failed': the Google key Gemini Live runs on is refused as unauthenticated.
  */
 export type SetupDemoVariant = 'fresh' | 'key-failed' | 'mic-denied' | 'tts-missing' | 'live-key-failed'
 

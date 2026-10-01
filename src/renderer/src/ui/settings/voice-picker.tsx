@@ -8,8 +8,8 @@ import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 
 /**
- * The voice samples the settings screen plays: the live engines' voices, which scripts/gen-live-voices.mjs has
- * each provider's TTS read in Japanese, and the local engines' voices, which scripts/gen-tts-voices.mjs has the
+ * The voice samples the settings screen plays: the live engine's voices, which scripts/gen-live-voices.mjs has
+ * the provider's TTS read in Japanese, and the local engines' voices, which scripts/gen-tts-voices.mjs has the
  * bundled worker read in each language the engine reads. Listening to one needs neither an API, a key nor a
  * downloaded model. Adding a voice or a language means generating its samples with those scripts.
  */

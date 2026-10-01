@@ -18,7 +18,7 @@ vi.mock('@/state/stores', () => ({
   useFeedStore: { getState: () => mocks.feed },
   useJobStore: { getState: () => ({}) },
   usePanelStore: { getState: () => ({ dismissLoadingOwnedBy: vi.fn() }) },
-  useSettingsStore: { getState: () => ({ settings: { voiceEngine: 'gpt-live', uiLocale: 'ja-JP' } }) },
+  useSettingsStore: { getState: () => ({ settings: { voiceEngine: 'gemini-live', uiLocale: 'ja-JP' } }) },
   useStatusStore: { getState: () => ({}) },
   useToastStore: { getState: () => mocks.toast }
 }))

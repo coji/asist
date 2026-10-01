@@ -369,17 +369,17 @@ export const settingsAbout = defineMessages({
       'es-ES': 'La conversación, las frases de enlace y el resumen del historial'
     },
     openai: {
-      'ja-JP': '会話とつなぎの一言、声のエンジンの GPT-Live',
-      'en-US': 'The conversation, the bridge phrase and the GPT-Live voice engine',
-      'fr-FR': 'La conversation, la phrase de transition et le moteur vocal GPT-Live',
-      'de-DE': 'Das Gespräch, der Überbrückungssatz und die Sprach-Engine GPT-Live',
-      'hi-IN': 'बातचीत, जोड़ने वाला वाक्य और आवाज़ का इंजन GPT-Live',
-      'id-ID': 'Percakapan, kalimat penyambung, dan mesin suara GPT-Live',
-      'it-IT': 'La conversazione, la frase di raccordo e il motore vocale GPT-Live',
-      'ko-KR': '대화, 연결 멘트, 음성 엔진 GPT-Live',
-      'pt-BR': 'A conversa, a frase de transição e o motor de voz GPT-Live',
-      'es-419': 'La conversación, las frases de enlace y el motor de voz GPT-Live',
-      'es-ES': 'La conversación, las frases de enlace y el motor de voz GPT-Live'
+      'ja-JP': '会話とつなぎの一言',
+      'en-US': 'The conversation and the bridge phrase',
+      'fr-FR': 'La conversation et la phrase de transition',
+      'de-DE': 'Das Gespräch und der Überbrückungssatz',
+      'hi-IN': 'बातचीत और जोड़ने वाला वाक्य',
+      'id-ID': 'Percakapan dan kalimat penyambung',
+      'it-IT': 'La conversazione e la frase di raccordo',
+      'ko-KR': '대화와 연결 멘트',
+      'pt-BR': 'A conversa e a frase de transição',
+      'es-419': 'La conversación y las frases de enlace',
+      'es-ES': 'La conversación y las frases de enlace'
     },
     google: {
       'ja-JP': '会話とつなぎの一言、声のエンジンの Gemini Live',

@@ -321,7 +321,7 @@ export type TurnEvent =
       turnId: number
       /**
        * `user` is input from the renderer, `interject` is an interruption such as a job report, and
-       * `live` is a turn the live engine started, through delegation or function calling.
+       * `live` is an exchange of the live engine.
        */
       origin: 'user' | 'interject' | 'live'
       /** Matches the start request the renderer issued. It is set on user turns only. */
@@ -368,7 +368,7 @@ export interface TurnStartOptions {
 /** The connection state of a live session. `idle` means the engine is running but the session is closed because the conversation stopped. */
 export type LiveConnection = 'off' | 'idle' | 'connecting' | 'open' | 'error'
 
-/** Live usage. GPT-Live is priced from the seconds a session is open and Gemini from the seconds of audio in and out. */
+/** Live usage. Gemini is priced from the seconds of audio in and out. */
 export interface LiveUsage {
   /** The total seconds sessions have been open since the microphone was switched on. */
   sessionSeconds: number
@@ -378,10 +378,8 @@ export interface LiveUsage {
 
 /**
  * What the live engine in main reports to the renderer. The audio itself arrives separately through
- * onLiveAudio. A transcript arrives while it is still forming, and `final` settles one utterance. Under
- * Gemini Live that is when it goes into the conversation log, and `turnId` is the turn it belongs to.
- * GPT-Live sends only the user's transcript, whose `turnId` names its line on screen; brain records the
- * utterance with the turn it is handed to.
+ * onLiveAudio. A transcript arrives while it is still forming, and `final` settles one utterance, which
+ * is when it goes into the conversation log. `turnId` is the turn it belongs to.
  */
 export type LiveEvent =
   | { type: 'connection'; state: LiveConnection; detail?: string }
@@ -935,7 +933,7 @@ export interface RendererApi {
   livePush(samples: Float32Array): Promise<void>
   /** The renderer's VAD caught a human voice or lost it, which is the signal to open the session. */
   liveActivity(active: boolean): Promise<void>
-  /** Typed input. On GPT-Live the brain answers and the voice side reads it out; on Gemini it is sent as a text turn. */
+  /** Typed input, which Gemini receives as a text turn. */
   liveText(text: string): Promise<void>
   /** The live model's audio, 24 kHz mono Float32, to be played in the order it arrives. */
   onLiveAudio(callback: (samples: Float32Array) => void): () => void

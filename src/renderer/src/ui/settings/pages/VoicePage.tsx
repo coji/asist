@@ -48,8 +48,7 @@ function LiveVoiceRow({ engine, ctx }: { engine: LiveEngine; ctx: SettingsContex
   const toast = useToastStore((s) => s.push)
   const t = useT()
   const info = LIVE_ENGINE_INFO[engine]
-  const field = engine === 'gpt-live' ? 'gptLive' : 'geminiLive'
-  const current = settings[field]
+  const current = settings.geminiLive
   const listedVoice = info.voices.some((voice) => voice.id === current.voice)
   const sample = liveVoiceSample(engine, current.voice)
   return (
@@ -58,7 +57,7 @@ function LiveVoiceRow({ engine, ctx }: { engine: LiveEngine; ctx: SettingsContex
         className="st-select"
         aria-label={t('settingsConversation.live.voiceLabel', { engine: info.label })}
         value={current.voice}
-        onChange={(e) => set({ [field]: { ...current, voice: e.target.value } })}
+        onChange={(e) => set({ geminiLive: { ...current, voice: e.target.value } })}
       >
         {info.voices.map((voice) => (
           <option key={voice.id} value={voice.id}>

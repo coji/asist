@@ -20,17 +20,15 @@ describe('TranscriptTracker', () => {
     expect(tracker.pending('user')).toBe('')
   })
 
-  it('finalizes immediately on flush and hands the text over without finalizing on take', () => {
+  it('finalizes immediately on flush, without finalizing the same text again after quietMs', () => {
     const onFinal = vi.fn()
     const tracker = new TranscriptTracker({ quietMs: 1000, onDelta: vi.fn(), onFinal })
     tracker.push('assistant', 'はい。')
     expect(tracker.flush('assistant')).toBe('はい。')
     expect(onFinal).toHaveBeenCalledWith('assistant', 'はい。')
-    tracker.push('user', ' 会議の件 ')
-    expect(tracker.take('user')).toBe('会議の件')
     vi.advanceTimersByTime(2000)
     expect(onFinal).toHaveBeenCalledTimes(1)
-    expect(tracker.flush('user')).toBe('')
+    expect(tracker.flush('assistant')).toBe('')
   })
 
   it('tracks user and assistant separately and stops the pending finalization on dispose', () => {

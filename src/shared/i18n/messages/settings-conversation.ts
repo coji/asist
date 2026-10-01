@@ -147,19 +147,6 @@ export const settingsConversation = defineMessages({
       'es-419': 'Conversación',
       'es-ES': 'Conversación'
     },
-    conversationForGptLive: {
-      'ja-JP': '会話(GPT-Live の判断を任せる)',
-      'en-US': 'Conversation (decides for GPT-Live)',
-      'fr-FR': 'Conversation (décide pour GPT-Live)',
-      'de-DE': 'Gespräch (entscheidet für GPT-Live)',
-      'hi-IN': 'बातचीत (GPT-Live के फ़ैसले करता है)',
-      'id-ID': 'Percakapan (memutuskan untuk GPT-Live)',
-      'it-IT': 'Conversazione (decide per GPT-Live)',
-      'ko-KR': '대화(GPT-Live의 판단을 맡김)',
-      'pt-BR': 'Conversa (decide pelo GPT-Live)',
-      'es-419': 'Conversación (decide por GPT-Live)',
-      'es-ES': 'Conversación (decide por GPT-Live)'
-    },
     bridge: {
       'ja-JP': 'つなぎの一言',
       'en-US': 'Bridge phrase',

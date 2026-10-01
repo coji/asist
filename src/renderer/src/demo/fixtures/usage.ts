@@ -1,11 +1,11 @@
 import { addUsage, localDate, type UsageDay, type UsageItem } from '@shared/api-usage'
 import { llmCost } from '@shared/api-pricing'
-import { gptLiveCost } from '@shared/voice-engine'
+import { geminiLiveCost } from '@shared/voice-engine'
 
 /**
  * Ninety days of API use ending today, for the costs page. The numbers come from a fixed seed so the
  * screen looks the same on every run: weekdays are busier than weekends, the conversation moved from
- * Claude Sonnet 5 to GPT-5.6 Terra five weeks ago, GPT-Live was tried for about two weeks, and Claude
+ * Claude Sonnet 5 to GPT-5.6 Terra five weeks ago, Gemini Live was tried for about two weeks, and Claude
  * Code jobs run a few times a week.
  */
 
@@ -67,7 +67,7 @@ export function demoUsageDays(today = new Date()): UsageDay[] {
     }
     if (back >= 50 && back < 64 && !weekend) {
       const seconds = Math.round(600 + random() * 1_800)
-      add({ kind: 'live', engine: 'gpt-live', model: 'gpt-live-1', seconds, costUsd: gptLiveCost(seconds) })
+      add({ kind: 'live', engine: 'gemini-live', model: 'gemini-3.8-live', seconds, costUsd: geminiLiveCost(seconds, seconds * 0.4) })
     }
     if (!weekend && random() < 0.45) {
       const jobs = 1 + Math.floor(random() * 3)

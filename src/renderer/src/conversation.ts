@@ -49,8 +49,7 @@ const voiceEngine = (): VoiceEngine => useSettingsStore.getState().settings?.voi
 const liveMode = (): boolean => isLiveEngine(voiceEngine())
 /**
  * The feed lines that carry a live transcript, one per turnId. The user transcript is held separately
- * because it can arrive after the reply. Only Gemini Live sends a transcript of the reply; GPT-Live sends
- * the user's alone, and its replies arrive as brain's text.
+ * because it can arrive after the reply.
  */
 let liveAiLineId: number | null = null
 let liveAiTurnId = -1
@@ -662,8 +661,8 @@ export function handleTurnEvent(event: TurnEvent): void {
 
   if (event.type === 'started') {
     if (event.origin === 'live') {
-      // A turn the live engine started, through GPT-Live delegation or Gemini function calling.
-      // There is no renderer request to match it against, so it is always accepted.
+      // An exchange of the live engine. There is no renderer request to match it against, so it is
+      // always accepted.
       activateTurn(event.turnId, null, true)
       return
     }
@@ -695,8 +694,6 @@ export function handleTurnEvent(event: TurnEvent): void {
 
   switch (event.type) {
     case 'delta': {
-      // Under GPT-Live the voice rewords brain's text as it reads it, and the feed shows brain's text,
-      // which is also what the conversation log keeps.
       if (aiLineId === null) {
         aiLineId = feed.append({ role: 'ai', text: '', turnId: event.turnId, streaming: true })
       }

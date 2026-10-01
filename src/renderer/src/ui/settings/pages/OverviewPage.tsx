@@ -35,7 +35,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
   const { localSpeech, os } = platformCapabilities()
   const features = conversationFeatures(settings.conversationLocale)
   const live = isLiveEngine(settings.voiceEngine) ? settings.voiceEngine : null
-  const liveSettings = live ? settings[live === 'gpt-live' ? 'gptLive' : 'geminiLive'] : null
+  const liveSettings = live ? settings.geminiLive : null
   const conversation = settings.conversationModel
   const listening = cascadeListeningReady(settings, status, localSpeech)
   const speech = speechReadiness(settings.ttsEngine, status, localSpeech)

@@ -43,7 +43,7 @@ describe('the HUD', () => {
 
   it('words the note of the latest turn again when the interface language changes, an error in it included', async () => {
     const en = createTranslator('en-US')
-    useSettingsStore.setState({ settings: { uiLocale: 'ja-JP', voiceEngine: 'gpt-live' } as unknown as AppSettings })
+    useSettingsStore.setState({ settings: { uiLocale: 'ja-JP', voiceEngine: 'gemini-live' } as unknown as AppSettings })
     await act(async () => root.render(<Hud />))
     const router = container.querySelector('.hud-value.is-router')!
     const detail = errorText('voice.live.connectFailed', { detail: 'quota exceeded' })
@@ -52,7 +52,7 @@ describe('the HUD', () => {
       t('hud.router.liveDetail', { state: t('hud.connection.error'), detail: t('voice.live.connectFailed', { detail: 'quota exceeded' }) })
     )
 
-    await act(async () => useSettingsStore.setState({ settings: { uiLocale: 'en-US', voiceEngine: 'gpt-live' } as unknown as AppSettings }))
+    await act(async () => useSettingsStore.setState({ settings: { uiLocale: 'en-US', voiceEngine: 'gemini-live' } as unknown as AppSettings }))
     expect(router.textContent).toBe(
       en('hud.router.liveDetail', { state: en('hud.connection.error'), detail: en('voice.live.connectFailed', { detail: 'quota exceeded' }) })
     )

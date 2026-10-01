@@ -60,7 +60,7 @@ ASIST calls the conversation model and the voice engine with the API keys you re
 
 Costs tend to grow when:
 
-- you choose GPT-Live or Gemini Live as the voice engine and talk for a long time. You pay for the time the session is open.
+- you choose Gemini Live as the voice engine and talk for a long time. You pay for the minutes of audio sent while the session is open and the minutes of the replies.
 - you give an agent long jobs, or many jobs.
 - the conversation model searches the web many times.
 

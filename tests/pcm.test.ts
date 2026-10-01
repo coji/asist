@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { floatToPcm16, pcm16FromBytes, pcm16ToBytes, pcm16ToFloat, StreamResampler } from '../src/shared/pcm'
-import { decodeOutput, InputEncoder } from '../src/main/services/live/audio'
+import { decodeOutput, encodeInput } from '../src/main/services/live/audio'
 
 describe('pcm16', () => {
   it('round-trips the values between Float32 and 16 bit and clamps what lies outside the range', () => {
@@ -44,13 +44,12 @@ describe('StreamResampler', () => {
 })
 
 describe('live audio encode/decode', () => {
-  it('encodes 16 kHz Float32 as base64 PCM16 at the input rate, and decodes the output base64 back to Float32', () => {
-    const encoder = new InputEncoder(16000)
-    const base64 = encoder.encode(new Float32Array([0.5, -0.5]))
+  it('encodes 16 kHz Float32 as base64 PCM16, and decodes the output base64 back to Float32', () => {
+    const base64 = encodeInput(new Float32Array([0.5, -0.5]))
     expect(Buffer.from(base64, 'base64').length).toBe(4)
     const decoded = decodeOutput(base64)
     expect(decoded[0]).toBeCloseTo(0.5, 3)
     expect(decoded[1]).toBeCloseTo(-0.5, 3)
-    expect(new InputEncoder(24000).encode(new Float32Array(0))).toBe('')
+    expect(encodeInput(new Float32Array(0))).toBe('')
   })
 })

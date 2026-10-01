@@ -31,14 +31,8 @@ export const turnScheduler = new LatestTurnScheduler(() => {
   return history.highestTurnId + 1
 })
 
-let speechRoute: SpeechRoute = ttsRoute
-/** Where runTurn and interject hand their sentences. A live engine registers its route on start and restores the TTS route on stop. */
-export const currentSpeechRoute = (): SpeechRoute =>
-  // The text-to-speech setting only applies while no live engine has registered a route.
-  speechRoute === ttsRoute && getSettings().ttsEngine === 'none' ? silentRoute : speechRoute
-export function setSpeechRoute(route: SpeechRoute | null): void {
-  speechRoute = route ?? ttsRoute
-}
+/** Where runTurn and interject hand their sentences, by the text-to-speech setting. */
+export const currentSpeechRoute = (): SpeechRoute => (getSettings().ttsEngine === 'none' ? silentRoute : ttsRoute)
 
 /**
  * An engine where the model itself decides what to say, such as Gemini Live. While one is registered,

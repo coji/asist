@@ -151,7 +151,7 @@ export const CREDITS = [
   {
     id: 'openai',
     group: 'api',
-    name: 'GPT-5.6 Luna, GPT-5.6 Terra, GPT-5.6 Sol, gpt-live-1',
+    name: 'GPT-5.6 Luna, GPT-5.6 Terra, GPT-5.6 Sol',
     provider: 'OpenAI',
     license: null,
     url: 'https://openai.com/policies/'

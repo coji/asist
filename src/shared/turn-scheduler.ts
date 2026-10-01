@@ -91,10 +91,9 @@ export class LatestTurnScheduler {
   }
 
   /**
-   * Takes a turnId without running a turn, for what a live engine has outside brain's turns: Gemini
-   * Live's exchanges, which come from the model itself but still go into the conversation log and the
-   * events, and the lines GPT-Live shows for the user's utterances. It draws from the same counter as
-   * start, so the ids never collide.
+   * Takes a turnId without running a turn, for Gemini Live's exchanges, which come from the model itself
+   * but still go into the conversation log and the events. It draws from the same counter as start, so
+   * the ids never collide.
    */
   allocateTurnId(): number {
     return this.takeTurnId()

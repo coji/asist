@@ -20,7 +20,7 @@ const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
   { file: /^src\/shared\/voice-samples\.ts$/, text: '声のテストです', reason: 'the sentence the bundled voice samples say' },
   { file: /^src\/main\/ipc\.ts$/, text: '音声のテストです', reason: 'the sentence the speech test says, in the language of the conversation' },
   { file: /^src\/main\/services\/brain\//, reason: 'prompts, tool descriptions and tool results, written for the model' },
-  { file: /^src\/main\/services\/(bridge-plan|live\/index|live\/gpt-live|live\/gemini-live)\.ts$/, reason: 'prompts and bracketed notes sent to a model' },
+  { file: /^src\/main\/services\/(bridge-plan|live\/gemini-live)\.ts$/, reason: 'prompts and bracketed notes sent to a model' },
   { file: /^src\/main\/services\/llm\/adapter\.ts$/, text: '^エラー:', reason: 'the prefix of a failed tool result, read by the model' },
   { file: /^src\/shared\/(tool-registry|tool-round|turn-recovery|persona|panel-catalog|map-embed|weather|calendar|memory-injection|conversation-markers|job-workspace)\.ts$/, reason: 'prompts, tool schemas and conversation markers, written for the model' },
   { file: /^src\/main\/services\/weather\/(locations|open-meteo)\.ts$/, reason: 'instructions returned to the model when a place is unknown or ambiguous' },
@@ -43,7 +43,7 @@ const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
 const SAME_IN_EVERY_LANGUAGE = new Set([
   'ASIST', 'AGENT JOBS', 'CALENDAR', 'MAIL', 'MEMORY', 'NOTES', 'SETTINGS', 'TASKS', '· FOCUS', '▲ YOU', 'METRIC',
   'LLM', 'ASR', 'TTS', 'AGENT', 'Agent', 'CPU', 'GMT', 'Cc', 'Enter', 'exit', 'push', 'Stars', 'Forks', 'Issues', 'ms', 'GB',
-  'Codex', 'Claude Code',
+  'Codex', 'Claude Code', 'GEMINI',
   '/Users/you/Desktop'
 ])
 const READ_ALOUD_ATTRIBUTES = new Set(['aria-label', 'title', 'placeholder', 'alt', 'label'])

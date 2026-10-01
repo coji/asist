@@ -4,7 +4,6 @@ import { FIXED, embeddingTextOf } from '@shared/memory-page'
 import { baseSystem, buildLiveSystemInstruction, buildSystemLayers, stampUserMessage } from '../src/main/services/brain/prompt'
 
 const BASE_SYSTEM = baseSystem('ja-JP', 'self')
-const DELEGATED_SYSTEM = baseSystem('ja-JP', 'delegated')
 
 describe('buildSystemLayers', () => {
   it('builds the base layer alone for the smallest input', () => {
@@ -67,19 +66,11 @@ describe('stampUserMessage', () => {
   })
 })
 
-describe('the base prompt with and without a separate voice', () => {
-  it('gives delegated the section about splitting the work, and neither the bridge section nor the aizuchi constraint', () => {
-    expect(DELEGATED_SYSTEM).toContain('# 声の担当との分担')
-    expect(DELEGATED_SYSTEM).not.toContain('# つなぎ文')
-    expect(DELEGATED_SYSTEM).not.toContain('直前に相槌')
-    expect(BASE_SYSTEM).toContain('# つなぎ文')
-    expect(BASE_SYSTEM).toContain('直前に相槌')
-  })
-
-  it('keeps the speaking style of self for live and drops the bridge section alone', () => {
+describe('the base prompt for the brain speaking for itself and for Live', () => {
+  it('keeps the speaking style and the limits of self for live and drops the bridge section alone', () => {
     const live = baseSystem('ja-JP', 'live')
+    expect(BASE_SYSTEM).toContain('# つなぎ文')
     expect(live).not.toContain('# つなぎ文')
-    expect(live).not.toContain('# 声の担当との分担')
     expect(live).toContain('応答のアーク')
     expect(live).toContain('直前に相槌')
   })
@@ -121,7 +112,7 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
       ['en-US', 'English'],
       ['ko-KR', 'Korean']
     ] as const) {
-      for (const layer of ['self', 'delegated', 'live'] as const) {
+      for (const layer of ['self', 'live'] as const) {
         const prompt = baseSystem(locale, layer)
         expect(prompt).toContain(`The user speaks ${language}`)
         expect(prompt).not.toMatch(JAPANESE)
@@ -140,12 +131,16 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
   })
 
   it('leaves out the backchannel guidance instead of translating it, because no other language plays one', () => {
-    const limits = (prompt: string): string => prompt.slice(prompt.lastIndexOf('\n\n# '))
-    // The only thing the Japanese limits add when the assistant speaks for itself is the line asking it
-    // to carry on from the backchannel that has just played. Without backchannels there is nothing to
-    // carry on from, so the two read the same.
-    expect(limits(baseSystem('ja-JP', 'self'))).not.toBe(limits(baseSystem('ja-JP', 'delegated')))
-    expect(limits(baseSystem('en-US', 'self'))).toBe(limits(baseSystem('en-US', 'delegated')))
+    const limits = (prompt: string): string[] =>
+      prompt
+        .slice(prompt.lastIndexOf('\n\n# '))
+        .split('\n')
+        .filter((line) => line.startsWith('- '))
+    const japanese = limits(baseSystem('ja-JP', 'self'))
+    // The only thing the Japanese limits add is the line asking the assistant to carry on from the
+    // backchannel that has just played. Without backchannels there is nothing to carry on from.
+    expect(japanese.filter((line) => line.includes('直前に相槌'))).toHaveLength(1)
+    expect(limits(baseSystem('en-US', 'self'))).toHaveLength(japanese.length - 1)
     // The bridge sentence is not a backchannel: it says what a slow call is about to do, and it stays.
     expect(baseSystem('en-US', 'self')).toContain('# The bridge sentence')
   })

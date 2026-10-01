@@ -39,13 +39,12 @@ import {
 
 /**
  * Turn execution for the conversation engine. It drives the stream of the configured conversation
- * model and the tool round trips, and hands each finished sentence to the speech route: the classic
- * setup synthesizes it and emits a segment, while GPT-Live passes it to the voice model. On every route
- * the text of the reply is what reaches the screen and the conversation log. Differences
- * between providers are absorbed by the adapters in llm/. The pieces around it are prompt for the
- * system prompt, tools for the definitions and their execution, session for the events, history and
- * conversation log, and speech-route. Interjections live in interject and the reports of finished
- * jobs in job-reporting.
+ * model and the tool round trips, and hands each finished sentence to the speech route, which
+ * synthesizes it and emits a segment, or drops it when text-to-speech is off. On every route the text
+ * of the reply is what reaches the screen and the conversation log. Differences between providers
+ * are absorbed by the adapters in llm/. The pieces around it are prompt for the system prompt, tools
+ * for the definitions and their execution, session for the events, history and conversation log, and
+ * speech-route. Interjections live in interject and the reports of finished jobs in job-reporting.
  */
 
 const MAX_TOOL_ROUNDS = 6
@@ -115,7 +114,7 @@ export interface TurnInput {
   notice?: NoticeKind
 }
 
-/** Leaving `route` out uses the speech route registered with the session, which defaults to TTS. */
+/** Leaving `route` out uses the route the settings choose when the turn starts. */
 export interface TurnRuntime {
   route?: SpeechRoute
 }
@@ -153,7 +152,7 @@ export function beginTurn(
   return handle
 }
 
-type TurnOrigin = 'user' | 'interject' | 'live'
+type TurnOrigin = 'user' | 'interject'
 
 async function runTurn(
   turnId: number,
@@ -169,9 +168,6 @@ async function runTurn(
   // changes while it runs.
   const locale: ConversationLocale = conversationLocale()
   const say = translatorIn(locale)
-  // When the sentences go to a voice model, this is brain's text rather than the voice's rewording of it.
-  // The voice reports no playback position, so a reply the user cuts into while it is being read is
-  // recorded whole: only an abort of the turn itself marks it interrupted.
   const recordAssistant = (
     text: string,
     outcome: { interrupted?: 'before-reply' | 'while-speaking'; failed?: boolean } = {}
@@ -191,9 +187,9 @@ async function runTurn(
   const contextNotes: string[] = []
   // Typed input is not a transcript, so the model should not assume misrecognitions or missing punctuation.
   if (options.typed && !input.notice) contextNotes.push(marker(locale, 'typedInputNote'))
-  // The aizuchi and bridge notes are needed only where the brain's own sentences are spoken; a voice
-  // model already knows what it said. claude-sonnet-5 does not support prefilling the assistant
-  // message, so the request to continue from there is made on the user side.
+  // The aizuchi and bridge notes are needed only where the sentences are spoken. claude-sonnet-5 does
+  // not support prefilling the assistant message, so the request to continue from there is made on the
+  // user side.
   const aizuchiText = route.kind === 'tts' && conversationFeatures(locale).aizuchi ? options.aizuchi?.trim() : undefined
   const bridgeText = route.kind === 'tts' ? options.bridge?.trim() : undefined
   const spoken: string[] = []
@@ -283,8 +279,7 @@ async function runTurn(
       persona: getSettings().persona,
       toolGuide: toolGuide(locale, toolOptions),
       memoryBlock,
-      historySummary: history.summary,
-      voiceLayer: route.kind === 'live' ? 'delegated' : 'self'
+      historySummary: history.summary
     })
     signal.throwIfAborted()
   } catch (err) {
@@ -356,8 +351,8 @@ async function runTurn(
 
   // A filler that keeps the pause alive while a search or a tool takes long. It plays a pre-synthesized
   // aizuchi clip as is, at most once per turn. The clips are Japanese backchannels, so they play only in a
-  // turn whose language has them. With a voice model in front, that side fills the pause.
-  let fillerPlayed = route.kind === 'live' || !conversationFeatures(locale).aizuchi
+  // turn whose language has them.
+  let fillerPlayed = !conversationFeatures(locale).aizuchi
   const playWorkFiller = (sourceSignal: AbortSignal): void => {
     if (fillerPlayed || sourceSignal.aborted) return
     fillerPlayed = true

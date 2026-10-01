@@ -266,11 +266,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     conversation: has('key')
       ? { text: t('settingsConversation.models.notSet'), tone: 'warn' }
       : {
-          text: !live
-            ? modelLabel(settings.conversationModel)
-            : live === 'gpt-live'
-              ? t('settings.summary.conversationLive', { engine: LIVE_ENGINE_INFO[live].label, model: modelLabel(settings.conversationModel) })
-              : t('settings.summary.conversationLiveOnly', { engine: LIVE_ENGINE_INFO[live].label })
+          text: live ? t('settings.summary.conversationLiveOnly', { engine: LIVE_ENGINE_INFO[live].label }) : modelLabel(settings.conversationModel)
         },
     voice: live
       ? { text: t('settings.summary.voiceLive', { engine: LIVE_ENGINE_INFO[live].label }) }

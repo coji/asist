@@ -7,7 +7,7 @@ import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
 
 /**
- * The microphone input for the live engines, GPT-Live and Gemini Live. The 16 kHz frames go to the
+ * The microphone input for the live engine, Gemini Live. The 16 kHz frames go to the
  * main process untouched, because the live model itself decides what it hears and when speech has
  * ended. The renderer only signals the main process when it catches a voice, so that a closed
  * session opens, and reports the level the orb displays.

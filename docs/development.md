@@ -228,7 +228,7 @@ Mac のファイルを置いた Release は、まだ下書きのままです。`
 - **カレンダー。** Google へのログイン、同意の画面で権限の片方を外したときにログインにならないこと、ログアウトで Google のアカウントの「サードパーティ製のアプリとサービス」から ASIST が消えること、表示するカレンダーと保存先の選択、再起動のあとも設定とログインが残ることを確かめます。検証用の予定で追加、変更、削除を試し、キャンセルで何も変わらないこと、Google カレンダーにも反映されることを確かめます。月の表示で日をまたぐ終日の予定が 1 本の帯になること、週の表示で重なる予定が左右に分かれ、現在時刻の線が今日に出ることを確かめます。
 - **メール。** Gmail のアプリパスワードでアカウントを足し、受信箱の取り込み、IDLE での新着、再起動のあとの接続を確かめます。検証用のメールで「未読メールある?」「読んで」「返信して」を試し、返信が下書きのカードになり、「捨てる」で送らないこと、「送信」で相手に届いて送信済みに残ること、アーカイブとゴミ箱が確認画面を通ってサーバーにも反映されることを確かめます。メールの画面で、箱の切り替え、検索、スレッドの表示、作成からの送信と下書きの保存、まとめて既読にする操作を確かめます。
 - **マイクの許可。** 署名付きのアプリを 2 回再起動して、許可が残り、ネイティブのマイクが動くことを確かめます。音声認識、読み上げ、Agent の CLI が無い構成でも、設定の方法や失敗の理由が表示されることを確かめます。
-- **live のエンジン。** GPT-Live と Gemini Live をそれぞれ選び、話し始めでセッションが開くこと、返事が provider の声で鳴ること、天気や予定でカードが出ること、読み上げ中に話しかけると止まること、文字の入力に答えること、会話が止まると設定の秒数で閉じて次の声で開き直すこと、マイクを OFF にするとセッションが閉じることを確かめます。Gemini Live では会話ログに転写が残ること、GPT-Live では会話のモデルの返事が画面に出て、会話ログにも一度だけ残ることも確かめます。
+- **live のエンジン。** Gemini Live を選び、話し始めでセッションが開くこと、返事が provider の声で鳴ること、天気や予定でカードが出ること、読み上げ中に話しかけると止まること、文字の入力に答えること、会話が止まると設定の秒数で閉じて次の声で開き直すこと、マイクを OFF にするとセッションが閉じること、会話ログに転写が残ることを確かめます。
 
 Windows では、インストーラーで入れたアプリで、上の項目を確かめます。Windows には無い、または Windows だけの動きがあるので、次の項目も確かめます。
 
@@ -245,7 +245,7 @@ Windows では、インストーラーで入れたアプリで、上の項目を
 | [src/main/](../src/main/) | 外部のサービス、保存、音声の worker、Agent の実行 |
 | [src/main/services/brain/](../src/main/services/brain/) | 会話のループ、プロンプト、ツール、履歴、話す先の組み立て |
 | [src/main/services/llm/](../src/main/services/llm/) | 会話のモデルの呼び出し。provider ごとの adapter が、provider に依らない会話の型([conversation.ts](../src/shared/conversation.ts))と、それぞれの API の形を変換します。 |
-| [src/main/services/live/](../src/main/services/live/) | GPT-Live と Gemini Live のエンジン |
+| [src/main/services/live/](../src/main/services/live/) | Gemini Live のエンジン |
 | [src/main/services/weather/](../src/main/services/weather/) | 天気。気象庁と Open-Meteo |
 | [src/preload/](../src/preload/) | main と画面の間の API。契約は [src/shared/ipc.ts](../src/shared/ipc.ts) にあります。 |
 | [src/renderer/](../src/renderer/) | React の画面、マイクの入力、音声の再生、カード |
@@ -259,5 +259,5 @@ Windows では、インストーラーで入れたアプリで、上の項目を
 
 | 用途 | モデル |
 |---|---|
-| 同梱する live の声の見本 | OpenAI の `gpt-4o-mini-tts`(TTS に無い声は `gpt-live-1` のセッションから録音)、Google の `gemini-2.5-flash-preview-tts` |
+| 同梱する live の声の見本 | Google の `gemini-2.5-flash-preview-tts` |
 | アイコン、天気の風景と空模様の画像 | 画像生成のモデル。プロンプトは `resources/artwork/` と `src/renderer/src/assets/weather/` にあります。 |

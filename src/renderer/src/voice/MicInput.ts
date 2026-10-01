@@ -4,7 +4,7 @@ import { NativeMicSource } from './NativeMic'
 import { DfnDenoiser } from './DfnDenoiser'
 
 /**
- * The microphone as 16 kHz mono frames, for the voice pipeline and for the live engines alike. The
+ * The microphone as 16 kHz mono frames, for the voice pipeline and for the live engine alike. The
  * native helper, which cancels the echo in the OS, is tried first when the caller asks for it, and
  * getUserMedia takes over when it cannot start. DeepFilterNet works on the helper's 48 kHz audio only;
  * getUserMedia brings Chromium's own noise suppression.

@@ -13,6 +13,7 @@ import { SETTINGS_PAGES } from '@shared/mini-apps'
 import { THEMES } from '@shared/themes'
 import { shortcutLabel } from '@shared/platform'
 import { localDate, type UsageDay } from '@shared/api-usage'
+import { defaultModelsFor } from '@shared/llm-catalog'
 import { SettingsDialog } from '../src/renderer/src/ui/SettingsDialog'
 import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
@@ -43,7 +44,6 @@ const settings = {
   conversationModel: { provider: 'openai', id: 'gpt-5.6-luna' },
   bridgeModel: { provider: 'anthropic', id: 'claude-haiku-4-5' },
   voiceEngine: 'cascade',
-  gptLive: { model: 'gpt-live-1', voice: 'marin' },
   geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' },
   liveIdleSeconds: 90,
   persona: defaultPersona('ja-JP'),
@@ -435,19 +435,19 @@ describe('settings dialog', () => {
   })
 
   it('shows a saved key this build cannot decrypt as such wherever a key appears, and asks for it again', async () => {
-    useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'unreadable', cerebras: 'unreadable' } } })
-    useSettingsStore.setState({ settings: { ...settings, voiceEngine: 'gpt-live' } })
+    useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, google: 'unreadable', cerebras: 'unreadable' } } })
+    useSettingsStore.setState({ settings: { ...settings, ...defaultModelsFor('google'), voiceEngine: 'gemini-live' } })
     const view = await render()
     expect(sub(view, 'apiKeys')?.textContent).toBe(t('settings.summary.apiKeys', { keys: 1, total: 4 }))
-    // GPT-Live and the conversation model both need the OpenAI key, which the conversation page names once.
+    // Gemini Live and the conversation model both need the Google key, which the conversation page names once.
     await act(async () => nav(view, 'conversation').click())
     const lines = [...view.querySelectorAll('.st-prepline')]
     expect(lines.map((line) => [line.querySelector('.st-chip')?.textContent, line.querySelector('.st-prepline-text')?.textContent])).toEqual([
-      [t('settingsIntegrations.apiKeys.unreadable'), t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: 'OpenAI' })]
+      [t('settingsIntegrations.apiKeys.unreadable'), t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: 'Google' })]
     ])
     await act(async () => lines[0].querySelector<HTMLButtonElement>('.st-btn')!.click())
     expect(title(view)).toBe(t('settings.pages.apiKeys'))
-    const row = view.querySelector('.st-key[data-provider="openai"]')!
+    const row = view.querySelector('.st-key[data-provider="google"]')!
     expect(row.querySelector('.st-chip')?.textContent).toBe(t('settingsIntegrations.apiKeys.unreadable'))
     expect(row.querySelector('.st-btn')?.textContent).toBe(t('settingsIntegrations.apiKeys.register'))
   })
@@ -460,9 +460,9 @@ describe('settings dialog', () => {
   ] as const)(
     'lists on the overview what the cascade engine lacks once it is chosen after a live engine, with the speech engine %s',
     async (ttsEngine, lacking) => {
-      const liveSettings = { ...settings, voiceEngine: 'gpt-live', ttsEngine } as AppSettings
+      const liveSettings = { ...settings, voiceEngine: 'gemini-live', ttsEngine } as AppSettings
       useSettingsStore.setState({ settings: liveSettings })
-      useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'verified' }, agent: 'found', tts: false } })
+      useStatusStore.setState({ status: { ...status, llmKeys: { ...status.llmKeys, openai: 'verified', google: 'verified' }, agent: 'found', tts: false } })
       api.saveSettings.mockImplementationOnce(async (patch: Partial<AppSettings>) => ({ ...liveSettings, ...patch }))
       const view = await render()
       expect(pendingLabels(view)).toEqual([])
@@ -1143,7 +1143,7 @@ describe('settings dialog on a machine without the local models, the native micr
   })
 
   it('folds away nothing under a live engine, whose only details belong to the native microphone this machine lacks', async () => {
-    useSettingsStore.setState({ settings: { ...settings, voiceEngine: 'gpt-live' } })
+    useSettingsStore.setState({ settings: { ...settings, voiceEngine: 'gemini-live' } })
     const view = await render()
     await act(async () => nav(view, 'voice').click())
     expect(view.querySelector('.st-advanced')).toBeNull()
