@@ -24,16 +24,16 @@ Mac では、メモリが 16GB 以上なら音声認識に 1.7B を勧め、初�
 
 ## Windows
 
-Windows の音声認識と読み上げ(Irodori-TTS と Qwen3-TTS)は、単体の GPU のメモリにモデルを載せます。2026-09-29 に GeForce RTX 2080(8GB)で測った値は、次のとおりです。
+Windows の音声認識と読み上げ(Irodori-TTS と Qwen3-TTS)は、単体の GPU のメモリにモデルを載せます。GeForce RTX 2080(8GB)で測った値は、次のとおりです。音声認識は 2026-09-29 に、読み上げは 2026-10-01 に speech.cpp v0.3.0 で測りました。Qwen3-TTS の 1.7B だけは、2026-09-29 に移す前の実装で測った値です。
 
 | モデル | GPU のメモリ |
 |---|---|
 | Qwen3-ASR 1.7B(Q8_0) | 3.2GB |
 | Qwen3-ASR 0.6B(Q8_0) | 1.9GB |
-| Irodori-TTS v4.1-Small-MF(F16) | 2.1GB(speech.cpp の測定、2026-10-01) |
-| Qwen3-TTS 0.6B(Q8_0) | 1.6GB |
+| Irodori-TTS v4.1-Small-MF(F16) | 2.1GB |
+| Qwen3-TTS 0.6B(Q8_0) | 1.4GB |
 | Qwen3-TTS 1.7B(Q8_0) | 2.7GB |
 
-Windows の画面の表示も同じ GPU のメモリを使い、測ったときは 1.9GB でした。画面の分と合わせると、音声認識の 1.7B と Qwen3-TTS の 0.6B で 6.7GB、Qwen3-TTS を 1.7B にすると 7.7GB でした。GPU のメモリが 6GB 以上なら音声認識に 1.7B を勧め、8GB 以上なら初回セットアップで Irodori-TTS と Qwen3-TTS も勧めるのはこのためです。Irodori-TTS は Qwen3-TTS の 0.6B より 0.5GB 多く使うので、音声認識の 1.7B と画面の分と合わせると約 7.2GB になる見込みです。この組み合わせは、まだ Windows で測っていません。6GB より少なければ、音声認識に 0.6B を勧めます。Qwen3-TTS の 1.7B は、GPU のメモリが 10GB 以上のときに選べます。
+Windows の画面の表示も同じ GPU のメモリを使い、測ったときは 1.9GB でした。画面の分と合わせると、音声認識の 1.7B と Irodori-TTS で 7.1GB、Qwen3-TTS の 0.6B で 6.4GB、Qwen3-TTS を 1.7B にすると 7.7GB でした(Qwen3-TTS の 1.7B だけは 2026-09-29 の測定)。GPU のメモリが 6GB 以上なら音声認識に 1.7B を勧め、8GB 以上なら初回セットアップで Irodori-TTS と Qwen3-TTS も勧めるのはこのためです。6GB より少なければ、音声認識に 0.6B を勧めます。Qwen3-TTS の 1.7B は、GPU のメモリが 10GB 以上のときに選べます。
 
 記憶の意味検索、相槌の種類の判定、話し終わりの判定は、Windows でも CPU とメインのメモリで動きます。Windows でのメモリの量は、まだ測っていません。

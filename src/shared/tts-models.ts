@@ -32,9 +32,9 @@ export const QWEN_TTS_CODEC: PinnedFile = {
 /**
  * The sizes, in Q8_0 on Japanese sentences. On an M5 with Metal and speech.cpp v0.3.0 (2026-10-01), 0.6B
  * speaks its first audio 0.04 s after the request at 0.37 of real time in 1.8 GB, and 1.7B 0.06 s and 0.47
- * in 2.8 GB. On an RTX 2080 with Vulkan and qwen3-tts-ggml v0.1.1 (2026-09-29), 0.6B took 0.07 s, 0.31 and
- * 1.6 GB of VRAM, and 1.7B 0.08 s, 0.36 and 2.7 GB. 1.7B makes almost no silence before the voice, which
- * 0.6B makes for up to a second.
+ * in 2.8 GB. On an RTX 2080 with Vulkan, 0.6B took 0.04 s, 0.30 and 1.4 GB of VRAM with speech.cpp v0.3.0
+ * (2026-10-01), and 1.7B 0.08 s, 0.36 and 2.7 GB with qwen3-tts-ggml v0.1.1 (2026-09-29). 1.7B makes almost
+ * no silence before the voice, which 0.6B makes for up to a second.
  */
 export const QWEN_TTS_MODELS: Readonly<Record<QwenTtsSize, QwenTtsModelSpec>> = {
   '0.6b': {
@@ -96,11 +96,9 @@ export function localTtsSizeGb(model: LocalTtsModel): number {
 
 /**
  * The memory from which a local engine is offered beside the speech recognition, in GB as the capabilities
- * give it: the Mac's own, which every app shares, and the GPU's on Windows, where 1.7B speech recognition and
- * Qwen3-TTS 0.6B held 6.7 GB of an 8 GB RTX 2080 with the desktop's 1.9 GB (2026-09-29), more than a 6 GB GPU
- * has. Irodori-TTS takes 2.1 GB of VRAM there (speech.cpp's measurement, 2026-10-01), half a GB more than
- * Qwen3-TTS 0.6B, which puts it with 1.7B recognition and the desktop at about 7.2 GB; that combination has
- * not been measured.
+ * give it: the Mac's own, which every app shares, and the GPU's on Windows, where 1.7B speech recognition held
+ * 7.1 GB of an 8 GB RTX 2080 with Irodori-TTS and 6.4 GB with Qwen3-TTS 0.6B, the desktop's 1.9 GB included
+ * (speech.cpp v0.3.0, 2026-10-01), more than a 6 GB GPU has.
  */
 const RECOMMENDED_FROM_GB: Readonly<Record<SpeechBackend, number>> = { metal: 16, vulkan: 8 }
 

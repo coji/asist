@@ -24,16 +24,16 @@ On a Mac with 16GB of memory or more, ASIST recommends 1.7B for speech recogniti
 
 ## Windows
 
-On Windows, speech recognition and reading aloud (Irodori-TTS and Qwen3-TTS) load their models into the memory of a discrete GPU. Measured on a GeForce RTX 2080 (8GB) on 2026-09-29:
+On Windows, speech recognition and reading aloud (Irodori-TTS and Qwen3-TTS) load their models into the memory of a discrete GPU. Measured on a GeForce RTX 2080 (8GB): speech recognition on 2026-09-29, and reading aloud on 2026-10-01 with speech.cpp v0.3.0, except for 1.7B Qwen3-TTS, which was measured on 2026-09-29 with the implementation used before.
 
 | Model | GPU memory |
 |---|---|
 | Qwen3-ASR 1.7B (Q8_0) | 3.2GB |
 | Qwen3-ASR 0.6B (Q8_0) | 1.9GB |
-| Irodori-TTS v4.1-Small-MF (F16) | 2.1GB (measured by speech.cpp, 2026-10-01) |
-| Qwen3-TTS 0.6B (Q8_0) | 1.6GB |
+| Irodori-TTS v4.1-Small-MF (F16) | 2.1GB |
+| Qwen3-TTS 0.6B (Q8_0) | 1.4GB |
 | Qwen3-TTS 1.7B (Q8_0) | 2.7GB |
 
-The Windows desktop uses the same GPU memory as well, 1.9GB at the time of the measurement. Together with the desktop, 1.7B speech recognition and 0.6B Qwen3-TTS took 6.7GB, and 7.7GB with 1.7B Qwen3-TTS. This is why ASIST recommends 1.7B for speech recognition with 6GB of GPU memory or more, and the first-time setup also recommends Irodori-TTS and Qwen3-TTS with 8GB or more. Irodori-TTS takes 0.5GB more than Qwen3-TTS 0.6B, so with 1.7B speech recognition and the desktop it should come to about 7.2GB. This combination has not been measured on Windows yet. Below 6GB, it recommends 0.6B for speech recognition. The 1.7B size of Qwen3-TTS can be chosen with 10GB of GPU memory or more.
+The Windows desktop uses the same GPU memory as well, 1.9GB at the time of the measurement. Together with the desktop, 1.7B speech recognition took 7.1GB with Irodori-TTS, 6.4GB with 0.6B Qwen3-TTS, and 7.7GB with 1.7B Qwen3-TTS (the last measured on 2026-09-29). This is why ASIST recommends 1.7B for speech recognition with 6GB of GPU memory or more, and the first-time setup also recommends Irodori-TTS and Qwen3-TTS with 8GB or more. Below 6GB, it recommends 0.6B for speech recognition. The 1.7B size of Qwen3-TTS can be chosen with 10GB of GPU memory or more.
 
 Searching the memory by meaning, choosing the kind of backchannel and detecting the end of a turn run on the CPU and the main memory on Windows as well. Their memory use on Windows has not been measured yet.
