@@ -136,6 +136,7 @@ ASIST_SELFTEST=1 npx electron .
   - 作ったら、`npm run demo` の http://localhost:5174/aizuchi で全部を聞いて決めます。候補から選んで「合格」にすると、そのクリップに合格の印が付きます。「だめ」にした相槌は、左の「だめな N 件を作り直す」で作り直せます。全部が合格になってから、コミットします。
 - **Irodori-TTS の声。** `resources/irodori-voices/<声>.voice.gguf` は、speech-bench が作った参照の音声(`~/speech-bench-data/references/voice-<声>.wav`)を、speech.cpp の tools の `irodori-tts --make-voice` で CPU を使って変換したものです。声のファイルはコーデックの版を名指しするので、Irodori-TTS のコーデックの固定を変えたときは `node scripts/irodori-voices.mjs [参照のフォルダ]` で作り直します。スクリプトは、固定した版の tools を取得し、アプリで準備した Irodori-TTS のファイル(または `ASIST_SPEECH_MODELS` のフォルダ)を読みます。声を足すときは、短い相槌でも言葉を足さないかを確かめてから選びます(理由は ADR 0031)。
 - **live の声の見本。** `npm run gen:live-voices` が、provider の TTS に同じ文を読ませて `src/renderer/src/assets/live-voices/` に置きます。
+- **Irodori-TTS と Qwen3-TTS の声の見本。** `node scripts/gen-tts-voices.mjs` が、まだない見本を作り、`src/renderer/src/assets/tts-voices/<エンジン>/<言語>/<声>.mp3` に置きます。Irodori-TTS は日本語だけ、Qwen3-TTS は会話の言語になる 8 つの言語で、文は `src/shared/voice-samples.ts` にあります。音声認識で文のとおりに聞こえた読みだけを使います。相槌と同じく、同梱する speech-worker と llama-server、アプリで準備したモデルを使います。エンジン、言語、声を引数に渡すと、その分だけを作り直します。
 - **アイコン。** 元の画像と生成プロンプトは `resources/artwork/` にあり、`python3 scripts/gen-icon.py` で作り直せます(Pillow が要ります)。
 - **天気の画像。** 47 都道府県の風景と 5 種類の空模様を、別々の画像として重ねています。生成プロンプトは `src/renderer/src/assets/weather/` の各 `prompts.json` にあり、`python3 scripts/check-weather-alpha.py` で PNG のアルファを検査します。取得と対応表の更新は[天気の仕様](../src/main/services/weather/SPEC.md)にあります。
 - **macOS の許可のダイアログの文。** `scripts/macos/permission-texts.mjs` が、ビルドの前に 11 言語分を書き出します。macOS は、アプリの設定ではなく、システムの言語でこの文を選びます。

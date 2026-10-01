@@ -159,7 +159,10 @@ function wav16k(samples) {
   return Buffer.concat([header, data])
 }
 
-/** Starts llama-server on Qwen3-ASR 1.7B and resolves to a function that transcribes samples at RATE. */
+/**
+ * Starts llama-server on Qwen3-ASR 1.7B and resolves to a function that transcribes samples at RATE, in the
+ * language named by its English name.
+ */
 export async function startRecognizer() {
   const spec = ASR_MODEL_SPECS['qwen3-asr-1.7b']
   const port = await freePort()
@@ -178,14 +181,14 @@ export async function startRecognizer() {
   })()
   await Promise.race([healthy, exited])
   return {
-    async recognize(samples) {
+    async recognize(samples, language = 'Japanese') {
       const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
         body: JSON.stringify({
           messages: [
             { role: 'user', content: [{ type: 'input_audio', input_audio: { data: wav16k(samples).toString('base64'), format: 'wav' } }] },
-            { role: 'assistant', content: 'language Japanese<asr_text>' }
+            { role: 'assistant', content: `language ${language}<asr_text>` }
           ],
           temperature: 0,
           max_tokens: 256

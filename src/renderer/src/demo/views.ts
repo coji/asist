@@ -1,6 +1,7 @@
 import type { CalendarStatus } from '@shared/calendar'
 import type { RendererApi, SetupProgress } from '@shared/ipc'
 import type { SettingsPage } from '@shared/mini-apps'
+import type { LocalTtsEngine } from '@shared/tts-models'
 import { dayKey } from '@shared/calendar-layout'
 import { errorText } from '@shared/i18n/error-text'
 import { displayError } from '@/display-error'
@@ -33,6 +34,16 @@ export interface DemoView {
 
 const view = (): ReturnType<typeof useViewStore.getState> => useViewStore.getState()
 const settingsPage = (page: SettingsPage): DemoView => ({ open: () => view().openApp({ app: 'settings', page }) })
+
+/** The voice page with a local engine whose model is prepared, where its voices are chosen by listening. */
+const localTtsVoices = (engine: LocalTtsEngine): DemoView => ({
+  ...settingsPage('voice'),
+  prepare: (api) => {
+    void api.saveSettings({ ttsEngine: engine })
+    const getStatus = api.getStatus
+    api.getStatus = async () => ({ ...(await getStatus()), tts: true, ttsEngine: engine })
+  }
+})
 
 /**
  * The calendar and mail page without a Google sign-in, or holding a sign-in another build saved. Signing
@@ -138,6 +149,8 @@ export const DEMO_VIEWS: Record<ScreenName, DemoView> = {
 
   'settings/conversation': settingsPage('conversation'),
   'settings/voice': settingsPage('voice'),
+  'settings/voice/irodori': localTtsVoices('irodori'),
+  'settings/voice/qwen3tts': localTtsVoices('qwen3tts'),
   'settings/persona': settingsPage('persona'),
   'settings/memory': settingsPage('memory'),
   'settings/agent': settingsPage('agent'),

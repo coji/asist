@@ -22,6 +22,8 @@ export const SCREENS = {
   'calendar/event': { label: 'カレンダー(会話から週表示で予定を開く)', group: '画面' },
   'settings/conversation': { label: '会話', group: '設定のページ' },
   'settings/voice': { label: '声', group: '設定のページ' },
+  'settings/voice/irodori': { label: '声(Irodori-TTS の声を選ぶ)', group: '設定のページ' },
+  'settings/voice/qwen3tts': { label: '声(Qwen3-TTS の声を選ぶ)', group: '設定のページ' },
   'settings/persona': { label: 'キャラクター', group: '設定のページ' },
   'settings/memory': { label: '記憶', group: '設定のページ' },
   'settings/agent': { label: 'Agent', group: '設定のページ' },

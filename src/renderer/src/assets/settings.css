@@ -306,6 +306,73 @@
   color: var(--ui-text-muted);
 }
 
+.st-voices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 2px;
+}
+.st-voice {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-box-radius);
+  background: var(--ui-box);
+  transition: border-color 0.2s, outline-color 0.2s;
+}
+.st-voice:hover {
+  border-color: var(--ui-line-active);
+}
+.st-voice[data-checked='true'] {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 1px;
+}
+.st-voice-choose {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.st-voice-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-text-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-voice-detail {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ui-text-muted);
+}
+.st-voice-play {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  margin-right: 8px;
+  border: 1px solid var(--color-holo-line);
+  border-radius: 50%;
+  color: var(--color-holo-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.st-voice-play:hover {
+  border-color: var(--ui-line-active);
+  color: var(--color-holo-text);
+}
+.st-voice-play:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 /* The text keeps a readable width and a control too wide to sit beside it goes on to the next line. With the
    control fixed instead, a select whose options are long in some language left the description a column of
    about 150px (German, the voice engine, 2026-09-22). */

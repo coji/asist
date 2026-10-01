@@ -20,7 +20,7 @@ import { TTS_MODELS, startRecognizer, startSynthesizer } from './speech.mjs'
 const TARGET_RMS = 0.07
 const PEAK_CEILING = 0.95
 
-function level(samples, volume) {
+export function level(samples, volume) {
   const rms = frameRms(samples)
   let sum = 0
   let count = 0

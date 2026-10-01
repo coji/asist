@@ -245,43 +245,17 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Voz'
     },
     voiceHint: {
-      'ja-JP': '日本語の話者の声は Ono Anna です。ほかの声で読むと、日本語に少し訛りが出ます。',
-      'en-US': 'Ono Anna is the native Japanese voice. The other voices read Japanese with a slight accent.',
-      'fr-FR': 'Ono Anna est la voix japonaise native. Les autres voix lisent le japonais avec un léger accent.',
-      'de-DE': 'Ono Anna ist die japanische Stimme. Die anderen Stimmen lesen Japanisch mit einem leichten Akzent.',
-      'hi-IN': 'जापानी की अपनी आवाज़ Ono Anna है। बाकी आवाज़ें जापानी को हल्के लहजे के साथ पढ़ती हैं।',
-      'id-ID': 'Ono Anna adalah suara asli bahasa Jepang. Suara lain membaca bahasa Jepang dengan sedikit aksen.',
-      'it-IT': 'Ono Anna è la voce giapponese nativa. Le altre voci leggono il giapponese con un lieve accento.',
-      'ko-KR': '일본어 화자의 목소리는 Ono Anna입니다. 다른 목소리로 읽으면 일본어에 억양이 조금 섞입니다.',
-      'pt-BR': 'Ono Anna é a voz nativa em japonês. As outras vozes leem japonês com um leve sotaque.',
-      'es-419': 'Ono Anna es la voz nativa en japonés. Las demás voces leen el japonés con un ligero acento.',
-      'es-ES': 'Ono Anna es la voz nativa en japonés. Las demás voces leen el japonés con un ligero acento.'
-    },
-    femaleVoice: {
-      'ja-JP': '{name}(女性)',
-      'en-US': '{name} (female)',
-      'fr-FR': '{name} (femme)',
-      'de-DE': '{name} (weiblich)',
-      'hi-IN': '{name} (महिला)',
-      'id-ID': '{name} (perempuan)',
-      'it-IT': '{name} (femminile)',
-      'ko-KR': '{name}(여성)',
-      'pt-BR': '{name} (feminina)',
-      'es-419': '{name} (femenina)',
-      'es-ES': '{name} (femenina)'
-    },
-    maleVoice: {
-      'ja-JP': '{name}(男性)',
-      'en-US': '{name} (male)',
-      'fr-FR': '{name} (homme)',
-      'de-DE': '{name} (männlich)',
-      'hi-IN': '{name} (पुरुष)',
-      'id-ID': '{name} (laki-laki)',
-      'it-IT': '{name} (maschile)',
-      'ko-KR': '{name}(남성)',
-      'pt-BR': '{name} (masculina)',
-      'es-419': '{name} (masculina)',
-      'es-ES': '{name} (masculina)'
+      'ja-JP': '話者は、母語でない言葉を少し訛って読みます。▶ の見本は、会話の言語で読んだものです。',
+      'en-US': 'Each speaker reads languages other than their own with a slight accent. The ▶ sample is read in the conversation language.',
+      'fr-FR': "Chaque voix lit avec un léger accent les langues autres que la sienne. L'extrait ▶ est lu dans la langue de conversation.",
+      'de-DE': 'Jede Stimme liest andere Sprachen als ihre eigene mit leichtem Akzent. Die Probe hinter ▶ ist in der Gesprächssprache gesprochen.',
+      'hi-IN': 'हर आवाज़ अपनी भाषा के अलावा दूसरी भाषाएँ हल्के लहजे के साथ पढ़ती है। ▶ का नमूना बातचीत की भाषा में पढ़ा गया है।',
+      'id-ID': 'Setiap suara membaca bahasa selain bahasa ibunya dengan sedikit aksen. Contoh ▶ dibacakan dalam bahasa percakapan.',
+      'it-IT': "Ogni voce legge con un lieve accento le lingue diverse dalla propria. L'esempio ▶ è letto nella lingua della conversazione.",
+      'ko-KR': '각 목소리는 모국어가 아닌 언어를 약간의 억양을 섞어 읽습니다. ▶ 견본은 대화 언어로 읽은 것입니다.',
+      'pt-BR': 'Cada voz lê com um leve sotaque os idiomas que não são o seu. A amostra do ▶ é lida no idioma da conversa.',
+      'es-419': 'Cada voz lee con un ligero acento los idiomas que no son el suyo. La muestra de ▶ se lee en el idioma de la conversación.',
+      'es-ES': 'Cada voz lee con un ligero acento los idiomas que no son el suyo. La muestra de ▶ se lee en el idioma de la conversación.'
     },
     model: {
       'ja-JP': 'モデル',
@@ -377,6 +351,45 @@ export const settingsVoice = defineMessages({
         'es-419': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de Windows.',
         'es-ES': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de Windows.'
       }
+    },
+    femaleSpeaker: {
+      'ja-JP': '女性・{language}の話者',
+      'en-US': 'Female, {language} speaker',
+      'fr-FR': 'Femme, langue maternelle : {language}',
+      'de-DE': 'Frau, Muttersprache: {language}',
+      'hi-IN': 'महिला, मातृभाषा: {language}',
+      'id-ID': 'Perempuan, bahasa ibu: {language}',
+      'it-IT': 'Donna, madrelingua: {language}',
+      'ko-KR': '여성 · {language} 화자',
+      'pt-BR': 'Mulher, língua materna: {language}',
+      'es-419': 'Mujer, lengua materna: {language}',
+      'es-ES': 'Mujer, lengua materna: {language}'
+    },
+    maleSpeaker: {
+      'ja-JP': '男性・{language}の話者',
+      'en-US': 'Male, {language} speaker',
+      'fr-FR': 'Homme, langue maternelle : {language}',
+      'de-DE': 'Mann, Muttersprache: {language}',
+      'hi-IN': 'पुरुष, मातृभाषा: {language}',
+      'id-ID': 'Laki-laki, bahasa ibu: {language}',
+      'it-IT': 'Uomo, madrelingua: {language}',
+      'ko-KR': '남성 · {language} 화자',
+      'pt-BR': 'Homem, língua materna: {language}',
+      'es-419': 'Hombre, lengua materna: {language}',
+      'es-ES': 'Hombre, lengua materna: {language}'
+    },
+    playVoiceSample: {
+      'ja-JP': '{name} の見本を鳴らす',
+      'en-US': 'Play the sample of {name}',
+      'fr-FR': "Écouter l'extrait de {name}",
+      'de-DE': 'Probe von „{name}“ anhören',
+      'hi-IN': '{name} का नमूना सुनें',
+      'id-ID': 'Putar contoh {name}',
+      'it-IT': "Ascolta l'esempio di {name}",
+      'ko-KR': '{name} 견본 듣기',
+      'pt-BR': 'Reproduzir a amostra de {name}',
+      'es-419': 'Reproducir la muestra de {name}',
+      'es-ES': 'Escuchar la muestra de {name}'
     }
   },
   recognition: {

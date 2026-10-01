@@ -19,6 +19,8 @@ import { useViewStore } from '../src/renderer/src/state/view'
 import { asrModelSpec, offeredAsrModels } from '@shared/asr-models'
 import { CREDITS } from '@shared/credits'
 import { IRODORI_TTS_VOICES } from '@shared/tts-models'
+import { VOICE_SAMPLE_TEXT } from '@shared/voice-samples'
+import { speechPlayer } from '../src/renderer/src/voice/SpeechPlayer'
 import type { PlatformCapabilities } from '@shared/platform'
 import type { AppUpdateState } from '@shared/app-update'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, setCapabilities } from './helpers/platform'
@@ -976,20 +978,42 @@ describe('the state of the speech models while the settings are open', () => {
   })
 })
 
-describe('Irodori-TTS on the voice page', () => {
-  it('lists Irodori-TTS first for a Japanese conversation and saves the voice chosen for it', async () => {
+describe('choosing the voice of a local engine by listening', () => {
+  const card = (view: HTMLElement, name: string): HTMLElement =>
+    [...view.querySelectorAll<HTMLElement>('.st-voice')].find((one) => one.querySelector('.st-voice-name')?.textContent === name)!
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('lists Irodori-TTS first for a Japanese conversation and saves the voice whose card is chosen', async () => {
     useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'irodori' } })
     const view = await render()
     await act(async () => nav(view, 'voice').click())
     const engines = [...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)
     expect(engines).toEqual(['irodori', 'qwen3tts', 'voicevox', 'aivisspeech', 'system', 'none'])
-    const voice = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.voice')}"]`)!
-    expect([...voice.options].map((option) => option.textContent)).toEqual(IRODORI_TTS_VOICES.map((one) => t(one.label)))
-    await act(async () => {
-      voice.value = 'soft-young-woman'
-      voice.dispatchEvent(new Event('change', { bubbles: true }))
-    })
+    const voices = view.querySelector(`[role="radiogroup"][aria-label="${t('settingsVoice.speech.voice')}"]`)!
+    expect([...voices.querySelectorAll('[role="radio"]')].map((radio) => [radio.querySelector('.st-voice-name')?.textContent, radio.getAttribute('aria-checked')])).toEqual(
+      IRODORI_TTS_VOICES.map((voice) => [t(voice.label), String(voice.id === 'calm-young-woman')])
+    )
+    await act(async () => card(view, t('settingsVoice.speech.irodoriVoices.softYoungWoman')).querySelector<HTMLButtonElement>('[role="radio"]')!.click())
     expect(api.saveSettings).toHaveBeenCalledWith({ irodoriTtsVoice: 'soft-young-woman' })
+  })
+
+  it('plays the sample of a Qwen3-TTS voice read in the conversation language, and leaves the chosen voice as it is', async () => {
+    const fetched: string[] = []
+    vi.stubGlobal('fetch', async (url: string) => {
+      fetched.push(url)
+      return new Response(new Uint8Array([1, 2, 3]))
+    })
+    useSettingsStore.setState({ settings: { ...settings, conversationLocale: 'en-US', ttsEngine: 'qwen3tts' } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    expect(card(view, 'Ryan').querySelector('.st-voice-detail')?.textContent).toBe(
+      t('settingsVoice.speech.maleSpeaker', { language: new Intl.DisplayNames(['ja-JP'], { type: 'language' }).of('en') })
+    )
+    api.saveSettings.mockClear()
+    await act(async () => card(view, 'Ryan').querySelector<HTMLButtonElement>('.st-voice-play')!.click())
+    expect(fetched).toEqual([expect.stringMatching(/\/tts-voices\/qwen3tts\/en\/ryan\.mp3$/)])
+    expect(vi.mocked(speechPlayer.playClip)).toHaveBeenLastCalledWith(btoa('\x01\x02\x03'), VOICE_SAMPLE_TEXT.en, { role: 'preview' })
+    expect(api.saveSettings).not.toHaveBeenCalled()
   })
 })
 

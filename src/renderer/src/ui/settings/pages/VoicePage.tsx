@@ -7,14 +7,15 @@ import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
 import { IRODORI_TTS_VOICES, QWEN_TTS_MODELS, QWEN_TTS_SIZES, QWEN_TTS_VOICES, isLocalTtsEngine, localTtsModel, localTtsSizeGb, offeredQwenTtsSizes, recommendLocalTts, ttsEngineRuns, type IrodoriTtsVoice, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
-import { conversationFeatures, ttsEngineSpeaks } from '@shared/conversation-locale'
+import { conversationFeatures, languageOf, ttsEngineSpeaks } from '@shared/conversation-locale'
 import { TTS_SITE, ttsEngineLabel, isExternalTts, speechReadiness, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
 import { Advanced, Btn, Chip, Group, Page, Row } from '../primitives'
 import { PrepLine, PrepProgress, PrepareButton, WhisperControl } from '../preparation'
+import { VoicePicker, liveVoiceSample, localVoiceSample, playVoiceSample } from '../voice-picker'
 import { LIVE_ENGINE_INFO, isLiveEngine, type LiveEngine } from '@shared/voice-engine'
 import { displayError } from '@/display-error'
-import { useFormatLocale, useT } from '@/i18n'
+import { useFormatLocale, useT, useUiLocale } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import { asrRecommendationReason } from '../../asr-recommendation'
 import { osMessageKey } from '@shared/i18n/os-message'
@@ -41,29 +42,6 @@ function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   )
 }
 
-/**
- * The voice samples for the live engines. They are mp3 files bundled by scripts/gen-live-voices.mjs,
- * which has each provider's TTS read the same sentence, so listening to one needs neither the API
- * nor a key. Adding a voice means generating them again with that script.
- */
-const VOICE_SAMPLES = import.meta.glob<string>('../../../assets/live-voices/*/*.mp3', { eager: true, query: '?url', import: 'default' })
-// The sentence the bundled samples read, so it describes the audio rather than the interface.
-const SAMPLE_TEXT = 'こんにちは。声のテストです。今日はいい天気ですね。'
-
-function voiceSampleUrl(engine: LiveEngine, voice: string): string | null {
-  const suffix = `/${engine}/${voice}.mp3`
-  const entry = Object.entries(VOICE_SAMPLES).find(([file]) => file.endsWith(suffix))
-  return entry ? entry[1] : null
-}
-
-/** Plays a bundled mp3 through the speech playback queue, where decodeAudioData handles it just as it does WAV. */
-async function playVoiceSample(url: string): Promise<void> {
-  const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer())
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  speechPlayer.playClip(btoa(binary), SAMPLE_TEXT, { role: 'preview' })
-}
-
 /** The voice of a live engine, chosen from the provider's voices with a bundled sample of each. */
 function LiveVoiceRow({ engine, ctx }: { engine: LiveEngine; ctx: SettingsContext }): React.JSX.Element {
   const { settings, set } = ctx
@@ -73,7 +51,7 @@ function LiveVoiceRow({ engine, ctx }: { engine: LiveEngine; ctx: SettingsContex
   const field = engine === 'gpt-live' ? 'gptLive' : 'geminiLive'
   const current = settings[field]
   const listedVoice = info.voices.some((voice) => voice.id === current.voice)
-  const sample = voiceSampleUrl(engine, current.voice)
+  const sample = liveVoiceSample(engine, current.voice)
   return (
     <Row label={t('settingsConversation.live.voice')} hint={t('settingsConversation.live.voiceHint')}>
       <select
@@ -173,7 +151,9 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const toast = useToastStore((s) => s.push)
   const t = useT()
   const formatLocale = useFormatLocale()
+  const languageName = new Intl.DisplayNames([useUiLocale()], { type: 'language' })
   const engine = settings.ttsEngine
+  const sampleLanguage = languageOf(settings.conversationLocale)
   const features = conversationFeatures(settings.conversationLocale)
   const capabilities = platformCapabilities()
   const localSpeech = capabilities.localSpeech
@@ -352,21 +332,13 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           </Row>
         )}
         {engineUsable && engine === 'irodori' && (
-          <Row label={t('settingsVoice.speech.voice')}>
-            <select
-              className="st-select"
-              aria-label={t('settingsVoice.speech.voice')}
-              style={{ maxWidth: 220 }}
-              value={settings.irodoriTtsVoice}
-              onChange={(e) => set({ irodoriTtsVoice: e.target.value as IrodoriTtsVoice })}
-            >
-              {IRODORI_TTS_VOICES.map((voice) => (
-                <option key={voice.id} value={voice.id}>
-                  {t(voice.label)}
-                </option>
-              ))}
-            </select>
-            {!ttsMissing && preview}
+          <Row label={t('settingsVoice.speech.voice')} wide>
+            <VoicePicker
+              label={t('settingsVoice.speech.voice')}
+              voices={IRODORI_TTS_VOICES.map((voice) => ({ id: voice.id, name: t(voice.label), sample: localVoiceSample('irodori', voice.id, sampleLanguage) }))}
+              selected={settings.irodoriTtsVoice}
+              onSelect={(id) => set({ irodoriTtsVoice: id as IrodoriTtsVoice })}
+            />
           </Row>
         )}
         {engineUsable && engine === 'qwen3tts' && qwenTtsSizes.length > 1 && (
@@ -386,21 +358,18 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           </Row>
         )}
         {engineUsable && engine === 'qwen3tts' && (
-          <Row label={t('settingsVoice.speech.voice')} hint={t('settingsVoice.speech.voiceHint')}>
-            <select
-              className="st-select"
-              aria-label={t('settingsVoice.speech.voice')}
-              style={{ maxWidth: 220 }}
-              value={settings.qwenTtsVoice}
-              onChange={(e) => set({ qwenTtsVoice: e.target.value as QwenTtsVoice })}
-            >
-              {QWEN_TTS_VOICES.map((voice) => (
-                <option key={voice.id} value={voice.id}>
-                  {t(voice.gender === 'female' ? 'settingsVoice.speech.femaleVoice' : 'settingsVoice.speech.maleVoice', { name: voice.name })}
-                </option>
-              ))}
-            </select>
-            {!ttsMissing && preview}
+          <Row label={t('settingsVoice.speech.voice')} hint={t('settingsVoice.speech.voiceHint')} wide>
+            <VoicePicker
+              label={t('settingsVoice.speech.voice')}
+              voices={QWEN_TTS_VOICES.map((voice) => ({
+                id: voice.id,
+                name: voice.name,
+                detail: t(voice.gender === 'female' ? 'settingsVoice.speech.femaleSpeaker' : 'settingsVoice.speech.maleSpeaker', { language: languageName.of(voice.native) ?? voice.native }),
+                sample: localVoiceSample('qwen3tts', voice.id, sampleLanguage)
+              }))}
+              selected={settings.qwenTtsVoice}
+              onSelect={(id) => set({ qwenTtsVoice: id as QwenTtsVoice })}
+            />
           </Row>
         )}
       </Group>
