@@ -1,6 +1,7 @@
 import { UI_LOCALES, type UiLocale } from './i18n/message'
 import type { TtsEngine } from './ipc'
-import { qwenTtsLanguage } from './tts-models'
+import type { PlatformCapabilities } from './platform'
+import { qwenTtsLanguage, recommendLocalTts } from './tts-models'
 
 /**
  * The language the user and the assistant speak, and the region whose weather, news and formats apply.
@@ -124,7 +125,7 @@ export interface ConversationFeatures {
   aizuchi: boolean
   /** MaAI turn-taking, whose four models are trained on Japanese conversation. */
   maai: boolean
-  /** VOICEVOX and AivisSpeech, which speak Japanese only. */
+  /** VOICEVOX, AivisSpeech and Irodori-TTS, which speak Japanese only. */
   japaneseTts: boolean
   /** Qwen3-TTS, which does not speak Hindi or Indonesian. */
   qwenTts: boolean
@@ -145,15 +146,26 @@ export function conversationFeatures(locale: ConversationLocale): ConversationFe
 }
 
 /**
- * Whether a speech engine can read a language aloud. VOICEVOX and AivisSpeech speak Japanese only, and
- * Qwen3-TTS has no Hindi or Indonesian. The macOS voice and the engine that reads nothing fit every
- * language, so a conversation whose engine cannot speak it moves to `system`.
+ * Whether a speech engine can read a language aloud. VOICEVOX, AivisSpeech and Irodori-TTS speak Japanese
+ * only, and Qwen3-TTS has no Hindi or Indonesian. The OS's voice and the engine that reads nothing fit every
+ * language.
  */
 export function ttsEngineSpeaks(locale: ConversationLocale, engine: TtsEngine): boolean {
   const features = conversationFeatures(locale)
-  if (engine === 'voicevox' || engine === 'aivisspeech') return features.japaneseTts
+  if (engine === 'voicevox' || engine === 'aivisspeech' || engine === 'irodori') return features.japaneseTts
   if (engine === 'qwen3tts') return features.qwenTts
   return true
+}
+
+/**
+ * The engine a conversation in a language starts with. Where a local engine has the memory to run, Japanese
+ * is read by Irodori-TTS and another language by Qwen3-TTS when it speaks it. Elsewhere Japanese starts on
+ * VOICEVOX, which the setup offers to install, and every other language on the OS's voice, which works at once.
+ */
+export function defaultTtsEngine(locale: ConversationLocale, localSpeech: PlatformCapabilities['localSpeech']): TtsEngine {
+  const local = recommendLocalTts(localSpeech)
+  if (locale === 'ja-JP') return local ? 'irodori' : 'voicevox'
+  return local && conversationFeatures(locale).qwenTts ? 'qwen3tts' : 'system'
 }
 
 /** The weather of Japan comes from the Japan Meteorological Agency; everywhere else from a worldwide source. */

@@ -17,7 +17,7 @@ import {
   type TurnStartOptions
 } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
-import { recommendQwenTts } from '@shared/tts-models'
+import { isLocalTtsEngine } from '@shared/tts-models'
 import { parseSettingsPatch } from '@shared/settings'
 import { parseTurnMetricLog } from '@shared/turn-metric-log'
 import { docsUrl } from '@shared/docs-links'
@@ -25,7 +25,7 @@ import { getSettings, saveSettings } from './services/settings'
 import { features } from './services/conversation-locale'
 import * as asr from './services/asr'
 import * as tts from './services/tts'
-import * as qwenTts from './services/qwen-tts'
+import * as localTts from './services/local-tts'
 import * as aizuchi from './services/aizuchi'
 import * as bridgePlan from './services/bridge-plan'
 import * as aizuchiClassifier from './services/aizuchi-classifier'
@@ -182,15 +182,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     // may just have installed or removed an agent CLI.
     forgetCliSearches()
     const [services, asrStatus] = await Promise.all([computeStatus(), asr.installationStatus()])
-    const qwenInstalled = qwenTts.installationStatus()
-    return {
-      services,
-      asr: asrStatus,
-      qwenTts: {
-        recommended: recommendQwenTts(platformCapabilities().localSpeech),
-        ...qwenInstalled
-      }
-    }
+    return { services, asr: asrStatus }
   })
 
   handle(IpcChannel.CompleteSetup, (_e, request: unknown) =>
@@ -405,12 +397,15 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   })
   handle(IpcChannel.AsrPrepareCancel, () => asr.cancelPreparation())
   handle(IpcChannel.TtsPrepare, async () => {
-    const result = await qwenTts.prepare((progress) => send(IpcChannel.SetupProgress, progress))
+    const engine = getSettings().ttsEngine
+    // The screens offer the preparation only for the local engines, whose model this app downloads.
+    if (!isLocalTtsEngine(engine)) throw new Error(`${engine} has no model to prepare`)
+    const result = await localTts.prepare(engine, (progress) => send(IpcChannel.SetupProgress, progress))
     // A bank built while the model was missing holds no audio.
-    if (result.ok && getSettings().ttsEngine === 'qwen3tts') aizuchi.rebuild()
+    if (result.ok && getSettings().ttsEngine === engine) aizuchi.rebuild()
     return result
   })
-  handle(IpcChannel.TtsPrepareCancel, () => qwenTts.cancelPreparation())
+  handle(IpcChannel.TtsPrepareCancel, () => localTts.cancelPreparation())
 
   handle(IpcChannel.JobCancel, (_e, id: string) => agent.cancel(id))
   handle(IpcChannel.JobMerge, (_e, id: string, reviewed: ReviewedMerge) => {
@@ -501,6 +496,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
         before.ttsEngine !== after.ttsEngine ||
         before.voicevoxSpeaker !== after.voicevoxSpeaker ||
         before.aivisSpeaker !== after.aivisSpeaker ||
+        before.irodoriTtsVoice !== after.irodoriTtsVoice ||
         before.qwenTtsVoice !== after.qwenTtsVoice ||
         before.qwenTtsSize !== after.qwenTtsSize ||
         // The clips exist for Japanese only, so the language decides whether there is a bank at all.

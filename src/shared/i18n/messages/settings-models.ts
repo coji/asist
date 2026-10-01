@@ -108,19 +108,6 @@ export const settingsModels = defineMessages({
       'es-419': 'Lectura en voz alta',
       'es-ES': 'Lectura en voz alta'
     },
-    qwen: {
-      'ja-JP': '{model} をこのコンピュータの GPU で動かします。モデル(約 {sizeGb}GB)を取得します。',
-      'en-US': '{model} runs on the GPU of this computer. Downloads the model (about {sizeGb} GB).',
-      'fr-FR': '{model} tourne sur le GPU de cet ordinateur. Télécharge le modèle (environ {sizeGb} Go).',
-      'de-DE': '{model} läuft auf der GPU dieses Computers. Lädt das Modell (rund {sizeGb} GB).',
-      'hi-IN': '{model} इसी कंप्यूटर के GPU पर चलता है। मॉडल (करीब {sizeGb} GB) डाउनलोड होता है।',
-      'id-ID': '{model} berjalan di GPU komputer ini. Mengunduh modelnya (sekitar {sizeGb} GB).',
-      'it-IT': '{model} funziona sulla GPU di questo computer. Scarica il modello (circa {sizeGb} GB).',
-      'ko-KR': '{model} 모델을 이 컴퓨터의 GPU에서 실행합니다. 모델(약 {sizeGb}GB)을 내려받습니다.',
-      'pt-BR': '{model} roda na GPU deste computador. Baixa o modelo (cerca de {sizeGb} GB).',
-      'es-419': '{model} funciona en la GPU de esta computadora. Descarga el modelo (unos {sizeGb} GB).',
-      'es-ES': '{model} se ejecuta en la GPU de este ordenador. Descarga el modelo (unos {sizeGb} GB).'
-    },
     get: {
       'ja-JP': '{engine} を入手する',
       'en-US': 'Get {engine}',
@@ -147,7 +134,20 @@ export const settingsModels = defineMessages({
       'es-419': 'Elegir un motor',
       'es-ES': 'Elegir un motor'
     },
-    qwenTooLittleMemory: {
+    localModel: {
+      'ja-JP': '{model} をこのコンピュータの GPU で動かします。モデル(約 {sizeGb}GB)を取得します。',
+      'en-US': '{model} runs on the GPU of this computer. Downloads the model (about {sizeGb} GB).',
+      'fr-FR': '{model} tourne sur le GPU de cet ordinateur. Télécharge le modèle (environ {sizeGb} Go).',
+      'de-DE': '{model} läuft auf der GPU dieses Computers. Lädt das Modell (rund {sizeGb} GB).',
+      'hi-IN': '{model} इसी कंप्यूटर के GPU पर चलता है। मॉडल (करीब {sizeGb} GB) डाउनलोड होता है।',
+      'id-ID': '{model} berjalan di GPU komputer ini. Mengunduh modelnya (sekitar {sizeGb} GB).',
+      'it-IT': '{model} funziona sulla GPU di questo computer. Scarica il modello (circa {sizeGb} GB).',
+      'ko-KR': '{model} 모델을 이 컴퓨터의 GPU에서 실행합니다. 모델(약 {sizeGb}GB)을 내려받습니다.',
+      'pt-BR': '{model} roda na GPU deste computador. Baixa o modelo (cerca de {sizeGb} GB).',
+      'es-419': '{model} funciona en la GPU de esta computadora. Descarga el modelo (unos {sizeGb} GB).',
+      'es-ES': '{model} se ejecuta en la GPU de este ordenador. Descarga el modelo (unos {sizeGb} GB).'
+    },
+    localModelTooLittleMemory: {
       macos: {
         'ja-JP': '{model} をこの Mac の GPU で動かします。モデル(約 {sizeGb}GB)を取得します。この Mac はメモリが 16GB 未満で、音声認識と並べて動かすには足りないため、VOICEVOX か macOS の音声合成を勧めます。',
         'en-US': '{model} runs on the GPU of this Mac. Downloads the model (about {sizeGb} GB). This Mac has less than 16 GB of memory, too little to run it beside speech recognition, so VOICEVOX or the macOS voice suits it better.',

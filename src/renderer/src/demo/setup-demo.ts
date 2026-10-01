@@ -4,7 +4,9 @@ import type { ApiKeyState, RendererApi, SetupProgress } from '@shared/ipc'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
 import { errorText } from '@shared/i18n/error-text'
 import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
-import { QWEN_TTS_MODELS } from '@shared/tts-models'
+import { defaultTtsEngine } from '@shared/conversation-locale'
+import { isLocalTtsEngine, localTtsModel, localTtsSizeGb } from '@shared/tts-models'
+import { platformCapabilities } from '@/platform'
 import { voiceController } from '@/voice/VoiceController'
 
 /**
@@ -36,14 +38,24 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     saveSettings: api.saveSettings,
     completeSetup: api.completeSetup
   }
-  // The demo starts on VOICEVOX, as the app's own default does. The demo Mac does not have it installed,
-  // so it stays unconnected. The risks have not been acknowledged yet, as on a new Mac.
-  void base.saveSettings({ ttsEngine: 'voicevox', safetyNoticeVersion: 0 })
+  // The risks have not been acknowledged yet, as on a new Mac.
+  void base.saveSettings({ safetyNoticeVersion: 0 })
+  // The speech engine starts on the one the app starts the language on: Irodori-TTS for Japanese on the demo
+  // Mac, whose model is not prepared yet. It is chosen at the first read of the settings, which comes after the
+  // capabilities are loaded and before the wizard can change the language.
+  let engineChosen = false
   // The mock settings already count as onboarded, so every read is rewritten as not onboarded until the
   // wizard finishes.
   const unfinished = <T extends { onboardingVersion: number }>(settings: T): T => (state.completed ? settings : { ...settings, onboardingVersion: 0 })
 
-  api.getSettings = async () => unfinished(await base.getSettings())
+  api.getSettings = async () => {
+    if (!engineChosen) {
+      engineChosen = true
+      const settings = await base.getSettings()
+      await base.saveSettings({ ttsEngine: defaultTtsEngine(settings.conversationLocale, platformCapabilities().localSpeech) })
+    }
+    return unfinished(await base.getSettings())
+  }
   api.completeSetup = async (request) => {
     state.completed = true
     return base.completeSetup(request)
@@ -91,8 +103,11 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     return { ok: true, message: translate('settingsModels.preparation.done', { model: asr.label }) }
   }
   api.prepareTtsModel = async () => {
-    const totalMb = 1214
-    const message = translate('settingsModels.preparation.downloading', { model: QWEN_TTS_MODELS['0.6b'].label })
+    const settings = await base.getSettings()
+    if (!isLocalTtsEngine(settings.ttsEngine)) throw new Error(`${settings.ttsEngine} has no model to prepare`)
+    const model = localTtsModel(settings.ttsEngine, settings.qwenTtsSize)
+    const totalMb = Math.round(localTtsSizeGb(model) * 1000)
+    const message = translate('settingsModels.preparation.downloading', { model: model.label })
     for (let pct = 0; pct <= 100; pct += 4) {
       progressListeners.forEach((listener) => listener({ status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb, message }))
       await sleep(120)

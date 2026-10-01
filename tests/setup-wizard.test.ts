@@ -27,7 +27,6 @@ let settings: AppSettings
 let status: AppStatus
 const ja = createTranslator('ja-JP')
 const verifiedKeys = new Set<string>()
-let qwenTtsRecommended = false
 let progressListener: (progress: SetupProgress) => void = () => {}
 
 /**
@@ -54,9 +53,7 @@ const asrStatus = (): SetupStatus['asr'] => {
 const setupStatus = (): SetupStatus =>
   ({
     services: status,
-    asr: asrStatus(),
-    // This Mac has too little memory for the local speech model, so the setup does not offer it.
-    qwenTts: { recommended: qwenTtsRecommended, modelInstalled: false }
+    asr: asrStatus()
   }) as SetupStatus
 
 const api = {
@@ -153,7 +150,6 @@ const stepStates = (): Record<string, string | undefined> =>
 
 beforeEach(async () => {
   verifiedKeys.clear()
-  qwenTtsRecommended = false
   settings = {
     onboardingVersion: 0,
     safetyNoticeVersion: 0,
@@ -216,12 +212,15 @@ describe('first-run setup', () => {
     await render()
     expect(container.querySelector('h1')?.textContent).toBe(createTranslator('ja-JP')('setup.steps.language.title'))
     await chooseLanguage('en-US')
-    // VOICEVOX reads Japanese only, so the speech engine moves in the same save.
-    expect(api.saveSettings).toHaveBeenCalledWith({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', ttsEngine: 'system' })
+    // The speech engine moves to the one the language starts with: Qwen3-TTS for English on this 32 GB Mac.
+    expect(api.saveSettings).toHaveBeenCalledWith({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', ttsEngine: 'qwen3tts' })
     expect(container.querySelector('h1')?.textContent).toBe(createTranslator('en-US')('setup.steps.language.title'))
 
     await chooseLanguage('ja-JP')
-    // Japanese can keep VOICEVOX, so nothing but the three language settings is written.
+    expect(api.saveSettings).toHaveBeenLastCalledWith({ uiLocale: 'ja-JP', conversationLocale: 'ja-JP', region: 'JP', ttsEngine: 'irodori' })
+
+    // Choosing the same language again leaves an engine picked since then as it is.
+    await chooseLanguage('ja-JP')
     expect(api.saveSettings).toHaveBeenLastCalledWith({ uiLocale: 'ja-JP', conversationLocale: 'ja-JP', region: 'JP' })
   })
 
@@ -241,7 +240,7 @@ describe('first-run setup', () => {
     expect(button(ja('setup.next')).disabled).toBe(true)
   })
 
-  it('offers VOICEVOX, AivisSpeech, the backchannel classifier and MaAI for a Japanese conversation', async () => {
+  it('offers Irodori-TTS first, VOICEVOX, AivisSpeech, the backchannel classifier and MaAI for a Japanese conversation', async () => {
     status = { ...status, asr: true }
     await render()
     const t = createTranslator('ja-JP')
@@ -251,7 +250,7 @@ describe('first-run setup', () => {
     await press(t('setup.speaking.voice.title'))
     await press(t('setup.next'))
     await press(t('setup.next'))
-    expect(optionTitles()).toEqual([t('settings.ttsEngine.system.macos'), 'VOICEVOX', 'AivisSpeech'])
+    expect(optionTitles()).toEqual(['Irodori-TTS', 'Qwen3-TTS', t('settings.ttsEngine.system.macos'), 'VOICEVOX', 'AivisSpeech'])
 
     // VOICEVOX is not running in this test, so the macOS voice carries the walk to the last screens.
     await press(t('settings.ttsEngine.system.macos'))
@@ -282,7 +281,7 @@ describe('first-run setup', () => {
     expect(api.saveSettings.mock.calls.some(([patch]) => 'vapEnabled' in patch)).toBe(false)
   })
 
-  it('offers the macOS voice alone and prepares only the search model when the conversation is not in Japanese', async () => {
+  it('offers Qwen3-TTS and the macOS voice and prepares only the search model when the conversation is not in Japanese', async () => {
     status = { ...status, asr: true }
     await render()
     const t = createTranslator('en-US')
@@ -293,8 +292,9 @@ describe('first-run setup', () => {
     await press(t('setup.speaking.voice.title'))
     await press(t('setup.next'))
     await press(t('setup.next'))
-    expect(optionTitles()).toEqual([t('settings.ttsEngine.system.macos')])
+    expect(optionTitles()).toEqual(['Qwen3-TTS', t('settings.ttsEngine.system.macos')])
 
+    await press(t('settings.ttsEngine.system.macos'))
     await press(t('setup.next'))
     await press(t('setup.mic.check'))
     await press(t('setup.next'))
@@ -359,7 +359,6 @@ describe('first-run setup', () => {
 
   it('shows how much of the Qwen3-TTS model has arrived while it is prepared on the reading step', async () => {
     status = { ...status, asr: true }
-    qwenTtsRecommended = true
     await render()
     const t = createTranslator('ja-JP')
     await toModel(t)

@@ -115,6 +115,7 @@ function steps({ locale, name }) {
     press('setup.next'),
     wait(300),
     pressIfShown('setup.tts.verify'),
+    pressIfShown('setup.tts.prepareModel'),
     untilText('setup.guide.tts.ready'),
     press('setup.next'),
     wait(300)
@@ -176,9 +177,10 @@ function steps({ locale, name }) {
     setupShot('setup-4-listening'),
     press('setup.next'),
     wait(300),
-    // The demo opens on VOICEVOX, which is checked before it counts as ready. VOICEVOX reads Japanese only, so
-    // choosing English moved the setup to the macOS voice, which is ready without a check.
+    // Choosing the language moved the setup to the engine that language starts on, a local one on the demo Mac,
+    // whose model is prepared before it counts as ready.
     pressIfShown('setup.tts.verify'),
+    pressIfShown('setup.tts.prepareModel'),
     untilText('setup.guide.tts.ready'),
     wait(300),
     setupShot('setup-5-speech'),

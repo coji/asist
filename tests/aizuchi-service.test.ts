@@ -24,7 +24,7 @@ vi.mock('../src/main/services/settings', () => ({
     conversationLocale: mocks.locale
   })
 }))
-vi.mock('../src/main/services/qwen-tts', () => ({
+vi.mock('../src/main/services/local-tts', () => ({
   installationStatus: () => ({ modelInstalled: mocks.qwenModelInstalled })
 }))
 vi.mock('../src/main/services/tts', () => ({
@@ -203,6 +203,31 @@ describe('aizuchi bank outside Japanese', () => {
     const bank = await aizuchi.getBank()
     expect(bank.length).toBeGreaterThan(0)
     expect(bank.every((clip) => clip.audio === audioFor(1))).toBe(true)
+  })
+})
+
+describe('aizuchi bank with Irodori-TTS', () => {
+  beforeEach(() => {
+    mocks.engine = 'irodori'
+    mocks.resolveVoice.mockImplementation(async () => ({ engine: 'irodori', voice: 'calm-young-woman', language: 'ja' }))
+  })
+
+  it('synthesizes every clip with the chosen voice and caches it, as it does for the HTTP engines', async () => {
+    const aizuchi = await import('../src/main/services/aizuchi')
+    const bank = await aizuchi.getBank()
+    expect(bank.every((clip) => clip.audio !== null)).toBe(true)
+    expect(mocks.synthesize).toHaveBeenCalledWith('うん。', undefined, expect.objectContaining({ volumeScale: 0.8 }), { engine: 'irodori', voice: 'calm-young-woman', language: 'ja' })
+    const cached = fs.readdirSync(path.join(mocks.dir, 'aizuchi')).filter((name) => name.endsWith('.wav'))
+    expect(cached).toHaveLength(new Set(bank.map((clip) => clip.text)).size)
+  })
+
+  it('builds the bank again once the worker that was still loading answers', async () => {
+    mocks.engineUp = false
+    const aizuchi = await import('../src/main/services/aizuchi')
+    expect((await aizuchi.getBank()).every((clip) => clip.audio === null)).toBe(true)
+    mocks.engineUp = true
+    aizuchi.ttsAnswered(false)
+    expect((await aizuchi.getBank()).every((clip) => clip.audio !== null)).toBe(true)
   })
 })
 

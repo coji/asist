@@ -1,6 +1,6 @@
-# ローカルの音声認識と Qwen3-TTS は、同梱した llama.cpp と speech.cpp で GPU の上で動かす
+# ローカルの音声認識と読み上げは、同梱した llama.cpp と speech.cpp で GPU の上で動かす
 
-macOS でも Windows でも、ローカルの音声認識は Qwen3-ASR(1.7B と 0.6B)の GGUF を llama.cpp の llama-server で動かし、Qwen3-TTS(0.6B と 1.7B)は自分で実装した speech.cpp のワーカーで動かす。どちらのプログラムもアプリに同梱し、Mac では Metal で、Windows では Vulkan で GPU を使う。モデルは Hugging Face から、版と sha256 を固定して取得する。Python の実行環境を作らないので、初回の準備はモデルの取得だけで済み、OS ごとに別の推論の実装を保たなくてよい。どの OS でも同じモデルの同じファイルを使うので、聞き取りと声の質が OS で変わらない。Windows では単体の GPU があるマシンでだけ提供し、それ以外のマシンでは理由を出して、ブラウザの中の Whisper と live のエンジンを使ってもらう。
+macOS でも Windows でも、ローカルの音声認識は Qwen3-ASR(1.7B と 0.6B)の GGUF を llama.cpp の llama-server で動かし、読み上げの Qwen3-TTS(0.6B と 1.7B)と Irodori-TTS は自分で実装した speech.cpp のワーカーで動かす。どちらのプログラムもアプリに同梱し、Mac では Metal で、Windows では Vulkan で GPU を使う。モデルは Hugging Face から、版と sha256 を固定して取得する。Python の実行環境を作らないので、初回の準備はモデルの取得だけで済み、OS ごとに別の推論の実装を保たなくてよい。どの OS でも同じモデルの同じファイルを使うので、聞き取りと声の質が OS で変わらない。Windows では単体の GPU があるマシンでだけ提供し、それ以外のマシンでは理由を出して、ブラウザの中の Whisper と live のエンジンを使ってもらう。
 
 ## 見送った案
 
@@ -30,7 +30,7 @@ macOS でも Windows でも、ローカルの音声認識は Qwen3-ASR(1.7B と 
 
 ## 分かっている制約
 
-- 単体の GPU が無い Windows のマシンでは、ローカルの音声認識と Qwen3-TTS を使えない。
+- 単体の GPU が無い Windows のマシンでは、ローカルの音声認識と読み上げ(Qwen3-TTS と Irodori-TTS)を使えない。
 - 新しい版のアプリや GPU のドライバーを入れたあとの最初の起動では、Mac では Metal のカーネルを、Windows では Vulkan のシェーダーを組み立てるので、その回だけ準備が長くなる。
 - 同梱した相槌の音声は Qwen3-TTS 0.6B で作ったもので、1.7B で読み上げるときも同じものを鳴らす。
-- speech.cpp は ASIST のために作ったもので、Qwen3-TTS の新しい版には自分で追従する。
+- speech.cpp は ASIST のために作ったもので、Qwen3-TTS と Irodori-TTS の新しい版には自分で追従する。

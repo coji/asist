@@ -61,6 +61,30 @@ export const CREDITS = [
     url: 'https://huggingface.co/sakasegawa/qwen3-tts-ggml'
   },
   {
+    id: 'ttsIrodori',
+    group: 'local',
+    name: 'Irodori-TTS v4.1-Small-MF (GGUF)',
+    provider: 'Aratako',
+    license: 'MIT',
+    url: 'https://huggingface.co/sakasegawa/irodori-tts-ggml'
+  },
+  {
+    id: 'ttsIrodoriCodec',
+    group: 'local',
+    name: 'Semantic-DACVAE-Japanese-32dim (GGUF)',
+    provider: 'Aratako',
+    license: 'MIT',
+    url: 'https://huggingface.co/sakasegawa/irodori-tts-ggml'
+  },
+  {
+    id: 'dacvae',
+    group: 'local',
+    name: 'DACVAE (dacvae-watermarked)',
+    provider: 'Meta',
+    license: 'Apache-2.0',
+    url: 'https://huggingface.co/facebook/dacvae-watermarked'
+  },
+  {
     id: 'maai',
     group: 'local',
     name: 'MaAI (vap_jp_kyoto, bc_det_jp, vap_bc_2type_jp, vap_nod_jp)',

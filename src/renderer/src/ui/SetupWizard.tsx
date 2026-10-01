@@ -3,8 +3,8 @@ import { LLM_PROVIDER_INFO, defaultModelsFor, modelLabel, sameModel, type LlmPro
 import { keyReadable, type SetupProgress, type SetupStatus, type SetupVoiceMode } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { errorText } from '@shared/i18n/error-text'
-import { qwenTtsRuns, ttsEngineRuns } from '@shared/tts-models'
-import { defaultRegion, ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
+import { isLocalTtsEngine, localTtsRuns, recommendLocalTts, ttsEngineRuns } from '@shared/tts-models'
+import { defaultRegion, defaultTtsEngine, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { useSettingsStore, useStatusStore } from '@/state/stores'
 import { startMicAtLaunch } from '@/conversation'
@@ -164,11 +164,11 @@ export function SetupWizard(): React.JSX.Element | null {
 
   /**
    * Saves the one language choice: the interface, the conversation and the region move together, and
-   * the speech engine moves with them when the chosen one cannot read the new language aloud.
+   * the speech engine moves to the one the new language starts with, which the speech step comes after.
    */
   const chooseLocale = (next: ConversationLocale): void => {
     setError('')
-    const engine = ttsEngineSpeaks(next, settings.ttsEngine) ? {} : { ttsEngine: 'system' as const }
+    const engine = next === settings.conversationLocale ? {} : { ttsEngine: defaultTtsEngine(next, capabilities.localSpeech) }
     void saveSettings({ uiLocale: next, conversationLocale: next, region: defaultRegion(next), ...engine })
       .then(() => refresh())
       .catch((err: unknown) => setError(displayError(err)))
@@ -306,7 +306,7 @@ export function SetupWizard(): React.JSX.Element | null {
     }
   }
 
-  /** Downloads the Qwen3-TTS model and starts it. */
+  /** Downloads the model of the chosen local engine and starts it. */
   const prepareTts = async (): Promise<void> => {
     if (ttsChecking) return
     setTtsChecking(true)
@@ -390,7 +390,7 @@ export function SetupWizard(): React.JSX.Element | null {
       if (ttsReady) return t('setup.guide.tts.ready')
       // A saved engine this machine cannot run is offered by no choice on the screen, so it is chosen again.
       if (!ttsEngineRuns(settings.ttsEngine, capabilities.localSpeech)) return t('setup.guide.tts.choose')
-      if (settings.ttsEngine === 'qwen3tts') return ttsChecking ? ttsDownload?.message || t('common.preparing') : t(osMessageKey('setup.guide.tts.prepareOrSystem', capabilities.os))
+      if (isLocalTtsEngine(settings.ttsEngine)) return ttsChecking ? ttsDownload?.message || t('common.preparing') : t(osMessageKey('setup.guide.tts.prepareOrSystem', capabilities.os))
       return ttsChecking ? t('setup.guide.tts.verifying') : t(osMessageKey('setup.guide.tts.notConnected', capabilities.os), { engine: services?.ttsLabel ?? t('setup.steps.tts.title') })
     }
     if (step === 'mic') {
@@ -512,7 +512,7 @@ export function SetupWizard(): React.JSX.Element | null {
               }}
               ttsChecking={ttsChecking}
               ttsDownload={ttsDownload}
-              qwenTtsOffered={qwenTtsRuns(capabilities.localSpeech) && (setup?.qwenTts.recommended === true || settings.ttsEngine === 'qwen3tts')}
+              localTtsOffered={recommendLocalTts(capabilities.localSpeech) || (localTtsRuns(capabilities.localSpeech) && isLocalTtsEngine(settings.ttsEngine))}
               qwenTtsSize={settings.qwenTtsSize}
               onRecheckTts={() => void verifyTts()}
               onPrepareTts={() => void prepareTts()}

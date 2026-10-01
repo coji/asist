@@ -1,10 +1,10 @@
 import type { AppSettings } from '@shared/ipc'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-/** The TTS service with Qwen3-TTS selected: which calls reach the worker service and what the playback queue is given. */
+/** The TTS service with a local engine selected: which calls reach the worker service and what the playback queue is given. */
 
 const mocks = vi.hoisted(() => ({
-  settings: { ttsEngine: 'qwen3tts', qwenTtsVoice: 'ono_anna', conversationLocale: 'ja-JP' } as Partial<AppSettings>,
+  settings: { ttsEngine: 'qwen3tts', qwenTtsVoice: 'ono_anna', irodoriTtsVoice: 'calm-young-woman', conversationLocale: 'ja-JP' } as Partial<AppSettings>,
   stream: vi.fn(),
   synthesizeWav: vi.fn(),
   ensureWorker: vi.fn(async () => true),
@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ ...mocks.settings }) }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
-vi.mock('../src/main/services/qwen-tts', () => ({
+vi.mock('../src/main/services/local-tts', () => ({
   stream: mocks.stream,
   synthesizeWav: mocks.synthesizeWav,
   ensureWorker: mocks.ensureWorker,
@@ -25,7 +25,7 @@ vi.mock('../src/main/services/qwen-tts', () => ({
 beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
-  mocks.settings = { ttsEngine: 'qwen3tts', qwenTtsVoice: 'ono_anna', conversationLocale: 'ja-JP' }
+  mocks.settings = { ttsEngine: 'qwen3tts', qwenTtsVoice: 'ono_anna', irodoriTtsVoice: 'calm-young-woman', conversationLocale: 'ja-JP' }
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 afterEach(() => vi.restoreAllMocks())
@@ -44,7 +44,7 @@ describe('TTS service with Qwen3-TTS', () => {
     for await (const piece of speech.pieces) received.push([...piece])
     expect(received).toEqual([[1, 2], [3]])
     expect(speech.sampleRate).toBe(24_000)
-    expect(mocks.stream).toHaveBeenCalledWith({ text: 'こんにちは。', voice: 'ono_anna', language: 'ja' }, undefined)
+    expect(mocks.stream).toHaveBeenCalledWith('qwen3tts', { text: 'こんにちは。', voice: 'ono_anna', language: 'ja' }, undefined)
   })
 
   it('lets the renderer speak a sentence through Web Speech when the model produces nothing or fails before the first piece', async () => {
@@ -70,7 +70,7 @@ describe('TTS service with Qwen3-TTS', () => {
     const tts = await import('../src/main/services/tts')
     const result = await tts.synthesize('うん', undefined, { speedScale: 1.1, volumeScale: 0.8 })
     expect(result).toEqual({ audio: 'AQID', phonemes: null })
-    expect(mocks.synthesizeWav).toHaveBeenCalledWith({ text: 'うん', voice: 'ono_anna', language: 'ja' }, undefined, 0.8)
+    expect(mocks.synthesizeWav).toHaveBeenCalledWith('qwen3tts', { text: 'うん', voice: 'ono_anna', language: 'ja' }, undefined, 0.8)
   })
 
   it('frees the worker\'s memory when another engine is chosen', async () => {
@@ -80,5 +80,36 @@ describe('TTS service with Qwen3-TTS', () => {
     expect(mocks.stop).not.toHaveBeenCalled()
     await tts.ensureEngine('system')
     expect(mocks.stop).toHaveBeenCalledOnce()
+  })
+})
+
+describe('TTS service with Irodori-TTS', () => {
+  beforeEach(() => {
+    mocks.settings = { ...mocks.settings, ttsEngine: 'irodori', irodoriTtsVoice: 'soft-young-woman' }
+  })
+
+  it('streams a sentence in the chosen voice, naming Japanese for the worker', async () => {
+    mocks.stream.mockReturnValue(piecesOf([1, 2], [3]))
+    const tts = await import('../src/main/services/tts')
+    const speech = await tts.synthesizeSentence('こんにちは。', 'ja-JP')
+    if (speech.kind !== 'stream') throw new Error('expected a stream')
+    const received: number[][] = []
+    for await (const piece of speech.pieces) received.push([...piece])
+    expect(received).toEqual([[1, 2], [3]])
+    expect(mocks.stream).toHaveBeenCalledWith('irodori', { text: 'こんにちは。', voice: 'soft-young-woman', language: 'ja' }, undefined)
+  })
+
+  it('synthesizes a backchannel as a WAV at the clip\'s volume, for the bank to cache', async () => {
+    mocks.synthesizeWav.mockResolvedValue(Buffer.from([1, 2, 3]))
+    const tts = await import('../src/main/services/tts')
+    expect(await tts.synthesize('うん', undefined, { speedScale: 1.2, volumeScale: 0.8 })).toEqual({ audio: 'AQID', phonemes: null })
+    expect(mocks.synthesizeWav).toHaveBeenCalledWith('irodori', { text: 'うん', voice: 'soft-young-woman', language: 'ja' }, undefined, 0.8)
+  })
+
+  it('starts the worker on Irodori-TTS when it is chosen', async () => {
+    const tts = await import('../src/main/services/tts')
+    await tts.ensureEngine('irodori')
+    expect(mocks.ensureWorker).toHaveBeenCalledWith('irodori')
+    expect(mocks.stop).not.toHaveBeenCalled()
   })
 })

@@ -233,6 +233,13 @@ describe('an engine that cannot speak the conversation language', () => {
     await expect(tts.resolveVoice()).rejects.toThrow('[asist:voice.speech.cannotSpeak {"engine":"VOICEVOX","language":"English"}]')
   })
 
+  it('refuses Irodori-TTS outside Japanese, the one language its model speaks', async () => {
+    mocks.settings.ttsEngine = 'irodori'
+    mocks.settings.conversationLocale = 'en-US'
+    const tts = await import('../src/main/services/tts')
+    await expect(tts.resolveVoice()).rejects.toThrow('[asist:voice.speech.cannotSpeak {"engine":"Irodori-TTS","language":"English"}]')
+  })
+
   it('refuses Qwen3-TTS in the two languages the model has no voice for, and accepts the rest', async () => {
     mocks.settings.ttsEngine = 'qwen3tts'
     mocks.settings.conversationLocale = 'hi-IN'

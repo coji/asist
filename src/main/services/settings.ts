@@ -2,7 +2,7 @@ import { app } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
-import { defaultRegion, pickInitialLocale } from '@shared/conversation-locale'
+import { defaultRegion, defaultTtsEngine, pickInitialLocale } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
 import type { AppSettings } from '@shared/ipc'
 import { SETTINGS_FORMAT, mergeSettings, parseAppSettings, parseSettingsPatch, type SettingsPatch } from '@shared/settings'
@@ -14,6 +14,7 @@ import { DEFAULT_LIVE_MODELS } from '@shared/voice-engine'
 import { defaultModelsFor } from '@shared/llm-catalog'
 import { storedContent } from '@shared/stored-format'
 import { writeJsonFileAtomicSync } from './atomic-json'
+import { platformCapabilities } from './platform'
 import { openStoredFileSync } from './stored-file'
 
 /** Reads and writes userData/settings.json. The file is read once and then cached for the life of the process. */
@@ -43,7 +44,8 @@ function defaultSettings(): AppSettings {
     liveIdleSeconds: 90,
     persona: defaultPersona(locale),
     conversationLogRetentionDays: 90,
-    ttsEngine: 'voicevox',
+    ttsEngine: defaultTtsEngine(locale, platformCapabilities().localSpeech),
+    irodoriTtsVoice: 'calm-young-woman',
     qwenTtsSize: '0.6b',
     voicevoxSpeaker: Number(process.env.VOICEVOX_SPEAKER || 1),
     aivisSpeaker: null,

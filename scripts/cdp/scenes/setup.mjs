@@ -96,9 +96,16 @@ await main(
     press('おすすめ'),
     wait(200),
     press('次へ'),
-    // 5. Speech.
+    // 5. Speech. A Japanese conversation starts on Irodori-TTS on the demo Mac.
     wait(300),
     shot('setup-15-tts-unready'),
+    press('モデルを準備する'),
+    wait(1500),
+    shot('setup-15b-tts-irodori-preparing'),
+    wait(3000),
+    shot('setup-15c-tts-irodori-ready'),
+    press('VOICEVOX'),
+    wait(300),
     press('検証する'),
     wait(300),
     shot('setup-16-tts-verifying'),

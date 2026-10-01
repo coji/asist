@@ -26,7 +26,7 @@ The folder of settings and data holds the following.
 | `api-usage.json` | Usage and cost of the paid APIs (daily totals) |
 | `joblogs/` | Logs of Agent jobs |
 | `python/`, `uv-cache/` | The Python that uv downloaded, and the package cache |
-| `speech-models/` | The models for speech recognition and Qwen3-TTS |
+| `speech-models/` | The models for speech recognition and for reading aloud (Irodori-TTS and Qwen3-TTS) |
 | `embedding-runtime/`, `vap-runtime/` | Python environments for searching the memory by meaning, choosing the kind of backchannel, and MaAI |
 
 The app log is kept in the app log folder in the table above, one file per day.

@@ -57,7 +57,6 @@ import { translate, uiLocale } from '@/i18n'
 import { demoPanelProps, respondTo } from './sayings'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { mergeSettings } from '@shared/settings'
-import { recommendQwenTts } from '@shared/tts-models'
 import { asrDownloadGb, asrModelSpec, recommendAsrModel } from '@shared/asr-models'
 import { demoCapabilities } from './platform'
 import { isLiveEngine } from '@shared/voice-engine'
@@ -130,6 +129,7 @@ const settings: AppSettings = {
   ttsEngine: 'system',
   voicevoxSpeaker: 1,
   aivisSpeaker: null,
+  irodoriTtsVoice: 'calm-young-woman',
   qwenTtsVoice: 'ono_anna',
   qwenTtsSize: '0.6b',
   bargeIn: true,
@@ -576,11 +576,7 @@ export const mockApi: RendererApi = {
   onHotkeyMic: () => () => {},
   getSetupStatus: async () => ({
     services: await mockApi.getStatus(),
-    asr: demoAsrStatus(),
-    qwenTts: {
-      recommended: recommendQwenTts(capabilities.localSpeech),
-      modelInstalled: false
-    }
+    asr: demoAsrStatus()
   }),
   completeSetup: async (request) => {
     Object.assign(settings, {

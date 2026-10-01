@@ -17,7 +17,7 @@ sidebar:
 
 ## 日本語以外で話すとき
 
-- 相槌、MaAI、VOICEVOX、AivisSpeech は使いません。設定にも出ません。
+- 相槌、MaAI、VOICEVOX、AivisSpeech、Irodori-TTS は使いません。設定にも出ません。
 - 記憶は会話の言語で書きます。それまでに別の言語で書いた記憶は、そのまま残って検索できます。
 - 地域が日本以外なら、天気は [Open-Meteo](https://open-meteo.com) から取ります。地域がアメリカのときだけ、華氏とマイル毎時です。
 

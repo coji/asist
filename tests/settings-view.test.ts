@@ -18,6 +18,7 @@ import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer
 import { useViewStore } from '../src/renderer/src/state/view'
 import { asrModelSpec, offeredAsrModels } from '@shared/asr-models'
 import { CREDITS } from '@shared/credits'
+import { IRODORI_TTS_VOICES } from '@shared/tts-models'
 import type { PlatformCapabilities } from '@shared/platform'
 import type { AppUpdateState } from '@shared/app-update'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, setCapabilities } from './helpers/platform'
@@ -50,6 +51,7 @@ const settings = {
   ttsEngine: 'system',
   qwenTtsSize: '0.6b',
   qwenTtsVoice: 'ono_anna',
+  irodoriTtsVoice: 'calm-young-woman',
   voicevoxSpeaker: 1,
   aivisSpeaker: null,
   bargeIn: true,
@@ -106,8 +108,7 @@ const api = {
       recommendationReason: '32GBメモリではQwen3-ASRを推奨します。',
       totalMemoryGb: 32,
       modelInstalled: false
-    },
-    qwenTts: { recommended: true, modelInstalled: false }
+    }
   })),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false })),
   embeddingStatus: vi.fn(async (): Promise<EmbeddingStatus> => embeddingReady),
@@ -958,6 +959,23 @@ describe('the state of the speech models while the settings are open', () => {
   })
 })
 
+describe('Irodori-TTS on the voice page', () => {
+  it('lists Irodori-TTS first for a Japanese conversation and saves the voice chosen for it', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'irodori' } })
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    const engines = [...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)
+    expect(engines).toEqual(['irodori', 'qwen3tts', 'voicevox', 'aivisspeech', 'system', 'none'])
+    const voice = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.voice')}"]`)!
+    expect([...voice.options].map((option) => option.textContent)).toEqual(IRODORI_TTS_VOICES.map((one) => t(one.label)))
+    await act(async () => {
+      voice.value = 'soft-young-woman'
+      voice.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(api.saveSettings).toHaveBeenCalledWith({ irodoriTtsVoice: 'soft-young-woman' })
+  })
+})
+
 describe('the size of Qwen3-TTS on the voice page', () => {
   const sizeSelect = (view: HTMLElement): HTMLSelectElement | null => view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.model')}"]`)
   const openVoicePage = async (): Promise<HTMLElement> => {
@@ -1012,11 +1030,12 @@ describe('settings dialog on a machine without the local models, the native micr
     api.getSetupStatus.mockImplementation(macSetup)
   })
 
-  it('gives the reason in place of the recognition model, leaves out echo cancellation, noise suppression and Qwen3-TTS, and keeps MaAI on the voice page', async () => {
+  it('gives the reason in place of the recognition model, leaves out echo cancellation, noise suppression and the local engines, and keeps MaAI on the voice page', async () => {
     const view = await render()
     await act(async () => nav(view, 'voice').click())
     const engines = [...view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.engineLabel')}"]`)!.options].map((option) => option.value)
     expect(engines).not.toContain('qwen3tts')
+    expect(engines).not.toContain('irodori')
     expect(hint(view, t('settingsVoice.recognition.model'))).toBe(t('speechRecognition.unavailable.noDiscreteGpu'))
     expect(view.querySelector(`[aria-label="${t('settingsVoice.recognition.modelLabel')}"]`)).toBeNull()
     const labels = rowLabels(view)

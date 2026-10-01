@@ -588,6 +588,45 @@ export const settingsAbout = defineMessages({
       'pt-BR': 'Execução dos modelos de síntese de fala na GPU',
       'es-419': 'Ejecución de los modelos de síntesis de voz en la GPU',
       'es-ES': 'Ejecución de los modelos de síntesis de voz en la GPU'
+    },
+    ttsIrodori: {
+      'ja-JP': '返事の読み上げ。モデルカードは、本人の同意なしに声を複製したりなりすましたりすることと、ディープフェイクや誤った情報を作ることを禁じています。',
+      'en-US': 'Reading the replies aloud. Its model card forbids copying or impersonating a voice without the person’s consent, and making deepfakes or misinformation.',
+      'fr-FR': 'Lecture des réponses à voix haute. Sa fiche de modèle interdit de copier ou d’imiter une voix sans le consentement de la personne, et de créer des deepfakes ou de la désinformation.',
+      'de-DE': 'Vorlesen der Antworten. Die Modellkarte verbietet, eine Stimme ohne Einwilligung der Person zu kopieren oder nachzuahmen und Deepfakes oder Falschinformationen zu erzeugen.',
+      'hi-IN': 'जवाब बोलकर पढ़ना। इसका मॉडल कार्ड किसी व्यक्ति की सहमति के बिना उसकी आवाज़ की नकल करने या उसका रूप धरने, और डीपफ़ेक या गलत जानकारी बनाने से मना करता है।',
+      'id-ID': 'Membacakan jawaban. Kartu modelnya melarang menyalin atau meniru suara seseorang tanpa persetujuannya, serta membuat deepfake atau misinformasi.',
+      'it-IT': 'Lettura delle risposte ad alta voce. La sua scheda del modello vieta di copiare o imitare una voce senza il consenso della persona e di creare deepfake o disinformazione.',
+      'ko-KR': '답변 읽어 주기. 모델 카드는 본인의 동의 없이 목소리를 복제하거나 흉내 내는 것과 딥페이크나 허위 정보를 만드는 것을 금지합니다.',
+      'pt-BR': 'Leitura das respostas em voz alta. O cartão do modelo proíbe copiar ou imitar uma voz sem o consentimento da pessoa e criar deepfakes ou desinformação.',
+      'es-419': 'Lectura de las respuestas en voz alta. La ficha del modelo prohíbe copiar o imitar una voz sin el consentimiento de la persona y crear deepfakes o desinformación.',
+      'es-ES': 'Lectura de las respuestas en voz alta. La ficha del modelo prohíbe copiar o imitar una voz sin el consentimiento de la persona y crear deepfakes o desinformación.'
+    },
+    ttsIrodoriCodec: {
+      'ja-JP': 'Irodori-TTS が作った声を音声に戻す',
+      'en-US': 'Turning the voice Irodori-TTS makes into audio',
+      'fr-FR': 'Conversion en audio de la voix que produit Irodori-TTS',
+      'de-DE': 'Umwandeln der von Irodori-TTS erzeugten Stimme in Audio',
+      'hi-IN': 'Irodori-TTS की बनाई आवाज़ को ऑडियो में बदलना',
+      'id-ID': 'Mengubah suara buatan Irodori-TTS menjadi audio',
+      'it-IT': 'Conversione in audio della voce prodotta da Irodori-TTS',
+      'ko-KR': 'Irodori-TTS가 만든 목소리를 오디오로 변환',
+      'pt-BR': 'Conversão em áudio da voz que o Irodori-TTS produz',
+      'es-419': 'Conversión en audio de la voz que produce Irodori-TTS',
+      'es-ES': 'Conversión en audio de la voz que produce Irodori-TTS'
+    },
+    dacvae: {
+      'ja-JP': 'Semantic-DACVAE-Japanese-32dim の元になったモデル',
+      'en-US': 'The model Semantic-DACVAE-Japanese-32dim is derived from',
+      'fr-FR': 'Le modèle dont dérive Semantic-DACVAE-Japanese-32dim',
+      'de-DE': 'Das Modell, aus dem Semantic-DACVAE-Japanese-32dim abgeleitet ist',
+      'hi-IN': 'वह मॉडल जिससे Semantic-DACVAE-Japanese-32dim बना है',
+      'id-ID': 'Model asal Semantic-DACVAE-Japanese-32dim',
+      'it-IT': 'Il modello da cui deriva Semantic-DACVAE-Japanese-32dim',
+      'ko-KR': 'Semantic-DACVAE-Japanese-32dim의 바탕이 된 모델',
+      'pt-BR': 'O modelo do qual o Semantic-DACVAE-Japanese-32dim deriva',
+      'es-419': 'El modelo del que deriva Semantic-DACVAE-Japanese-32dim',
+      'es-ES': 'El modelo del que deriva Semantic-DACVAE-Japanese-32dim'
     }
   },
   notices: {

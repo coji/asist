@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, PROVIDER_DEFAULT_MODELS, modelName, type LlmProvider } from '@shared/llm-catalog'
 import type { SetupProgress, SetupStatus, TtsEngine } from '@shared/ipc'
 import { asrModelChoices, type AsrModel } from '@shared/asr-models'
-import { qwenTtsSizeGb, type QwenTtsSize } from '@shared/tts-models'
+import { isLocalTtsEngine, localTtsModel, localTtsSizeGb, type QwenTtsSize } from '@shared/tts-models'
 import { ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT, type PlatformCapabilities } from '@shared/platform'
@@ -302,12 +302,15 @@ type OfferedTtsEngine = Exclude<TtsEngine, 'none'>
 /**
  * The engines that read the replies aloud. VOICEVOX and AivisSpeech are separate applications, and
  * ASIST starts them in the background when they sit in the Applications folder; when they do not,
- * the user is asked to install them from the official site. Qwen3-TTS is a model ASIST downloads
- * and runs itself on the GPU, offered only where the GPU has the memory for it beside the speech recognition.
+ * the user is asked to install them from the official site. Irodori-TTS and Qwen3-TTS are models ASIST
+ * downloads and runs itself on the GPU, offered only where the GPU has the memory for one beside the
+ * speech recognition. The local engines come first, since one of them is what a language starts with
+ * where they run.
  */
 const TTS_ENGINES: Array<{ id: OfferedTtsEngine; site?: string }> = [
-  { id: 'system' },
+  { id: 'irodori' },
   { id: 'qwen3tts' },
+  { id: 'system' },
   { id: 'voicevox', site: 'https://voicevox.hiroshiba.jp/' },
   { id: 'aivisspeech', site: 'https://aivis-project.com/' }
 ]
@@ -319,7 +322,7 @@ export function TtsStep({
   onTtsEngine,
   ttsChecking,
   ttsDownload,
-  qwenTtsOffered,
+  localTtsOffered,
   qwenTtsSize,
   onRecheckTts,
   onPrepareTts,
@@ -333,10 +336,10 @@ export function TtsStep({
   onTtsEngine: (engine: TtsEngine) => void
   /** True from the moment the engine is verified or its model is prepared until the result comes back. */
   ttsChecking: boolean
-  /** The latest progress of the Qwen3-TTS preparation while it runs. */
+  /** The latest progress of the preparation of a local engine while it runs. */
   ttsDownload: SetupProgress | null
-  /** Offered where the machine has the memory for it, or already chosen on a machine that runs it. */
-  qwenTtsOffered: boolean
+  /** The local engines are offered where the machine has the memory for one, or where one is already chosen on a machine that runs it. */
+  localTtsOffered: boolean
   /** The size of Qwen3-TTS the settings name, whose files the description counts. */
   qwenTtsSize: QwenTtsSize
   onRecheckTts: () => void
@@ -351,7 +354,7 @@ export function TtsStep({
   return (
     <div className="su-stack">
       <section className="su-group" aria-label={t('setup.tts.groupLabel')}>
-        {TTS_ENGINES.filter((engine) => ttsEngineSpeaks(locale, engine.id) && (engine.id !== 'qwen3tts' || qwenTtsOffered)).map((engine) => {
+        {TTS_ENGINES.filter((engine) => ttsEngineSpeaks(locale, engine.id) && (!isLocalTtsEngine(engine.id) || localTtsOffered)).map((engine) => {
           const active = ttsEngine === engine.id
           const ready = active && ttsReady
           const title = ttsEngineLabel(t, engine.id)
@@ -361,8 +364,10 @@ export function TtsStep({
               active={active}
               title={title}
               detail={
-                engine.id === 'qwen3tts'
-                  ? t('setup.tts.engines.qwen3tts.detail', { sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(qwenTtsSizeGb(qwenTtsSize)) })
+                isLocalTtsEngine(engine.id)
+                  ? t(`setup.tts.engines.${engine.id}.detail`, {
+                      sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(localTtsSizeGb(localTtsModel(engine.id, qwenTtsSize)))
+                    })
                   : t(osMessageKey(`setup.tts.engines.${engine.id}.detail`, os))
               }
               chip={
@@ -371,8 +376,8 @@ export function TtsStep({
                   : ready
                     ? { tone: 'ok', label: t('common.ready') }
                     : ttsChecking
-                      ? { tone: 'cyan', label: engine.id === 'qwen3tts' ? t('common.preparing') : t('setup.verifying') }
-                      : { tone: 'warn', label: engine.id === 'qwen3tts' ? t('common.notReady') : t('setup.tts.notConnected') }
+                      ? { tone: 'cyan', label: isLocalTtsEngine(engine.id) ? t('common.preparing') : t('setup.verifying') }
+                      : { tone: 'warn', label: isLocalTtsEngine(engine.id) ? t('common.notReady') : t('setup.tts.notConnected') }
               }
               onClick={() => onTtsEngine(engine.id)}
             >
@@ -383,7 +388,7 @@ export function TtsStep({
                     {t('common.playSample')}
                   </Btn>
                 </div>
-              ) : engine.id === 'qwen3tts' ? (
+              ) : isLocalTtsEngine(engine.id) ? (
                 <div className="su-inline">
                   {ttsChecking ? (
                     <>

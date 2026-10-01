@@ -26,7 +26,7 @@ ASIST から開発者へ送るデータはありません。設定とデータ�
 | `api-usage.json` | 有料の API の使用量と料金(日ごとの合計) |
 | `joblogs/` | Agent のジョブのログ |
 | `python/`、`uv-cache/` | uv が取得した Python と、パッケージのキャッシュ |
-| `speech-models/` | 声の聞き取りと Qwen3-TTS のモデル |
+| `speech-models/` | 声の聞き取りと読み上げ(Irodori-TTS と Qwen3-TTS)のモデル |
 | `embedding-runtime/`、`vap-runtime/` | 記憶の意味検索、相槌の種類の判定、MaAI が使う Python の環境 |
 
 動作ログは、上の表の動作ログのフォルダに日ごとに残ります。

@@ -5,9 +5,9 @@ import { asrModelChoices, type AsrModel } from '@shared/asr-models'
 import { HoloSwitch } from '@/components/ui/switch'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useToastStore } from '@/state/stores'
-import { QWEN_TTS_MODELS, QWEN_TTS_SIZES, QWEN_TTS_VOICES, offeredQwenTtsSizes, qwenTtsSizeGb, ttsEngineRuns, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
+import { IRODORI_TTS_VOICES, QWEN_TTS_MODELS, QWEN_TTS_SIZES, QWEN_TTS_VOICES, isLocalTtsEngine, localTtsModel, localTtsSizeGb, offeredQwenTtsSizes, recommendLocalTts, ttsEngineRuns, type IrodoriTtsVoice, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
-import { conversationFeatures } from '@shared/conversation-locale'
+import { conversationFeatures, ttsEngineSpeaks } from '@shared/conversation-locale'
 import { TTS_SITE, ttsEngineLabel, isExternalTts, speechReadiness, type SettingsContext } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
 import { Advanced, Btn, Chip, Group, Page, Row } from '../primitives'
@@ -180,13 +180,10 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   // The engines this machine runs that can read the conversation language. A saved engine that is not
   // among them, which a change of language or settings brought from another machine leaves behind,
   // shows as no selection until one is picked.
-  const engines: TtsEngine[] = [
-    ...(features.japaneseTts ? (['voicevox', 'aivisspeech'] as const) : []),
-    ...(features.qwenTts && ttsEngineRuns('qwen3tts', localSpeech) ? (['qwen3tts'] as const) : []),
-    'system',
-    'none'
-  ]
-  const engineUsable = engines.includes(engine)
+  const engines = (['irodori', 'qwen3tts', 'voicevox', 'aivisspeech', 'system', 'none'] as const).filter(
+    (option) => ttsEngineSpeaks(settings.conversationLocale, option) && ttsEngineRuns(option, localSpeech)
+  )
+  const engineUsable = (engines as readonly TtsEngine[]).includes(engine)
   const speakers = useSpeakerOptions(engineUsable, engine)
   // The size is chosen where the memory holds more than one. A saved size this machine does not offer,
   // which settings brought from a larger machine leave behind, stays in the list because it is the one
@@ -282,7 +279,7 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
 
       <Group title={t('settingsVoice.speech.title')} description={t(osMessageKey('settingsVoice.speech.description', capabilities.os))}>
         <Row label={t('settingsVoice.speech.engine')} hint={!ttsEngineRuns(engine, localSpeech) ? t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, engine) }) : undefined}>
-          {ttsMissing && <Chip tone="warn">{engine === 'qwen3tts' ? t('common.notReady') : t('common.notFound')}</Chip>}
+          {ttsMissing && <Chip tone="warn">{isLocalTtsEngine(engine) ? t('common.notReady') : t('common.notFound')}</Chip>}
           <select
             className="st-select"
             aria-label={t('settingsVoice.speech.engineLabel')}
@@ -291,16 +288,16 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
           >
             {engines.map((option) => (
               <option key={option} value={option}>
-                {option === 'qwen3tts' || option === 'none' ? t(`settingsVoice.speech.engines.${option}`) : ttsEngineLabel(t, option)}
+                {option === 'irodori' || option === 'qwen3tts' || option === 'none' ? t(`settingsVoice.speech.engines.${option}`) : ttsEngineLabel(t, option)}
               </option>
             ))}
           </select>
         </Row>
-        {ttsMissing && engine === 'qwen3tts' && (
+        {ttsMissing && isLocalTtsEngine(engine) && (
           <PrepLine
-            text={t(setup && !setup.qwenTts.recommended ? osMessageKey('settingsModels.speech.qwenTooLittleMemory', capabilities.os) : 'settingsModels.speech.qwen', {
-              model: QWEN_TTS_MODELS[settings.qwenTtsSize].label,
-              sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(qwenTtsSizeGb(settings.qwenTtsSize))
+            text={t(!recommendLocalTts(localSpeech) ? osMessageKey('settingsModels.speech.localModelTooLittleMemory', capabilities.os) : 'settingsModels.speech.localModel', {
+              model: localTtsModel(engine, settings.qwenTtsSize).label,
+              sizeGb: new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 }).format(localTtsSizeGb(localTtsModel(engine, settings.qwenTtsSize)))
             })}
             progress={<PrepProgress ctx={ctx} target="tts" />}
           >
@@ -350,6 +347,24 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
               ))}
             </select>
             {preview}
+          </Row>
+        )}
+        {engineUsable && engine === 'irodori' && (
+          <Row label={t('settingsVoice.speech.voice')}>
+            <select
+              className="st-select"
+              aria-label={t('settingsVoice.speech.voice')}
+              style={{ maxWidth: 220 }}
+              value={settings.irodoriTtsVoice}
+              onChange={(e) => set({ irodoriTtsVoice: e.target.value as IrodoriTtsVoice })}
+            >
+              {IRODORI_TTS_VOICES.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {t(voice.label)}
+                </option>
+              ))}
+            </select>
+            {!ttsMissing && preview}
           </Row>
         )}
         {engineUsable && engine === 'qwen3tts' && qwenTtsSizes.length > 1 && (

@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
-import { QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsFiles, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
+import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, localTtsModel, type LocalTtsEngine, type LocalTtsModel } from '@shared/tts-models'
 import type { SetupProgress } from '@shared/ipc'
 import { platformCapabilities } from './platform'
+import { resourcePath } from './resource-path'
 import { getSettings } from './settings'
 import { speechWorkerPath } from './speech-binaries'
 import { filesInstalled, modelFilePath, prepareModelFiles } from './speech-models'
@@ -10,16 +11,17 @@ import { SpeechShaper, encodeWav } from './speech-shaper'
 import { startSpeechWorker, type SpeechWorker } from './speech-worker'
 
 /**
- * Speech synthesis with Qwen3-TTS in speech.cpp's worker, on the GPU the capabilities chose, at the size the
- * setting names. The worker serves one request at a time in arrival order and returns the audio in pieces
- * while the sentence is still being generated: its first frame alone, then four frames at a time, so a
- * caller can start playback after the first piece.
+ * Speech synthesis on the GPU the capabilities chose, in speech.cpp's worker, which runs one model per
+ * process: Irodori-TTS, or Qwen3-TTS at the size the setting names. Choosing the other engine or size starts
+ * the worker again. The worker serves one request at a time in arrival order and returns the audio in pieces:
+ * Qwen3-TTS while the sentence is still being generated, its first frame alone and then four frames at a
+ * time, and Irodori-TTS once the whole sentence is made, as its codec decodes it.
  */
 
-export interface QwenSpeechRequest {
+export interface LocalSpeechRequest {
   text: string
-  voice: QwenTtsVoice
-  /** The BCP 47 tag of the language, from `qwenTtsLanguage`. */
+  voice: string
+  /** The BCP 47 tag of the language. */
   language: string
 }
 
@@ -62,24 +64,54 @@ class PieceQueue {
   }
 }
 
+/** What one worker runs. Two starts run the same worker when their keys match. */
+interface WorkerSpec {
+  key: string
+  model: LocalTtsModel
+  logName: string
+  args: string[]
+}
+
+/** The voice files ASIST ships for Irodori-TTS, which needs at least one at start and switches between them per request. */
+const irodoriVoicePath = (voice: string): string => resourcePath(`irodori-voices/${voice}.voice.gguf`)
+
+function workerSpec(engine: LocalTtsEngine): WorkerSpec {
+  const size = getSettings().qwenTtsSize
+  const model = localTtsModel(engine, size)
+  if (engine === 'irodori') {
+    return {
+      key: 'irodori',
+      model,
+      logName: 'irodori-tts',
+      args: [
+        modelFilePath(IRODORI_TTS_MODEL.model),
+        modelFilePath(IRODORI_TTS_MODEL.codec),
+        ...IRODORI_TTS_VOICE_IDS.flatMap((voice) => ['--voice', `${voice}=${irodoriVoicePath(voice)}`])
+      ]
+    }
+  }
+  return { key: `qwen3tts:${size}`, model, logName: 'qwen3-tts', args: [modelFilePath(QWEN_TTS_MODELS[size].talker), modelFilePath(QWEN_TTS_CODEC)] }
+}
+
 let worker: SpeechWorker | null = null
-/** The size the running worker loaded. */
-let workerSize: QwenTtsSize | null = null
+/** The spec the running worker was started with. */
+let workerKey: string | null = null
+let workerLabel = ''
 let workerReady = false
 let starting: Promise<boolean> | null = null
 let silenceTimer: NodeJS.Timeout | null = null
 const requests = new Map<string, PieceQueue>()
 
-/** Whether the files of the size are there. */
-export function installationStatus(size: QwenTtsSize = getSettings().qwenTtsSize): { modelInstalled: boolean } {
-  return { modelInstalled: filesInstalled(qwenTtsFiles(size)) }
+/** Whether the files of the engine's model, as the settings name it, are there. */
+export function installationStatus(engine: LocalTtsEngine): { modelInstalled: boolean } {
+  return { modelInstalled: filesInstalled(localTtsModel(engine, getSettings().qwenTtsSize).files) }
 }
 
-export function available(): boolean {
-  return Boolean(worker && workerReady && worker.alive && workerSize === getSettings().qwenTtsSize)
+export function available(engine: LocalTtsEngine): boolean {
+  return Boolean(worker && workerReady && worker.alive && workerKey === workerSpec(engine).key)
 }
 
-/** True while a worker this app started is loading the model. */
+/** True while a worker this app started is loading its model. */
 export function isStarting(): boolean {
   return starting !== null
 }
@@ -87,7 +119,7 @@ export function isStarting(): boolean {
 /** The sample rate of the pieces, known once the worker is ready. */
 export function sampleRate(): number {
   const rate = worker?.info.sampleRate
-  if (typeof rate !== 'number') throw new Error('Qwen3-TTS worker is not ready')
+  if (typeof rate !== 'number') throw new Error('the speech worker is not ready')
   return rate
 }
 
@@ -95,7 +127,7 @@ function armSilenceTimer(): void {
   if (silenceTimer) clearTimeout(silenceTimer)
   silenceTimer = requests.size === 0
     ? null
-    : setTimeout(() => stopWorker(new Error('Qwen3-TTS worker stopped responding')), SILENT_WORKER_TIMEOUT_MS)
+    : setTimeout(() => stopWorker(new Error(`${workerLabel} worker stopped responding`)), SILENT_WORKER_TIMEOUT_MS)
 }
 
 function handleMessage(message: Record<string, unknown>): void {
@@ -108,37 +140,33 @@ function handleMessage(message: Record<string, unknown>): void {
   } else {
     requests.delete(message.id as string)
     if (message.type === 'end') queue.end()
-    else queue.fail(new Error(typeof message.error === 'string' && message.error ? message.error : 'Qwen3-TTS synthesis failed'))
+    else queue.fail(new Error(typeof message.error === 'string' && message.error ? message.error : `${workerLabel} synthesis failed`))
   }
   armSilenceTimer()
 }
 
-async function startWorker(): Promise<boolean> {
-  if (available()) return true
-  if (starting) return starting
+async function startWorker(engine: LocalTtsEngine): Promise<boolean> {
+  if (available(engine)) return true
+  const spec = workerSpec(engine)
+  if (starting && workerKey === spec.key) return starting
   stopWorker()
-  const size = getSettings().qwenTtsSize
   const { localSpeech } = platformCapabilities()
-  // The capabilities leave Qwen3-TTS out where the local speech does not run, so a start here is a caller's mistake.
-  if (localSpeech.backend === null) throw new Error('Qwen3-TTS cannot run on this machine')
-  if (!installationStatus(size).modelInstalled) return false
+  // The capabilities leave the local engines out where the local speech does not run, so a start here is a caller's mistake.
+  if (localSpeech.backend === null) throw new Error(`${spec.model.label} cannot run on this machine`)
+  if (!filesInstalled(spec.model.files)) return false
   // The worker ships with the app, so a missing one is a broken build rather than something to prepare.
   if (!fs.existsSync(speechWorkerPath())) throw new Error(`speech-worker is missing from ${speechWorkerPath()}`)
-  const started: SpeechWorker = startSpeechWorker(
-    speechWorkerPath(),
-    [modelFilePath(QWEN_TTS_MODELS[size].talker), modelFilePath(QWEN_TTS_CODEC), '--device', localSpeech.device],
-    'qwen3-tts',
-    {
-      onMessage: (message) => {
-        if (worker === started) handleMessage(message)
-      },
-      onFailure: (error) => {
-        if (worker === started) stopWorker(error)
-      }
+  const started: SpeechWorker = startSpeechWorker(speechWorkerPath(), [...spec.args, '--device', localSpeech.device], spec.logName, {
+    onMessage: (message) => {
+      if (worker === started) handleMessage(message)
+    },
+    onFailure: (error) => {
+      if (worker === started) stopWorker(error)
     }
-  )
+  })
   worker = started
-  workerSize = size
+  workerKey = spec.key
+  workerLabel = spec.model.label
   const operation = started.ready
     .then((ready) => {
       if (worker !== started) return false
@@ -153,19 +181,19 @@ async function startWorker(): Promise<boolean> {
   return operation
 }
 
-/** Starts the worker on the size the setting names. Resolves false when the worker or the model files are missing. */
-export function ensureWorker(): Promise<boolean> {
-  return startWorker()
+/** Starts the worker on the engine's model as the settings name it. Resolves false when the model files are missing. */
+export function ensureWorker(engine: LocalTtsEngine): Promise<boolean> {
+  return startWorker(engine)
 }
 
 export function stop(): void {
   stopWorker()
 }
 
-function stopWorker(error: Error = new DOMException('Qwen3-TTS worker stopped', 'AbortError')): void {
+function stopWorker(error: Error = new DOMException('the speech worker stopped', 'AbortError')): void {
   const stale = worker
   worker = null
-  workerSize = null
+  workerKey = null
   workerReady = false
   starting = null
   stale?.stop()
@@ -175,7 +203,7 @@ function stopWorker(error: Error = new DOMException('Qwen3-TTS worker stopped', 
 }
 
 /**
- * On a short interjection the model often rambles instead of stopping. Measured on 2026-09-21 with
+ * On a short interjection Qwen3-TTS often rambles instead of stopping. Measured on 2026-09-21 with
  * `ono_anna`, eight generations each: "あー。" came out between 0.6 and 6.5 s and "はいはい。" between
  * 0.5 and 7.0 s, where a natural reading takes under a second, and between 40% and 90% of the
  * generations were plausible. Whole sentences are read at about 0.16 s per character and do not show
@@ -185,19 +213,21 @@ function stopWorker(error: Error = new DOMException('Qwen3-TTS worker stopped', 
  * A digit is read as a word of its own and takes longer than a character of text, so it is allowed
  * twice the time. Measured on 2026-09-26 with `ono_anna`, 16 readings: "暗証番号は4桁で、8264です。"
  * took up to 5.9 s, which the allowance by characters alone, 5.4 s, cut before "四です".
+ *
+ * Irodori-TTS fixes a sentence's length before it makes it, so it has no limit here.
  */
-const plausibleSeconds = (text: string): number =>
-  0.6 + 0.3 * text.length + 0.3 * (text.match(/\p{Nd}/gu)?.length ?? 0)
+const plausibleSeconds = (engine: LocalTtsEngine, text: string): number =>
+  engine === 'qwen3tts' ? 0.6 + 0.3 * text.length + 0.3 * (text.match(/\p{Nd}/gu)?.length ?? 0) : Infinity
 const CLIP_ATTEMPTS = 6
 
 /**
- * Synthesizes one text and yields mono pieces of up to a third of a second each as they are generated,
- * with the silence around the sentence cut and the level evened out. The stream ends early when
- * the model rambles past a plausible length. Aborting the signal, or leaving the loop early, cancels
+ * Synthesizes one text and yields mono pieces of up to a third of a second each as they are made,
+ * with the silence around the sentence cut and the level evened out. A stream of Qwen3-TTS ends early
+ * when the model rambles past a plausible length. Aborting the signal, or leaving the loop early, cancels
  * the request in the worker.
  */
-export async function* stream(request: QwenSpeechRequest, signal?: AbortSignal): AsyncGenerator<Float32Array> {
-  if (!(await ensureWorker()) || !worker) throw new Error('Qwen3-TTS is not installed or failed to start')
+export async function* stream(engine: LocalTtsEngine, request: LocalSpeechRequest, signal?: AbortSignal): AsyncGenerator<Float32Array> {
+  if (!(await ensureWorker(engine)) || !worker) throw new Error(`${localTtsModel(engine, getSettings().qwenTtsSize).label} is not installed or failed to start`)
   signal?.throwIfAborted()
   const active = worker
   const id = randomUUID()
@@ -218,7 +248,7 @@ export async function* stream(request: QwenSpeechRequest, signal?: AbortSignal):
     active.send({ id, text: request.text, voice: request.voice, language: request.language })
     armSilenceTimer()
     const shaper = new SpeechShaper(sampleRate())
-    const limit = plausibleSeconds(request.text) * sampleRate()
+    const limit = plausibleSeconds(engine, request.text) * sampleRate()
     let samples = 0
     for await (const piece of queue.read()) {
       const shaped = shaper.push(piece)
@@ -235,35 +265,35 @@ export async function* stream(request: QwenSpeechRequest, signal?: AbortSignal):
 }
 
 /** Synthesizes the whole text into a WAV file, for clips that are cached and played at once. `volume` scales the samples. */
-export async function synthesizeWav(request: QwenSpeechRequest, signal?: AbortSignal, volume = 1): Promise<Buffer> {
+export async function synthesizeWav(engine: LocalTtsEngine, request: LocalSpeechRequest, signal?: AbortSignal, volume = 1): Promise<Buffer> {
   for (let attempt = 0; attempt < CLIP_ATTEMPTS; attempt++) {
     const pieces: Float32Array[] = []
     let samples = 0
-    for await (const piece of stream(request, signal)) {
+    for await (const piece of stream(engine, request, signal)) {
       pieces.push(volume === 1 ? piece : piece.map((value) => value * volume))
       samples += piece.length
     }
-    if (samples > 0 && samples <= plausibleSeconds(request.text) * sampleRate()) return encodeWav(pieces, sampleRate())
+    if (samples > 0 && samples <= plausibleSeconds(engine, request.text) * sampleRate()) return encodeWav(pieces, sampleRate())
   }
-  throw new Error(`Qwen3-TTS produced no plausible reading of "${request.text}" in ${CLIP_ATTEMPTS} attempts`)
+  throw new Error(`${workerLabel} produced no plausible reading of "${request.text}" in ${CLIP_ATTEMPTS} attempts`)
 }
 
 let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
 let prepareController: AbortController | null = null
 
-/** Downloads the files of the size the setting names and starts the worker on them. Progress arrives through `onProgress`. */
-export function prepare(onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
+/** Downloads the files of the engine's model as the settings name it and starts the worker on them. Progress arrives through `onProgress`. */
+export function prepare(engine: LocalTtsEngine, onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
   if (prepareInFlight) return prepareInFlight
   const controller = new AbortController()
   prepareController = controller
-  const size = getSettings().qwenTtsSize
+  const model = localTtsModel(engine, getSettings().qwenTtsSize)
   const operation = prepareModelFiles({
-    files: qwenTtsFiles(size),
-    label: QWEN_TTS_MODELS[size].label,
-    feature: 'Qwen3-TTS',
+    files: model.files,
+    label: model.label,
+    feature: model.label,
     signal: controller.signal,
     onProgress,
-    start: () => startWorker()
+    start: () => startWorker(engine)
   }).finally(() => {
     if (prepareInFlight === operation) prepareInFlight = null
     if (prepareController === controller) prepareController = null

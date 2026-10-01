@@ -12,7 +12,7 @@ sidebar:
 | uv | Astral's releases on GitHub. It is checked by hash before it is bundled. | MIT or Apache-2.0 |
 | git | On a Mac, the source tarball from kernel.org. After a hash check, only the parts needed for local operations are compiled. The source is not modified. On Windows, MinGit as Git for Windows publishes it. After a hash check, it is bundled without the parts ASIST does not use. | GPL-2.0 |
 | llama-server from llama.cpp | The releases of ggml-org on GitHub. It is checked by hash before it is bundled. It runs Qwen3-ASR for speech recognition. On Windows, the OpenMP runtime from LLVM that comes in the same release is bundled with it. | MIT (the OpenMP runtime is Apache-2.0 with LLVM exception) |
-| speech-worker from speech.cpp | The releases of [nyosegawa/speech.cpp](https://github.com/nyosegawa/speech.cpp) on GitHub. It is checked by hash before it is bundled. It runs Qwen3-TTS for reading aloud. | MIT |
+| speech-worker from speech.cpp | The releases of [nyosegawa/speech.cpp](https://github.com/nyosegawa/speech.cpp) on GitHub. It is checked by hash before it is bundled. It runs Irodori-TTS and Qwen3-TTS for reading aloud. | MIT |
 
 The license texts of all of them are included in the app. For git, the [Release](https://github.com/nyosegawa/asist/releases) of each version of ASIST carries the source tarball of the same git version, and for the git on Windows, the source of the same version of Git for Windows.
 
@@ -21,6 +21,7 @@ The license texts of all of them are included in the app. For git, the [Release]
 | Data | How it is made |
 |---|---|
 | The weather region table (47 prefectures and 1,919 municipalities, matched to forecast areas and weather stations) | From the Japan Meteorological Agency's constant files and the list of municipalities from the Geospatial Information Authority of Japan |
+| Irodori-TTS voices (three) | Speech that Irodori-TTS made from a description of each voice, turned into voice files with speech.cpp and bundled. |
 | Qwen3-TTS backchannel audio (nine voices) | Synthesized with Qwen3-TTS, then trimmed and bundled. |
 | Voice samples for Live | Synthesized with the provider's TTS and bundled. |
 

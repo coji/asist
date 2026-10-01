@@ -5,15 +5,15 @@ import fs from 'node:fs'
 import type { AppSettings, PhonemeEvent, SpeakerOption, TtsEngine } from '@shared/ipc'
 import type { OsFamily } from '@shared/platform'
 import { withTimeoutSignal } from '@shared/abort'
-import { CONVERSATION_LANGUAGE_NAMES, type ConversationLocale } from '@shared/conversation-locale'
-import { qwenTtsLanguage, ttsEngineRuns } from '@shared/tts-models'
+import { CONVERSATION_LANGUAGE_NAMES, languageOf, ttsEngineSpeaks, type ConversationLocale } from '@shared/conversation-locale'
+import { isLocalTtsEngine, qwenTtsLanguage, ttsEngineRuns } from '@shared/tts-models'
 import { errorText } from '@shared/i18n/error-text'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { conversationLocale } from './conversation-locale'
 import { platformCapabilities } from './platform'
 import { t } from './i18n'
 import { getSettings } from './settings'
-import * as qwenTts from './qwen-tts'
+import * as localTts from './local-tts'
 import type { HttpTtsEngine, TtsVoice } from './tts-voice'
 import { childEnv } from './child-env'
 
@@ -22,8 +22,8 @@ export type { TtsVoice } from './tts-voice'
 /**
  * The speech engines behind one interface. VOICEVOX ENGINE and AivisSpeech Engine speak the same
  * HTTP API of audio_query, synthesis and speakers and are driven by one implementation here;
- * Qwen3-TTS runs in a worker of its own. With 'system', or when the chosen engine fails, audio comes
- * back as null and the renderer speaks through Web Speech.
+ * Irodori-TTS and Qwen3-TTS run in speech.cpp's worker. With 'system', or when the chosen engine fails,
+ * audio comes back as null and the renderer speaks through Web Speech.
  */
 
 interface EngineDef {
@@ -76,6 +76,7 @@ const currentEngine = (): TtsEngine => getSettings().ttsEngine
 export function engineLabel(engine: TtsEngine = currentEngine()): string {
   if (engine === 'system') return t(osMessageKey('settings.ttsEngine.system', platformCapabilities().os))
   if (engine === 'none') return t('settings.ttsEngine.none')
+  if (engine === 'irodori') return 'Irodori-TTS'
   if (engine === 'qwen3tts') return 'Qwen3-TTS'
   return ENGINES[engine].label
 }
@@ -84,7 +85,7 @@ export function engineLabel(engine: TtsEngine = currentEngine()): string {
 export async function available(engine: TtsEngine = currentEngine()): Promise<boolean> {
   if (engine === 'system') return true
   if (engine === 'none') return false
-  if (engine === 'qwen3tts') return qwenTts.available()
+  if (isLocalTtsEngine(engine)) return localTts.available(engine)
   try {
     const res = await fetch(`${ENGINES[engine].url}/version`, {
       signal: AbortSignal.timeout(1500)
@@ -99,23 +100,23 @@ const children = new Map<TtsEngine, ChildProcess>()
 
 /** Whether a process this app started for the engine is still alive, which is how a caller avoids waiting forever on an engine that is not installed. */
 export const engineStarting = (engine: TtsEngine = currentEngine()): boolean =>
-  engine === 'qwen3tts' ? qwenTts.isStarting() : children.has(engine)
+  isLocalTtsEngine(engine) ? localTts.isStarting() : children.has(engine)
 const starting = new Map<TtsEngine, Promise<void>>()
 
 /**
  * Starts the engine unless it is already running: an HTTP engine from the first executable that
- * exists, Qwen3-TTS from its installed model. The Qwen3-TTS worker holds about 2 GB, so it is
- * stopped as soon as another engine is chosen.
+ * exists, a local engine from its installed model. The speech worker holds about 2 GB, so it is
+ * stopped as soon as an engine that does not use it is chosen.
  */
 export function ensureEngine(engine: TtsEngine = currentEngine()): Promise<void> {
   // An engine this machine cannot run, such as Qwen3-TTS in settings brought from another machine, is
   // never started; reading with it fails with the reason instead.
   if (!ttsEngineRuns(engine, platformCapabilities().localSpeech)) {
-    qwenTts.stop()
+    localTts.stop()
     return Promise.resolve()
   }
-  if (engine === 'qwen3tts') return qwenTts.ensureWorker().then(() => undefined)
-  qwenTts.stop()
+  if (isLocalTtsEngine(engine)) return localTts.ensureWorker(engine).then(() => undefined)
+  localTts.stop()
   if (engine === 'system' || engine === 'none') return Promise.resolve()
   const pending = starting.get(engine)
   if (pending) return pending
@@ -150,7 +151,7 @@ async function startEngine(engine: HttpTtsEngine): Promise<void> {
 }
 
 export async function listSpeakers(engine: TtsEngine = currentEngine()): Promise<SpeakerOption[]> {
-  if (engine === 'system' || engine === 'none' || engine === 'qwen3tts') return []
+  if (engine === 'system' || engine === 'none' || isLocalTtsEngine(engine)) return []
   const res = await fetch(`${ENGINES[engine].url}/speakers`, {
     signal: AbortSignal.timeout(3000)
   })
@@ -207,6 +208,10 @@ export async function resolveVoice(settings: AppSettings = getSettings(), locale
   if (!ttsEngineRuns(engine, platformCapabilities().localSpeech)) {
     throw new Error(errorText('voice.speech.cannotRunHere', { engine: engineLabel(engine) }))
   }
+  if (engine === 'irodori') {
+    if (!ttsEngineSpeaks(locale, engine)) throw cannotSpeak(engine, locale)
+    return { engine, voice: settings.irodoriTtsVoice, language: languageOf(locale) }
+  }
   if (engine === 'qwen3tts') {
     const language = qwenTtsLanguage(locale)
     if (!language) throw cannotSpeak(engine, locale)
@@ -262,15 +267,16 @@ export interface ProsodyOptions {
   /**
    * The silence in seconds placed before and after the speech by an HTTP engine. The engine defaults
    * to 0.1 seconds on each side, which on a clip as short as an aizuchi is heard as a delay between
-   * playback starting and the voice arriving, so an aizuchi sets the leading silence to 0. Qwen3-TTS
-   * ignores it, because its silence is cut to a fixed short tail.
+   * playback starting and the voice arriving, so an aizuchi sets the leading silence to 0. The local
+   * engines ignore it, because their silence is cut to a fixed short tail.
    */
   prePhonemeLength?: number
   postPhonemeLength?: number
 }
 
-const qwenRequest = (text: string, voice: Extract<TtsVoice, { engine: 'qwen3tts' }>): qwenTts.QwenSpeechRequest =>
-  ({ text, voice: voice.voice, language: voice.language })
+type LocalVoice = Extract<TtsVoice, { engine: 'irodori' | 'qwen3tts' }>
+
+const localRequest = (text: string, voice: LocalVoice): localTts.LocalSpeechRequest => ({ text, voice: voice.voice, language: voice.language })
 
 /** Synthesizes the whole text. With no engine reachable, or with 'system' selected, audio is null and the renderer speaks through Web Speech. */
 export async function synthesize(
@@ -282,8 +288,8 @@ export async function synthesize(
   try {
     const selected = voice ?? await resolveVoice()
     if (selected.engine === 'system') return { audio: null, phonemes: null }
-    if (selected.engine === 'qwen3tts') {
-      const wav = await qwenTts.synthesizeWav(qwenRequest(text, selected), signal, prosody?.volumeScale)
+    if (selected.engine === 'irodori' || selected.engine === 'qwen3tts') {
+      const wav = await localTts.synthesizeWav(selected.engine, localRequest(text, selected), signal, prosody?.volumeScale)
       return { audio: wav.toString('base64'), phonemes: null }
     }
     const { engine, speaker } = selected
@@ -333,16 +339,16 @@ export type SentenceSpeech =
  */
 export async function synthesizeSentence(text: string, locale: ConversationLocale, signal?: AbortSignal): Promise<SentenceSpeech> {
   const voice = await resolveVoice(getSettings(), locale)
-  if (voice.engine !== 'qwen3tts') return { kind: 'whole', ...(await synthesize(text, signal, undefined, voice)) }
+  if (voice.engine !== 'irodori' && voice.engine !== 'qwen3tts') return { kind: 'whole', ...(await synthesize(text, signal, undefined, voice)) }
   try {
-    const pieces = qwenTts.stream(qwenRequest(text, voice), signal)
+    const pieces = localTts.stream(voice.engine, localRequest(text, voice), signal)
     const first = await pieces.next()
-    if (first.done) throw new Error('Qwen3-TTS produced no audible speech')
+    if (first.done) throw new Error(`${engineLabel(voice.engine)} produced no audible speech`)
     const rest = async function* (): AsyncGenerator<Float32Array> {
       yield first.value
       yield* pieces
     }
-    return { kind: 'stream', sampleRate: qwenTts.sampleRate(), pieces: rest() }
+    return { kind: 'stream', sampleRate: localTts.sampleRate(), pieces: rest() }
   } catch (err) {
     if (signal?.aborted) throw err
     console.error('tts synthesize failed:', err instanceof Error ? err.message : err)

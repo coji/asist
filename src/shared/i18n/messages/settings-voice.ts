@@ -58,17 +58,17 @@ export const settingsVoice = defineMessages({
     },
     description: {
       macos: {
-        'ja-JP': '選んだエンジンが使えない間は、macOS の音声合成で読み上げます。Qwen3-TTS はこの Mac 上で動き、文を作りながら読み始めます。',
-        'en-US': 'While the chosen engine is unavailable, replies are read with the macOS voice. Qwen3-TTS runs on this Mac and starts reading while the sentence is still being generated.',
-        'fr-FR': "Tant que le moteur choisi est indisponible, les réponses sont lues avec la voix de macOS. Qwen3-TTS tourne sur ce Mac et commence à lire pendant que la phrase s'écrit encore.",
-        'de-DE': 'Solange die gewählte Engine nicht bereitsteht, werden Antworten mit der macOS-Stimme vorgelesen. Qwen3-TTS läuft auf diesem Mac und beginnt zu lesen, während der Satz noch entsteht.',
-        'hi-IN': 'चुना हुआ इंजन उपलब्ध न हो, तब तक जवाब macOS की आवाज़ में पढ़े जाते हैं। Qwen3-TTS इसी Mac पर चलता है और वाक्य बनते-बनते ही पढ़ना शुरू कर देता है।',
-        'id-ID': 'Selama mesin yang dipilih tidak tersedia, jawaban dibacakan dengan suara macOS. Qwen3-TTS berjalan di Mac ini dan mulai membaca sementara kalimatnya masih disusun.',
-        'it-IT': 'Finché il motore scelto non è disponibile, le risposte vengono lette con la sintesi vocale di macOS. Qwen3-TTS funziona su questo Mac e inizia a leggere mentre la frase è ancora in scrittura.',
-        'ko-KR': '선택한 엔진을 쓸 수 없는 동안에는 macOS 음성 합성으로 읽어줍니다. Qwen3-TTS는 이 Mac에서 동작하며, 문장을 만들면서 읽기 시작합니다.',
-        'pt-BR': 'Enquanto o motor escolhido não está disponível, as respostas são lidas com a voz do macOS. O Qwen3-TTS roda neste Mac e começa a ler enquanto a frase ainda está sendo gerada.',
-        'es-419': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS funciona en esta Mac y empieza a leer mientras la frase todavía se está generando.',
-        'es-ES': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS. Qwen3-TTS se ejecuta en este Mac y empieza a leer mientras la frase todavía se está generando.'
+        'ja-JP': '選んだエンジンが使えない間は、macOS の音声合成で読み上げます。',
+        'en-US': 'While the chosen engine is unavailable, replies are read with the macOS voice.',
+        'fr-FR': 'Tant que le moteur choisi est indisponible, les réponses sont lues avec la voix de macOS.',
+        'de-DE': 'Solange die gewählte Engine nicht bereitsteht, werden Antworten mit der macOS-Stimme vorgelesen.',
+        'hi-IN': 'चुना हुआ इंजन उपलब्ध न हो, तब तक जवाब macOS की आवाज़ में पढ़े जाते हैं।',
+        'id-ID': 'Selama mesin yang dipilih tidak tersedia, jawaban dibacakan dengan suara macOS.',
+        'it-IT': 'Finché il motore scelto non è disponibile, le risposte vengono lette con la sintesi vocale di macOS.',
+        'ko-KR': '선택한 엔진을 쓸 수 없는 동안에는 macOS 음성 합성으로 읽어줍니다.',
+        'pt-BR': 'Enquanto o motor escolhido não está disponível, as respostas são lidas com a voz do macOS.',
+        'es-419': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS.',
+        'es-ES': 'Mientras el motor elegido no esté disponible, las respuestas se leen con la voz de macOS.'
       },
       windows: {
         'ja-JP': '選んだエンジンが使えない間は、Windows の音声合成で読み上げます。',
@@ -164,6 +164,19 @@ export const settingsVoice = defineMessages({
         'pt-BR': 'Sem leitura (respostas só em texto)',
         'es-419': 'Sin lectura en voz alta (respuestas solo como texto)',
         'es-ES': 'Sin lectura en voz alta (respuestas solo en texto)'
+      },
+      irodori: {
+        'ja-JP': 'Irodori-TTS(このコンピュータ上で実行)',
+        'en-US': 'Irodori-TTS (runs on this computer)',
+        'fr-FR': 'Irodori-TTS (tourne sur cet ordinateur)',
+        'de-DE': 'Irodori-TTS (läuft auf diesem Computer)',
+        'hi-IN': 'Irodori-TTS (इसी कंप्यूटर पर चलता है)',
+        'id-ID': 'Irodori-TTS (berjalan di komputer ini)',
+        'it-IT': 'Irodori-TTS (funziona su questo computer)',
+        'ko-KR': 'Irodori-TTS(이 컴퓨터에서 실행)',
+        'pt-BR': 'Irodori-TTS (roda neste computador)',
+        'es-419': 'Irodori-TTS (funciona en esta computadora)',
+        'es-ES': 'Irodori-TTS (se ejecuta en este ordenador)'
       }
     },
     speaker: {
@@ -270,34 +283,6 @@ export const settingsVoice = defineMessages({
       'es-419': '{name} (masculina)',
       'es-ES': '{name} (masculina)'
     },
-    qwenNotPrepared: {
-      macos: {
-        'ja-JP': 'Qwen3-TTS のモデルを準備していません。macOS の音声合成で読み上げています。',
-        'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the macOS voice.',
-        'fr-FR': "Le modèle Qwen3-TTS n'est pas préparé. Les réponses sont lues avec la voix de macOS.",
-        'de-DE': 'Das Modell von Qwen3-TTS ist nicht vorbereitet. Antworten werden mit der macOS-Stimme vorgelesen.',
-        'hi-IN': 'Qwen3-TTS का मॉडल तैयार नहीं है। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
-        'id-ID': 'Model Qwen3-TTS belum disiapkan. Jawaban dibacakan dengan suara macOS.',
-        'it-IT': 'Il modello di Qwen3-TTS non è pronto. Le risposte vengono lette con la sintesi vocale di macOS.',
-        'ko-KR': 'Qwen3-TTS 모델을 준비하지 않았습니다. macOS 음성 합성으로 읽어주고 있습니다.',
-        'pt-BR': 'O modelo do Qwen3-TTS não está preparado. As respostas estão sendo lidas com a voz do macOS.',
-        'es-419': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.',
-        'es-ES': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de macOS.'
-      },
-      windows: {
-        'ja-JP': 'Qwen3-TTS のモデルを準備していません。Windows の音声合成で読み上げています。',
-        'en-US': 'The Qwen3-TTS model is not prepared. Replies are read with the Windows voice.',
-        'fr-FR': "Le modèle Qwen3-TTS n'est pas préparé. Les réponses sont lues avec la voix de Windows.",
-        'de-DE': 'Das Modell von Qwen3-TTS ist nicht vorbereitet. Antworten werden mit der Windows-Stimme vorgelesen.',
-        'hi-IN': 'Qwen3-TTS का मॉडल तैयार नहीं है। जवाब Windows की आवाज़ में पढ़े जा रहे हैं।',
-        'id-ID': 'Model Qwen3-TTS belum disiapkan. Jawaban dibacakan dengan suara Windows.',
-        'it-IT': 'Il modello di Qwen3-TTS non è pronto. Le risposte vengono lette con la sintesi vocale di Windows.',
-        'ko-KR': 'Qwen3-TTS 모델을 준비하지 않았습니다. Windows 음성 합성으로 읽어주고 있습니다.',
-        'pt-BR': 'O modelo do Qwen3-TTS não está preparado. As respostas estão sendo lidas com a voz do Windows.',
-        'es-419': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de Windows.',
-        'es-ES': 'El modelo de Qwen3-TTS no está preparado. Las respuestas se leen con la voz de Windows.'
-      }
-    },
     model: {
       'ja-JP': 'モデル',
       'en-US': 'Model',
@@ -323,6 +308,75 @@ export const settingsVoice = defineMessages({
       'pt-BR': 'O 1.7B deixa menos silêncio antes de começar a falar, mas ocupa cerca de 1 GB de memória a mais. Depois de trocar, é preciso preparar o novo modelo.',
       'es-419': '1.7B deja menos silencio antes de empezar a hablar, pero ocupa aproximadamente 1 GB más de memoria. Después de cambiarlo, hay que preparar el nuevo modelo.',
       'es-ES': '1.7B deja menos silencio antes de empezar a hablar, pero ocupa aproximadamente 1 GB más de memoria. Tras cambiarlo, hay que preparar el nuevo modelo.'
+    },
+    irodoriVoices: {
+      calmYoungWoman: {
+        'ja-JP': '落ち着いた声(若い女性)',
+        'en-US': 'Calm (young woman)',
+        'fr-FR': 'Calme (jeune femme)',
+        'de-DE': 'Ruhig (junge Frau)',
+        'hi-IN': 'शांत आवाज़ (युवा महिला)',
+        'id-ID': 'Tenang (wanita muda)',
+        'it-IT': 'Calma (giovane donna)',
+        'ko-KR': '차분한 목소리(젊은 여성)',
+        'pt-BR': 'Calma (mulher jovem)',
+        'es-419': 'Tranquila (mujer joven)',
+        'es-ES': 'Tranquila (mujer joven)'
+      },
+      softYoungWoman: {
+        'ja-JP': '柔らかい声(若い女性)',
+        'en-US': 'Soft (young woman)',
+        'fr-FR': 'Douce (jeune femme)',
+        'de-DE': 'Sanft (junge Frau)',
+        'hi-IN': 'कोमल आवाज़ (युवा महिला)',
+        'id-ID': 'Lembut (wanita muda)',
+        'it-IT': 'Morbida (giovane donna)',
+        'ko-KR': '부드러운 목소리(젊은 여성)',
+        'pt-BR': 'Suave (mulher jovem)',
+        'es-419': 'Suave (mujer joven)',
+        'es-ES': 'Suave (mujer joven)'
+      },
+      energeticYoungMan: {
+        'ja-JP': '元気な声(若い男性)',
+        'en-US': 'Energetic (young man)',
+        'fr-FR': 'Énergique (jeune homme)',
+        'de-DE': 'Energisch (junger Mann)',
+        'hi-IN': 'जोशीली आवाज़ (युवा पुरुष)',
+        'id-ID': 'Bersemangat (pria muda)',
+        'it-IT': 'Energica (giovane uomo)',
+        'ko-KR': '활기찬 목소리(젊은 남성)',
+        'pt-BR': 'Animada (homem jovem)',
+        'es-419': 'Enérgica (hombre joven)',
+        'es-ES': 'Enérgica (hombre joven)'
+      }
+    },
+    modelNotPrepared: {
+      macos: {
+        'ja-JP': '{engine} のモデルを準備していません。macOS の音声合成で読み上げています。',
+        'en-US': 'The {engine} model is not prepared. Replies are read with the macOS voice.',
+        'fr-FR': "Le modèle {engine} n'est pas préparé. Les réponses sont lues avec la voix de macOS.",
+        'de-DE': 'Das Modell von {engine} ist nicht vorbereitet. Antworten werden mit der macOS-Stimme vorgelesen.',
+        'hi-IN': '{engine} का मॉडल तैयार नहीं है। जवाब macOS की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': 'Model {engine} belum disiapkan. Jawaban dibacakan dengan suara macOS.',
+        'it-IT': 'Il modello di {engine} non è pronto. Le risposte vengono lette con la sintesi vocale di macOS.',
+        'ko-KR': '{engine} 모델을 준비하지 않았습니다. macOS 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': 'O modelo do {engine} não está preparado. As respostas estão sendo lidas com a voz do macOS.',
+        'es-419': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de macOS.',
+        'es-ES': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de macOS.'
+      },
+      windows: {
+        'ja-JP': '{engine} のモデルを準備していません。Windows の音声合成で読み上げています。',
+        'en-US': 'The {engine} model is not prepared. Replies are read with the Windows voice.',
+        'fr-FR': "Le modèle {engine} n'est pas préparé. Les réponses sont lues avec la voix de Windows.",
+        'de-DE': 'Das Modell von {engine} ist nicht vorbereitet. Antworten werden mit der Windows-Stimme vorgelesen.',
+        'hi-IN': '{engine} का मॉडल तैयार नहीं है। जवाब Windows की आवाज़ में पढ़े जा रहे हैं।',
+        'id-ID': 'Model {engine} belum disiapkan. Jawaban dibacakan dengan suara Windows.',
+        'it-IT': 'Il modello di {engine} non è pronto. Le risposte vengono lette con la sintesi vocale di Windows.',
+        'ko-KR': '{engine} 모델을 준비하지 않았습니다. Windows 음성 합성으로 읽어주고 있습니다.',
+        'pt-BR': 'O modelo do {engine} não está preparado. As respostas estão sendo lidas com a voz do Windows.',
+        'es-419': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de Windows.',
+        'es-ES': 'El modelo de {engine} no está preparado. Las respuestas se leen con la voz de Windows.'
+      }
     }
   },
   recognition: {

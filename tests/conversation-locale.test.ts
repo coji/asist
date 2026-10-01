@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { formatLocaleOf, CONVERSATION_LOCALES, REGIONS, conversationFeatures, defaultRegion, fillPrompt, pickInitialLocale, promptText, speechTag, ttsEngineSpeaks } from '@shared/conversation-locale'
+import { formatLocaleOf, CONVERSATION_LOCALES, REGIONS, conversationFeatures, defaultRegion, defaultTtsEngine, fillPrompt, pickInitialLocale, promptText, speechTag, ttsEngineSpeaks } from '@shared/conversation-locale'
+import { deriveCapabilities } from '@shared/platform'
+import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU } from './helpers/platform'
 
 describe('pickInitialLocale', () => {
   it('takes the first preferred language that the app speaks, whatever its region', () => {
@@ -65,7 +67,7 @@ describe('locale helpers', () => {
   })
 
   it('keeps a speech engine only in the languages it can read aloud', () => {
-    for (const engine of ['voicevox', 'aivisspeech'] as const) {
+    for (const engine of ['voicevox', 'aivisspeech', 'irodori'] as const) {
       expect(ttsEngineSpeaks('ja-JP', engine)).toBe(true)
       expect(ttsEngineSpeaks('en-US', engine)).toBe(false)
     }
@@ -73,6 +75,23 @@ describe('locale helpers', () => {
     expect(ttsEngineSpeaks('de-DE', 'qwen3tts')).toBe(true)
     // The macOS voice carries every language, which is what a conversation moves to.
     for (const locale of CONVERSATION_LOCALES) expect(ttsEngineSpeaks(locale, 'system')).toBe(true)
+  })
+
+  it('starts Japanese on Irodori-TTS and another language on Qwen3-TTS where a local engine has the memory', () => {
+    for (const machine of [MACOS, WINDOWS]) {
+      expect(defaultTtsEngine('ja-JP', machine.localSpeech)).toBe('irodori')
+      expect(defaultTtsEngine('en-US', machine.localSpeech)).toBe('qwen3tts')
+      // Qwen3-TTS has no Hindi, so Hindi starts on the OS's voice.
+      expect(defaultTtsEngine('hi-IN', machine.localSpeech)).toBe('system')
+    }
+  })
+
+  it('starts Japanese on VOICEVOX and another language on the OS\'s voice where no local engine is offered', () => {
+    const smallMac = deriveCapabilities({ platform: 'darwin', arch: 'arm64', totalMemoryBytes: 8 * 1024 ** 3, speechDevices: () => null, micCancelsEcho: () => true })
+    for (const machine of [smallMac, WINDOWS_WITHOUT_GPU]) {
+      expect(defaultTtsEngine('ja-JP', machine.localSpeech)).toBe('voicevox')
+      expect(defaultTtsEngine('en-US', machine.localSpeech)).toBe('system')
+    }
   })
 
   it('writes the prompt in Japanese for a Japanese conversation and in English for every other', () => {

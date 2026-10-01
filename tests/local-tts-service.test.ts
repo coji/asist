@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsLanguage } from '@shared/tts-models'
+import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsLanguage } from '@shared/tts-models'
 
 const mocks = vi.hoisted(() => ({ spawn: vi.fn(), settings: { qwenTtsSize: '0.6b' as '0.6b' | '1.7b' } }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -26,7 +26,7 @@ function fakeChild() {
 }
 type Child = ReturnType<typeof fakeChild>
 let children: Child[] = []
-let qwen: typeof import('../src/main/services/qwen-tts')
+let local: typeof import('../src/main/services/local-tts')
 
 const say = (child: Child, message: Record<string, unknown>): void => { child.stdout.write(`ASIST_JSON:${JSON.stringify(message)}\n`) }
 const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 5))
@@ -50,10 +50,10 @@ beforeEach(async () => {
     setTimeout(() => say(child, { type: 'ready', sampleRate: RATE, voices: ['ono_anna'], languages: ['ja'] }), 0)
     return child
   })
-  qwen = await import('../src/main/services/qwen-tts')
+  local = await import('../src/main/services/local-tts')
 })
 afterEach(() => {
-  qwen.stop()
+  local.stop()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
   for (const child of children) {
@@ -69,7 +69,7 @@ async function collect(stream: AsyncIterable<Float32Array>): Promise<number> {
 
 describe('Qwen3-TTS service', () => {
   it('yields the pieces of a request while they arrive and ends with the worker\'s end message', async () => {
-    const stream = qwen.stream(REQUEST)
+    const stream = local.stream('qwen3tts', REQUEST)
     const first = stream.next()
     await settle()
     const child = children[0]
@@ -86,7 +86,7 @@ describe('Qwen3-TTS service', () => {
 
   it('cancels the request in the worker as soon as the signal aborts, without waiting for the consumer', async () => {
     const controller = new AbortController()
-    const stream = qwen.stream(REQUEST, controller.signal)
+    const stream = local.stream('qwen3tts', REQUEST, controller.signal)
     const first = stream.next()
     await settle()
     const child = children[0]
@@ -100,7 +100,7 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('cancels a request the consumer stops reading', async () => {
-    const stream = qwen.stream(REQUEST)
+    const stream = local.stream('qwen3tts', REQUEST)
     const first = stream.next()
     await settle()
     const child = children[0]
@@ -112,15 +112,15 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('fails every waiting request when the worker dies, and starts a new worker for the next request', async () => {
-    const one = collect(qwen.stream(REQUEST))
-    const two = collect(qwen.stream({ ...REQUEST, text: '次の文。' }))
+    const one = collect(local.stream('qwen3tts', REQUEST))
+    const two = collect(local.stream('qwen3tts', { ...REQUEST, text: '次の文。' }))
     await settle()
     children[0].exitCode = 1
     children[0].emit('exit', 1)
     await expect(one).rejects.toThrow('exited')
     await expect(two).rejects.toThrow('exited')
 
-    const again = qwen.stream(REQUEST)
+    const again = local.stream('qwen3tts', REQUEST)
     const first = again.next()
     await settle()
     expect(children).toHaveLength(2)
@@ -130,8 +130,8 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('reports the worker\'s error for one request and keeps serving the others', async () => {
-    const failing = collect(qwen.stream(REQUEST))
-    const healthy = collect(qwen.stream({ ...REQUEST, text: '次の文。' }))
+    const failing = collect(local.stream('qwen3tts', REQUEST))
+    const healthy = collect(local.stream('qwen3tts', { ...REQUEST, text: '次の文。' }))
     await settle()
     const child = children[0]
     const [a, b] = child.input.filter((message) => message.text).map((message) => message.id)
@@ -143,7 +143,7 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('generates a clip again when the model rambles, cancelling the rambling generation, and returns the first plausible one', async () => {
-    const wav = qwen.synthesizeWav({ ...REQUEST, text: 'うん。' })
+    const wav = local.synthesizeWav('qwen3tts', { ...REQUEST, text: 'うん。' })
     await settle()
     const child = children[0]
     const requests = (): Array<Record<string, unknown>> => child.input.filter((message) => message.text)
@@ -162,7 +162,7 @@ describe('Qwen3-TTS service', () => {
 
   it('lets a slow reading of a sentence full of digits finish, and still cuts one that rambles on past it', async () => {
     const text = '暗証番号は4桁で、8264です。'
-    const reading = collect(qwen.stream({ ...REQUEST, text }))
+    const reading = collect(local.stream('qwen3tts', { ...REQUEST, text }))
     await settle()
     const child = children[0]
     const first = child.input.find((message) => message.text === text)!.id
@@ -172,7 +172,7 @@ describe('Qwen3-TTS service', () => {
     expect(await reading / RATE).toBeGreaterThan(6.2)
     expect(child.input).not.toContainEqual({ type: 'cancel', id: first })
 
-    const rambling = collect(qwen.stream({ ...REQUEST, text }))
+    const rambling = collect(local.stream('qwen3tts', { ...REQUEST, text }))
     await settle()
     const second = child.input.filter((message) => message.text === text)[1].id
     for (let seq = 0; seq < 40; seq++) say(child, { type: 'chunk', id: second, seq, pcm: voiced() })
@@ -181,7 +181,7 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('gives up on a clip the model never reads plausibly instead of caching a bad one', async () => {
-    const wav = qwen.synthesizeWav({ ...REQUEST, text: 'うん。' })
+    const wav = local.synthesizeWav('qwen3tts', { ...REQUEST, text: 'うん。' })
     const outcome = wav.then(() => 'resolved', (error: Error) => error.message)
     const child = () => children[0]
     for (let attempt = 0; attempt < 6; attempt++) {
@@ -196,12 +196,12 @@ describe('Qwen3-TTS service', () => {
 
   it('does not start a worker while a file of the model is missing', async () => {
     vi.mocked(fs.existsSync).mockImplementation((file) => !String(file).endsWith('qwen3-tts-codec-12hz-f16.gguf'))
-    await expect(collect(qwen.stream(REQUEST))).rejects.toThrow('not installed')
+    await expect(collect(local.stream('qwen3tts', REQUEST))).rejects.toThrow('not installed')
     expect(mocks.spawn).not.toHaveBeenCalled()
   })
 
   it('runs the worker on the talker of the size the setting names, the shared codec and the GPU the capabilities chose', async () => {
-    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    await expect(local.ensureWorker('qwen3tts')).resolves.toBe(true)
     const [command, args] = mocks.spawn.mock.calls[0] as [string, string[]]
     expect(path.basename(command)).toMatch(/^speech-worker(\.exe)?$/)
     expect(args.map((arg) => (arg.endsWith('.gguf') ? path.basename(arg) : arg))).toEqual([
@@ -210,12 +210,49 @@ describe('Qwen3-TTS service', () => {
   })
 
   it('starts the worker again on the other talker when the size changes', async () => {
-    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    await expect(local.ensureWorker('qwen3tts')).resolves.toBe(true)
     mocks.settings.qwenTtsSize = '1.7b'
-    expect(qwen.available()).toBe(false)
-    await expect(qwen.ensureWorker()).resolves.toBe(true)
+    expect(local.available('qwen3tts')).toBe(false)
+    await expect(local.ensureWorker('qwen3tts')).resolves.toBe(true)
     expect(children[0].kill).toHaveBeenCalled()
     expect(path.basename((mocks.spawn.mock.calls[1] as [string, string[]])[1][0])).toBe(QWEN_TTS_MODELS['1.7b'].talker.file)
+  })
+})
+
+describe('Irodori-TTS service', () => {
+  it('runs the worker on the model, its codec, every voice the app ships and the GPU the capabilities chose', async () => {
+    await expect(local.ensureWorker('irodori')).resolves.toBe(true)
+    const [command, args] = mocks.spawn.mock.calls[0] as [string, string[]]
+    expect(path.basename(command)).toMatch(/^speech-worker(\.exe)?$/)
+    expect(args.slice(0, 2).map((arg) => path.basename(arg))).toEqual([IRODORI_TTS_MODEL.model.file, IRODORI_TTS_MODEL.codec.file])
+    const voices = args.flatMap((arg, index) => (args[index - 1] === '--voice' ? [arg] : []))
+    expect(voices.map((voice) => voice.split('=')[0])).toEqual([...IRODORI_TTS_VOICE_IDS])
+    for (const voice of voices) {
+      const [name, file] = voice.split('=')
+      expect(file).toBe(path.join('/app', 'resources', 'irodori-voices', `${name}.voice.gguf`))
+    }
+    expect(args.slice(-2)).toEqual(['--device', 'MTL0'])
+  })
+
+  it('replaces the Qwen3-TTS worker when Irodori-TTS is chosen, since one worker runs one model', async () => {
+    await expect(local.ensureWorker('qwen3tts')).resolves.toBe(true)
+    expect(local.available('irodori')).toBe(false)
+    await expect(local.ensureWorker('irodori')).resolves.toBe(true)
+    expect(children[0].kill).toHaveBeenCalled()
+    expect(local.available('irodori')).toBe(true)
+    expect(local.available('qwen3tts')).toBe(false)
+  })
+
+  it('lets a reading run as long as the model made it, since Irodori-TTS fixes the length before it speaks', async () => {
+    const reading = collect(local.stream('irodori', { text: 'うん。', voice: 'calm-young-woman', language: 'ja' }))
+    await settle()
+    const child = children[0]
+    const id = child.input.find((message) => message.text)!.id
+    // 3.8 s, past the 1.5 s Qwen3-TTS is allowed for the same text.
+    for (let seq = 0; seq < 8; seq++) say(child, { type: 'chunk', id, seq, pcm: voiced() })
+    say(child, { type: 'end', id, samples: 0 })
+    expect(await reading / RATE).toBeGreaterThan(3.5)
+    expect(child.input).not.toContainEqual({ type: 'cancel', id })
   })
 })
 

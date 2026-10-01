@@ -63,6 +63,9 @@ extraResources:
     to: llama.cpp
   - from: resources/speech-worker
     to: speech-worker
+  # The voices of Irodori-TTS, which scripts/irodori-voices.mjs makes from speech-bench's reference recordings.
+  - from: resources/irodori-voices
+    to: irodori-voices
 
 # scripts/prepare-resources.mjs prepares git, uv, the speech binaries and the native helpers for the machine it runs on, so an
 # app packaged for another OS or CPU would carry tools that cannot run there. This stops such a build.

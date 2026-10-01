@@ -1667,6 +1667,21 @@ export const setup = defineMessages({
             'es-ES': 'Lee las respuestas con una entonación natural. Instala la app gratuita sin cambiar la carpeta de instalación y ASIST la abrirá por ti.'
           }
         }
+      },
+      irodori: {
+        detail: {
+          'ja-JP': '日本語の 3 つの声から選べます。モデル(約 {sizeGb}GB)をこのコンピュータに取得し、GPU で動かします。',
+          'en-US': 'Three Japanese voices to choose from. The model (about {sizeGb} GB) is downloaded to this computer and runs on its GPU.',
+          'fr-FR': 'Trois voix japonaises au choix. Le modèle (environ {sizeGb} Go) est téléchargé sur cet ordinateur et tourne sur son GPU.',
+          'de-DE': 'Drei japanische Stimmen zur Auswahl. Das Modell (rund {sizeGb} GB) wird auf diesen Computer geladen und läuft auf seiner GPU.',
+          'hi-IN': 'तीन जापानी आवाज़ों में से चुन सकते हैं। मॉडल (करीब {sizeGb} GB) इसी कंप्यूटर पर डाउनलोड होकर उसके GPU पर चलता है।',
+          'id-ID': 'Tiga suara bahasa Jepang untuk dipilih. Modelnya (sekitar {sizeGb} GB) diunduh ke komputer ini dan berjalan di GPU-nya.',
+          'it-IT': 'Tre voci giapponesi tra cui scegliere. Il modello (circa {sizeGb} GB) viene scaricato su questo computer e funziona sulla sua GPU.',
+          'ko-KR': '일본어 목소리 3가지 중에서 고를 수 있습니다. 모델(약 {sizeGb}GB)을 이 컴퓨터에 내려받아 GPU에서 실행합니다.',
+          'pt-BR': 'Três vozes em japonês para escolher. O modelo (cerca de {sizeGb} GB) é baixado para este computador e roda na GPU dele.',
+          'es-419': 'Tres voces en japonés para elegir. El modelo (unos {sizeGb} GB) se descarga en esta computadora y se ejecuta en su GPU.',
+          'es-ES': 'Tres voces en japonés para elegir. El modelo (unos {sizeGb} GB) se descarga en este ordenador y se ejecuta en su GPU.'
+        }
       }
     },
     notConnected: {

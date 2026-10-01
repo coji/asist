@@ -133,6 +133,7 @@ ASIST_SELFTEST=1 npx electron .
 ## 同梱している素材の作り直し
 
 - **Qwen3-TTS の相槌の音声。** アプリは実行時に合成せず、`resources/aizuchi/qwen3tts/<声>/` に同梱したものを使います。Qwen3-TTS は、短い一言だけを読ませると数秒しゃべり続けることがあるためです。相槌の文言(`src/shared/aizuchi-bank.ts`)を変えたときや、声を足したときは、`node scripts/aizuchi-clips/build.mjs <声> <確認用の HTML の出力先>` で作り直します。スクリプトは、相槌を続きの文の前に付けて何度か読ませ、続きの文が音声認識でそのまま聞こえる間で相槌を切り出し、切り出した相槌の文言も音声認識で確かめて、いちばん良い候補を書き出します。読み上げと音声認識には、同梱する speech-worker と llama-server(`node scripts/prepare-resources.mjs dev`)を使い、アプリで準備した Qwen3-TTS 0.6B と Qwen3-ASR 1.7B のファイルを読みます。ほかの場所にあるファイルを使うときは、`ASIST_SPEECH_MODELS` でそのフォルダを指定します。相槌は 0.6B で作り、読み上げを 1.7B にしたときも同じものを鳴らします。出力された HTML で全部を聞いて確かめてから、コミットします。
+- **Irodori-TTS の声。** `resources/irodori-voices/<声>.voice.gguf` は、speech-bench が作った参照の音声(`~/speech-bench-data/references/voice-<声>.wav`)を、speech.cpp の tools の `irodori-tts --make-voice` で CPU を使って変換したものです。声のファイルはコーデックの版を名指しするので、Irodori-TTS のコーデックの固定を変えたときは `node scripts/irodori-voices.mjs [参照のフォルダ]` で作り直します。スクリプトは、固定した版の tools を取得し、アプリで準備した Irodori-TTS のファイル(または `ASIST_SPEECH_MODELS` のフォルダ)を読みます。声を足すときは、短い相槌でも言葉を足さないかを確かめてから選びます(理由は ADR 0031)。
 - **live の声の見本。** `npm run gen:live-voices` が、provider の TTS に同じ文を読ませて `src/renderer/src/assets/live-voices/` に置きます。
 - **アイコン。** 元の画像と生成プロンプトは `resources/artwork/` にあり、`python3 scripts/gen-icon.py` で作り直せます(Pillow が要ります)。
 - **天気の画像。** 47 都道府県の風景と 5 種類の空模様を、別々の画像として重ねています。生成プロンプトは `src/renderer/src/assets/weather/` の各 `prompts.json` にあり、`python3 scripts/check-weather-alpha.py` で PNG のアルファを検査します。取得と対応表の更新は[天気の仕様](../src/main/services/weather/SPEC.md)にあります。

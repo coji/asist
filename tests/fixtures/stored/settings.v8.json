@@ -1,0 +1,82 @@
+{
+  "version": 8,
+  "onboardingVersion": 1,
+  "safetyNoticeVersion": 1,
+  "conversationModel": {
+    "provider": "anthropic",
+    "id": "claude-sonnet-5"
+  },
+  "bridgeModel": {
+    "provider": "anthropic",
+    "id": "claude-haiku-4-5"
+  },
+  "voiceEngine": "cascade",
+  "gptLive": {
+    "model": "gpt-live-1",
+    "voice": "marin"
+  },
+  "geminiLive": {
+    "model": "gemini-3.8-live",
+    "voice": "Kore"
+  },
+  "liveIdleSeconds": 90,
+  "uiLocale": "ja-JP",
+  "theme": "pop",
+  "showHud": true,
+  "conversationLocale": "ja-JP",
+  "region": "JP",
+  "persona": "名前は ASIST。この人のデスクトップに住んでいて、声で話す相棒。\n\n落ち着いていて、気さく。相手の話を最後まで聞いてから、結論を先に短く返す。知ったかぶりをせず、分からないことは分からないと言う。\n相手の時間を大事にする。頼まれたことは引き受けたら最後までやり、終わったら自分から報告する。約束は覚えていて、頃合いを見て確かめる。\n持ち上げすぎず、へりくだりすぎず、対等に話す。冗談は控えめで、相手が乗ってきたら合わせる。\n自分の考えを持っていて、聞かれれば率直に言う。ただし決めるのは相手で、その判断を尊重する。\n好奇心があり、相手の暮らしや仕事に本当に関心を持つ。細かいことを覚えていて、さりげなく活かす。",
+  "conversationLogRetentionDays": 90,
+  "ttsEngine": "irodori",
+  "voicevoxSpeaker": 1,
+  "aivisSpeaker": null,
+  "irodoriTtsVoice": "soft-young-woman",
+  "qwenTtsVoice": "ono_anna",
+  "qwenTtsSize": "1.7b",
+  "bargeIn": true,
+  "aizuchi": true,
+  "aizuchiRate": 0.85,
+  "listeningAizuchi": true,
+  "hangoverMs": 600,
+  "partialIntervalMs": 600,
+  "calendar": {
+    "enabled": true,
+    "readCalendarIds": [
+      "someone@example.com",
+      "ja.japanese#holiday@group.v.calendar.google.com"
+    ],
+    "writeCalendarId": "someone@example.com"
+  },
+  "mail": {
+    "enabled": false,
+    "accounts": [],
+    "defaultAccountId": null,
+    "syncDays": 30,
+    "notifyNewMail": true
+  },
+  "agentCwd": "/Users/someone",
+  "agentEngine": "codex",
+  "agentMode": "readonly",
+  "fileRoots": [
+    "/Users/someone/Desktop",
+    "/Users/someone/Downloads",
+    "/Users/someone/Documents"
+  ],
+  "micAutoStart": false,
+  "localAsrEnabled": false,
+  "nativeMic": true,
+  "noiseSuppression": true,
+  "vapEnabled": false,
+  "memoryEmbeddingEnabled": false,
+  "asrModel": "qwen3-asr-1.7b",
+  "globalHotkey": true,
+  "dockOrder": [
+    "jobs",
+    "tasks",
+    "notes",
+    "mail",
+    "memory",
+    "calendar",
+    "settings"
+  ]
+}

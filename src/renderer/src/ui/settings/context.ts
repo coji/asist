@@ -4,7 +4,7 @@ import type { SettingsPage } from '@shared/mini-apps'
 import type { SettingsPatch } from '@shared/settings'
 import type { PlatformCapabilities } from '@shared/platform'
 import { osMessageKey } from '@shared/i18n/os-message'
-import { ttsEngineRuns } from '@shared/tts-models'
+import { isLocalTtsEngine, ttsEngineRuns } from '@shared/tts-models'
 import { platformCapabilities } from '@/platform'
 import type { Pending } from './pending'
 
@@ -63,9 +63,9 @@ export const AGENT_INSTALL_GUIDE = { codex: 'https://developers.openai.com/codex
 /** Where each speech application that is installed separately is downloaded. */
 export const TTS_SITE = { voicevox: 'https://voicevox.hiroshiba.jp/', aivisspeech: 'https://aivis-project.com/' } as const
 
-const TTS_ENGINE_NAME = { voicevox: 'VOICEVOX', aivisspeech: 'AivisSpeech', qwen3tts: 'Qwen3-TTS' } as const
+const TTS_ENGINE_NAME = { voicevox: 'VOICEVOX', aivisspeech: 'AivisSpeech', irodori: 'Irodori-TTS', qwen3tts: 'Qwen3-TTS' } as const
 
-/** The name of a speech engine. The three engines named after their product keep that name in every language. */
+/** The name of a speech engine. The engines named after their product keep that name in every language. */
 export function ttsEngineLabel(t: Translate, engine: TtsEngine): string {
   if (engine === 'system') return t(osMessageKey('settings.ttsEngine.system', platformCapabilities().os))
   if (engine === 'none') return t('settings.ttsEngine.none')
@@ -75,7 +75,7 @@ export function ttsEngineLabel(t: Translate, engine: TtsEngine): string {
 /** Whether the engine is a separate application to install. */
 export const isExternalTts = (engine: TtsEngine): engine is 'voicevox' | 'aivisspeech' => engine === 'voicevox' || engine === 'aivisspeech'
 /** Whether the engine can be unavailable: a separate application, or a model this app downloads. The OS's own speech synthesis and the engine that reads nothing need no preparation. */
-export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts(engine) || engine === 'qwen3tts'
+export const ttsNeedsPreparation = (engine: TtsEngine): boolean => isExternalTts(engine) || isLocalTtsEngine(engine)
 
 /**
  * Whether speech recognition is ready, which the models card shows and the page list counts: the local

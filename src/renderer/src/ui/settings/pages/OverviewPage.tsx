@@ -7,6 +7,7 @@ import { conversationFeatures } from '@shared/conversation-locale'
 import { keyReadable } from '@shared/ipc'
 import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT } from '@shared/platform'
+import { isLocalTtsEngine } from '@shared/tts-models'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
@@ -105,11 +106,11 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
           hint:
             item.reason === 'cannotRun'
               ? t('voice.speech.cannotRunHere', { engine: ttsEngineLabel(t, settings.ttsEngine) })
-              : t(osMessageKey(settings.ttsEngine === 'qwen3tts' ? 'settingsVoice.speech.qwenNotPrepared' : 'settingsVoice.speech.engineMissing', os), {
+              : t(osMessageKey(isLocalTtsEngine(settings.ttsEngine) ? 'settingsVoice.speech.modelNotPrepared' : 'settingsVoice.speech.engineMissing', os), {
                   engine: ttsEngineLabel(t, settings.ttsEngine)
                 }),
           action:
-            item.reason === 'missing' && engine === 'qwen3tts' ? (
+            item.reason === 'missing' && isLocalTtsEngine(engine) ? (
               <PrepareButton ctx={ctx} target="tts" onClick={prepare.tts} />
             ) : item.reason === 'missing' && isExternalTts(engine) ? (
               <Btn onClick={() => void window.api.openExternal(TTS_SITE[engine])}>

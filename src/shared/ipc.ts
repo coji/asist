@@ -76,11 +76,11 @@ export interface SpeechSegment {
 }
 
 /**
- * The speech engine: one that speaks the VOICEVOX-compatible API, Qwen3-TTS on this computer's GPU,
- * the OS's speech synthesis, or none at all. With `none` the reply is neither synthesized nor played and arrives only as text in the
+ * The speech engine: one that speaks the VOICEVOX-compatible API, Irodori-TTS or Qwen3-TTS on this
+ * computer's GPU, the OS's speech synthesis, or none at all. With `none` the reply is neither synthesized nor played and arrives only as text in the
  * feed, for a user who wants text alone.
  */
-export type TtsEngine = 'voicevox' | 'aivisspeech' | 'qwen3tts' | 'system' | 'none'
+export type TtsEngine = 'voicevox' | 'aivisspeech' | 'irodori' | 'qwen3tts' | 'system' | 'none'
 
 /** The result of starting the native microphone capture, which cancels the echo of what the machine plays. */
 export interface NativeMicStartResult {
@@ -703,11 +703,6 @@ export interface SetupStatus {
     /** What preparing the resolved model downloads: nothing once it is installed. */
     downloadGb: number
   } | null
-  /** The Qwen3-TTS size the settings name. `recommended` is whether this machine has the memory to run it beside the speech recognition. */
-  qwenTts: {
-    recommended: boolean
-    modelInstalled: boolean
-  }
 }
 
 export interface SetupProgress {

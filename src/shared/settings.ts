@@ -4,7 +4,7 @@ import { mailSettingsSchema } from './mail'
 import { ASR_MODELS, type AsrModel } from './asr-models'
 import { dockOrderSchema } from './dock'
 import { conversationModelSchema } from './llm-catalog'
-import { QWEN_TTS_SIZES, QWEN_TTS_VOICE_IDS } from './tts-models'
+import { IRODORI_TTS_VOICE_IDS, QWEN_TTS_SIZES, QWEN_TTS_VOICE_IDS } from './tts-models'
 import { CONVERSATION_LOCALES } from './conversation-locale'
 import { UI_LOCALES } from './i18n'
 import { THEMES } from './themes'
@@ -46,9 +46,10 @@ const fields = {
   region: z.string().regex(/^[A-Z]{2}$/),
   persona: z.string(),
   conversationLogRetentionDays: z.number().int().positive(),
-  ttsEngine: z.enum(['voicevox', 'aivisspeech', 'qwen3tts', 'system', 'none']),
+  ttsEngine: z.enum(['voicevox', 'aivisspeech', 'irodori', 'qwen3tts', 'system', 'none']),
   voicevoxSpeaker: z.number().int().nonnegative(),
   aivisSpeaker: z.number().int().nonnegative().nullable(),
+  irodoriTtsVoice: z.enum(IRODORI_TTS_VOICE_IDS),
   qwenTtsVoice: z.enum(QWEN_TTS_VOICE_IDS),
   qwenTtsSize: z.enum(QWEN_TTS_SIZES),
   bargeIn: z.boolean(),
@@ -159,7 +160,7 @@ const V4_ASR_MODELS: Record<string, AsrModel> = {
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 7,
+  version: 8,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -192,7 +193,10 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
     // Version 7 lets the times of a turn at the top of the screen be turned off. They matter to someone
     // tuning the conversation rather than to someone using it, so they are hidden for everyone, including
     // those who saw them until now.
-    6: (content) => ({ ...(content as Record<string, unknown>), showHud: false })
+    6: (content) => ({ ...(content as Record<string, unknown>), showHud: false }),
+    // Version 8 adds Irodori-TTS and its voice. The engine chosen until now stays, and the voice starts on the
+    // one a new installation starts on.
+    7: (content) => ({ ...(content as Record<string, unknown>), irodoriTtsVoice: 'calm-young-woman' })
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })
