@@ -59,7 +59,8 @@ To see a new card or screen in the demo, add data to `fixtures/`; for a card, ad
 
 | Step | Meaning |
 | --- | --- |
-| `--say text` | Types an utterance and waits for the response to finish. Against the app, this uses the real APIs |
+| `--say text` | Types an utterance and waits for the response to finish: the app has thought or spoken and then rested, on IDLE or LISTENING, for a few seconds. An error toast the app shows meanwhile stops the run with its text. Against the app, this uses the real APIs |
+| `--mic on\|off` | Turns the app's microphone on or off with its button, unless it already is, and waits until it is. The live engine takes typed text only while the microphone is on (install-mac-app). In the demo the microphone is never permitted, so `--mic on` stops with that error |
 | `--click selector` / `--key Escape` | Clicks an element; presses a key |
 | `--goto path` | Navigates to a page of the demo the run is on (`/preview/screens/calendar`, for instance). A full URL works too |
 | `--size l\|m\|s\|1280x720` | Pretends the window has that size. For the demo only, never for the app's own window |

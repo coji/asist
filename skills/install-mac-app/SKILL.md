@@ -30,8 +30,14 @@ A change counts as finished only when it has gone all the way through: implement
    npm run demo:drive -- --port 9222 --say "長野県の今日の天気を教えて" --cards --out /tmp/asist-app --shot weather
    ```
 
-   `--say` uses the real API of the conversation model chosen in the settings, and the real external services, so it costs a turn. Omit it and the run only measures and captures the current screen. The JSON output carries each card's size, height and `clipped`; `clipped` of `error` means the card does not fit. Do not use `--size` on the app's own window.
-5. Quit the app when the check is done. The app started with `--launch` opens the microphone by itself and keeps picking up the sound of the room and answering it. What you started for a check ends with the check; whether to keep using it is the user's decision.
+   `--say` uses the real API of the conversation model chosen in the settings, and the real external services, so it costs a turn. It waits until the app has answered and then rested for a few seconds, and when the app shows an error meanwhile, it stops at once with the app's words. Omit it and the run only measures and captures the current screen. The JSON output carries each card's size, height and `clipped`; `clipped` of `error` means the card does not fit. Do not use `--size` on the app's own window.
+
+   Typed text goes to the voice engine chosen in the settings (`voiceEngine` in `settings.json`). The live engine (`gemini-live`) runs only while the microphone is on, so for it put `--mic on` before `--say`; without it, `--say` stops with 「live エンジンが動いていません。マイクをオンにしてください。」. `--mic on` does nothing when the microphone is already on, and `--mic off` when it is already off. The cascade engine answers typed text with the microphone off, so for it put `--mic off` before `--say`: with the microphone on, which it is at launch when `micAutoStart` is on, a voice in the room can cut into the reply.
+
+   ```bash
+   npm run demo:drive -- --port 9222 --mic on --say "長野県の今日の天気を教えて" --cards --out /tmp/asist-app --shot weather
+   ```
+5. Quit the app when the check is done. The app turns the microphone on at launch only when 「起動時にマイクをオンにする」 is on in the settings (`micAutoStart` in `settings.json`), and `--mic on` turns it on as well. While it is on, the app picks up the sound of the room and answers it, and the live engine sends that sound to the provider. What you started for a check ends with the check; whether to keep using it is the user's decision.
 
    ```bash
    osascript -e 'tell application "ASIST" to quit'

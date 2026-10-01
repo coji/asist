@@ -11,7 +11,8 @@ const KIND_STYLE: Record<string, string> = {
 /**
  * The toasts at the top right. A body shows two lines, and the toast the pointer or the keyboard rests on
  * shows the whole of it and stays up until it is left, so that a long error can be read to the end.
- * A click dismisses it.
+ * A click dismisses it. Each toast carries its kind in data-toast, which the scripts that drive the app over
+ * CDP read to report an error the app showed.
  *
  * A heading is a sentence, not a label. With the HUD labels' letter spacing (0.16em) in a 320 px column, 85
  * headings over the eleven languages wrapped; with 0.04em in 384 px, 9 do, all longer than 55 characters
@@ -50,6 +51,7 @@ export function Toasts(): React.JSX.Element {
             onFocus={() => read(toast.id, 'focus')}
             onBlur={() => leave(toast.id, 'focus')}
             aria-expanded={toast.body ? reading(toast.id) : undefined}
+            data-toast={toast.kind}
             className={`glass pointer-events-auto cursor-pointer rounded-xl border px-4 py-2.5 text-left ${KIND_STYLE[toast.kind]}`}
           >
             <div className="font-mono text-[10px] font-semibold tracking-[0.04em]">{toast.title}</div>

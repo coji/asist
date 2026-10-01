@@ -11,6 +11,7 @@ import {
   pressKey,
   rects,
   say,
+  setMic,
   sleep,
   waitForApp,
   WINDOWS,
@@ -32,6 +33,8 @@ import { startDemo } from './demo-server.mjs'
  * The steps, run in the order they are given:
  *   --say text          types an utterance and waits for the response to finish (against the app, this
  *                       uses the real APIs)
+ *   --mic on|off        turns the app's microphone on or off and waits until it is; the live engine takes
+ *                       typed text only while it is on, and on, the app also answers the sound of the room
  *   --click selector    clicks the element
  *   --key name          presses a key, such as Escape
  *   --goto path|url     navigates and waits for the conversation screen; a path resolves against the
@@ -51,7 +54,7 @@ import { startDemo } from './demo-server.mjs'
  * For example: node scripts/cdp/drive.mjs --launch --goto /preview/cards/fx --size s --cards --rect '.fx-hero' --out /tmp/x --shot s
  */
 
-const STEP_OPS = new Set(['say', 'click', 'key', 'goto', 'size', 'fit', 'wait', 'eval', 'rect', 'cards', 'shot'])
+const STEP_OPS = new Set(['say', 'mic', 'click', 'key', 'goto', 'size', 'fit', 'wait', 'eval', 'rect', 'cards', 'shot'])
 /**
  * The quality of a --shot written as WebP, which Chrome encodes itself so that no image library is needed.
  * At 85 the text keeps sharp edges, and the largest 1440x900 screen captured at 2x by demo:docs-shots
@@ -82,6 +85,7 @@ export function parse(argv) {
     } else if (STEP_OPS.has(name)) {
       const value = argv[++i]
       if (value === undefined) throw new Error(`--${name} に値がありません`)
+      if (name === 'mic' && value !== 'on' && value !== 'off') throw new Error(`--mic は on か off です: ${value}`)
       steps.push({ op: name, value })
     } else {
       throw new Error(`不明な引数: --${name}`)
@@ -128,6 +132,9 @@ export async function run(steps, options = {}) {
           saidCount += 1
           await say(client, step.value, { minCards: 0 })
           await sleep(1200)
+          break
+        case 'mic':
+          await setMic(client, step.value)
           break
         case 'click':
           await click(client, step.value)

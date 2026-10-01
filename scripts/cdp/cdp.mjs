@@ -270,13 +270,54 @@ export const pressKey = (client, key) =>
   client.evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true })) || true`)
 
 /**
- * Types an utterance and waits until the response has started and the app is back to IDLE. When cards are
- * expected, it also waits until there are at least minCards of them.
+ * The phases of the state chip in which the app is not answering. It rests on IDLE, and on LISTENING once
+ * the live engine, which holds the microphone, has opened its session.
+ */
+const RESTING_PHASES = new Set(['IDLE', 'LISTENING'])
+/**
+ * How long the app has to rest before a response counts as over, because either engine can rest in the
+ * middle of one: between two sentences, or while a function runs after a sentence. Asked by typing for the
+ * weather of one place and of two places on 2026-10-02, Gemini Live showed LISTENING for up to 1.9 s before
+ * it spoke, from the moment its session opened, and for 0.5 s between two parts of its speech.
+ */
+const RESPONSE_SETTLE_MS = 3000
+const POLL_MS = 200
+
+/** Remembers the toasts on screen, so that NEW_ERROR_TOAST reports only one that appears afterwards. */
+const MARK_TOASTS = `window.__driveSeenToasts = new WeakSet(document.querySelectorAll('[data-toast]'))`
+/**
+ * The text of an error toast that appeared since MARK_TOASTS, or null. A page loaded since then has lost
+ * what MARK_TOASTS remembered, and the response or the microphone being waited for with it.
+ */
+const NEW_ERROR_TOAST = `(() => {
+  const seen = window.__driveSeenToasts
+  if (!seen) throw new Error('待っている間にページが読み込み直されました')
+  const toast = [...document.querySelectorAll('[data-toast="error"]')].find((el) => !seen.has(el))
+  return toast ? toast.innerText.replace(/\\s+/g, ' ').trim() : null
+})()`
+
+function throwIfShown(error) {
+  if (error) throw new Error(`アプリがエラーを表示しました: ${error}`)
+}
+
+/** What say() polls while it waits. The cards are measured once, when the response is over. */
+const RESPONSE_STATE = `({
+  phase: document.querySelector('.state-chip')?.textContent ?? null,
+  cards: document.querySelectorAll('.panel-card').length,
+  error: ${NEW_ERROR_TOAST}
+})`
+
+/**
+ * Types an utterance and waits until the response is over: the app has answered, by thinking or speaking,
+ * and has then rested for RESPONSE_SETTLE_MS. When cards are expected, it also waits until there are at
+ * least minCards of them. An error the app shows meanwhile, such as the live engine refusing text while the
+ * microphone is off, fails it at once with the app's words.
  */
 export async function say(client, text, { minCards = 0, timeoutMs = 90_000 } = {}) {
   await client.evaluate(`(() => {
     const input = document.querySelector('form input')
     if (!input) throw new Error('入力欄がありません(会話画面を開いていますか)')
+    ${MARK_TOASTS}
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
     setter.call(input, ${JSON.stringify(text)})
     input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -284,12 +325,53 @@ export async function say(client, text, { minCards = 0, timeoutMs = 90_000 } = {
     return true
   })()`)
   let started = false
+  let restingSince = null
+  let state = null
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    await sleep(500)
-    const state = await measureCards(client)
-    if (state.phase !== 'IDLE') started = true
-    if (started && state.phase === 'IDLE' && state.cards.length >= minCards) return state
+    await sleep(POLL_MS)
+    state = await client.evaluate(RESPONSE_STATE)
+    throwIfShown(state.error)
+    if (!RESTING_PHASES.has(state.phase)) {
+      started = true
+      restingSince = null
+      continue
+    }
+    restingSince ??= Date.now()
+    if (started && Date.now() - restingSince >= RESPONSE_SETTLE_MS && state.cards >= minCards) return measureCards(client)
   }
-  throw new Error(`応答が終わりません: ${text}`)
+  throw new Error(
+    started
+      ? `応答が終わりません(最後の状態 ${state.phase}、カード ${state.cards} 枚): ${text}`
+      : `応答が始まりません(状態 ${state?.phase}): ${text}`
+  )
+}
+
+/** Whether the microphone button shows on, loading or off, or null when the screen has no such button. */
+const MIC_STATE = `(() => {
+  const button = document.querySelector('button.mic')
+  if (!button) return null
+  return button.classList.contains('is-on') ? 'on' : button.classList.contains('is-loading') ? 'loading' : 'off'
+})()`
+
+/**
+ * Turns the app's microphone on or off with its button, unless it already is, and waits until it is. On,
+ * the app hears the room and answers it, and the live engine sends it to the provider; it is also what lets
+ * the live engine take typed text. A failure the app shows, such as a denied permission, fails it at once.
+ */
+export async function setMic(client, wanted, { timeoutMs = 60_000 } = {}) {
+  const current = await client.evaluate(MIC_STATE)
+  if (current === null) throw new Error('マイクのボタンがありません(会話画面を開いていますか)')
+  if (current === wanted) return
+  await client.evaluate(MARK_TOASTS)
+  // A microphone that is loading is already on its way on, and a click would turn it off.
+  if (current !== 'loading' || wanted === 'off') await click(client, 'button.mic')
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    await sleep(POLL_MS)
+    const { mic, error } = await client.evaluate(`({ mic: ${MIC_STATE}, error: ${NEW_ERROR_TOAST} })`)
+    throwIfShown(error)
+    if (mic === wanted) return
+  }
+  throw new Error(`マイクが ${wanted} になりません`)
 }
