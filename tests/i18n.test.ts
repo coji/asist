@@ -20,7 +20,7 @@ const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
   { file: /^src\/shared\/voice-samples\.ts$/, text: '声のテストです', reason: 'the sentence the bundled voice samples say' },
   { file: /^src\/main\/ipc\.ts$/, text: '音声のテストです', reason: 'the sentence the speech test says, in the language of the conversation' },
   { file: /^src\/main\/services\/brain\//, reason: 'prompts, tool descriptions and tool results, written for the model' },
-  { file: /^src\/main\/services\/(bridge-plan|live\/gemini-live)\.ts$/, reason: 'prompts and bracketed notes sent to a model' },
+  { file: /^src\/main\/services\/(bridge-plan|live\/gemini-live|live\/gemini-calls)\.ts$/, reason: 'prompts and bracketed notes sent to a model' },
   { file: /^src\/main\/services\/llm\/adapter\.ts$/, text: '^エラー:', reason: 'the prefix of a failed tool result, read by the model' },
   { file: /^src\/shared\/(tool-registry|tool-round|turn-recovery|persona|panel-catalog|map-embed|weather|calendar|memory-injection|conversation-markers|job-workspace)\.ts$/, reason: 'prompts, tool schemas and conversation markers, written for the model' },
   { file: /^src\/main\/services\/weather\/(locations|open-meteo)\.ts$/, reason: 'instructions returned to the model when a place is unknown or ambiguous' },

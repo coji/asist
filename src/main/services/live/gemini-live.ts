@@ -1,4 +1,5 @@
-import type { TurnEvent } from '@shared/ipc'
+import mitt, { type Emitter } from 'mitt'
+import type { AppSettings, LiveConnection, LiveEvent, LiveUsage, TurnEvent } from '@shared/ipc'
 import type { LiveEngineInfo } from '@shared/voice-engine'
 import { geminiLiveCost } from '@shared/voice-engine'
 import { errMessage } from '@shared/api-errors'
@@ -8,14 +9,14 @@ import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from '../conversation-locale'
 import { LLM_PROVIDER_INFO } from '@shared/llm-catalog'
 import type { ToolExecution, ToolExecutionTask } from '@shared/tool-registry'
-import { ToolCallOrder } from '@shared/tool-call-order'
-import { buildMemoryInjection, memoryIdsInToolResult, type InjectableMemory } from '@shared/memory-injection'
+import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import { record, turnScheduler, type ConversationOwner } from '../brain/session'
 import type { HistoryMessage } from '../brain/history'
-import { LiveEngineBase, type LiveEngineDeps } from './engine'
 import { decodeOutput } from './audio'
+import { GeminiCalls } from './gemini-calls'
 import type { GeminiFunctionDeclaration } from './gemini-tools'
-import type { TranscriptRole } from './transcripts'
+import { LiveSessionLifecycle } from './session-lifecycle'
+import { TranscriptTracker, type TranscriptRole } from './transcripts'
 
 /**
  * Gemini Live. One model listens, thinks, calls functions and speaks. It does not use brain's runTurn and
@@ -32,6 +33,12 @@ import type { TranscriptRole } from './transcripts'
  * that is from what was actually heard, since no other text of the conversation exists. A turn id is
  * allocated per exchange, which closes on the first final assistant transcript.
  */
+
+export type LiveEngineEvents = {
+  /** Mono Float32 at 24 kHz, played in the order it arrives. */
+  audio: Float32Array
+  event: LiveEvent
+}
 
 /** The part of the SDK's Session that is used. Tests substitute a fake. */
 export interface GeminiSession {
@@ -85,7 +92,9 @@ export interface GeminiConnectParams {
   }
 }
 
-export interface GeminiLiveDeps extends LiveEngineDeps {
+export interface GeminiLiveDeps {
+  settings: () => AppSettings
+  now?: () => number
   apiKey: () => string | undefined
   connect: (params: GeminiConnectParams) => Promise<GeminiSession>
   systemInstruction: (startedAt: Date) => string
@@ -112,13 +121,12 @@ const READ_ALOUD: PromptText = {
   en: `{systemNotice} Read the following sentence aloud exactly as it is: {text}`
 }
 
-/** Tells Gemini what came of a call it cancelled after the user had approved it. */
-const CANCELLED_AFTER_APPROVAL: PromptText = {
-  ja: `{notice} 取り消した呼び出しは、ユーザーが承認したあとだったので実行が始まっている: {result}`,
-  en: `{notice} The call you cancelled had already been approved by the user, so it has started: {result}`
-}
-
 const OPEN_TIMEOUT_MS = 15_000
+/**
+ * How long the transcript stays quiet before an utterance is final. It is long enough not to cut at a
+ * pause inside a sentence, which runs around 0.5 seconds, and short enough to separate two utterances.
+ */
+const TRANSCRIPT_QUIET_MS = 1500
 /** How long a resumption handle is reused. The provider allows two hours, and this leaves a margin. */
 const RESUMPTION_TTL_MS = 100 * 60_000
 /**
@@ -133,13 +141,14 @@ const SESSION_MEMORY_AUDIO_SECONDS = 5 * 60
 const INPUT_MIME = 'audio/pcm;rate=16000'
 const OUTPUT_RATE = 24_000
 
-/** The result of a call whose tool failed instead of answering. It still goes back to the model, because Gemini waits for one. */
-function failedExecution(err: unknown): ToolExecution {
-  const content = errMessage(err)
-  return { content, isError: true, durationMs: 0, resultLength: content.length, truncated: false }
-}
-
-export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwner {
+export class GeminiLiveEngine implements ConversationOwner {
+  readonly events: Emitter<LiveEngineEvents> = mitt<LiveEngineEvents>()
+  private readonly now: () => number
+  private readonly lifecycle: LiveSessionLifecycle
+  private readonly transcripts: TranscriptTracker
+  /** Response latency measurement: when the last user transcript arrived and whether audio is still awaited. */
+  private lastUserDeltaAt = -Infinity
+  private awaitingFirstAudio = false
   /**
    * The session the engine owns, from the call that creates it until it is closed. Connecting resolves
    * only once the socket is open, so the session itself is filled in then, and closing reaches it from
@@ -155,13 +164,7 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
   private resumption: { handle: string; at: number; memories: ReadonlyMap<string, number> } | null = null
   private inputSeconds = 0
   private outputSeconds = 0
-  /** The calls that still owe the model a result, waiting for their turn or running, by the id Gemini gave them. */
-  private readonly running = new Map<string, AbortController>()
-  /**
-   * One order for all of the engine's calls rather than one per message, because a NON_BLOCKING call can
-   * arrive while an earlier one still waits for approval.
-   */
-  private readonly order = new ToolCallOrder()
+  private readonly calls: GeminiCalls
   /**
    * The memories sent to the current session in its notes and recall results, each with the session's
    * audio seconds when it was sent, which a note does not show again while they are recent. A session
@@ -174,19 +177,68 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
   private exchangeStarted = false
 
   constructor(
-    info: LiveEngineInfo,
+    private readonly info: LiveEngineInfo,
     private readonly deps: GeminiLiveDeps
   ) {
-    super(info, deps)
+    this.now = deps.now ?? (() => Date.now())
+    this.lifecycle = new LiveSessionLifecycle({
+      idleMs: deps.settings().liveIdleSeconds * 1000,
+      now: this.now,
+      open: (signal) => this.openSession(signal),
+      close: () => this.closeSession(),
+      transmit: (base64, seconds) => this.transmitAudio(base64, seconds),
+      working: () => this.calls.working,
+      emit: (event) => this.events.emit('event', event)
+    })
+    this.calls = new GeminiCalls({
+      executeTool: deps.executeTool,
+      isParallel: deps.isParallel,
+      recordTool: deps.recordTool,
+      emitTurn: deps.emitTurn,
+      session: () => this.session,
+      touch: () => this.lifecycle.touch(),
+      memoriesSent: (ids) => this.memoriesSent(ids)
+    })
+    this.transcripts = new TranscriptTracker({
+      quietMs: TRANSCRIPT_QUIET_MS,
+      onDelta: (role, text) => this.onTranscriptDelta(role, text),
+      onFinal: (role, text) => this.onTranscriptFinal(role, text)
+    })
   }
 
-  protected async openSession(signal: AbortSignal): Promise<void> {
+  get state(): LiveConnection {
+    return this.lifecycle.state
+  }
+
+  async start(): Promise<void> {
+    this.lifecycle.start()
+  }
+
+  async stop(): Promise<void> {
+    if (!this.lifecycle.enabled) return
+    this.transcripts.flush('user')
+    this.transcripts.flush('assistant')
+    await this.lifecycle.stop()
+    this.transcripts.dispose()
+  }
+
+  /** Mono Float32 from the microphone at 16 kHz. */
+  pushAudio(frame: Float32Array): void {
+    this.lifecycle.pushAudio(frame)
+  }
+
+  /** The renderer's VAD heard a human voice start or stop. The start opens a closed session. */
+  activity(active: boolean): void {
+    this.lifecycle.activity(active)
+  }
+
+  private async openSession(signal: AbortSignal): Promise<void> {
     const key = this.deps.apiKey()
     if (!key) {
       const info = LLM_PROVIDER_INFO.google
       throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
     }
-    const settings = this.settings().geminiLive
+    const settings = this.deps.settings().geminiLive
     const resumption = this.resumption && this.now() - this.resumption.at < RESUMPTION_TTL_MS ? this.resumption : null
     const resume = resumption?.handle ?? null
     // Built before the timer exists, since building it reads the history, which can fail.
@@ -252,7 +304,7 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
     return this.owned?.ready ? this.owned.session : null
   }
 
-  protected async closeSession(): Promise<void> {
+  private async closeSession(): Promise<void> {
     const session = this.owned?.session ?? null
     this.disown()
     if (!session) return
@@ -264,7 +316,7 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
     session.close()
   }
 
-  protected transmitAudio(base64: string, seconds: number): void {
+  private transmitAudio(base64: string, seconds: number): void {
     if (!this.session) return
     this.session.sendRealtimeInput({ audio: { data: base64, mimeType: INPUT_MIME } })
     this.inputSeconds += seconds
@@ -272,19 +324,14 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
 
   private onClosed(reason: string): void {
     this.disown()
-    if (this.enabled) console.warn(`gemini-live: connection closed (${reason})`)
-    this.sessionEnded()
+    if (this.lifecycle.enabled) console.warn(`gemini-live: connection closed (${reason})`)
+    this.lifecycle.ended()
   }
 
-  /**
-   * Lets go of the session, whether the engine or the provider closed it. The calls that still owe it a
-   * result are aborted: Gemini offers no resumption handle while a call runs, so no later session knows
-   * their ids.
-   */
+  /** Lets go of the session, whether the engine or the provider closed it, and of the calls that still owe it a result. */
   private disown(): void {
     this.owned = null
-    for (const controller of this.running.values()) controller.abort()
-    this.running.clear()
+    this.calls.abortAll()
   }
 
   private seedHistory(session: GeminiSession): void {
@@ -321,82 +368,12 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
         this.emitUsage({ sessionSeconds: Math.round(this.inputSeconds), costUsd: geminiLiveCost(this.inputSeconds, this.outputSeconds) })
       }
     }
-    for (const call of message.toolCall?.functionCalls ?? []) this.submitTool(call)
-    for (const id of message.toolCallCancellation?.ids ?? []) {
-      this.running.get(id)?.abort()
-      this.running.delete(id)
-    }
+    for (const call of message.toolCall?.functionCalls ?? []) this.calls.submit(call, this.ensureTurnStarted())
+    this.calls.cancel(message.toolCallCancellation?.ids ?? [])
     if (message.sessionResumptionUpdate?.resumable && message.sessionResumptionUpdate.newHandle) {
       this.resumption = { handle: message.sessionResumptionUpdate.newHandle, at: this.now(), memories: new Map(this.sessionMemories) }
     }
     if (message.goAway) console.warn(`gemini-live: GoAway (${message.goAway.timeLeft ?? '?'})`)
-  }
-
-  /** A call belongs to the exchange it arrived in, and it starts when the order lets it. */
-  private submitTool(call: GeminiFunctionCall): void {
-    const id = call.id ?? ''
-    const name = call.name ?? ''
-    const emit = (event: TurnEvent): void => this.deps.emitTurn(event)
-    const turnId = this.ensureTurnStarted()
-    const controller = new AbortController()
-    this.running.set(id, controller)
-    this.touch()
-    void this.order
-      .run(this.deps.isParallel(name), () => {
-        if (controller.signal.aborted) return null
-        emit({ type: 'tool', turnId, name, status: 'start' })
-        try {
-          return this.deps.executeTool(name, call.args ?? {}, { turnId, signal: controller.signal, emit })
-        } catch (err) {
-          // executeClientTool reads the conversation language and the tool registry before it returns its
-          // task, and either can throw, for instance on settings that cannot be read.
-          return Object.assign(Promise.resolve(failedExecution(err)), { completion: Promise.resolve(), operationStarted: () => {} })
-        }
-      })
-      .then((started) => (started ? this.answerTool(call, turnId, controller, started.work) : undefined))
-      .catch((err: unknown) => console.error('gemini-live function call failed:', errMessage(err)))
-      .finally(() => {
-        if (this.running.get(id) === controller) this.running.delete(id)
-      })
-  }
-
-  /** Sends the result to the model, unless Gemini cancelled the call or the session closed meanwhile. */
-  private async answerTool(call: GeminiFunctionCall, turnId: number, controller: AbortController, task: ToolExecutionTask): Promise<void> {
-    let execution: ToolExecution
-    try {
-      execution = await task
-    } catch (err) {
-      execution = failedExecution(err)
-    }
-    const id = call.id ?? ''
-    const name = call.name ?? ''
-    if (controller.signal.aborted) {
-      // Gemini dropped the call, but an operation the user approved goes on, so what is known of it is
-      // recorded and told to Gemini as context: it has no call left to answer.
-      if (execution.unfinished) {
-        this.deps.recordTool(turnId, name, call.args ?? {}, execution)
-        const locale = conversationLocale()
-        const text = fillPrompt(promptText(locale, CANCELLED_AFTER_APPROVAL), { notice: marker(locale, 'systemNotice'), result: execution.content })
-        this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false })
-      }
-      return
-    }
-    this.deps.emitTurn({ type: 'tool', turnId, name, status: execution.isError ? 'error' : 'done' })
-    this.deps.recordTool(turnId, name, call.args ?? {}, execution)
-    this.touch()
-    const session = this.session
-    if (!session) return
-    session.sendToolResponse({
-      functionResponses: [
-        {
-          id,
-          name,
-          response: execution.isError ? { error: execution.content } : { result: execution.content },
-          scheduling: 'WHEN_IDLE'
-        }
-      ]
-    })
-    this.memoriesSent(memoryIdsInToolResult(name, execution))
   }
 
   private memoriesSent(ids: readonly string[]): void {
@@ -409,30 +386,26 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
     return new Set([...this.sessionMemories].flatMap(([id, at]) => (now - at < SESSION_MEMORY_AUDIO_SECONDS ? [id] : [])))
   }
 
-  protected override working(): boolean {
-    return this.running.size > 0
-  }
-
   private sendUserText(text: string): void {
     this.session?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true })
-    this.touch()
+    this.lifecycle.touch()
   }
 
   /** Typed input. No transcript event is emitted, because the renderer already shows the typed text in the feed. */
   async sendText(text: string): Promise<void> {
-    await this.ensureOpen()
+    await this.lifecycle.ensureOpen()
     const turnId = this.exchange()
     this.deps.recordUser(turnId, text)
     this.sendUserText(`${marker(conversationLocale(), 'typedInput')} ${text}`)
   }
 
   async notify(text: string): Promise<void> {
-    await this.ensureOpen()
+    await this.lifecycle.ensureOpen()
     this.sendUserText(text)
   }
 
   async say(text: string): Promise<void> {
-    await this.ensureOpen()
+    await this.lifecycle.ensureOpen()
     const locale = conversationLocale()
     this.sendUserText(fillPrompt(promptText(locale, READ_ALOUD), { systemNotice: marker(locale, 'systemNotice'), text }))
   }
@@ -462,12 +435,38 @@ export class GeminiLiveEngine extends LiveEngineBase implements ConversationOwne
     this.exchangeStarted = false
   }
 
-  protected onTranscriptDelta(role: TranscriptRole, text: string): void {
+  /** Passes the model's audio to the renderer and measures the response latency. */
+  private emitAudio(samples: Float32Array): void {
+    this.lifecycle.touch()
+    if (this.awaitingFirstAudio) {
+      this.awaitingFirstAudio = false
+      const responseMs = Math.round(this.now() - this.lastUserDeltaAt)
+      if (responseMs >= 0) this.events.emit('event', { type: 'latency', responseMs })
+    }
+    this.events.emit('audio', samples)
+  }
+
+  private emitUsage(usage: LiveUsage): void {
+    this.events.emit('event', { type: 'usage', usage })
+  }
+
+  private pushTranscript(role: TranscriptRole, delta: string): void {
+    if (role === 'user') {
+      this.lastUserDeltaAt = this.now()
+      this.awaitingFirstAudio = true
+      this.lifecycle.touch()
+    }
+    this.transcripts.push(role, delta)
+  }
+
+  /** The text of a transcript collected so far, which is not final yet. */
+  private onTranscriptDelta(role: TranscriptRole, text: string): void {
     const turnId = this.exchange()
     this.events.emit('event', role === 'user' ? { type: 'userTranscript', turnId, text, final: false } : { type: 'assistantTranscript', turnId, text, final: false })
   }
 
-  protected onTranscriptFinal(role: TranscriptRole, text: string): void {
+  /** A transcript is final, because it went quiet, the model signalled its end, or the engine stopped. */
+  private onTranscriptFinal(role: TranscriptRole, text: string): void {
     // The input transcript can arrive after the model's reply. A pending user utterance is finalized
     // before the reply is recorded, so that the conversation log keeps the order user then assistant.
     if (role === 'assistant' && this.transcripts.pending('user')) this.transcripts.flush('user')
