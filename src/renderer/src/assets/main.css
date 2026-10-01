@@ -477,32 +477,39 @@ body {
   flex-shrink: 0;
   margin: -10px 0 -5px;
 }
-.orb-core {
+/* The glow of the sphere in each phase, which Orb.tsx bakes into the sphere's canvas with the image: its
+   colour and its blur radius in px. */
+.orb {
+  --orb-glow: color-mix(in srgb, var(--ui-halo) calc(31% * var(--ui-glow-strength)), transparent);
+  --orb-glow-blur: 13;
+}
+.orb[data-phase='listen'] {
+  --orb-glow: color-mix(in srgb, var(--color-holo-cyan) calc(44% * var(--ui-glow-strength)), transparent);
+  --orb-glow-blur: 17;
+}
+.orb[data-phase='think'] {
+  --orb-glow: color-mix(in srgb, var(--color-holo-violet) calc(50% * var(--ui-glow-strength)), transparent);
+  --orb-glow-blur: 17;
+}
+.orb[data-phase='speak'] {
+  --orb-glow: color-mix(in srgb, var(--color-holo-peach) calc(44% * var(--ui-glow-strength)), transparent);
+  --orb-glow-blur: 23;
+}
+/* The sphere with its glow, which Orb.tsx scales, turns and dips in the frames of the waveform. */
+.orb-body {
   position: absolute;
   left: 14%;
   top: 14%;
   width: 72%;
   height: 72%;
-  object-fit: contain;
-  animation: orb-breathe 6s ease-in-out infinite;
-  filter: drop-shadow(0 0 13px color-mix(in srgb, var(--ui-halo) calc(31% * var(--ui-glow-strength)), transparent));
   pointer-events: none;
 }
-.orb canvas {
+.orb-core {
+  position: absolute;
+}
+.orb > canvas {
   position: relative;
   display: block;
-}
-.orb[data-phase='listen'] .orb-core {
-  animation-duration: 2.8s;
-  filter: drop-shadow(0 0 17px color-mix(in srgb, var(--color-holo-cyan) calc(44% * var(--ui-glow-strength)), transparent));
-}
-.orb[data-phase='think'] .orb-core {
-  animation-duration: 2s;
-  filter: drop-shadow(0 0 17px color-mix(in srgb, var(--color-holo-violet) calc(50% * var(--ui-glow-strength)), transparent));
-}
-.orb[data-phase='speak'] .orb-core {
-  animation-duration: 1.4s;
-  filter: drop-shadow(0 0 23px color-mix(in srgb, var(--color-holo-peach) calc(44% * var(--ui-glow-strength)), transparent));
 }
 @keyframes orb-breathe {
   0%,
@@ -954,11 +961,6 @@ button:focus-visible {
   }
   .navigation-dock {
     inset-block-end: 12px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .orb-core {
-    animation: none;
   }
 }
 

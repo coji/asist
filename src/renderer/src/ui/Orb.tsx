@@ -12,6 +12,12 @@ import { hslCss, mixHsl, rgbToHsl, type Hsl } from './orb-colors'
  * The orb in the center. An image of a glass sphere forms its core, and a canvas lays a waveform,
  * orbits and points of light over it. The waveform moves with the phase and with the microphone or
  * TTS level, and its colours follow the phase as well, from the theme's --orb-* tokens.
+ *
+ * Everything that moves is drawn in the canvas's frames, the breathing of the sphere included, and nothing
+ * blurs per frame. The breathing was a CSS animation of the image with a drop-shadow, which redrew the window
+ * 60 times a second: on an idle screen of an M2 MacBook Air (2026-10-02), WindowServer took 46% of a core and
+ * the GPU process 28%, against 15% and 11% drawn this way, and Qwen3-TTS 0.6B beside it made a second of
+ * voice in 0.68 to 0.77 s against 0.63 to 0.74 s.
  */
 
 const MODES: Record<Phase, { energy: number; ring: string }> = {
@@ -21,6 +27,9 @@ const MODES: Record<Phase, { energy: number; ring: string }> = {
   speak: { energy: 0.9, ring: 'var(--color-holo-peach)' }
 }
 const BARS = 144
+/** One breath of the sphere, from small to large and back, in seconds. */
+const BREATH_SECONDS: Record<Phase, number> = { idle: 6, listen: 2.8, think: 2, speak: 1.4 }
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
 
 /**
  * The colours of the theme on screen: the two ends the waveform sweeps between in each phase, the orbits and
@@ -30,6 +39,62 @@ interface OrbPalette {
   bars: Record<Phase, [Hsl, Hsl]>
   orbit: [number, number, number]
   dots: [string, string]
+}
+
+/** The sphere's image, decoded once for every orb. */
+const sphere = new Image()
+sphere.src = orbImage
+const sphereReady = sphere.decode()
+
+/** A colour the canvas takes, from a CSS colour that may use var() and color-mix(), as it applies inside `host`. */
+function resolvedColor(host: HTMLElement, value: string): string {
+  const probe = document.createElement('span')
+  probe.style.color = value
+  host.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return color
+}
+
+/**
+ * Draws the sphere's image with the glow of the current phase into its canvas, as a drop-shadow draws it, so
+ * that the breathing only scales and turns a finished picture.
+ */
+function bakeSphere(canvas: HTMLCanvasElement, host: HTMLElement, side: number): void {
+  const blur = Number(getComputedStyle(host).getPropertyValue('--orb-glow-blur'))
+  if (!(blur > 0)) throw new Error('the orb has no --orb-glow-blur')
+  // The blur of a CSS drop-shadow is the deviation of its Gaussian, and the canvas's shadowBlur is twice the
+  // deviation: the same value drew a glow half as wide (Chromium, 2026-10-02). It fades out within three deviations.
+  const margin = Math.ceil(3 * blur)
+  const dpr = Math.min(devicePixelRatio || 1, 2)
+  const full = side + 2 * margin
+  canvas.width = Math.round(full * dpr)
+  canvas.height = Math.round(full * dpr)
+  Object.assign(canvas.style, { width: `${full}px`, height: `${full}px`, left: `${-margin}px`, top: `${-margin}px` })
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('no 2d canvas to draw the orb')
+  ctx.shadowColor = resolvedColor(host, 'var(--orb-glow)')
+  ctx.shadowBlur = 2 * blur * dpr
+  ctx.drawImage(sphere, margin * dpr, margin * dpr, side * dpr, side * dpr)
+}
+
+/**
+ * A point of light with its glow, drawn once at the size the canvas uses: a shadow blur on every point in
+ * every frame is a Gaussian blur each time.
+ */
+function dotSprite(color: string, radius: number, blur: number): HTMLCanvasElement {
+  const sprite = document.createElement('canvas')
+  const size = Math.ceil(2 * (radius + 2 * blur))
+  sprite.width = size
+  sprite.height = size
+  const ctx = sprite.getContext('2d')!
+  ctx.fillStyle = color
+  ctx.shadowColor = color
+  ctx.shadowBlur = blur
+  ctx.beginPath()
+  ctx.arc(size / 2, size / 2, radius, 0, Math.PI * 2)
+  ctx.fill()
+  return sprite
 }
 
 function readPalette(): OrbPalette {
@@ -86,7 +151,8 @@ function liveEnergy(phase: Phase, t: number): number {
 
 export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const coreRef = useRef<HTMLImageElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const coreRef = useRef<HTMLCanvasElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const phase = useTurnStore((s) => s.phase)
   const phaseRef = useRef<Phase>(phase)
@@ -95,6 +161,23 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
   useEffect(() => {
     if (phase !== 'idle') spawnRing(hostRef.current, MODES[phase].ring)
   }, [phase])
+
+  useEffect(() => {
+    const core = coreRef.current
+    const host = hostRef.current
+    if (!core || !host) return
+    let mounted = true
+    const bake = (): void => {
+      if (mounted) bakeSphere(core, host, size * 0.72)
+    }
+    void sphereReady.then(bake)
+    const theme = new MutationObserver(bake)
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => {
+      mounted = false
+      theme.disconnect()
+    }
+  }, [phase, size])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -106,12 +189,16 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
     canvas.height = S
     const c = S / 2
 
+    const dotRadius = S * 0.0026
+    const sprites = (dots: [string, string]): [HTMLCanvasElement, HTMLCanvasElement] => [dotSprite(dots[0], dotRadius, S * 0.02), dotSprite(dots[1], dotRadius, S * 0.02)]
     let palette = readPalette()
+    let dots = sprites(palette.dots)
     let bars = palette.bars.idle
     // The rest of the UI switches theme at once, so the waveform jumps too rather than fading from the
     // old theme's colours.
     const theme = new MutationObserver(() => {
       palette = readPalette()
+      dots = sprites(palette.dots)
       bars = palette.bars[phaseRef.current]
     })
     theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
@@ -119,6 +206,9 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
     let lastT = performance.now()
     let lastDraw = 0
     let lastNod = 0
+    // Turned by the time passed over the period of the phase, so that a change of phase changes the speed
+    // without a jump in size.
+    let breath = 0
     let raf = 0
 
     const frame = (): void => {
@@ -137,10 +227,16 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
       const target = palette.bars[phaseRef.current]
       bars = [mixHsl(bars[0], target[0], dt * 3), mixHsl(bars[1], target[1], dt * 3)]
 
-      const nod = nodOffset(now - nodStartedAt, nodKind)
-      if (nod !== lastNod && coreRef.current) {
-        coreRef.current.style.top = `${14 + nod * 100}%`
-        lastNod = nod
+      const body = bodyRef.current
+      if (body) {
+        const nod = nodOffset(now - nodStartedAt, nodKind)
+        if (nod !== lastNod) {
+          body.style.top = `${14 + nod * 100}%`
+          lastNod = nod
+        }
+        breath = (breath + (dt * 2 * Math.PI) / BREATH_SECONDS[phaseRef.current]) % (2 * Math.PI)
+        const swing = -Math.cos(breath)
+        body.style.transform = reducedMotion.matches ? '' : `scale(${1.0025 + 0.0225 * swing}) rotate(${4 * swing}deg)`
       }
 
       ctx.clearRect(0, 0, S, S)
@@ -163,16 +259,11 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
         ctx.beginPath()
         ctx.arc(c, c, radius, t * 0.07 + ring, t * 0.07 + ring + Math.PI * 1.65)
         ctx.stroke()
-        ctx.fillStyle = palette.dots[ring % 2]
-        ctx.shadowColor = ctx.fillStyle
-        ctx.shadowBlur = S * 0.02
+        const sprite = dots[ring % 2]
         for (let j = 0; j < 4; j++) {
           const a = j * 1.6 + t * (0.09 + ring * 0.04) + ring * 2
-          ctx.beginPath()
-          ctx.arc(c + Math.cos(a) * radius, c + Math.sin(a) * radius, S * 0.0026, 0, Math.PI * 2)
-          ctx.fill()
+          ctx.drawImage(sprite, c + Math.cos(a) * radius - sprite.width / 2, c + Math.sin(a) * radius - sprite.height / 2)
         }
-        ctx.shadowBlur = 0
       }
       raf = requestAnimationFrame(frame)
     }
@@ -185,7 +276,9 @@ export function Orb({ size = 240 }: { size?: number }): React.JSX.Element {
 
   return (
     <div ref={hostRef} className="orb" data-phase={phase} style={{ width: size, height: size }}>
-      <img ref={coreRef} className="orb-core" src={orbImage} alt="" />
+      <div ref={bodyRef} className="orb-body">
+        <canvas ref={coreRef} className="orb-core" />
+      </div>
       <canvas ref={canvasRef} style={{ width: size, height: size }} />
     </div>
   )

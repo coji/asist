@@ -50,6 +50,7 @@ export function Starfield(): React.JSX.Element {
     let raf = 0
     let lastT = performance.now()
     let lastDraw = 0
+    let lastGlow = ''
     const frame = (): void => {
       const now = performance.now()
       // While idle the field drops to 15 fps, since background decoration does not need 60.
@@ -67,11 +68,13 @@ export function Starfield(): React.JSX.Element {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, width, height)
       const [r, g, b] = cur.map((v) => v | 0)
-      const grad = ctx.createRadialGradient(width / 2, height * 0.42, 0, width / 2, height * 0.42, Math.max(width, height) * 0.7)
-      grad.addColorStop(0, `rgba(${r},${g},${b},0.05)`)
-      grad.addColorStop(1, 'transparent')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, 0, width, height)
+      // The glow behind the field is the canvas's own background, painted again only when its colour or the
+      // window changes, rather than filled over the whole window in every frame.
+      const glow = `radial-gradient(circle ${Math.max(width, height) * 0.7}px at 50% 42%, rgba(${r},${g},${b},0.05), transparent)`
+      if (glow !== lastGlow) {
+        canvas.style.background = glow
+        lastGlow = glow
+      }
       for (const s of stars) {
         const alpha = (0.12 + 0.5 * s.z * (0.55 + 0.45 * Math.sin(t * 1.3 + s.tw * 6))) * 0.5
         ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`
