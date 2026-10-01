@@ -327,6 +327,38 @@ export async function synthesize(
   }
 }
 
+/**
+ * How long a stretch of a reply Qwen3-TTS reads in one request: about 45 s of Japanese, well inside the
+ * talker's context of about 160 s of speech.
+ */
+const QWEN_REQUEST_CHARS = 300
+
+/**
+ * What one request reads out of the pieces of a reply waiting in turn. Qwen3-TTS streams a request frame by
+ * frame, so its first audio does not wait for the length, and the pieces that have arrived are read in one
+ * stretch of voice, with the intonation running on from one sentence to the next. Irodori-TTS makes a whole
+ * request before its first audio, which a longer request delays, and the HTTP engines return a whole file, so
+ * they read one piece at a time.
+ */
+export function nextRequest(waiting: readonly string[], locale: ConversationLocale): { text: string; count: number } {
+  if (getSettings().ttsEngine !== 'qwen3tts') return { text: waiting[0], count: 1 }
+  const separator = languageOf(locale) === 'ja' ? '' : ' '
+  let text = waiting[0]
+  let count = 1
+  while (count < waiting.length && text.length + separator.length + waiting[count].length <= QWEN_REQUEST_CHARS) {
+    text += separator + waiting[count]
+    count++
+  }
+  return { text, count }
+}
+
+/**
+ * The silence an HTTP engine puts around a piece of a reply. Its default of 0.1 s before the voice delayed the
+ * first word and was added to the pause the player leaves between two pieces, so a piece starts at its voice
+ * and keeps the default 0.1 s after it, as the shaper does for the local engines.
+ */
+const PIECE_SILENCE = { prePhonemeLength: 0, postPhonemeLength: 0.1 } as const
+
 /** One sentence of a reply: either complete, or streaming in pieces from an engine that returns audio while it synthesizes. */
 export type SentenceSpeech =
   | ({ kind: 'whole' } & SynthesisResult)
@@ -339,7 +371,7 @@ export type SentenceSpeech =
  */
 export async function synthesizeSentence(text: string, locale: ConversationLocale, signal?: AbortSignal): Promise<SentenceSpeech> {
   const voice = await resolveVoice(getSettings(), locale)
-  if (voice.engine !== 'irodori' && voice.engine !== 'qwen3tts') return { kind: 'whole', ...(await synthesize(text, signal, undefined, voice)) }
+  if (voice.engine !== 'irodori' && voice.engine !== 'qwen3tts') return { kind: 'whole', ...(await synthesize(text, signal, PIECE_SILENCE, voice)) }
   try {
     const pieces = localTts.stream(voice.engine, localRequest(text, voice), signal)
     const first = await pieces.next()

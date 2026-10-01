@@ -6,6 +6,7 @@ const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 10))
 
 function makeQueue(opts?: {
   synthesize?: (text: string, signal: AbortSignal) => Promise<SynthesizedSentence>
+  take?: (waiting: readonly string[]) => { text: string; count: number }
   controller?: AbortController
   onFirstSynth?: (ms: number) => void
 }): {
@@ -23,6 +24,7 @@ function makeQueue(opts?: {
     turnId: 7,
     signal: controller.signal,
     synthesize: opts?.synthesize ?? (async (text) => ({ kind: 'whole', audio: `wav:${text}`, phonemes: null })),
+    take: opts?.take,
     emitSegment: (s) => segments.push(s),
     emitAudio: (index, samples, last) => audio.push([index, [...samples], last]),
     onFirstSynth: opts?.onFirstSynth,
@@ -173,5 +175,26 @@ describe('SynthQueue', () => {
     queue.push('b')
     await flush()
     expect(audio).toEqual([[0, [1], false], [0, [], true]])
+  })
+
+  it('reads in one request the sentences that waited while the one before was synthesized, when take joins them', async () => {
+    let release: () => void = () => {}
+    const requests: string[] = []
+    const { queue, segments } = makeQueue({
+      take: (waiting) => ({ text: waiting.join(''), count: waiting.length }),
+      synthesize: async (text) => {
+        requests.push(text)
+        if (requests.length === 1) await new Promise<void>((resolve) => { release = resolve })
+        return { kind: 'whole', audio: `wav:${text}`, phonemes: null }
+      }
+    })
+    queue.push('一文目。')
+    await flush()
+    queue.push('二文目。')
+    queue.push('三文目。')
+    release()
+    await queue.drain()
+    expect(requests).toEqual(['一文目。', '二文目。三文目。'])
+    expect(segments.map((s) => [s.index, s.text])).toEqual([[0, '一文目。'], [1, '二文目。三文目。']])
   })
 })

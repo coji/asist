@@ -340,3 +340,13 @@ describe('the name of the system voice', () => {
     expect(tts.engineLabel('system')).toBe(t('settings.ttsEngine.system.windows'))
   })
 })
+
+describe('a piece of a reply read by an HTTP engine', () => {
+  it('starts at the voice and keeps a short silence after it, since the player leaves the pause between pieces', async () => {
+    mockSynthesis(Promise.resolve(speakerResponse()))
+    const tts = await import('../src/main/services/tts')
+    await tts.synthesizeSentence('明日は晴れです。', 'ja-JP')
+    const synthesis = fetchMock.mock.calls.find(([url]) => String(url).includes('/synthesis?'))!
+    expect(JSON.parse(String((synthesis[1] as RequestInit).body))).toMatchObject({ prePhonemeLength: 0, postPhonemeLength: 0.1 })
+  })
+})

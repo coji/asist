@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { pauseAfter } from '../src/renderer/src/voice/sentence-pause'
 
 class FakeSource {
   buffer: AudioBuffer | null = null
@@ -377,7 +378,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
     context.decodeResolvers[0]({ duration: 1 } as AudioBuffer)
     await flushMicrotasks()
 
-    await vi.advanceTimersByTimeAsync(8_000)
+    await vi.advanceTimersByTimeAsync(8_000 + pauseAfter('synthesized'))
     expect(context.sources[0].stop).toHaveBeenCalledOnce()
     expect(synthesis.speak.mock.calls.map(([utterance]) => utterance.text)).toEqual([
       'next fallback'
@@ -398,6 +399,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
   })
 
   it('ignores a stale Web Speech callback instead of consuming the new queue', async () => {
+    vi.useFakeTimers()
     const { player, utterances, synthesis } = await createHarness()
 
     player.beginTurn(1)
@@ -417,6 +419,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
     ])
 
     utterances[1].onend?.()
+    await vi.advanceTimersByTimeAsync(pauseAfter('new current'))
     expect(synthesis.speak.mock.calls.map(([utterance]) => utterance.text)).toEqual([
       'old current',
       'new current',
@@ -426,6 +429,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
   })
 
   it('speaks through the system voice in the conversation language, and estimates the progress by script', async () => {
+    vi.useFakeTimers()
     const { useSettingsStore } = await import('@/state/stores')
     const { player, utterances } = await createHarness()
     const durations: number[] = []
@@ -441,6 +445,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
     try {
       utterances[0].onend?.()
       player.enqueue(segment(1, 1, 'Hola.'))
+      await vi.advanceTimersByTimeAsync(pauseAfter('あいうえお'))
       utterances[1].onstart?.()
       // Latin America has no voice of its own on macOS, so the tag names Mexico.
       expect(utterances[1].lang).toBe('es-MX')
@@ -452,6 +457,7 @@ describe('SpeechPlayer generations and queue ordering', () => {
   })
 
   it('appends a system interject after current and already queued playback', async () => {
+    vi.useFakeTimers()
     const { player, utterances, synthesis } = await createHarness()
 
     player.beginTurn(1)
@@ -461,7 +467,9 @@ describe('SpeechPlayer generations and queue ordering', () => {
     player.enqueue(segment(2, 0, 'system report'))
 
     utterances[0].onend?.()
+    await vi.advanceTimersByTimeAsync(pauseAfter('current'))
     utterances[1].onend?.()
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(synthesis.speak.mock.calls.map(([utterance]) => utterance.text)).toEqual([
       'current',
@@ -469,5 +477,69 @@ describe('SpeechPlayer generations and queue ordering', () => {
       'system report'
     ])
     player.interrupt()
+  })
+})
+
+describe('the pause between the pieces of an answer', () => {
+  const spoken = (synthesis: Harness['synthesis']): string[] => synthesis.speak.mock.calls.map(([utterance]) => utterance.text)
+
+  it('waits after a sentence before the next one, and less after a comma', async () => {
+    vi.useFakeTimers()
+    const { player, utterances, synthesis } = await createHarness()
+    player.beginTurn(1)
+    player.enqueue(segment(1, 0, '今日は晴れです。'))
+    player.enqueue(segment(1, 1, '明日は雨が降りそうなので、'))
+    player.enqueue(segment(1, 2, '傘を持っていきましょう。'))
+    utterances[0].onend?.()
+    await vi.advanceTimersByTimeAsync(pauseAfter('今日は晴れです。') - 1)
+    expect(spoken(synthesis)).toEqual(['今日は晴れです。'])
+    await vi.advanceTimersByTimeAsync(1)
+    expect(spoken(synthesis)).toHaveLength(2)
+    utterances[1].onend?.()
+    await vi.advanceTimersByTimeAsync(pauseAfter('明日は雨が降りそうなので、'))
+    expect(spoken(synthesis)).toHaveLength(3)
+    expect(pauseAfter('明日は雨が降りそうなので、')).toBeLessThan(pauseAfter('今日は晴れです。'))
+    player.interrupt()
+  })
+
+  it('counts the time spent waiting for the next piece towards the pause', async () => {
+    vi.useFakeTimers()
+    const { player, utterances, synthesis } = await createHarness()
+    player.beginTurn(1)
+    player.enqueue(segment(1, 0, '一文目。'))
+    utterances[0].onend?.()
+    vi.spyOn(performance, 'now').mockReturnValue(performance.now() + pauseAfter('一文目。'))
+    player.enqueue(segment(1, 1, '二文目。'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spoken(synthesis)).toEqual(['一文目。', '二文目。'])
+    player.interrupt()
+  })
+
+  it('adds no pause around a clip, nor between the pieces on either side of it', async () => {
+    vi.useFakeTimers()
+    const { player, utterances, synthesis } = await createHarness()
+    player.beginTurn(1)
+    player.enqueue(segment(1, 0, '調べますね。'))
+    player.enqueue({ ...segment(1, 998, 'ちょっと待ってくださいね。') })
+    player.enqueue(segment(1, 1, '見つかりました。'))
+    utterances[0].onend?.()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spoken(synthesis)).toHaveLength(2)
+    utterances[1].onend?.()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spoken(synthesis)).toEqual(['調べますね。', 'ちょっと待ってくださいね。', '見つかりました。'])
+    player.interrupt()
+  })
+
+  it('stops waiting when the answer is interrupted during the pause', async () => {
+    vi.useFakeTimers()
+    const { player, utterances, synthesis } = await createHarness()
+    player.beginTurn(1)
+    player.enqueue(segment(1, 0, '一文目。'))
+    player.enqueue(segment(1, 1, '二文目。'))
+    utterances[0].onend?.()
+    player.interrupt()
+    await vi.advanceTimersByTimeAsync(pauseAfter('一文目。'))
+    expect(spoken(synthesis)).toEqual(['一文目。'])
   })
 })

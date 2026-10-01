@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { pauseAfter } from '../src/renderer/src/voice/sentence-pause'
 
 /**
  * Playback of PCM that arrives in pieces: the stream from a live model, and a segment a speech engine
@@ -203,7 +204,7 @@ describe('SpeechPlayer with a streamed segment', () => {
     expect(started).toEqual(['一文目。'])
 
     playOut(context)
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(pauseAfter('一文目。'))
     expect(context.sources).toHaveLength(3)
     expect(started).toEqual(['一文目。', '二文目。'])
     expect(idle).not.toHaveBeenCalled()
@@ -251,7 +252,7 @@ describe('SpeechPlayer with a streamed segment', () => {
     await vi.advanceTimersByTimeAsync(0)
     playOut(context)
     expect(player.karaoke()?.text).toBe('途切れる文。')
-    await vi.advanceTimersByTimeAsync(8_600)
+    await vi.advanceTimersByTimeAsync(8_600 + pauseAfter('途切れる文。'))
     expect(started).toEqual(['途切れる文。'])
     expect(player.karaoke()?.text).toBe('次の文。')
   })

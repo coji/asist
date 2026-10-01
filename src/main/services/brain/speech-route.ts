@@ -45,6 +45,7 @@ export const ttsRoute: SpeechRoute = {
       turnId,
       signal,
       synthesize: (text, s) => tts.synthesizeSentence(text, locale, s),
+      take: (waiting) => tts.nextRequest(waiting, locale),
       emitSegment: (segment) => emit({ type: 'segment', turnId, segment }),
       emitAudio: (index, samples, last) => emit({ type: 'segmentAudio', turnId, index, samples, last }),
       onFirstSynth: (ms) => emit({ type: 'metrics', turnId, timings: { ttsMs: ms } }),

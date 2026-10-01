@@ -6,6 +6,7 @@ import { conversationLocale } from '@/conversation-locale'
 import { PcmScheduler } from './pcm-scheduler'
 import { isAnswerSegment } from './answer-segment'
 import { SegmentStream } from './segment-stream'
+import { pauseAfter } from './sentence-pause'
 
 type SpeechEvents = {
   /** A segment has actually started playing. durationMs is the audio's length, estimated from the character count for Web Speech. */
@@ -75,6 +76,8 @@ export class SpeechPlayer {
   private fallbackUtterance: SpeechSynthesisUtterance | null = null
   /** The segment playing and what the karaoke subtitle computes its progress from. A streamed segment's length settles while it plays. */
   private current: { segment: SpeechSegment; startedAt: number; durationMs: number; stream?: SegmentStream } | null = null
+  /** The piece of an answer that played last and when it ended, which decides the pause before the next piece of the same answer. */
+  private lastAnswer: { turnId: number; text: string; endedAt: number } | null = null
   /** A segment waiting on a decode or on the output resuming, which is not yet audible. */
   private starting: SpeechSegment | null = null
   /** The audio of the streamed segments that are queued, starting or playing. A segment dropped from the queue takes its audio with it. */
@@ -408,6 +411,9 @@ registerProcessor('speech-tap', TapProcessor)
 
   private async playNext(generation = this.playbackGeneration): Promise<void> {
     if (generation !== this.playbackGeneration) return
+    // What is still current here is the segment that just ended; a clip or a filler after an answer's piece breaks the pair.
+    const ended = this.current?.segment
+    if (ended) this.lastAnswer = isAnswerSegment(ended) ? { turnId: ended.turnId, text: ended.text, endedAt: performance.now() } : null
     const segment = this.queue.shift()
     if (!segment) {
       this.playing = false
@@ -420,6 +426,13 @@ registerProcessor('speech-tap', TapProcessor)
     }
     this.playing = true
     this.starting = segment
+    // The time spent waiting for this piece's audio counts towards the pause.
+    const previous = this.lastAnswer
+    if (previous && isAnswerSegment(segment) && previous.turnId === segment.turnId) {
+      const wait = pauseAfter(previous.text) - (performance.now() - previous.endedAt)
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+      if (generation !== this.playbackGeneration) return
+    }
 
     if (segment.audio || segment.stream) {
       try {

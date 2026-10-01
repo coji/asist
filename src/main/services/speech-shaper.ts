@@ -1,10 +1,9 @@
 /**
- * Shapes the raw output of Qwen3-TTS while it streams. Measured on 2026-09-21 over 20 Japanese
- * generations with four voices: a generation starts with 0.2 to 0.75 s of silence and ends with 0.3
- * to 1.0 s of it, which would delay the first word and leave gaps of over a second between
+ * Shapes the raw output of the local engines while it streams. Measured on 2026-09-21 over 20 Japanese
+ * generations of Qwen3-TTS with four voices: a generation starts with 0.2 to 0.75 s of silence and ends
+ * with 0.3 to 1.0 s of it, which would delay the first word and leave gaps of over a second between
  * sentences; and the level of one voice varies between generations by 15 dB (voiced RMS 0.011 to
- * 0.056 for `ono_anna`). The noise floor stays below 0.002, so a 20 ms frame counts as voiced from
- * an RMS of 0.004.
+ * 0.056 for `ono_anna`). A 20 ms frame counts as voiced from an RMS of 0.004.
  *
  * The shaper drops the leading silence, holds silence back until voiced audio follows it so that
  * the trailing silence can be cut to a short tail, and brings the voiced level to a common target.
@@ -12,8 +11,21 @@
 
 const FRAME_SECONDS = 0.02
 const VOICED_FRAME_RMS = 0.004
-/** Frames of silence kept after the last voiced frame. One frame is kept before the first, so an onset is not clipped. */
+/**
+ * The level that still belongs to the voice around its voiced frames: the breath before a word and the decay
+ * after the last one. Measured on 2026-10-01 in 20 raw readings of Qwen3-TTS 0.6B with two voices, the noise
+ * floor before the voice had a median RMS of 0.00024 (0.001 at the 90th percentile), while frames from 0.001
+ * up ran 40 ms before the first voiced frame in the median, 80 ms at the 90th percentile and 120 ms at most,
+ * and 50 ms after the last one, 180 ms at the 90th percentile and 460 ms at most. Keeping one frame before the
+ * voice and 100 ms after it took the breathy start off "はい" and cut the decay of a sentence's end.
+ * Irodori-TTS, with a noise floor of 0.00014, has 40 ms of either at most.
+ */
+const TRAILING_RMS = 0.001
+/** How far the start of the voice is followed back through quieter frames. */
+const MAX_LEAD_FRAMES = 6
+/** Frames kept after the last voiced frame: at least the shortest tail, and its decay up to the longest. */
 const TAIL_FRAMES = 5
+const MAX_TAIL_FRAMES = 15
 /** The voiced RMS the louder voices produce on their own, which is also about the level of VOICEVOX. */
 const TARGET_RMS = 0.07
 const MIN_GAIN = 0.5
@@ -22,12 +34,18 @@ const PEAK_CEILING = 0.95
 /** A change of gain between two pieces is spread over this many frames. */
 const GAIN_RAMP_FRAMES = 5
 
+interface Frame {
+  samples: Float32Array
+  rms: number
+}
+
 export class SpeechShaper {
   private readonly frameSize: number
   private carry = new Float32Array(0)
   private started = false
-  private lastSilent: Float32Array | null = null
-  private held: Float32Array[] = []
+  /** The silent frames just before the voice starts, the most recent last. */
+  private before: Frame[] = []
+  private held: Frame[] = []
   private voicedSquares = 0
   private voicedSamples = 0
   private peak = 0
@@ -45,7 +63,7 @@ export class SpeechShaper {
     const frameCount = Math.floor(samples.length / this.frameSize)
     this.carry = samples.slice(frameCount * this.frameSize)
 
-    const frames: Array<{ samples: Float32Array; voiced: boolean }> = []
+    const released: Float32Array[] = []
     for (let f = 0; f < frameCount; f++) {
       const frame = samples.subarray(f * this.frameSize, (f + 1) * this.frameSize)
       let squares = 0
@@ -54,39 +72,41 @@ export class SpeechShaper {
         squares += value * value
         peak = Math.max(peak, Math.abs(value))
       }
-      const voiced = Math.sqrt(squares / frame.length) >= VOICED_FRAME_RMS
-      if (voiced) {
-        this.voicedSquares += squares
-        this.voicedSamples += frame.length
-        this.peak = Math.max(this.peak, peak)
+      const rms = Math.sqrt(squares / frame.length)
+      if (rms < VOICED_FRAME_RMS) {
+        if (this.started) this.held.push({ samples: frame, rms })
+        else this.before = [...this.before, { samples: frame, rms }].slice(-(MAX_LEAD_FRAMES + 1))
+        continue
       }
-      frames.push({ samples: frame, voiced })
-    }
-
-    const released: Float32Array[] = []
-    for (const frame of frames) {
-      if (frame.voiced) {
-        if (!this.started) {
-          this.started = true
-          if (this.lastSilent) released.push(this.lastSilent)
-        }
-        released.push(...this.held, frame.samples)
-        this.held = []
-      } else if (this.started) {
-        this.held.push(frame.samples)
-      } else {
-        this.lastSilent = frame.samples
+      this.voicedSquares += squares
+      this.voicedSamples += frame.length
+      this.peak = Math.max(this.peak, peak)
+      if (!this.started) {
+        this.started = true
+        released.push(...this.lead().map((one) => one.samples))
+        this.before = []
       }
+      released.push(...this.held.map((one) => one.samples), frame)
+      this.held = []
     }
     return this.level(released)
   }
 
-  /** Returns the short tail of silence that ends the sentence. */
+  /** Returns the tail that ends the sentence: the decay of its last word and a short silence. */
   flush(): Float32Array {
-    const tail = this.started ? this.held.slice(0, TAIL_FRAMES) : []
+    let decay = 0
+    while (decay < this.held.length && decay < MAX_TAIL_FRAMES && this.held[decay].rms >= TRAILING_RMS) decay++
+    const tail = this.started ? this.held.slice(0, Math.min(MAX_TAIL_FRAMES, Math.max(TAIL_FRAMES, decay + 1))) : []
     this.held = []
     this.carry = new Float32Array(0)
-    return this.level(tail)
+    return this.level(tail.map((one) => one.samples))
+  }
+
+  /** The frames before the first voiced one that belong to the voice, and one more, so that an onset is not clipped. */
+  private lead(): Frame[] {
+    let quiet = this.before.length
+    while (quiet > 0 && this.before.length - quiet < MAX_LEAD_FRAMES && this.before[quiet - 1].rms >= TRAILING_RMS) quiet--
+    return this.before.slice(Math.max(0, quiet - 1))
   }
 
   /** The whole piece is measured before any of it is released, so its own level already counts towards its gain. */

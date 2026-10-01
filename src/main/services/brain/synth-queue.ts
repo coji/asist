@@ -1,10 +1,10 @@
 import type { SpeechSegment } from '@shared/ipc'
 
 /**
- * The sentence-by-sentence TTS pipeline, which runs serially within a turn. Each sentence is emitted
- * as a segment as soon as its audio exists, so sentence N+1 can be synthesized while sentence N is
+ * The sentence-by-sentence TTS pipeline, which runs serially within a turn. Each request is emitted
+ * as a segment as soon as its audio exists, so request N+1 can be synthesized while request N is
  * still playing. A streaming engine's segment is emitted with its first piece and the rest follows
- * as audio events.
+ * as audio events. `take` decides how many of the waiting sentences one request reads.
  */
 
 export type SynthesizedSentence =
@@ -15,6 +15,8 @@ export interface SynthQueueOptions {
   turnId: number
   signal: AbortSignal
   synthesize: (text: string, signal: AbortSignal) => Promise<SynthesizedSentence>
+  /** The text of the next request out of the sentences waiting, and how many of them it reads. One at a time without it. */
+  take?: (waiting: readonly string[]) => { text: string; count: number }
   emitSegment: (segment: SpeechSegment) => void
   /** Receives the next samples of the streamed segment `index`. `last` is sent exactly once per streamed segment, even when it fails or is aborted. */
   emitAudio: (index: number, samples: Float32Array, last: boolean) => void
@@ -43,10 +45,11 @@ export class SynthQueue {
   }
 
   private async run(): Promise<void> {
-    const { turnId, signal, synthesize, emitSegment, emitAudio, onFirstSynth, onFailure } = this.options
+    const { turnId, signal, synthesize, take, emitSegment, emitAudio, onFirstSynth, onFailure } = this.options
     this.running = true
     while (this.queue.length > 0 && !signal.aborted) {
-      const text = this.queue.shift()!
+      const { text, count } = take ? take(this.queue) : { text: this.queue[0], count: 1 }
+      this.queue.splice(0, count)
       const t0 = Date.now()
       try {
         const result = await synthesize(text, signal)

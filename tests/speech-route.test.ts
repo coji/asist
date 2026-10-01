@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ settings: { ttsEngine: 'voicevox' }, synthesize: vi.fn() }))
 
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
-vi.mock('../src/main/services/tts', () => ({ synthesizeSentence: mocks.synthesize }))
+vi.mock('../src/main/services/tts', () => ({
+  synthesizeSentence: mocks.synthesize,
+  nextRequest: (waiting: readonly string[]) => ({ text: waiting[0], count: 1 })
+}))
 vi.mock('../src/main/services/store', () => ({ dataPath: (name: string) => `/tmp/asist-test/${name}` }))
 
 beforeEach(() => {

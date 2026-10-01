@@ -48,6 +48,26 @@ describe('SpeechShaper', () => {
     expect(seconds(onset)).toBeLessThan(0.03)
   })
 
+  it('keeps a breathy start quieter than the voice, which a cut at the first voiced frame took off', () => {
+    // 80 ms of breath at an RMS of about 0.002 before the voice, as Qwen3-TTS starts "はい" (2026-10-01).
+    const { out } = shape(concat(silence(0.4), tone(0.08, 0.0028, 1800), tone(0.5, 0.2), silence(0.6)))
+    expect(seconds(out.length)).toBeGreaterThanOrEqual(0.02 + 0.08 + 0.5 + 0.1 - 0.001)
+  })
+
+  it('leaves out the noise floor before the voice, so that the first word is not delayed', () => {
+    const { out } = shape(concat(tone(0.4, 0.0003, 900), tone(0.5, 0.2), silence(0.6)))
+    expect(seconds(out.length)).toBeCloseTo(0.02 + 0.5 + 0.1, 2)
+  })
+
+  it('keeps the decay of the last word past the short tail, up to its limit', () => {
+    const decay = (amplitude: number): Int16Array => tone(0.2, amplitude, 700)
+    const { out } = shape(concat(silence(0.2), tone(0.5, 0.2), decay(0.002), silence(0.6)))
+    // The voice, one frame before it, and the 200 ms of decay with one frame after it.
+    expect(seconds(out.length)).toBeCloseTo(0.02 + 0.5 + 0.22, 2)
+    const { out: long } = shape(concat(silence(0.2), tone(0.5, 0.2), tone(0.8, 0.002, 700), silence(0.6)))
+    expect(seconds(long.length)).toBeCloseTo(0.02 + 0.5 + 0.3, 2)
+  })
+
   it('keeps a pause between two phrases at its length', () => {
     const { out } = shape(concat(silence(0.3), tone(0.7, 0.3), silence(0.4), tone(0.7, 0.3), silence(0.5)))
     expect(seconds(out.length)).toBeGreaterThan(1.8)

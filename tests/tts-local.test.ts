@@ -113,3 +113,19 @@ describe('TTS service with Irodori-TTS', () => {
     expect(mocks.stop).not.toHaveBeenCalled()
   })
 })
+
+describe('what one request of a reply reads', () => {
+  it('joins the waiting pieces for Qwen3-TTS up to its limit, without a space in Japanese and with one elsewhere', async () => {
+    const tts = await import('../src/main/services/tts')
+    expect(tts.nextRequest(['一文目。', '二文目、', '続き。'], 'ja-JP')).toEqual({ text: '一文目。二文目、続き。', count: 3 })
+    expect(tts.nextRequest(['One.', 'Two.'], 'en-US')).toEqual({ text: 'One. Two.', count: 2 })
+    const long = 'あ'.repeat(200)
+    expect(tts.nextRequest([long, long], 'ja-JP')).toEqual({ text: long, count: 1 })
+  })
+
+  it('reads one piece at a time with Irodori-TTS, whose first audio waits for the whole request', async () => {
+    mocks.settings = { ...mocks.settings, ttsEngine: 'irodori' }
+    const tts = await import('../src/main/services/tts')
+    expect(tts.nextRequest(['一文目。', '二文目。'], 'ja-JP')).toEqual({ text: '一文目。', count: 1 })
+  })
+})

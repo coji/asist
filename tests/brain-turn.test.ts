@@ -146,6 +146,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => ({ isDestroyed: () => false, isVisible: () => true }), getAllWindows: () => [] }
 }))
 vi.mock('../src/main/services/tts', () => ({
+  nextRequest: (waiting: readonly string[]) => ({ text: waiting[0], count: 1 }),
   synthesizeSentence: async (_text: string, locale: string, signal?: AbortSignal) => {
     mocks.voiceLocales.push(locale)
     if (mocks.holdSynthesis) {
