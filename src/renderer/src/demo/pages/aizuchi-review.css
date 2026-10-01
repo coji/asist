@@ -1,0 +1,252 @@
+/* The review of the aizuchi clips (/aizuchi in the demo). html and body are overflow hidden, so the two columns scroll on their own. */
+.azr {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  height: 100%;
+  color: var(--ui-text);
+  background: var(--ui-backing);
+  font-size: 13px;
+}
+.azr button {
+  padding: 4px 10px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-control-radius);
+  background: var(--ui-control);
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.azr button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.azr input {
+  width: 9em;
+  padding: 4px 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-control-radius);
+  background: var(--ui-field);
+  color: inherit;
+  font: inherit;
+}
+.azr kbd {
+  padding: 0 4px;
+  border: 1px solid var(--ui-line);
+  border-radius: 4px;
+  font: 11px ui-monospace, monospace;
+}
+.azr-muted {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+.azr-warn {
+  color: var(--ui-tone-gold);
+}
+.azr-error {
+  margin: 4px 0 0;
+  color: var(--ui-tone-red-text);
+  font-size: 12px;
+}
+
+.azr-side {
+  overflow: auto;
+  padding: 20px 12px 40px;
+  border-right: 1px solid var(--ui-divider);
+}
+.azr-side h1 {
+  margin: 12px 8px 8px;
+  font-size: 15px;
+}
+.azr-side h2 {
+  margin: 18px 8px 6px;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.azr-side .azr-muted {
+  margin: 0 8px 10px;
+}
+.azr-home {
+  margin-left: 8px;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.azr-progress {
+  height: 6px;
+  margin: 0 8px 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--ui-line);
+}
+.azr-progress div {
+  height: 100%;
+  background: var(--ui-tone-mint-text);
+}
+.azr-side > button,
+.azr-voice > button:first-child {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border-color: transparent;
+  background: none;
+  text-align: left;
+}
+.azr-side > button.on,
+.azr-voice > button.on,
+.azr-side > button:hover,
+.azr-voice > button:first-child:hover {
+  background: var(--ui-raised);
+}
+.azr-side span {
+  color: var(--ui-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.azr-voice .azr-render {
+  margin: 2px 8px 6px;
+  font-size: 12px;
+}
+.azr-voice .azr-muted,
+.azr-voice .azr-error {
+  margin: 2px 8px 6px;
+}
+
+.azr-main {
+  overflow: auto;
+  padding: 0 24px 120px;
+}
+.azr-main header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--ui-divider);
+  background: var(--ui-backing);
+}
+.azr-filters,
+.azr-play {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.azr-filters button[aria-pressed='true'] {
+  border-color: var(--ui-line-active);
+  background: var(--ui-raised);
+}
+.azr-primary {
+  border-color: var(--ui-line-active) !important;
+}
+.azr-keys {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+.azr-keys kbd + kbd {
+  margin-left: 2px;
+}
+.azr-group {
+  margin: 22px 0 6px;
+  font-size: 14px;
+}
+
+/* The text, the options and the actions sit in one line on a wide window and wrap in that order on a narrow one. */
+.azr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin: 2px 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.azr-row.is-focus {
+  border-color: var(--ui-focus-ring);
+  background: var(--ui-raised);
+}
+.azr-row.is-folded {
+  padding-block: 4px;
+  opacity: 0.55;
+}
+.azr-text {
+  display: flex;
+  flex: 1 1 14em;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 22em;
+}
+.azr-text strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.azr-text small {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.azr-options {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.azr-options button {
+  font-variant-numeric: tabular-nums;
+}
+.azr-options button.is-chosen {
+  border-color: var(--ui-link);
+  box-shadow: inset 0 0 0 1px var(--ui-link);
+}
+.azr-options button.is-partial {
+  border-style: dashed;
+}
+.azr-options button.is-playing {
+  animation: azr-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes azr-pulse {
+  to {
+    background: var(--ui-raised-lifted);
+  }
+}
+.azr-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.azr-ok {
+  color: var(--ui-tone-mint-text);
+}
+.azr-ng {
+  color: var(--ui-tone-red-text);
+}
+.azr-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 999px;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+.azr-chip.is-ok {
+  color: var(--ui-tone-mint-text);
+  border: 1px solid currentColor;
+}
+.azr-chip.is-ng {
+  color: var(--ui-tone-red-text);
+  border: 1px solid currentColor;
+}
+.azr-empty {
+  margin-top: 40px;
+  color: var(--ui-text-muted);
+  text-align: center;
+}

@@ -38,3 +38,6 @@ __pycache__/
 # characters are cut from the first by tools/cutout.py; tools/refs.py makes the second from the website.
 promotions/launch-video/assets/gen/raw/
 promotions/launch-video/assets/gen/refs/
+
+# The candidates of the aizuchi clips that scripts/aizuchi-clips/build.mjs keeps for review.mjs.
+.aizuchi-candidates/

@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { aizuchiReview } from './aizuchi-clips/review-api.mjs'
 
 // Runs the renderer alone in a plain browser, which is the demo mode. Electron is not started.
 
@@ -33,6 +34,7 @@ export default defineConfig({
       '@shared': resolve(root, 'src/shared')
     }
   },
-  plugins: [react(), tailwindcss(), allowOwnFrames],
+  // The aizuchi review page (/aizuchi) reads and writes the clips under resources/aizuchi through it.
+  plugins: [react(), tailwindcss(), allowOwnFrames, aizuchiReview(root)],
   server: { port: 5174, strictPort: true }
 })

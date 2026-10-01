@@ -6,7 +6,7 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline'
 import { ASR_MODEL_SPECS } from '../../src/shared/asr-models.ts'
-import { QWEN_TTS_CODEC, QWEN_TTS_MODELS } from '../../src/shared/tts-models.ts'
+import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS } from '../../src/shared/tts-models.ts'
 import { RATE } from './cut.mjs'
 
 /**
@@ -24,7 +24,8 @@ function modelsDir() {
   return path.join(userData, 'speech-models')
 }
 
-function modelPath(file) {
+/** The path of a pinned model file the app has prepared. */
+export function modelPath(file) {
   const found = path.join(modelsDir(), file.repo.replace('/', '--'), file.revision, file.file)
   if (!existsSync(found)) throw new Error(`${file.file} is not in ${modelsDir()}; prepare the model in the app first`)
   return found
@@ -36,14 +37,53 @@ function program(dir, name) {
   return found
 }
 
-/** Qwen3-TTS 0.6B, whose clips the app plays for both sizes. */
-export const TTS_MODEL = QWEN_TTS_MODELS['0.6b'].talker
+/**
+ * The model each engine's clips are read with: Qwen3-TTS 0.6B, whose clips the app plays for both sizes, and
+ * Irodori-TTS with the voice files the app ships.
+ */
+export const TTS_MODELS = {
+  qwen3tts: QWEN_TTS_MODELS['0.6b'].talker,
+  irodori: IRODORI_TTS_MODEL.model
+}
 
-/** Starts the worker and resolves to a function that reads a text and resolves to its samples at RATE. */
-export async function startSynthesizer() {
-  const child = spawn(program('speech-worker', 'speech-worker'), [modelPath(TTS_MODEL), modelPath(QWEN_TTS_CODEC)], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true })
+function workerArgs(engine) {
+  if (engine === 'qwen3tts') return [modelPath(TTS_MODELS.qwen3tts), modelPath(QWEN_TTS_CODEC)]
+  if (engine !== 'irodori') throw new Error(`no aizuchi clips are made for ${engine}`)
+  const voices = IRODORI_TTS_VOICE_IDS.flatMap((voice) => ['--voice', `${voice}=${path.join(root, 'resources', 'irodori-voices', `${voice}.voice.gguf`)}`])
+  return [modelPath(IRODORI_TTS_MODEL.model), modelPath(IRODORI_TTS_MODEL.codec), ...voices]
+}
+
+/**
+ * Halves the sample rate. A windowed-sinc low-pass at 0.45 of the new rate keeps what lies above the new
+ * Nyquist frequency from folding back into the voice.
+ */
+function halve(samples) {
+  const taps = 63
+  const middle = (taps - 1) / 2
+  const kernel = Array.from({ length: taps }, (_, i) => {
+    const x = i - middle
+    const sinc = x === 0 ? 0.45 : Math.sin(Math.PI * 0.45 * x) / (Math.PI * x)
+    return sinc * (0.42 - 0.5 * Math.cos((2 * Math.PI * i) / (taps - 1)) + 0.08 * Math.cos((4 * Math.PI * i) / (taps - 1)))
+  })
+  const sum = kernel.reduce((total, value) => total + value, 0)
+  const out = new Float32Array(Math.floor(samples.length / 2))
+  for (let n = 0; n < out.length; n++) {
+    let value = 0
+    for (let k = 0; k < taps; k++) {
+      const index = 2 * n + k - middle
+      if (index >= 0 && index < samples.length) value += samples[index] * kernel[k]
+    }
+    out[n] = value / sum
+  }
+  return out
+}
+
+/** Starts the worker on the engine's model and resolves to a function that reads a text and resolves to its samples at RATE. */
+export async function startSynthesizer(engine) {
+  const child = spawn(program('speech-worker', 'speech-worker'), workerArgs(engine), { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true })
   const pending = new Map()
   let ready
+  let rate = RATE
   const started = new Promise((resolve, reject) => {
     ready = resolve
     child.once('exit', (code) => reject(new Error(`speech-worker exited (${code})`)))
@@ -51,7 +91,11 @@ export async function startSynthesizer() {
   readline.createInterface({ input: child.stdout }).on('line', (line) => {
     if (!line.startsWith('ASIST_JSON:')) return
     const message = JSON.parse(line.slice('ASIST_JSON:'.length))
-    if (message.type === 'ready') return ready()
+    if (message.type === 'ready') {
+      rate = message.sampleRate
+      if (rate !== RATE && rate !== 2 * RATE) throw new Error(`speech-worker speaks at ${rate} Hz, which the clips cannot be made from`)
+      return ready()
+    }
     if (message.type === 'fatal') throw new Error(`speech-worker: ${message.error}`)
     const request = pending.get(message.id)
     if (!request) return
@@ -72,7 +116,7 @@ export async function startSynthesizer() {
       return bytes.then((pcm) => {
         const samples = new Float32Array(pcm.length / 2)
         for (let i = 0; i < samples.length; i++) samples[i] = pcm.readInt16LE(i * 2) / 32768
-        return samples
+        return rate === RATE ? samples : halve(samples)
       })
     },
     stop: () => child.kill()

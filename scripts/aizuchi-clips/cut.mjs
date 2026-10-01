@@ -13,12 +13,30 @@ export const VOICED_FRAME_RMS = 0.004
 /** The carrier has no comma, so the only long pause of a reading after the aizuchi is the one before it. */
 export const CARRIER = '今日は朝からとてもいい天気ですね。'
 const TAIL_FRAMES = 5
+/**
+ * The level down to which the start of the voice is followed back from the first voiced frame. A breathy
+ * onset such as the "h" of "はい" stays under VOICED_FRAME_RMS for tens of milliseconds, and a cut one frame
+ * before the first voiced frame took the head off "はいはい。" and "そうですね、" (heard on 2026-10-01).
+ */
+const ONSET_RMS = 0.001
+const MAX_LEAD_FRAMES = 10
 /** Without a pause of 80 ms the aizuchi runs into the carrier and cannot be cut cleanly. */
 const MIN_PAUSE_FRAMES = 4
 
-/** The text without what a recognizer spells differently in an interjection: long vowels, the small tsu and small vowels. */
+/** The vowel of each kana, which a long vowel mark after it stands for. */
+const VOWEL = Object.fromEntries(
+  ['あかさたなはまやらわがざだばぱゃアカサタナハマヤラワガザダバパャ', 'いきしちにひみりぎじぢびぴイキシチニヒミリギジヂビピ', 'うくすつぬふむゆるぐずづぶぷゅウクスツヌフムユルグズヅブプュ', 'えけせてねへめれげぜでべぺエケセテネヘメレゲゼデベペ', 'おこそとのほもよろをごぞどぼぽょオコソトノホモヨロヲゴゾドボポョ']
+    .flatMap((row) => [...row].map((kana) => [kana, row[0]]))
+)
+
+/**
+ * The text without what a recognizer spells differently in an interjection: punctuation, the small tsu and
+ * small vowels. A long vowel mark is read as the vowel it draws out, so that "あー" and "ああ" are the same and
+ * neither is "あ".
+ */
 export function plain(text) {
-  return text.replace(/[。、,.!?！？\s…ー〜っッぁぃぅぇぉ]/g, '')
+  const drawn = [...text].map((char, index, chars) => (char === 'ー' ? VOWEL[chars[index - 1]] ?? '' : char)).join('')
+  return drawn.replace(/[。、,.!?！？\s…〜っッぁぃぅぇぉ]/g, '')
 }
 
 export function editDistance(a, b) {
@@ -47,6 +65,13 @@ export function frameRms(audio) {
   return rms
 }
 
+/** The first frame of the voice that starts at `onset`, followed back through a quiet breathy start. */
+function leadIn(rms, onset) {
+  let start = onset
+  while (start > 0 && onset - start < MAX_LEAD_FRAMES && rms[start - 1] >= ONSET_RMS) start--
+  return Math.max(0, start - 1)
+}
+
 /** The silent runs of at least MIN_PAUSE_FRAMES that start after `from` and end before the audio does. */
 function pauses(voiced, from) {
   const found = []
@@ -67,7 +92,8 @@ function pauses(voiced, from) {
  * cannot be used.
  */
 export async function cutAizuchi(audio, head, recognize) {
-  const voiced = Array.from(frameRms(audio), (rms) => rms >= VOICED_FRAME_RMS)
+  const rms = frameRms(audio)
+  const voiced = Array.from(rms, (value) => value >= VOICED_FRAME_RMS)
   const onset = voiced.indexOf(true)
   if (onset < 0) return 'no voice'
   const spoken = plain(head).length || 1
@@ -83,9 +109,49 @@ export async function cutAizuchi(audio, head, recognize) {
       reason = `the carrier came back as "${rest}"`
       continue
     }
-    const samples = audio.slice(Math.max(0, onset - 1) * FRAME, end)
+    const samples = audio.slice(leadIn(rms, onset) * FRAME, end)
     const heard = await recognize(samples)
     return { samples, end, pauseMs: pause.length * 20, voicedMs: (pause.start - onset) * 20, heard }
   }
   return reason
+}
+
+/**
+ * A short sound this long or less after a pause this long or more, at the end of a reading alone, is not part
+ * of the aizuchi: Irodori-TTS left an 80 ms blip 0.3 to 0.4 s after "あー。", "えっと、" and "はいはい。"
+ * (heard on 2026-10-01), while the pause inside "あ、失礼しました。" is followed by most of the words.
+ */
+const STRAY_FRAMES = 10
+const STRAY_PAUSE_FRAMES = 10
+
+/** The last voiced frame of a reading, leaving out short stray sounds after a long pause at its end. */
+function lastVoice(voiced, onset) {
+  let last = voiced.lastIndexOf(true)
+  for (;;) {
+    let start = last
+    while (start > onset && voiced[start - 1]) start--
+    let gap = start
+    while (gap > onset && !voiced[gap - 1]) gap--
+    if (start === onset || last - start + 1 > STRAY_FRAMES || start - gap < STRAY_PAUSE_FRAMES) return last
+    last = gap - 1
+  }
+}
+
+/**
+ * An aizuchi read alone, as Irodori-TTS can read one without rambling, with the silence around it cut as the
+ * app's SpeechShaper cuts a sentence: the start of the voice kept and a short tail after the last of it.
+ */
+export async function trimAizuchi(audio, head, recognize) {
+  const rms = frameRms(audio)
+  const voiced = Array.from(rms, (value) => value >= VOICED_FRAME_RMS)
+  const onset = voiced.indexOf(true)
+  if (onset < 0) return 'no voice'
+  const last = lastVoice(voiced, onset)
+  const seconds = ((last + 1 - onset) * FRAME) / RATE
+  // Irodori-TTS fixes the length before it speaks, so this only refuses a reading far past any natural one;
+  // "えっと、" took 1.26 s, with the breath of its comma.
+  if (seconds > 0.5 * (plain(head).length || 1) + 1) return `${seconds.toFixed(2)} s is not a natural length`
+  const samples = audio.slice(leadIn(rms, onset) * FRAME, Math.min(voiced.length, last + 1 + TAIL_FRAMES) * FRAME)
+  const heard = await recognize(samples)
+  return { samples, pauseMs: 0, voicedMs: (last + 1 - onset) * 20, heard }
 }

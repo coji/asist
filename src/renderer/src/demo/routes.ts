@@ -9,6 +9,7 @@
  * - /preview/screens/<screen> The same, for a screen.
  * - /app                      The app without the shell, driven by typing. ?say=<utterance> sends utterances in order at startup.
  * - /i18n                     Every message of the UI dictionary with its languages side by side. ?group= and ?q= narrow it.
+ * - /aizuchi                  The review of the aizuchi clips the app ships, which the development server reads and writes.
  *
  * Prefixing a shell URL with /preview gives the URL loaded in the iframe.
  */
@@ -16,11 +17,13 @@ export type DemoRoute =
   | { kind: 'shell'; entry: string }
   | { kind: 'app' }
   | { kind: 'i18n' }
+  | { kind: 'aizuchi' }
   | { kind: 'cards'; card: string | null }
   | { kind: 'screen'; name: string }
 
 export const APP_PATH = '/app'
 export const I18N_PATH = '/i18n'
+export const AIZUCHI_PATH = '/aizuchi'
 export const CARDS_PATH = '/cards'
 export const SCREENS_PATH = '/screens'
 const PREVIEW = '/preview'
@@ -38,6 +41,7 @@ export function resolveDemoRoute(pathname: string): DemoRoute {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
   if (path === APP_PATH) return { kind: 'app' }
   if (path === I18N_PATH) return { kind: 'i18n' }
+  if (path === AIZUCHI_PATH) return { kind: 'aizuchi' }
   const previewCard = under(path, `${PREVIEW}${CARDS_PATH}`)
   if (previewCard !== null) return { kind: 'cards', card: previewCard || null }
   const previewScreen = under(path, `${PREVIEW}${SCREENS_PATH}`)

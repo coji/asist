@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
 import { CATALOG, findEntry, type CatalogEntry } from '../catalog'
 import { DEFAULT_DEMO_OS, DEMO_OSES, demoOs } from '../platform'
-import { previewPath, resolveDemoRoute, I18N_PATH } from '../routes'
+import { previewPath, resolveDemoRoute, AIZUCHI_PATH, I18N_PATH } from '../routes'
 import WINDOW_SIZES from '../window-sizes.json'
 import './shell.css'
 
@@ -106,6 +106,7 @@ export function Shell(): React.JSX.Element {
       <aside className="demo-side">
         <h1>ASIST · DEMO</h1>
         <a className="demo-i18n" href={I18N_PATH}>文言の一覧</a>
+        <a className="demo-i18n" href={AIZUCHI_PATH}>相槌の確認</a>
         <input className="demo-filter" type="search" placeholder="絞り込む" aria-label="見本を絞り込む" value={filter} onChange={(event) => setFilter(event.target.value)} />
         <nav aria-label="見本">
           {groups.map((group) => (

@@ -61,6 +61,11 @@ export async function bootDemo(root: Root): Promise<boolean> {
     root.render(<I18nPage />)
     return true
   }
+  if (route.kind === 'aizuchi') {
+    const { AizuchiReview } = await import('./pages/AizuchiReview')
+    root.render(<AizuchiReview />)
+    return true
+  }
   if (route.kind === 'cards') {
     if (route.card && !findEntry(cardPath(route.card))) throw new Error(`demo に ${route.card} というカードの見本はありません`)
     // The cards read the interface language from the settings, which only the app loads on its own.

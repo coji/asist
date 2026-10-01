@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS } from '../src/shared/tts-models.ts'
+import { modelPath } from './aizuchi-clips/speech.mjs'
 import { download, extract, run, withTemporaryDir } from './resources/shared.mjs'
 
 /*
@@ -25,14 +26,6 @@ const TOOLS = {
 
 const root = path.resolve(import.meta.dirname, '..')
 const references = process.argv[2] ?? path.join(homedir(), 'speech-bench-data', 'references')
-
-function modelPath(file) {
-  const userData = process.platform === 'win32' ? path.join(process.env.APPDATA, 'asist') : path.join(homedir(), 'Library/Application Support/asist')
-  const models = process.env.ASIST_SPEECH_MODELS ?? path.join(userData, 'speech-models')
-  const found = path.join(models, file.repo.replace('/', '--'), file.revision, file.file)
-  if (!fs.existsSync(found)) throw new Error(`${file.file} is not in ${models}; prepare Irodori-TTS in the app first`)
-  return found
-}
 
 const tools = TOOLS[`${process.platform}-${process.arch}`]
 if (!tools) throw new Error(`speech.cpp ${VERSION} has no tools for ${process.platform} ${process.arch}`)

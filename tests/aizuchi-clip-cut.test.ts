@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CARRIER, FRAME, RATE, VOICED_FRAME_RMS, cutAizuchi, frameRms } from '../scripts/aizuchi-clips/cut.mjs'
+import { CARRIER, FRAME, RATE, VOICED_FRAME_RMS, cutAizuchi, frameRms, plain, trimAizuchi } from '../scripts/aizuchi-clips/cut.mjs'
 
 /** Audio of voice and silence, given as [seconds, voiced] parts. */
 function reading(parts: Array<[number, boolean]>): Float32Array {
@@ -53,5 +53,57 @@ describe('cutting an aizuchi out of a reading in front of the carrier', () => {
     const garbled = async (audio: Float32Array): Promise<string> => ((await recognize(audio)) === CARRIER ? '今日はあさがおが' : recognize(audio))
     const audio = reading([[0.1, false], [0.3, true], [0.3, false], [1.5, true], [0.3, false]])
     await expect(cutAizuchi(audio, 'はい。', garbled)).resolves.toBeTypeOf('string')
+  })
+})
+
+describe('checking what the recognizer heard in an aizuchi', () => {
+  it('takes a long vowel mark for the vowel it draws out, so that a drawn-out aizuchi is neither refused nor taken for a short one', () => {
+    expect(plain('あー、はい。')).toBe(plain('ああ、はい。'))
+    expect(plain('おー。')).toBe(plain('おお'))
+    expect(plain('あー。')).not.toBe(plain('あ。'))
+    expect(plain('うーん。')).not.toBe(plain('うん。'))
+  })
+})
+
+describe('trimming an aizuchi read alone', () => {
+  it('keeps the voice with one frame before it and a short tail, and hands that to the recognizer', async () => {
+    const audio = reading([[0.3, false], [0.5, true], [0.8, false]])
+    const heard: number[] = []
+    const found = await trimAizuchi(audio, 'うん。', async (samples: Float32Array) => {
+      heard.push(samples.length)
+      return 'うん。'
+    })
+    if (typeof found === 'string') throw new Error(found)
+    expect(found.voicedMs).toBe(500)
+    expect(found.samples.length).toBe(heard[0])
+    expect(found.samples.length / RATE).toBeCloseTo(0.5 + 0.02 + 0.1, 2)
+  })
+
+  it('drops a short stray sound after a long pause at the end, which is not part of the aizuchi', async () => {
+    const audio = reading([[0.1, false], [0.8, true], [0.35, false], [0.08, true], [0.1, false]])
+    const found = await trimAizuchi(audio, 'あー。', async () => 'あー。')
+    if (typeof found === 'string') throw new Error(found)
+    expect(found.voicedMs).toBe(800)
+  })
+
+  it('keeps the words after a pause inside the aizuchi', async () => {
+    const audio = reading([[0.1, false], [0.2, true], [0.9, false], [0.9, true], [0.1, false]])
+    const found = await trimAizuchi(audio, 'あ、失礼しました。', async () => 'あ、失礼しました。')
+    if (typeof found === 'string') throw new Error(found)
+    expect(found.voicedMs).toBe(2000)
+  })
+
+  it('keeps a breathy start that is quieter than the voice', async () => {
+    const breath = Float32Array.from({ length: Math.round(0.1 * RATE) }, (_, i) => 0.003 * Math.sin((2 * Math.PI * 900 * i) / RATE))
+    const audio = Float32Array.from([...new Float32Array(Math.round(0.2 * RATE)), ...breath, ...reading([[0.5, true], [0.3, false]])])
+    const found = await trimAizuchi(audio, 'はい。', async () => 'はい。')
+    if (typeof found === 'string') throw new Error(found)
+    // The cut starts with the breath, 0.1 s before the first voiced frame, and one frame earlier still.
+    expect(found.samples.length / RATE).toBeCloseTo(0.02 + 0.1 + 0.5 + 0.1, 2)
+  })
+
+  it('refuses a reading far longer than any natural reading of the aizuchi', async () => {
+    const audio = reading([[0.1, false], [3, true], [0.1, false]])
+    expect(await trimAizuchi(audio, 'うん。', async () => 'うん。')).toMatch(/not a natural length/)
   })
 })
