@@ -1,5 +1,5 @@
 import { resolveWeatherCard, WeatherIssueError } from '../weather'
-import { weatherCardKeyOf, type WeatherData, type WeatherIssue } from '@shared/weather'
+import { weatherCardKeyOf, weatherForModel, type WeatherData, type WeatherIssue } from '@shared/weather'
 import { PANEL_CATALOG, type PanelCatalogEntry } from '@shared/panel-catalog'
 import { MINI_APPS } from '@shared/mini-apps'
 import type { AgentJob, PanelEvent, TurnEvent } from '@shared/ipc'
@@ -148,7 +148,7 @@ async function runPanelTool(
     ctx.emit({ type: 'panel', turnId: ctx.turnId, event: {
       op: 'create', key, type, slot: entry.slot, props: result.props, state: 'ready', replacesKey
     } })
-    return { shown: true, panel: type, data: weather }
+    return { shown: true, panel: type, data: weatherForModel(weather, locale) }
   }
   let props: Record<string, unknown>
   try {

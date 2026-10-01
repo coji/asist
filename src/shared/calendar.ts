@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { addDays, lastInstant, parseDayKey } from './calendar-layout'
-import { promptText, weekdayName, type ConversationLocale, type PromptText } from './conversation-locale'
+import { dateLabel, promptText, type ConversationLocale, type PromptText } from './conversation-locale'
 import { errorText } from './i18n/error-text'
 import { bilingual } from './tool-registry'
 
@@ -208,13 +208,6 @@ const TEXTS = {
 } as const satisfies Record<string, PromptText>
 
 const pad2 = (n: number): string => String(n).padStart(2, '0')
-/** A local calendar day of this machine, written like "2026-09-15(火)" or "2026-09-15 (Tue)". */
-export function calendarDateLabel(locale: ConversationLocale, at: number | Date): string {
-  const d = new Date(at)
-  const date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-  const weekday = weekdayName(locale, d)
-  return promptText(locale, { ja: `${date}(${weekday})`, en: `${date} (${weekday})` })
-}
 const clock = (at: number | Date): string => {
   const d = new Date(at)
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
@@ -271,8 +264,8 @@ export const localIsoWithOffset = (at: number): string =>
   isoWithOffset(at, Intl.DateTimeFormat().resolvedOptions().timeZone)
 
 export function summarizeCalendarEvent(locale: ConversationLocale, event: CalendarEvent): CalendarEventSummary {
-  const lastDay = calendarDateLabel(locale, lastInstant(event))
-  const date = calendarDateLabel(locale, event.start)
+  const lastDay = dateLabel(locale, lastInstant(event))
+  const date = dateLabel(locale, event.start)
   return {
     id: event.id,
     title: event.title,
@@ -299,7 +292,7 @@ export function detailCalendarEvent(locale: ConversationLocale, event: CalendarE
 
 /** The current time attached to a tool result, written like "2026-09-20(日) 15:58". */
 export const calendarNowLabel = (locale: ConversationLocale, now: Date): string =>
-  `${calendarDateLabel(locale, now)} ${clock(now)}`
+  `${dateLabel(locale, now)} ${clock(now)}`
 
 export interface CalendarSummary {
   today: string
@@ -314,8 +307,8 @@ export interface CalendarSummary {
 }
 
 function rangeLabel(locale: ConversationLocale, fromMs: number, untilMs: number): string {
-  const first = calendarDateLabel(locale, fromMs)
-  const last = calendarDateLabel(locale, untilMs - 1)
+  const first = dateLabel(locale, fromMs)
+  const last = dateLabel(locale, untilMs - 1)
   return first === last ? first : `${first}${promptText(locale, TEXTS.between)}${last}`
 }
 

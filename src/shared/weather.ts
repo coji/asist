@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { PromptText } from './conversation-locale'
+import { dateLabel, type ConversationLocale, type PromptText } from './conversation-locale'
 import { bilingual } from './tool-registry'
 
 /**
@@ -216,6 +216,76 @@ export interface WeatherData {
   day: WeatherDay
   daily: WeatherDay[]
   sources: WeatherSource[]
+}
+
+/** An instant as the clock of the place reads it, written like "2026-10-03 06:00". */
+function placeClock(iso: string, timeZone: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    })
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value])
+  )
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`
+}
+
+/**
+ * The weather as show_weather answers the model. Every day carries its weekday and every time is the
+ * clock of the place, so the model reads them rather than works them out: given bare dates, Gemini Live
+ * answered a question about Saturday from Sunday's forecast (2026-10-02), and the sources write some
+ * times in UTC beside others with the place's offset, so an hour reads as the day before. What only the
+ * card uses, such as the codes of the place, the icons and the addresses of the sources, is left out:
+ * with it a day of Fukuoka came to 3,936 characters (2026-10-02), past the 3,000 a panel's result may
+ * hold, and the result reached the model with its days cut short. The card keeps the data as fetched and
+ * reads its instants in the place's zone itself.
+ */
+export function weatherForModel(data: WeatherData, locale: ConversationLocale) {
+  const clock = (iso: string): string => placeClock(iso, data.location.timeZone)
+  const date = (value: string): string => {
+    const [year, month, day] = value.split('-').map(Number)
+    return dateLabel(locale, new Date(year, month - 1, day))
+  }
+  // The words of the source, or the key a source of codes names the sky by.
+  const sky = (condition: WeatherCondition | null): string | null => condition && (condition.label ?? condition.word)
+  const ofDay = (day: WeatherDay) => ({ date: date(day.date), condition: sky(day.condition), min: day.min, max: day.max, percent: day.percent })
+  const place = data.location
+  return {
+    location:
+      place.source === 'jma'
+        ? {
+            requested: place.requested,
+            name: place.name,
+            prefecture: place.prefecture,
+            forecastAreaName: place.forecastAreaName,
+            stationName: place.stationName,
+            usedRepresentative: place.usedRepresentative,
+            timeZone: place.timeZone
+          }
+        : { requested: place.requested, name: place.name, admin: place.admin, country: place.country, timeZone: place.timeZone },
+    date: data.date,
+    targetDate: date(data.targetDate),
+    fetchedAt: clock(data.fetchedAt),
+    units: data.units,
+    observation: data.observation && { ...data.observation, at: clock(data.observation.at) },
+    hourly: data.hourly.map((hour) => ({ at: clock(hour.at), until: clock(hour.until), temperature: hour.temperature, condition: sky(hour.condition) })),
+    temperaturePoint: data.temperaturePoint,
+    precipitationPeriods: data.precipitationPeriods.map((period) => ({ from: clock(period.from), to: clock(period.to), percent: period.percent })),
+    day: ofDay(data.day),
+    daily: data.daily.map(ofDay),
+    sources: data.sources.map((source) => ({
+      product: source.product,
+      issuedAt: source.issuedAt === null ? null : clock(source.issuedAt),
+      status: source.status,
+      ...(source.message ? { message: source.message } : {})
+    }))
+  }
 }
 
 /** The key of the card a place and a target date share. */

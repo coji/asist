@@ -108,6 +108,17 @@ export const weekdayName = (locale: ConversationLocale, date: Date): string =>
   WEEKDAY_NAMES[promptLanguage(locale)][date.getDay()]
 
 /**
+ * A calendar day of this machine as the model reads it, written like "2026-09-15(火)" or
+ * "2026-09-15 (Tue)". The weekday rides along because a model works one out of a bare date wrong.
+ */
+export function dateLabel(locale: ConversationLocale, at: number | Date): string {
+  const d = new Date(at)
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const weekday = weekdayName(locale, d)
+  return promptText(locale, { ja: `${date}(${weekday})`, en: `${date} (${weekday})` })
+}
+
+/**
  * Fills the `{name}` placeholders of a prompt text. A name with no value throws instead of reaching the
  * model as braces: what they stand for is the name of the language or a marker the model has to
  * recognize, and a prompt that explains a marker it never shows is worse than no prompt at all.

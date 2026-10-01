@@ -13,6 +13,7 @@ import { errorText, readErrorText } from '@shared/i18n/error-text'
 import { lastRoundNote } from '@shared/tool-round'
 import { interruptedBeforeReply, interruptedWhileSpeaking, resumeAfterDisconnectNote } from '@shared/turn-recovery'
 import { InterjectPlaybackAcks } from '@/interject-playback'
+import { DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 
 const LAST_ROUND_NOTE = lastRoundNote('ja-JP')
 const INTERRUPTED_BEFORE_REPLY = interruptedBeforeReply('ja-JP')
@@ -252,7 +253,7 @@ function unansweredCalls(messages: ConversationMessage[]): string[] {
   })
 }
 
-const weatherPanel = { props: { location: '東京都', weather: { targetDate: '2026-09-16', summary: '晴天' } }, source: 'test' }
+const weatherPanel = { props: { location: '東京都', date: 'tomorrow', weather: DEMO_WEATHER_TOKYO }, source: 'test' }
 
 describe('brain turn', () => {
   // The first import of the brain transforms its whole module graph, and the imports after vi.resetModules
@@ -818,7 +819,7 @@ describe('brain turn', () => {
   })
 
   it('keeps the tool call and its result from the previous turn in the next request and only appends to the history', async () => {
-    mocks.fetchPanel.mockResolvedValueOnce({ props: { location: '東京都', weather: { targetDate: '2026-09-16', temp: 28, forecast: 'x'.repeat(500) } }, source: 'open-meteo' })
+    mocks.fetchPanel.mockResolvedValueOnce(weatherPanel)
     mocks.rounds.push(async (round) => {
       round.toolUse('t1', 'show_weather', { location: '東京都' })
       return { stop: 'tool_calls' }
@@ -837,7 +838,8 @@ describe('brain turn', () => {
     const messages = mocks.requests[2].messages
     expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant', 'user'])
     expect(messages[1].parts).toEqual([{ type: 'tool_call', id: 't1', name: 'show_weather', input: { location: '東京都' } }])
-    expect(JSON.stringify(messages[2].parts)).toContain('x'.repeat(500))
+    // The whole result comes back, its last day included.
+    expect(JSON.stringify(messages[2].parts)).toContain('2026-09-22(火)')
     expect(messages[3]).toEqual(said('晴天です。'))
     // The messages sent in the previous turn become the prefix of the next request unchanged.
     expect(messages.slice(0, 4)).toEqual([...mocks.requests[1].messages.slice(0, 3), said('晴天です。')])

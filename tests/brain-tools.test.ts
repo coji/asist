@@ -3,6 +3,7 @@ import type { ConversationLocale } from '@shared/conversation-locale'
 import type { JobDiff, TurnEvent } from '@shared/ipc'
 import type { ToolContext, ToolOptions } from '../src/main/services/brain/tools'
 import { PANEL_CATALOG } from '@shared/panel-catalog'
+import { DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 import { taskSummary } from '@shared/tasks'
 import { FETCHER_TIMEOUT_MS, LOCAL_TIMEOUT_MS, resolvePromptTexts } from '@shared/tool-registry'
 import { createTranslator } from '@shared/i18n'
@@ -354,13 +355,24 @@ describe('brain tools registry', () => {
     }
   })
 
-  it('returns the fetched weather as it is and creates the card under the resolved area and date', async () => {
-    const weather = { targetDate: '2026-09-16', day: { min: null, max: 24 } }
+  it('answers the model with the days of the fetched weather named by weekday, and creates the card from the weather as fetched under the resolved area and date', async () => {
+    const weather = DEMO_WEATHER_TOKYO
     mocks.fetchPanel.mockResolvedValueOnce({ props: { location: '東京都', date: 'tomorrow', weather } })
     const { executeClientTool } = await load()
     const { ctx, events } = makeCtx()
     const result = await executeClientTool('show_weather', { location: '東京都', date: 'tomorrow', replacesLocation: '広島県' }, ctx)
-    expect(JSON.parse(result.content)).toEqual({ shown: true, panel: 'weather', data: weather })
+    const { data } = JSON.parse(result.content) as { data: { targetDate: string; daily: Array<{ date: string }> } }
+    expect(data.targetDate).toBe('2026-09-16(水)')
+    // A whole day of forecasts comes back uncut, all seven days of the week included.
+    expect(data.daily.map((day) => day.date)).toEqual([
+      '2026-09-16(水)',
+      '2026-09-17(木)',
+      '2026-09-18(金)',
+      '2026-09-19(土)',
+      '2026-09-20(日)',
+      '2026-09-21(月)',
+      '2026-09-22(火)'
+    ])
     expect(events).toHaveLength(1)
     expect(events[0]).toMatchObject({ event: { op: 'create', key: 'weather:13101:2026-09-16', replacesKey: 'weather:34100:2026-09-16', props: { weather }, state: 'ready' } })
   })

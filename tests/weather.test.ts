@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { errorText } from '../src/shared/i18n/error-text'
-import { WMO_WEATHER, weatherCardKey, weatherInputSchema, wmoCondition } from '../src/shared/weather'
+import { WMO_WEATHER, weatherCardKey, weatherForModel, weatherInputSchema, wmoCondition } from '../src/shared/weather'
+import { DEMO_WEATHER_MUNICH, DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 import { resolveWeatherLocation, weeklyCandidates } from '../src/main/services/weather/locations'
 import {
   numeric,
@@ -170,5 +171,40 @@ describe('Japan Meteorological Agency data', () => {
     })
     expect(parseObservation(data, '2026-09-15T18:00:00+09:00', '大阪')).toBeNull()
     expect(observationBlock('2026-09-15T17:20:00+09:00')).toBe('20260915_15')
+  })
+})
+
+describe('the weather as the model reads it', () => {
+  it('names every day by its weekday, in the language of the conversation', () => {
+    expect(weatherForModel(DEMO_WEATHER_TOKYO, 'ja-JP').daily.map((day) => day.date)).toEqual([
+      '2026-09-16(水)',
+      '2026-09-17(木)',
+      '2026-09-18(金)',
+      '2026-09-19(土)',
+      '2026-09-20(日)',
+      '2026-09-21(月)',
+      '2026-09-22(火)'
+    ])
+    const english = weatherForModel(DEMO_WEATHER_MUNICH, 'en-US')
+    expect([english.targetDate, english.day.date, english.daily[5].date]).toEqual(['2026-09-15 (Tue)', '2026-09-15 (Tue)', '2026-09-20 (Sun)'])
+  })
+
+  it('writes every time as the clock of the place, whether the source wrote it in UTC or with the offset', () => {
+    // JMA's ends of a period are written in UTC beside starts with +09:00, and Open-Meteo writes UTC throughout.
+    const tokyo = weatherForModel(
+      {
+        ...DEMO_WEATHER_TOKYO,
+        hourly: [{ at: '2026-09-16T21:00:00+09:00', until: '2026-09-16T15:00:00.000Z', temperature: 21, condition: null }],
+        precipitationPeriods: [{ from: '2026-09-16T18:00:00+09:00', to: '2026-09-16T15:00:00.000Z', percent: 70 }]
+      },
+      'ja-JP'
+    )
+    expect(tokyo.hourly[0]).toMatchObject({ at: '2026-09-16 21:00', until: '2026-09-17 00:00' })
+    expect(tokyo.precipitationPeriods[0]).toMatchObject({ from: '2026-09-16 18:00', to: '2026-09-17 00:00' })
+    const munich = weatherForModel(
+      { ...DEMO_WEATHER_MUNICH, observation: { ...DEMO_WEATHER_MUNICH.observation!, at: '2026-09-15T16:00:00.000Z' } },
+      'en-US'
+    )
+    expect(munich.observation?.at).toBe('2026-09-15 18:00')
   })
 })

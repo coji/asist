@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { calendarDateLabel, detailCalendarEvent, type CalendarEvent } from '../src/shared/calendar'
+import { detailCalendarEvent, type CalendarEvent } from '../src/shared/calendar'
+import { dateLabel } from '../src/shared/conversation-locale'
 import {
   cellPlan,
   eventsOn,
@@ -132,7 +133,7 @@ describe('events of a day', () => {
     const { days } = weekLayout(monday, [reminder])
     expect(days.map((d) => d.timed.length)).toEqual([0, 0, 1, 0, 0, 0, 0])
     expect(layoutBlocks(days[2].timed, days[2].date)).toMatchObject([{ startMin: 0 }])
-    expect(detailCalendarEvent('ja-JP', reminder).date).toBe(calendarDateLabel('ja-JP', day(16)))
+    expect(detailCalendarEvent('ja-JP', reminder).date).toBe(dateLabel('ja-JP', day(16)))
   })
 })
 
