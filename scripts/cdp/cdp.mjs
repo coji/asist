@@ -103,13 +103,21 @@ export async function connect(port) {
   })
   let seq = 0
   const pending = new Map()
-  /** The uncaught errors of the page since the last navigation, which waitForApp reports when the page never renders. */
-  let exceptions = []
+  /**
+   * The last navigation, or the page as it was when connected: its URL, when it began, and since then the
+   * uncaught errors of the page and the errors the browser logged, such as a module it could not load.
+   * waitForApp reports them when the page never renders.
+   */
+  let navigation = { url: page.url, at: Date.now(), exceptions: [], logged: [] }
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data)
     if (msg.method === 'Runtime.exceptionThrown') {
       const details = msg.params.exceptionDetails
-      exceptions.push({ at: Date.now(), text: details.exception?.description ?? details.text })
+      navigation.exceptions.push({ at: Date.now(), text: details.exception?.description ?? details.text })
+    }
+    if (msg.method === 'Log.entryAdded' && msg.params.entry.level === 'error') {
+      const { text, url } = msg.params.entry
+      navigation.logged.push(url ? `${text} ${url}` : text)
     }
     if (msg.id && pending.has(msg.id)) {
       const { resolve, reject } = pending.get(msg.id)
@@ -124,6 +132,7 @@ export async function connect(port) {
       ws.send(JSON.stringify({ id, method, params }))
     })
   await send('Runtime.enable')
+  await send('Log.enable')
   return {
     send,
     async evaluate(expression) {
@@ -138,10 +147,10 @@ export async function connect(port) {
       return result.value
     },
     navigate: (url) => {
-      exceptions = []
+      navigation = { url, at: Date.now(), exceptions: [], logged: [] }
       return send('Page.navigate', { url })
     },
-    exceptions: () => exceptions,
+    navigation: () => navigation,
     /** Pretends the window has this size. It is for the demo, and never for the app's own window. */
     resize: ([width, height]) =>
       send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 2, mobile: false }),
@@ -160,8 +169,14 @@ export async function connect(port) {
 }
 
 /**
- * Waits until one of these has rendered: the conversation screen with its input field, the card gallery,
- * a screen such as the demo's /preview/screens/boot, the demo shell, or the demo's list of messages.
+ * What a rendered page shows: the conversation screen's input field, the card gallery, the demo shell, or
+ * the demo's list of messages.
+ */
+const RENDERED = ['form input', '.gallery', '.demo-shell', '.i18n']
+
+/**
+ * Waits until one of RENDERED has rendered and the boot screen is gone, or, on a screen such as the demo's
+ * /preview/screens/boot, until the boot screen is there.
  */
 export async function waitForApp(client, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs
@@ -170,7 +185,7 @@ export async function waitForApp(client, timeoutMs = 30_000) {
   // boot screens (/screens/boot…) are the one place where the boot screen is the page.
   const ready = `location.pathname.includes('/screens/boot')
     ? !!document.querySelector('.boot')
-    : !!document.querySelector('form input, .gallery, .demo-shell, .i18n') && !document.querySelector('.boot')`
+    : !!document.querySelector(${JSON.stringify(RENDERED.join(', '))}) && !document.querySelector('.boot')`
   // Checked every 50 ms: a screen of the demo is ready about 0.6 s after navigating, and polling every
   // 300 ms added up to a third of that to each load.
   // A page that throws while it starts, such as the demo refusing an unknown ?theme=, never renders. Its
@@ -185,11 +200,29 @@ export async function waitForApp(client, timeoutMs = 30_000) {
     if (await client.evaluate(ready)) return
     const fatal = await client.evaluate(failed)
     if (fatal) throw new Error(`ページが起動に失敗しました: ${fatal.replace(/\s+/g, ' ').trim()}`)
-    const first = client.exceptions?.()[0]
+    const first = client.navigation().exceptions[0]
     if (first && Date.now() - first.at > 3000) throw new Error(`ページが起動中に止まりました: ${first.text}`)
     await sleep(50)
   }
-  throw new Error('会話画面もカードの見本も起動画面も demo のフレームも表示されません')
+  // What the page shows when the time is up tells apart a document whose modules have not all loaded (its
+  // readyState and an empty body), a page held on its boot screen (.boot without anything of RENDERED),
+  // and a page the browser could not load (another URL, and the errors the browser logged).
+  const shown = await client.evaluate(`({
+    href: location.href,
+    readyState: document.readyState,
+    found: ${JSON.stringify([...RENDERED, '.boot'])}.filter((selector) => document.querySelector(selector)),
+    text: (document.body?.innerText ?? '').replace(/\\s+/g, ' ').trim().slice(0, 120)
+  })`)
+  const { url, at, logged } = client.navigation()
+  throw new Error(
+    [
+      `${url} を開いて ${Math.round((Date.now() - at) / 1000)} 秒待っても、会話画面もカードの見本も起動画面も demo のフレームも表示されません`,
+      `ページ: ${shown.href} (readyState: ${shown.readyState})`,
+      `見つかった要素: ${shown.found.join(', ') || 'なし'}`,
+      `本文: ${shown.text || '(なし)'}`,
+      `ブラウザが記録したエラー: ${logged.length ? logged.slice(0, 5).join(' / ') : 'なし'}`
+    ].join('\n  ')
+  )
 }
 
 /** Measures the response state and the cards, which is what decides size, natural height and clipping. */
