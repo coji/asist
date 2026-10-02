@@ -167,10 +167,14 @@ export async function startRecognizer() {
   const spec = ASR_MODEL_SPECS['qwen3-asr-1.7b']
   const port = await freePort()
   const key = randomBytes(24).toString('hex')
+  // The key goes in the environment, not on the command line, because a Mac's ps shows every user the
+  // arguments of all processes. llama-server reads every option it is not given on its command line from a
+  // LLAMA_ variable, so the developer's own are left out, as the app leaves them out.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith('LLAMA_')))
   const child = spawn(program('llama.cpp', 'llama-server'), [
     '--model', modelPath(spec.model), '--mmproj', modelPath(spec.mmproj), '--n-gpu-layers', '99', '--ctx-size', '4096',
-    '--parallel', '1', '--host', '127.0.0.1', '--port', String(port), '--api-key', key, '--no-webui', '--offline', '--log-verbosity', '1'
-  ], { stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true })
+    '--parallel', '1', '--host', '127.0.0.1', '--port', String(port), '--no-webui', '--offline', '--log-verbosity', '1'
+  ], { stdio: ['ignore', 'ignore', 'inherit'], env: { ...env, LLAMA_API_KEY: key }, windowsHide: true })
   const exited = new Promise((_, reject) => child.once('exit', (code) => reject(new Error(`llama-server exited (${code})`))))
   const healthy = (async () => {
     for (;;) {

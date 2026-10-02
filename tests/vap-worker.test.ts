@@ -146,6 +146,22 @@ describe.runIf(python !== null || pythonRequired)('the MaAI worker, vap_worker.p
     expect(await worker.exited).toBe(0)
   })
 
+  it('sends ready once the warm-up is worked through, so that the first estimates are about the audio sent after it', { timeout: 30_000 }, async () => {
+    // At 30 ms a frame, the warm-up's second of silence is still being worked through when its first result comes.
+    const worker = startWorker({ FAKE_MAAI_FRAME_SEC: '0.03' })
+    expect(await worker.until((messages) => messages.some((message) => message.type === 'ready'))).toBe(true)
+
+    // Each user frame holds its number in thousandths; the stand-in reports the warm-up's silence as 0.
+    const frames = 5
+    const user = Float32Array.from({ length: frames * FRAME_SAMPLES }, (_, i) => (Math.floor(i / FRAME_SAMPLES) + 1) / 1000)
+    worker.write(user, new Float32Array(user.length))
+    expect(await worker.until((messages) => states(messages).length >= frames)).toBe(true)
+
+    expect(states(worker.messages).map((state) => Math.round(state.pNowUser * 1000))).toEqual([1, 2, 3, 4, 5])
+    running!.stdin.end()
+    expect(await worker.exited).toBe(0)
+  })
+
   it('stops with a fatal error when the warm-up result carries no frame number', { timeout: 30_000 }, async () => {
     const worker = startWorker({ FAKE_MAAI_UNNUMBERED: '1' })
     await worker.until((messages) => messages.length > 0)

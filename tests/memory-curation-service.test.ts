@@ -89,6 +89,20 @@ async function restart(at = now) {
 }
 
 const lastLaunch = () => mocks.launch.mock.calls.at(-1)![2]
+const settled = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
+
+/** The process of a curation's Agent, as ASIST saves it once the Agent has started. */
+const agentProcess = (pid: number) => ({ pid, startedAt: 'Sat Sep 12 12:00:00 2026', token: '6f9619ff-8b86-4d01-b42d-00cf4fc964ff' })
+
+/**
+ * What the next start finds of an Agent that a crash of ASIST cut off: gone, since the stop sent as ASIST ends
+ * stopped it. The first check runs after the caller has registered the recovery, as the real one does.
+ */
+function goneAtNextStart(_identity: unknown, onStopped: () => void) {
+  let resolve!: () => void
+  const completion = new Promise<void>((done) => { resolve = done })
+  return { completion, stop: () => { queueMicrotask(() => { onStopped(); resolve() }); return completion } }
+}
 
 it('starts the curation of yesterday at startup, and keeps the job out of what the user and the conversation see', async () => {
   const { curation, agent } = await setup()
@@ -145,6 +159,94 @@ it('records a failure when the next curation is stopped by a quit as well, and l
   expect(mocks.launch).toHaveBeenCalledTimes(2)
   await restart(now + DAY)
   expect(mocks.launch).toHaveBeenCalledTimes(3)
+})
+
+it('discards the changes of a run that a crash cut off, records no failure, and curates the same days at the next start', async () => {
+  const { curation } = await setup()
+  const job = curation.pendingJob()!
+  lastLaunch().onSpawn(agentProcess(4242))
+  fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'unfinished\n')
+  mocks.recover.mockImplementation(goneAtNextStart)
+  const restored = await restart(now + 10 * MINUTE)
+  await settled()
+  expect(restored.agent.get(job.id)?.mergeState).toBe('discarded')
+  expect(fs.existsSync(path.join(mocks.root, 'repo', 'memory.md'))).toBe(false)
+  expect(restored.curation.lastFailure()).toBeNull()
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  expect(restored.curation.pendingJob()?.memoryCuration).toEqual({ through: '2026-09-11', applied: false })
+})
+
+it.each(['crash', 'quit'] as const)('records a failure when the curation after one a crash cut off is stopped by a %s as well, and leaves the retry to the next day', async (end) => {
+  await setup()
+  lastLaunch().onSpawn(agentProcess(4242))
+  mocks.recover.mockImplementation(goneAtNextStart)
+  const second = await restart(now + 10 * MINUTE)
+  await settled()
+  expect(second.curation.lastFailure()).toBeNull()
+  if (end === 'crash') {
+    lastLaunch().onSpawn(agentProcess(4243))
+  } else {
+    const quitting = second.agent.shutdown()
+    lastLaunch().onExit(0)
+    await quitting
+  }
+  const third = await restart(now + 20 * MINUTE)
+  await settled()
+  expect(third.curation.lastFailure()).toMatchObject({ message: ja('memory.curation.quitTwice') })
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  await restart(now + 30 * MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  await restart(now + DAY)
+  expect(mocks.launch).toHaveBeenCalledTimes(3)
+})
+
+it('records a failure when two curations in a row are cut off by a crash before their Agent started, and starts no third that day', async () => {
+  await setup()
+  const second = await restart(now + 10 * MINUTE)
+  expect(second.curation.lastFailure()).toBeNull()
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  const third = await restart(now + 20 * MINUTE)
+  expect(third.curation.lastFailure()).toMatchObject({ message: ja('memory.curation.quitTwice') })
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  await restart(now + 30 * MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  await restart(now + DAY)
+  expect(mocks.launch).toHaveBeenCalledTimes(3)
+})
+
+it.each([false, true])('takes a curation whose merge reached the memory before the app ended as merged at the next start, and curates no day twice (an edit by hand not yet committed: %s)', async (handEdit) => {
+  const { curation } = await setup()
+  const job = curation.pendingJob()!
+  fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'curated\n')
+  // The app ends after git has merged the curation: from the save that records the merge on, nothing it
+  // writes reaches the disk.
+  const rename = fs.renameSync
+  let ended = false
+  vi.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+    ended ||= path.basename(String(to)) === 'jobs.json' && fs.readFileSync(from, 'utf8').includes('"mergeState":"merged"')
+    if (ended) throw new Error('the app ended')
+    rename(from, to)
+  })
+  lastLaunch().onExit(0)
+  vi.mocked(fs.renameSync).mockRestore()
+  const repo = path.join(mocks.root, 'repo')
+  const merged = git(repo, 'rev-parse', 'HEAD')
+  expect(fs.readFileSync(path.join(repo, 'memory.md'), 'utf8')).toBe('curated\n')
+  const memory = handEdit ? 'curated\nadded by hand\n' : 'curated\n'
+  fs.writeFileSync(path.join(repo, 'memory.md'), memory)
+  const restored = await restart(now + 10 * MINUTE)
+  expect(restored.agent.get(job.id)).toMatchObject({ mergeState: 'merged', memoryCuration: { through: '2026-09-11', applied: true } })
+  expect(restored.curation.curatedThrough()).toBe('2026-09-11')
+  expect(restored.curation.lastFailure()).toBeNull()
+  expect(git(repo, 'rev-parse', 'HEAD')).toBe(merged)
+  expect(fs.readFileSync(path.join(repo, 'memory.md'), 'utf8')).toBe(memory)
+  expect(fs.existsSync(job.cwd)).toBe(false)
+  vi.setSystemTime(now + DAY)
+  vi.advanceTimersByTime(MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  const next = restored.curation.pendingJob()!
+  expect(next.prompt).not.toContain('# 2026-09-11 の会話')
+  expect(next.prompt).toContain('# 2026-09-12 の会話')
 })
 
 it('records no failure when the daily check comes while the app is quitting, and curates at the next start', async () => {
@@ -282,7 +384,7 @@ describe.runIf(process.platform !== 'win32')('a curation refused by the check be
 it('starts the next curation while the stop of the Agent of one cut off by a restart cannot be confirmed, and leaves asking again to the next start', async () => {
   const { curation } = await setup()
   const job = curation.pendingJob()!
-  lastLaunch().onSpawn({ pid: 4242, startedAt: 'Sat Sep 12 12:00:00 2026', token: '6f9619ff-8b86-4d01-b42d-00cf4fc964ff' })
+  lastLaunch().onSpawn(agentProcess(4242))
   let checks = 0
   mocks.recover.mockImplementation(() => {
     checks++
@@ -290,7 +392,6 @@ it('starts the next curation while the stop of the Agent of one cut off by a res
     completion.catch(() => {})
     return { completion, stop: () => completion }
   })
-  const settled = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
   const restored = await restart(now + DAY)
   await settled()
   for (let i = 0; i < 10; i++) vi.advanceTimersByTime(MINUTE)

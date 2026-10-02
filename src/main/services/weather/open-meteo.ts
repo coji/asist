@@ -4,6 +4,7 @@ import {
   placeCardId,
   wmoCondition,
   zonedDate,
+  zonedHour,
   type GlobalWeatherLocation,
   type WeatherData,
   type WeatherDay
@@ -141,7 +142,13 @@ function offsetTag(seconds: number): string {
   const pad = (value: number): string => String(Math.floor(value)).padStart(2, '0')
   return `${seconds < 0 ? '-' : '+'}${pad(Math.abs(seconds) / 3600)}:${pad((Math.abs(seconds) % 3600) / 60)}`
 }
-/** Open-Meteo writes local times without a zone (`2026-09-21T21:30`), so the offset is added here. */
+/**
+ * The moment a time of the answer stands for. Open-Meteo writes times without a zone (`2026-09-21T21:30`),
+ * and every one of them in the single offset of `utc_offset_seconds`, even past a change of the clocks:
+ * its answer for Sydney of 2026-10-02 wrote 2026-10-04 in +10:00 throughout, with a 02:00 that Sydney's
+ * clocks skip that night. The moment is right, but the date and hour as written are an hour off the
+ * place's clock after the change, so the place's day and hours are read from its zone.
+ */
 const instant = (local: string, offset: string): string =>
   `${local}${local.length === 16 ? ':00' : ''}${offset}`
 
@@ -204,35 +211,41 @@ export async function fetchGlobalWeather(
   const hourCodes = column(hours, 'weather_code')
   const hourTemperature = column(hours, 'temperature_2m')
   const hourPercent = column(hours, 'precipitation_probability')
-  // The card shows the target day from the hour that is still running, as the card of Japan does.
+  // The card shows the target day from the hour that is still running, as the card of Japan does, in
+  // steps of three hours of the place's clock, counted from that hour today and from midnight tomorrow.
+  // The steps lie on that grid of the clock, so an hour the clock skips or repeats changes how many hours
+  // its own step holds and never moves the steps after it: a step whose first hour is skipped begins
+  // with the hour after it.
   const kept = hours.time.flatMap((local, i) => {
-    if (local.slice(0, 10) !== targetDate) return []
     const at = Date.parse(instant(local, offset))
-    if (at + 3600_000 <= now) return []
-    return [{ at, index: i }]
+    if (zonedDate(at, timeZone) !== targetDate || at + 3600_000 <= now) return []
+    return [{ at, clock: zonedHour(at, timeZone), index: i }]
   })
+  const base = request.date === 'today' && kept.length ? kept[0].clock : 0
+  const steps = new Map<number, typeof kept>()
+  for (const hour of kept) {
+    const step = Math.floor((hour.clock - base) / HOURS_STEP)
+    steps.set(step, [...(steps.get(step) ?? []), hour])
+  }
   const hourly: WeatherData['hourly'] = []
   const precipitationPeriods: WeatherData['precipitationPeriods'] = []
-  for (let step = 0; step < kept.length; step += HOURS_STEP) {
-    const { at, index } = kept[step]
-    const until = at + HOURS_STEP * 3600_000
+  for (const step of steps.values()) {
+    const { at, index } = step[0]
+    const from = new Date(at).toISOString()
+    // A step ends with its last hour, so the last step of the day ends at the place's midnight.
+    const until = new Date(step[step.length - 1].at + 3600_000).toISOString()
     hourly.push({
-      at: new Date(at).toISOString(),
-      until: new Date(until).toISOString(),
+      at: from,
+      until,
       temperature: number(hourTemperature[index]),
       condition: wmoCondition(hourCodes[index])
     })
     // Open-Meteo gives a probability for each single hour, so the value shown for the period is the
     // highest of the hours it covers rather than a probability computed for the period itself.
-    const inside = kept
-      .slice(step, step + HOURS_STEP)
+    const inside = step
       .map((hour) => number(hourPercent[hour.index]))
       .filter((value): value is number => value !== null)
-    precipitationPeriods.push({
-      from: new Date(at).toISOString(),
-      to: new Date(until).toISOString(),
-      percent: inside.length ? Math.max(...inside) : null
-    })
+    precipitationPeriods.push({ from, to: until, percent: inside.length ? Math.max(...inside) : null })
   }
 
   const current = (data.current ?? {}) as Record<string, unknown>

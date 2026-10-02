@@ -218,11 +218,7 @@ export const NotebookViewer: Viewer = ({ item, mode, size }) => {
     return (
       <Frame mode={mode} size={size}>
         <p className="fv-note" data-tone="error">
-          {item.truncated
-            ? t('files.viewer.notebookTruncated')
-            : parsed.error === null
-              ? t('files.viewer.notebookShape')
-              : t('files.viewer.notebookFailed', { message: parsed.error })}
+          {parsed.error === null ? t('files.viewer.notebookShape') : t('files.viewer.notebookFailed', { message: parsed.error })}
         </p>
       </Frame>
     )

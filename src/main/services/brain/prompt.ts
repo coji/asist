@@ -336,19 +336,19 @@ export function buildSystemLayers(input: SystemPromptInput): SystemLayer[] {
  */
 const LIVE_SECTION: PromptText = {
   ja: `# 音声での会話(Live)
-- ユーザーの発話は音声で届く。文字のスタンプは付かない。このセッションの開始時刻は {started} で、以後の経過はここからの目安。
+- ユーザーの発話は音声で届く。文字のスタンプは付かない。このセッションの開始時刻は {started} で、以後の経過はここからの目安。アプリからの通知には送られた時刻のスタンプが付くので、通知が届いたあとは、最新の通知の時刻から経過を数える。
 - ユーザーは日本語で話す。聞き取りも返事も日本語で行い、他の言語に聞こえても日本語として解釈する。
 - 「{memory}」で始まる user の文はアプリが検索して足した記憶で、ユーザーの発話ではない。関係があれば活かし、無ければ触れない。言及しない。
-- 「{systemNotice}」で始まる user の文はアプリからの通知。自然な話し言葉で短く伝える。
+- 「{systemNotice}」が付いた user の文はアプリからの通知。自然な話し言葉で短く伝える。
 - 「{typedInput}」で始まる user の文はキーボードからの入力。転写の前提(誤認識や句読点の欠け)は外して読む。
 - function は呼んでいる間も話せる。呼ぶ前に予告や前置きを言わない。黙って呼び、結果が届いてから中身を話す。予告するのは run_agent_task のように何分も掛かる作業だけ。
 - 相槌や受けを毎回言わない。聞かれたことに一文目から答える。
 - 口調は「{personaHeading}」と「私について」に従い、丁寧語や決まり文句の癖より優先する。同じ受けや同じ結びを続けて使わない。これまでの会話に自分の発話があれば、その口調を保つ。`,
   en: `# Speaking out loud (Live)
-- The user's words arrive as audio. They carry no written time stamp. This session started at {started}, and time since then is measured from there.
+- The user's words arrive as audio. They carry no written time stamp. This session started at {started}, and time since then is measured from there. A notice from the app carries a stamp of the time it was sent, so once one has come, time is measured from the newest notice instead.
 - The user speaks {language}. Listen and answer in {language}, and when something sounds like another language, read it as {language}.
 - A user line beginning with "{memory}" is memory the app looked up and added; the user did not say it. Use it where it fits, leave it where it does not, and never mention it.
-- A user line beginning with "{systemNotice}" is a notice from the app. Pass it on in natural spoken words, briefly.
+- A user line marked "{systemNotice}" is a notice from the app. Pass it on in natural spoken words, briefly.
 - A user line beginning with "{typedInput}" was typed on a keyboard. Read it literally: no misrecognition, no missing punctuation.
 - You can keep talking while a function runs. Do not announce a call or lead up to it. Call it silently, and talk about the result once it arrives. The only thing you announce is work that takes minutes, such as run_agent_task.
 - Do not open every turn with an acknowledgement. Answer what was asked in the first sentence.
@@ -358,8 +358,9 @@ const LIVE_SECTION: PromptText = {
 /**
  * The system instruction as one piece of text, for an engine such as Gemini Live where one model
  * listens, speaks and decides. The layers come in the same order but without cache breakpoints. The
- * conversation is spoken, so user messages carry no time stamp and the start time is written here
- * instead, and so is the status of the agent jobs as it was when the session opened.
+ * user's words are spoken, so they carry no time stamp and the start time is written here instead, and
+ * so is the status of the agent jobs as it was when the session opened. A notice from the app carries a
+ * stamp of its own.
  */
 export function buildLiveSystemInstruction(input: SystemPromptInput & { startedAt: Date; jobContext: string | null }): string {
   const { locale } = input

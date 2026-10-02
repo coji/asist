@@ -124,7 +124,7 @@ npm run demo
 | `npm run demo:cards`、`npm run demo:gallery` | カードを 3 つの大きさで撮ります。一覧を 1 枚に撮ります。 |
 | `npm run demo:setup` | 初回セットアップを最初から最後まで歩いて撮ります。 |
 | `npm run demo:docs-shots` | README とドキュメントに載せる画面を、日本語と英語で `website/public/screens/` に撮り直します。 |
-| `npm run demo:fit` | 全言語で、カードと画面の文言が収まるかを調べます。20 秒ほどかかります。 |
+| `npm run demo:fit` | 全言語で、カードと画面の文言が収まるかを調べます。1 分ほどかかります。 |
 
 実際のサービスを使うセルフテストは、API キーと音声のサービスを用意し、ビルドのあとに実行します。
 

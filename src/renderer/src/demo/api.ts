@@ -610,6 +610,7 @@ export const mockApi: RendererApi = {
     patch: '+## 注意\n+\n+設定ファイルの形式は変わることがあります。',
     submodules: [],
     leftOut: [],
+    alreadyMerged: false,
     blocked: null
   }),
   jobList: async () => DEMO_JOBS.map((job) => ({ ...job })),

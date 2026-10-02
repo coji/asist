@@ -262,8 +262,8 @@ export const PANEL_CATALOG: PanelCatalogEntry[] = [
   {
     type: 'files',
     description: {
-      ja: 'ファイルやフォルダをカードで見せる。markdown、テキスト、csv、json、コード、画像(複数なら並べる)、PDF、Word、PowerPoint、Excel、動画、音声、ipynb、フォルダの中身をアプリの中で読める。ジョブの成果物を見せるとき、「見せて」「開いて」と言われたときに使う。パスはジョブの artifacts、フォルダなら cwd、ユーザーが指した場所(デスクトップ、ダウンロード、書類)から。',
-      en: 'Shows files and folders on a card. Markdown, text, csv, json, code, images (several are laid out side by side), PDF, Word, PowerPoint, Excel, video, audio, ipynb and the contents of a folder can all be read inside the app. Use it to show what a job produced, and whenever the user asks to see or open something. Take the paths from a job\'s artifacts, from its cwd for a folder, or from the place the user pointed at, such as the desktop, the downloads folder or the documents folder.'
+      ja: 'ファイルやフォルダをカードで見せる。markdown、テキスト、csv、json、コード、画像(複数なら並べる)、PDF、Word(docx)、PowerPoint(pptx)、Excel(xlsx)、動画、音声、ipynb、フォルダの中身をアプリの中で読める。zip や古い形式の Office(doc、xls、ppt)などほかの種類のファイルと、大きすぎるファイルは中身を出さない。中身を出さなかったファイルは結果の notShown に理由と一緒に入るので、それらを開いたとは言わず、理由とボタンを伝えること。最初の部分だけを出したファイルは partlyShown に入る。ジョブの成果物を見せるとき、「見せて」「開いて」と言われたときに使う。パスはジョブの artifacts、フォルダなら cwd、ユーザーが指した場所(デスクトップ、ダウンロード、書類)から。',
+      en: 'Shows files and folders on a card. Markdown, text, csv, json, code, images (several are laid out side by side), PDF, Word (docx), PowerPoint (pptx), Excel (xlsx), video, audio, ipynb and the contents of a folder can all be read inside the app. A file of any other kind, such as a zip or an older Office file (doc, xls, ppt), and a file too large to show are not shown: the result lists them in notShown with the reason. Do not say you opened them; tell the user why, and which button to use. Files the card shows only the first part of are listed in partlyShown. Use it to show what a job produced, and whenever the user asks to see or open something. Take the paths from a job\'s artifacts, from its cwd for a folder, or from the place the user pointed at, such as the desktop, the downloads folder or the documents folder.'
     },
     slot: 'right',
     tool: true,

@@ -1,0 +1,53 @@
+{
+  "version": 6,
+  "jobs": [
+    { "id": "20261002-0001", "startedAt": 1790900000000, "endedAt": 1790900060000, "title": "調べもの", "prompt": "README を要約して", "cwd": "/Users/someone/src/project", "readonly": true, "engine": "codex", "status": "done" },
+    {
+      "id": "8e2f6a31", "startedAt": 1790900100000, "endedAt": 1790900400000, "title": "web のテストを直す", "prompt": "packages/web のテストを直す",
+      "cwd": "/Users/someone/asist-jobs/20261002-web-tests-6d9e1f2a/packages/web", "readonly": false, "engine": "codex", "status": "done", "sessionId": "01a0b8d6-ae9a-7902-a540-37b5c19d87f3",
+      "summary": "失敗していたテストを直しました。", "artifacts": ["/Users/someone/asist-jobs/20261002-web-tests-6d9e1f2a/packages/web/index.test.ts"],
+      "worktree": {
+        "repo": "/Users/someone/src/project", "dir": "/Users/someone/asist-jobs/20261002-web-tests-6d9e1f2a", "branch": "asist/20261002-web-tests-6d9e1f2a",
+        "base": "2eecee0e0632d291a0f1caa6de21705670a2a7bf", "commit": "3a034242370b0e455efeb8b6b4642d84bc6e89b5",
+        "submodules": [".gitmodules", "vendor/ui-kit"]
+      },
+      "mergeState": "pending"
+    },
+    {
+      "id": "8e2f6a32", "startedAt": 1790900500000, "endedAt": 1790900800000, "title": "ブランチを切ってコミットする", "prompt": "feature/greeting ブランチを切って挨拶を直し、コミットして",
+      "cwd": "/Users/someone/asist-jobs/20261002-greeting-7a0b2c3d", "readonly": false, "engine": "claude", "status": "done", "sessionId": "5b3c1d2e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+      "summary": "feature/greeting にコミットしました。",
+      "worktree": {
+        "repo": "/Users/someone/src/project", "dir": "/Users/someone/asist-jobs/20261002-greeting-7a0b2c3d", "branch": "asist/20261002-greeting-7a0b2c3d",
+        "base": "2eecee0e0632d291a0f1caa6de21705670a2a7bf", "commit": "9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f", "movedTo": "feature/greeting"
+      },
+      "mergeState": "pending"
+    },
+    {
+      "id": "8e2f6a34", "startedAt": 1790901000000, "endedAt": 1790901200000, "title": "レポートを書き出す", "prompt": "dist にレポートを書き出して",
+      "cwd": "/Users/someone/asist-jobs/20261002-report-1b2c3d4e", "readonly": false, "engine": "codex", "status": "done",
+      "artifacts": ["/Users/someone/asist-jobs/20261002-report-1b2c3d4e/dist/report.html"],
+      "worktree": {
+        "repo": "/Users/someone/src/project", "dir": "/Users/someone/asist-jobs/20261002-report-1b2c3d4e", "branch": "asist/20261002-report-1b2c3d4e",
+        "base": "2eecee0e0632d291a0f1caa6de21705670a2a7bf", "commit": "2eecee0e0632d291a0f1caa6de21705670a2a7bf", "keptFor": ["dist/report.html"]
+      },
+      "mergeState": "pending"
+    },
+    {
+      "id": "8e2f6a33", "startedAt": 1790900900000, "endedAt": 1790900960000, "title": "web のテストを直す(続き)", "prompt": "型も直す", "parentId": "8e2f6a31",
+      "cwd": "/Users/someone/asist-jobs/20261002-web-tests-9a0b1c2d/packages/web", "readonly": false, "engine": "codex", "status": "done", "sessionId": "01a0b8d6-ae9a-7902-a540-37b5c19d87f3",
+      "worktree": { "repo": "/Users/someone/src/project", "dir": "/Users/someone/asist-jobs/20261002-web-tests-9a0b1c2d", "branch": "asist/20261002-web-tests-9a0b1c2d", "base": "3a034242370b0e455efeb8b6b4642d84bc6e89b5", "commit": "3a034242370b0e455efeb8b6b4642d84bc6e89b5" },
+      "mergeState": "unchanged"
+    },
+    {
+      "id": "c5d1e2f3", "startedAt": 1790902000000, "endedAt": 1790903000000, "title": "記憶の整理(2026/10/02)", "prompt": "記憶を整理して",
+      "cwd": "/Users/someone/Library/Application Support/asist/memory-worktrees/20261003-memory-4c5d6e7f", "readonly": false, "engine": "claude", "status": "error",
+      "interrupted": true, "summary": "アプリ再起動前のAgentを停止し、残った成果物を確認しました",
+      "worktree": {
+        "repo": "/Users/someone/Library/Application Support/asist/memory", "dir": "/Users/someone/Library/Application Support/asist/memory-worktrees/20261003-memory-4c5d6e7f",
+        "branch": "asist/20261003-memory-4c5d6e7f", "base": "7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f901", "commit": "8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90112"
+      },
+      "mergeState": "discarded", "memoryCuration": { "through": "2026-10-02", "applied": false }
+    }
+  ]
+}

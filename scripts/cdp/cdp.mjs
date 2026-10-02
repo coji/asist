@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { spawn } from 'node:child_process'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -52,7 +52,10 @@ export function windowSize(value) {
   return [Number(match[1]), Number(match[2])]
 }
 
-/** Starts headless Chrome with a CDP port and returns that port. Port 0 picks a free one. */
+/**
+ * Starts headless Chrome with a CDP port and a profile of its own in the temporary folder, and returns the
+ * port and close(), which stops Chrome and removes the profile once Chrome has exited. Port 0 picks a free one.
+ */
 export async function launchChrome({ port = 0, url = 'about:blank' } = {}) {
   const profile = await mkdtemp(path.join(os.tmpdir(), 'asist-chrome-'))
   const child = spawn(chromePath(), [
@@ -64,24 +67,35 @@ export async function launchChrome({ port = 0, url = 'about:blank' } = {}) {
     `--user-data-dir=${profile}`,
     url
   ])
-  // Chrome is never left behind, however this process ends.
-  process.on('exit', () => {
-    try {
-      child.kill('SIGKILL')
-    } catch {
-      // The process has already ended.
-    }
-  })
-  const wsUrl = await new Promise((resolve, reject) => {
-    let buffer = ''
-    child.stderr.on('data', (chunk) => {
-      buffer += chunk
-      const match = buffer.match(/DevTools listening on (ws:\/\/\S+)/)
-      if (match) resolve(match[1])
+  const exited = new Promise((resolve) => child.once('exit', resolve))
+  // Chrome and its profile are never left behind, however this process ends. A handler of the exit cannot
+  // wait for Chrome to end, so it kills Chrome outright and removes the profile at once.
+  const leave = () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    rmSync(profile, { recursive: true, force: true })
+  }
+  process.on('exit', leave)
+  const close = async () => {
+    child.kill()
+    await exited
+    await rm(profile, { recursive: true, force: true })
+    process.off('exit', leave)
+  }
+  try {
+    const wsUrl = await new Promise((resolve, reject) => {
+      let buffer = ''
+      child.stderr.on('data', (chunk) => {
+        buffer += chunk
+        const match = buffer.match(/DevTools listening on (ws:\/\/\S+)/)
+        if (match) resolve(match[1])
+      })
+      child.on('exit', (code) => reject(new Error(`Chrome が終了しました: ${code}`)))
     })
-    child.on('exit', (code) => reject(new Error(`Chrome が終了しました: ${code}`)))
-  })
-  return { child, port: Number(new URL(wsUrl).port) }
+    return { port: Number(new URL(wsUrl).port), close }
+  } catch (error) {
+    await close()
+    throw error
+  }
 }
 
 /** Connects to the first page target on the port. */

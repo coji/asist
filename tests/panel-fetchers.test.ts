@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,8 @@ import { createTranslator } from '@shared/i18n'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
 import { REGIONS, regionCurrency } from '@shared/conversation-locale'
 import { readErrorText } from '@shared/i18n/error-text'
+import { MAX_TEXT_BYTES, WHOLE_READ_LIMIT } from '@shared/files'
+import { smallestLimitedFile } from './helpers/files'
 import munichGeocoding from './fixtures/weather/munich-geocoding.json'
 import namesakeAnswers from './fixtures/weather/namesakes-geocoding.json'
 
@@ -21,6 +23,10 @@ vi.mock('../src/main/services/settings', () => ({
 vi.mock('../src/main/services/calendar', () => ({ searchCalendar: mocks.searchCalendar }))
 vi.mock('electron', () => ({ app: { getVersion: () => '9.9.9' } }))
 vi.mock('../src/main/services/agent', () => ({ allowedFileRoots: () => mocks.roots }))
+vi.mock('../src/main/services/platform', async () => {
+  const { MACOS } = await import('./helpers/platform')
+  return { platformCapabilities: () => MACOS }
+})
 
 type Fetch = ReturnType<typeof vi.fn>
 
@@ -307,6 +313,48 @@ describe('the files card (show_files)', () => {
       }
     }
   )
+
+  it('tells the model which files the card leaves out and why, and which it shows only the first part of', async () => {
+    const root = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-show-files-')))
+    // Files lengthened without writing to them, so that a size past a limit costs no time.
+    const file = (name: string, sizeBytes: number): string => {
+      const target = path.join(root, name)
+      writeFileSync(target, '')
+      truncateSync(target, sizeBytes)
+      return target
+    }
+    const folder = path.join(root, 'many')
+    mkdirSync(folder)
+    const { MAX_DIRECTORY_ENTRIES } = await import('../src/main/services/file-preview')
+    for (let i = 0; i <= MAX_DIRECTORY_ENTRIES; i++) writeFileSync(path.join(folder, `${i}.txt`), '')
+    const { name: large, limit } = smallestLimitedFile()
+    mocks.roots = [root]
+    try {
+      const { data } = await fetchPanel('files', {
+        paths: [
+          file(large, limit + 1),
+          file(`fits-${large}`, limit),
+          file('lecture.mp3', (WHOLE_READ_LIMIT.audio ?? 0) + 1),
+          file('bundle.zip', 64),
+          file('budget.xls', 64),
+          file('server.log', MAX_TEXT_BYTES + 1),
+          file('page.html', MAX_TEXT_BYTES + 1),
+          folder,
+          path.join(tmpdir(), 'elsewhere.md'),
+          file('notes.md', 12)
+        ]
+      })
+      type Group = { files: string[]; why: string; button?: string }
+      const told = data as { notShown?: Group[]; partlyShown?: Group[] }
+      expect(told.notShown?.map((group) => group.files)).toEqual([[large], ['bundle.zip', 'budget.xls'], ['elsewhere.md']])
+      expect(new Set(told.notShown?.map((group) => group.why)).size).toBe(3)
+      // The card offers no button for a file it could not read.
+      expect(told.notShown?.map((group) => group.button !== undefined)).toEqual([true, true, false])
+      expect(told.partlyShown?.map((group) => group.files)).toEqual([['server.log', 'many']])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('the news card', () => {

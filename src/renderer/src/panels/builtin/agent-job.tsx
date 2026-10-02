@@ -134,7 +134,13 @@ function MergeControls({ job }: { job: AgentJob }): React.JSX.Element {
       note={t('jobs.card.merge.note')}
       className="aj-merge"
     >
-      <p className="aj-text">{t(conflict ? 'jobs.card.merge.conflictText' : 'jobs.card.merge.text')}</p>
+      <p className="aj-text">
+        {conflict
+          ? t('jobs.card.merge.conflictText')
+          : diff?.alreadyMerged && diff.blocked === null
+            ? t('jobs.merging.alreadyMerged', { into: diff.into })
+            : t('jobs.card.merge.text')}
+      </p>
       <p className="aj-path">
         {diff?.into
           ? t('jobs.card.merge.path', { branch: worktree.branch, into: diff.into, repo: worktree.repo })

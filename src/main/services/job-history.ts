@@ -24,6 +24,7 @@ const jobSchema: z.ZodType<AgentJob> = z.object({
   processIdentity: z.object({ pid: z.number().int().positive(), startedAt: z.string().min(1), token: z.string().uuid() }).optional(),
   startedAt: z.number().nonnegative(),
   endedAt: z.number().nonnegative().optional(),
+  interrupted: z.literal(true).optional(),
   summary: z.string().optional(),
   numTurns: z.number().int().nonnegative().optional(),
   costUsd: z.number().nonnegative().optional(),
@@ -50,7 +51,7 @@ const historySchema = z.array(jobSchema).superRefine((jobs, context) => {
 
 export const JOBS_FORMAT: StoredFormat<AgentJob[]> = {
   name: JOBS_FILE,
-  version: 5,
+  version: 6,
   upgrades: {
     // Version 1 was the bare list of jobs; version 2 is an object, which is what can carry the version.
     1: (content) => ({ jobs: content }),
@@ -85,7 +86,11 @@ export const JOBS_FORMAT: StoredFormat<AgentJob[]> = {
     // not merge, and the files git ignores that alone keep a job with nothing to merge. No job of version 4
     // has either recorded: a review of the first looks at the worktree itself and refuses it all the same, and
     // version 4 removed the worktree of the second when it settled.
-    4: (content) => content
+    4: (content) => content,
+    // Version 6 records that an end of the app which did not stop a job cut it off. A job of version 5 that a
+    // restart has already ended has no such record and counts as having ended by itself; one still running or
+    // stopping is recovered as in version 6, which records it.
+    5: (content) => content
   },
   parse: (content) => historySchema.parse((content as { jobs?: unknown } | null)?.jobs),
   serialize: (jobs) => ({ jobs })

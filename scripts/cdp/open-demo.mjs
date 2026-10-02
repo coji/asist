@@ -24,11 +24,10 @@ const sayings = argv.flatMap((a, i) => (a === '--say' ? [argv[i + 1]] : []))
 const demo = await startDemo()
 const url = new URL(path, demo.origin).href
 const chrome = await launchChrome({ port })
-const { child } = chrome
 const stop = () => {
-  // Wait for Chrome to exit before leaving; if it takes too long, the SIGKILL on exit deals with it.
-  child.once('exit', () => process.exit(0))
-  child.kill()
+  // Wait for Chrome to exit and its profile to go before leaving; if that takes too long, the handler
+  // launchChrome set on the exit kills Chrome and removes the profile.
+  void chrome.close().then(() => process.exit(0))
   void demo.close()
   setTimeout(() => process.exit(0), 2000).unref()
 }
@@ -48,7 +47,7 @@ try {
   console.log(`next: npm run demo:drive -- --port ${chrome.port} --cards  (sizes: ${Object.keys(WINDOWS).join('/')})`)
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error))
-  child.kill()
+  await chrome.close()
   process.exit(1)
 }
 await new Promise(() => {})

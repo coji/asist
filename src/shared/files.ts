@@ -123,7 +123,8 @@ const MB = 1024 * 1024
  * is not read: the viewer says it is too large to show here, above the card's button that shows it in Finder or File
  * Explorer. Audio still plays, since <audio> reads it by ranges, and only its waveform, which decodes the whole file,
  * is left out. The kinds not listed travel as text up to MAX_TEXT_BYTES, or are loaded by the page's own image,
- * media and frame elements.
+ * media and frame elements. A notebook travels as text too, but its viewer parses the whole of it as JSON, which no
+ * beginning of it is, so its limit is MAX_TEXT_BYTES.
  *
  * Measured on 2026-10-02 in the demo under headless Chrome on an Apple M5 with 32 GB, opening generated files in a card
  * and in the focus view, the slower of the two given. Most limits sit where the costliest likely file of the kind took
@@ -146,13 +147,50 @@ export const WHOLE_READ_LIMIT: Partial<Record<FileKind, number>> = {
   docx: 16 * MB,
   pptx: 32 * MB,
   pdf: 256 * MB,
-  audio: 8 * MB
+  audio: 8 * MB,
+  notebook: MAX_TEXT_BYTES
 }
 
 /** Whether the item's file is larger than its viewer reads whole (WHOLE_READ_LIMIT). */
 export function tooLargeToRead(item: Pick<FileItem, 'kind' | 'sizeBytes'>): boolean {
   const limit = WHOLE_READ_LIMIT[item.kind]
   return limit !== undefined && item.sizeBytes > limit
+}
+
+/**
+ * The kinds the files card has no viewer for, shown by their name and size alone: a zip, and every kind classifyFile
+ * does not know, such as an older Office file (.doc, .xls, .ppt) or an iWork file.
+ */
+const KINDS_WITHOUT_VIEWER = ['archive', 'binary'] as const satisfies readonly FileKind[]
+
+type KindWithoutViewer = (typeof KINDS_WITHOUT_VIEWER)[number]
+
+/** A kind the files card has a viewer for. */
+export type ViewedKind = Exclude<FileKind, KindWithoutViewer>
+
+const hasNoViewer = (kind: FileKind): kind is KindWithoutViewer => (KINDS_WITHOUT_VIEWER as readonly FileKind[]).includes(kind)
+
+/**
+ * What the files card shows of an item: all of it; only its first part (the text carried up to MAX_TEXT_BYTES, or the
+ * first entries of a large folder) with a note that says so; or, in its place, why it could not be read, or a placard
+ * saying that it is too large to show here or that its kind cannot be shown. The card's viewers and the result
+ * show_files gives the model both read it, so that the model is told what the card did. Audio is shown at any size,
+ * since <audio> plays it by ranges and only its waveform asks tooLargeToRead, and an HTML page is shown whole, since
+ * its frame loads the page itself and only its source is cut short.
+ */
+export type CardView =
+  | { shows: 'all' | 'firstPart'; kind: ViewedKind }
+  | { shows: 'nothing'; why: 'unreadable'; error: string }
+  | { shows: 'nothing'; why: 'tooLarge' | 'noViewer' }
+
+export function cardView(item: FileItem): CardView {
+  if (item.error) return { shows: 'nothing', why: 'unreadable', error: item.error }
+  const kind = item.kind
+  if (hasNoViewer(kind)) return { shows: 'nothing', why: 'noViewer' }
+  if (kind !== 'audio' && tooLargeToRead(item)) return { shows: 'nothing', why: 'tooLarge' }
+  const textCut = item.truncated === true && !(kind === 'code' && isHtmlPage(item.path))
+  const listCut = (item.entryCount ?? 0) > (item.entries?.length ?? 0)
+  return { shows: textCut || listCut ? 'firstPart' : 'all', kind }
 }
 
 export interface FileEntry {

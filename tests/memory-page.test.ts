@@ -159,18 +159,44 @@ describe('units', () => {
   })
 
   it('prefixes the embedded text with the page name and the heading, and a journal entry with its date', () => {
-    expect(embeddingTextOf({ kind: 'section', page: '松葉軒', heading: '要約', text: '行きつけの店', date: '' })).toBe('松葉軒 要約: 行きつけの店')
-    expect(embeddingTextOf({ kind: 'journal', page: '2026-09-07', heading: '四季', text: '春は桜', date: '2026-09-07' })).toBe('2026-09-07の日記 四季: 春は桜')
+    expect(embeddingTextOf({ file: 'pages/松葉軒.md', kind: 'section', page: '松葉軒', heading: '頼み方', text: '辛さは控えめ', date: '' })).toBe(
+      '松葉軒 頼み方: 辛さは控えめ'
+    )
+    expect(embeddingTextOf({ file: 'journal/2026-09-07.md', kind: 'journal', page: '2026-09-07', heading: '四季', text: '春は桜', date: '2026-09-07' })).toBe(
+      '2026-09-07の日記 四季: 春は桜'
+    )
+  })
+
+  it('leaves a heading the template of the document wrote out of the embedded text, in either form, and keeps one anyone else wrote', () => {
+    const embedded = (file: string, page: string, heading: string): string =>
+      embeddingTextOf({ file, kind: file.startsWith('journal/') ? 'journal' : 'section', page, heading, text: 'x', date: '2026-09-20' })
+    expect([
+      embedded('user.md', 'The user', 'Preferences'),
+      embedded('user.md', 'ユーザー', '習慣'),
+      embedded('me.md', 'About me', 'Who I am'),
+      embedded('me.md', '私について', '好きなもの、気になっていること'),
+      embedded('pages/Mugi.md', 'Mugi', 'Summary'),
+      embedded('pages/ムギ.md', 'ムギ', '私の印象'),
+      embedded('journal/2026-09-20.md', '2026-09-20', 'Myself today')
+    ]).toEqual(['The user: x', 'ユーザー: x', 'About me: x', '私について: x', 'Mugi: x', 'ムギ: x', 'Journal of 2026-09-20: x'])
+    expect([
+      embedded('user.md', 'The user', 'Walnut allergy'),
+      embedded('me.md', 'About me', 'Bonsai'),
+      embedded('pages/松葉軒.md', '松葉軒', '好み'),
+      embedded('journal/2026-09-20.md', '2026-09-20', 'Bonsai')
+    ]).toEqual(['The user Walnut allergy: x', 'About me Bonsai: x', '松葉軒 好み: x', 'Journal of 2026-09-20 Bonsai: x'])
   })
 
   it('names the journal in English in an entry written in another language, and leaves a Japanese entry as it was', () => {
-    expect(embeddingTextOf({ kind: 'journal', page: '2026-09-07', heading: 'Seasons', text: 'Cherry blossoms in spring', date: '2026-09-07' })).toBe(
+    expect(embeddingTextOf({ file: 'journal/2026-09-07.md', kind: 'journal', page: '2026-09-07', heading: 'Seasons', text: 'Cherry blossoms in spring', date: '2026-09-07' })).toBe(
       'Journal of 2026-09-07 Seasons: Cherry blossoms in spring'
     )
     // The prefix follows the entry, not the language of the conversation, so changing the language sends
     // nothing already written back through the embedding worker.
-    expect(embeddingTextOf({ kind: 'journal', page: '2026-09-07', heading: '四季', text: '春は桜', date: '2026-09-07' })).toContain('の日記')
-    expect(embeddingTextOf({ kind: 'section', page: 'Matsubaken', heading: 'Summary', text: 'A ramen shop', date: '' })).toBe('Matsubaken Summary: A ramen shop')
+    expect(embeddingTextOf({ file: 'journal/2026-09-07.md', kind: 'journal', page: '2026-09-07', heading: '四季', text: '春は桜', date: '2026-09-07' })).toContain('の日記')
+    expect(embeddingTextOf({ file: 'pages/Matsubaken.md', kind: 'section', page: 'Matsubaken', heading: 'How they order', text: 'Mild', date: '' })).toBe(
+      'Matsubaken How they order: Mild'
+    )
   })
 })
 

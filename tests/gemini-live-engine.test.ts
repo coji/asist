@@ -7,6 +7,7 @@ import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import { marker } from '@shared/conversation-markers'
 import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import type { GeminiConnectParams, GeminiServerMessage, GeminiSession } from '../src/main/services/live/gemini-live'
+import { stampUserMessage } from '../src/main/services/brain/prompt'
 
 /** These tests drive the Gemini Live engine end to end against a fake session. */
 
@@ -307,7 +308,49 @@ describe('GeminiLiveEngine', () => {
     expect(events.slice(before).some((e) => e.type === 'userTranscript')).toBe(false)
     expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: '[文字入力] こんにちは' }] }], turnComplete: true })
     await engine.notify('[システム通知] ジョブが完了した')
-    expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: '[システム通知] ジョブが完了した' }] }], turnComplete: true })
+    expect(session.contents.at(-1)).toEqual({
+      turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', '[システム通知] ジョブが完了した', new Date()) }] }],
+      turnComplete: true
+    })
+    await engine.stop()
+  })
+
+  it('stamps a job report with the time it is sent, so a report long after the session opened is not read at the time it opened', async () => {
+    vi.setSystemTime(new Date(2026, 9, 2, 10, 0))
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(first.closed).toBe(true)
+    const reportedAt = new Date(2026, 9, 2, 11, 30)
+    vi.setSystemTime(reportedAt)
+    const report = '[システム通知] ジョブ「調査」(jobId: j1)が完了した。'
+    const notified = engine.notify(report)
+    await vi.advanceTimersByTimeAsync(0)
+    const resumed = sessions.at(-1)!
+    expect(resumed.params.resumptionHandle).toBe('h1')
+    resumed.message({ setupComplete: {} })
+    await notified
+    expect(resumed.contents).toEqual([{ turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, reportedAt) }] }], turnComplete: true }])
+    await engine.stop()
+  })
+
+  it('stamps a notice that comes minutes into an open session with the time it is sent, not the time the session opened', async () => {
+    const openedAt = new Date(2026, 9, 2, 10, 0)
+    vi.setSystemTime(openedAt)
+    const call = held()
+    const { engine, sessions } = await setup(() => call.task)
+    const session = await open(engine, sessions)
+    // A call waiting for approval keeps the session open past its idle time.
+    session.message({ toolCall: { functionCalls: [{ id: 'a', name: 'run_agent_task', args: {} }] } })
+    await vi.advanceTimersByTimeAsync(7 * 60_000)
+    expect(sessions).toEqual([session])
+    expect(session.closed).toBe(false)
+    const report = '[システム通知] ジョブ「調査」(jobId: j1)が完了した。'
+    await engine.notify(report)
+    const sentAt = new Date(openedAt.getTime() + 7 * 60_000)
+    expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, sentAt) }] }], turnComplete: true })
+    call.finish()
     await engine.stop()
   })
 
@@ -322,7 +365,7 @@ describe('GeminiLiveEngine', () => {
     })
     await engine.say('Three minutes are up.')
     const spoken = (session.contents.at(-1) as { turns: Array<{ parts: Array<{ text: string }> }> }).turns[0].parts[0].text
-    expect(spoken.startsWith(marker('en-US', 'systemNotice'))).toBe(true)
+    expect(spoken.startsWith(stampUserMessage('en-US', marker('en-US', 'systemNotice'), new Date()))).toBe(true)
     expect(spoken).toContain('Three minutes are up.')
     expect(spoken).not.toMatch(/[぀-ヿ一-鿿]/)
     await engine.stop()
@@ -447,7 +490,9 @@ describe('GeminiLiveEngine', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(recordTool).toHaveBeenCalledWith(expect.any(Number), 'change_mail', { operation: 'archive' }, unfinished)
     expect(session.toolResponses).toEqual([])
-    expect(JSON.stringify(session.contents.at(-1))).toContain(unfinished.content)
+    const told = (session.contents.at(-1) as { turns: Array<{ parts: Array<{ text: string }> }> }).turns[0].parts[0].text
+    expect(told.startsWith(stampUserMessage('ja-JP', marker('ja-JP', 'systemNotice'), new Date()))).toBe(true)
+    expect(told).toContain(unfinished.content)
     await engine.stop()
   })
 

@@ -1,8 +1,12 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import type { JobDiff, TurnEvent } from '@shared/ipc'
 import type { ToolContext, ToolOptions } from '../src/main/services/brain/tools'
 import { PANEL_CATALOG } from '@shared/panel-catalog'
+import { smallestLimitedFile } from './helpers/files'
 import { DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 import { taskSummary } from '@shared/tasks'
 import { FETCHER_TIMEOUT_MS, LOCAL_TIMEOUT_MS, resolvePromptTexts } from '@shared/tool-registry'
@@ -19,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   },
   agent: {
     findActive: vi.fn(() => undefined),
+    allowedFileRoots: vi.fn((): string[] => []),
     workspaceRoot: vi.fn(() => '/work/asist-jobs'),
     start: vi.fn(() => ({ id: 'j1', title: 'job', cwd: '/tmp/ws' })),
     userJob: vi.fn(() => undefined),
@@ -325,6 +330,40 @@ describe('brain tools registry', () => {
     expect(result.isError).toBe(false)
     expect(JSON.parse(result.content)).toEqual({ shown: true, panel: 'calendar', data })
     expect(events.at(-1)).toMatchObject({ event: { op: 'patch', state: 'ready', props } })
+  })
+
+  it('keeps the files the card left out in what the model reads of a result too long to send whole', async () => {
+    // A job's artifacts, as long as a job's folder makes their paths, with the one the card leaves out last.
+    const base = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-show-files-')))
+    const work = path.join(base, 'Library', 'Application Support', 'ASIST', 'jobs', '2026-10-02-sales-analysis-7f3a', 'work')
+    mkdirSync(work, { recursive: true })
+    const file = (name: string, text: string, sizeBytes = text.length): string => {
+      const target = path.join(work, name)
+      writeFileSync(target, text)
+      truncateSync(target, sizeBytes)
+      return target
+    }
+    const { name: left, limit } = smallestLimitedFile()
+    const paths = [
+      file('report.md', '# 売上の分析\n'.repeat(4000)),
+      file('summary.csv', 'month,sales\n'.repeat(800)),
+      file('chart.png', '', 90_000),
+      file('notes.md', 'メモ\n'.repeat(1000)),
+      file('slides.pptx', '', 3_000_000),
+      file(left, '', limit + 1)
+    ]
+    mocks.agent.allowedFileRoots.mockReturnValue([work])
+    const actual = await vi.importActual<typeof import('../src/main/services/panel-fetchers')>('../src/main/services/panel-fetchers')
+    mocks.fetchPanel.mockImplementationOnce(actual.fetchPanel)
+    try {
+      const { executeClientTool } = await load()
+      const result = await executeClientTool('show_files', { paths }, makeCtx().ctx)
+      expect(result.truncated).toBe(true)
+      const { data } = result.value as { data: { notShown?: Array<{ files: string[] }> } }
+      expect(data.notShown?.flatMap((group) => group.files)).toEqual([left])
+    } finally {
+      rmSync(base, { recursive: true, force: true })
+    }
   })
 
   it('fetches nothing and leaves the card untouched while the weather location is unresolved', async () => {

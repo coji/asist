@@ -12,6 +12,7 @@ import type { ToolExecution, ToolExecutionTask } from '@shared/tool-registry'
 import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import { record, turnScheduler, type ConversationOwner } from '../brain/session'
 import type { HistoryMessage } from '../brain/history'
+import { stampUserMessage } from '../brain/prompt'
 import { decodeOutput } from './audio'
 import { GeminiCalls } from './gemini-calls'
 import type { GeminiFunctionDeclaration } from './gemini-tools'
@@ -197,7 +198,8 @@ export class GeminiLiveEngine implements ConversationOwner {
       emitTurn: deps.emitTurn,
       session: () => this.session,
       touch: () => this.lifecycle.touch(),
-      memoriesSent: (ids) => this.memoriesSent(ids)
+      memoriesSent: (ids) => this.memoriesSent(ids),
+      now: this.now
     })
     this.transcripts = new TranscriptTracker({
       quietMs: TRANSCRIPT_QUIET_MS,
@@ -408,15 +410,24 @@ export class GeminiLiveEngine implements ConversationOwner {
     this.sendUserText(`${marker(conversationLocale(), 'typedInput')} ${text}`)
   }
 
+  /**
+   * A notice is stamped with the time it is sent, as the conversation engine stamps its notices, since
+   * without a stamp the model has no reliable clock. Measured with gemini-3.8-live on 2026-10-02 in
+   * Asia/Tokyo, asked for the time two hours after a job report in a session whose instruction gave a
+   * start three hours earlier, it answered from a UTC clock of its own read as local time, or from that
+   * start, in 12 of 14 runs, and rightly in 19 of 21 with the report stamped. With the right start and no
+   * report it still answered from the UTC clock in 4 of 6. The start does not move either: a session
+   * resumed from a handle keeps the instruction it first opened with, whatever instruction the resume
+   * sends.
+   */
   async notify(text: string): Promise<void> {
     await this.lifecycle.ensureOpen()
-    this.sendUserText(text)
+    this.sendUserText(stampUserMessage(conversationLocale(), text, new Date(this.now())))
   }
 
   async say(text: string): Promise<void> {
-    await this.lifecycle.ensureOpen()
     const locale = conversationLocale()
-    this.sendUserText(fillPrompt(promptText(locale, READ_ALOUD), { systemNotice: marker(locale, 'systemNotice'), text }))
+    await this.notify(fillPrompt(promptText(locale, READ_ALOUD), { systemNotice: marker(locale, 'systemNotice'), text }))
   }
 
   /** The turn id of the current exchange, taken on first use. */

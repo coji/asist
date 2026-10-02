@@ -27,7 +27,7 @@ export const StubViewer: Viewer = (props) => {
   return <Placard {...props} reason={props.item.error ?? t('files.viewer.stub', { kind: t(`files.kind.${props.item.kind}`) })} />
 }
 
-/** For a file larger than its viewer reads whole (tooLargeToRead), which is never fetched. */
+/** For a file larger than its viewer reads whole (cardView), which is never fetched. */
 export const TooLargeViewer: Viewer = (props) => {
   const t = useT()
   return <Placard {...props} reason={t('files.viewer.tooLarge')} />

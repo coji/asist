@@ -1,4 +1,5 @@
-import { MESSAGES, formatMessage, type MessageKey, type MessageValues, type UiLocale } from '.'
+import { MESSAGES, formatMessage, type MessageKey, type UiLocale } from '.'
+import { ERROR_MARKER as MARKER, errorKey, type ErrorArguments } from './error-key'
 import type { Message } from './message'
 
 /**
@@ -8,16 +9,7 @@ import type { Message } from './message'
  * writes the sentence again in the language of the interface.
  */
 
-/**
- * The marker errorText puts after the sentence. Its values are matched one JSON string at a time,
- * because a value can be the message of another error, marker and all, and a pattern that ends the
- * values at the first or the last `}]` cuts such a value in two.
- */
-const MARKER = String.raw`\s\[asist:([\w.]+)(?: (\{(?:[^"{}]|"(?:[^"\\]|\\.)*")*\}))?\]`
-
 type Values = Record<string, string | number>
-type Arguments<Key extends MessageKey> = keyof MessageValues<Key> extends never ? [] : [values: MessageValues<Key>]
-
 function find(key: string): Message | undefined {
   let node: unknown = MESSAGES
   for (const part of key.split('.')) node = (node as Record<string, unknown> | undefined)?.[part]
@@ -32,10 +24,10 @@ const mapStrings = (values: Values, change: (value: string) => string): Values =
  * A value may be the message of another error, which the sentence then carries without its marker, so the
  * first marker in the message is this one; the marker keeps the value whole for the reader.
  */
-export function errorText<Key extends MessageKey>(key: Key, ...values: Arguments<Key>): string {
+export function errorText<Key extends MessageKey>(key: Key, ...values: ErrorArguments<Key>): string {
   const given = values[0] as Values | undefined
   const sentence = formatMessage(find(key)!, 'en-US', given && mapStrings(given, (value) => value.replace(new RegExp(MARKER, 'g'), '')))
-  return `${sentence} [asist:${key}${given ? ` ${JSON.stringify(given)}` : ''}]`
+  return `${sentence} ${errorKey(key, ...values)}`
 }
 
 /**
