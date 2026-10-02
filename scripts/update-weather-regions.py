@@ -19,6 +19,7 @@ SOURCES = {
 }
 raw = {name: (CACHE / name).read_bytes() if CACHE else urllib.request.urlopen(url, timeout=30).read() for name, url in SOURCES.items()}
 area, forecast, week, week05, stations = [json.loads(raw[n]) for n in list(SOURCES)[:5]]
+# The ids are the prefectures' names in romaji, which is how a conversation in another language names them.
 ids = 'hokkaido aomori iwate miyagi akita yamagata fukushima ibaraki tochigi gunma saitama chiba tokyo kanagawa niigata toyama ishikawa fukui yamanashi nagano gifu shizuoka aichi mie shiga kyoto osaka hyogo nara wakayama tottori shimane okayama hiroshima yamaguchi tokushima kagawa ehime kochi fukuoka saga nagasaki kumamoto oita miyazaki kagoshima okinawa'.split()
 capitals = '札幌市 青森市 盛岡市 仙台市 秋田市 山形市 福島市 水戸市 宇都宮市 前橋市 さいたま市 千葉市 千代田区 横浜市 新潟市 富山市 金沢市 福井市 甲府市 長野市 岐阜市 静岡市 名古屋市 津市 大津市 京都市 大阪市 神戸市 奈良市 和歌山市 鳥取市 松江市 岡山市 広島市 山口市 徳島市 高松市 松山市 高知市 福岡市 佐賀市 長崎市 熊本市 大分市 宮崎市 鹿児島市 那覇市'.split()
 municipalities = []
@@ -30,6 +31,26 @@ codes = {m['code'] for m in municipalities}
 # They are checked before any search by name, which would give "泊村" among them the area and the code
 # of "古宇郡泊村".
 northern_territories = {'01695', '01696', '01697', '01698', '01699', '01700'}
+# The Japan Meteorological Agency's English name of an area that is one part of a municipality names the
+# part as well, in one of these forms ("Akan, Kushiro City", "Plain Area of Toyama City", "Sasebo City
+# (Uku Area)", "Kobe City Higashinada Ward", "Eastern Sendai City"); the group is the municipality's name.
+PART_OF = [r'.+, (.+)', r'.+ of (.+)', r'(.+?) \(.+\)', r'(.+ City) .+ Ward', r'(?:Eastern|Western|Northern|Southern|Midwestern) (.+)']
+def whole(name):
+    for pattern in PART_OF:
+        if found := re.fullmatch(pattern, name):
+            return found.group(1)
+    return name
+def english_name(m, subareas):
+    names = [area['class20s'][k]['enName'] for k in subareas]
+    if len(names) == 1:
+        # A ward the agency forecasts on its own comes after its city ("Kobe City Higashinada Ward"), where
+        # English puts the city after a comma ("Higashinada Ward, Kobe City").
+        ward = re.fullmatch(r'(.+ City) (.+ Ward)', names[0])
+        return f'{ward.group(2)}, {ward.group(1)}' if ward else names[0]
+    wholes = {whole(name) for name in names}
+    if len(wholes) != 1:
+        raise SystemExit(f'No single English name for {m["name"]}: {names}')
+    return wholes.pop()
 missing = []
 aliases = []
 for m in municipalities:
@@ -37,10 +58,13 @@ for m in municipalities:
         m['unavailable'] = 'この市区町村に対応する気象庁の予報区域がありません。'
         continue
     subareas = sorted(k for k in area['class20s'] if k[:5] == m['code'])
+    # A ward that JMA forecasts with its city has the city's areas, whose English names are the city's.
+    in_city = False
     if not subareas and '市' in m['name']:
         parent = by_name.get((m['prefectureId'], m['name'].split('市')[0] + '市'))
         if parent:
             subareas = sorted(k for k in area['class20s'] if k[:5] == parent['code'])
+            in_city = bool(subareas)
     if not subareas:
         subareas = sorted(k for k,v in area['class20s'].items() if k[:2] == m['code'][:2] and v['name'].startswith(m['name']))
     if not subareas:
@@ -62,6 +86,8 @@ for m in municipalities:
     station = next(code for code in mapping['amedas'] if code in stations)
     m.update({'class20': chosen, 'forecastAreaCode': class10, 'forecastAreaName': area['class10s'][class10]['name'], 'officeCode': office,
               'stationId': station, 'stationName': stations[station]['kjName'], 'representativeArea': len(subareas)>1})
+    if not in_city:
+        m['enName'] = english_name(m, subareas)
 if missing:
     print(json.dumps(missing, ensure_ascii=False)); raise SystemExit('Unmapped municipalities')
 municipalities = [m for m in municipalities if not any(m is alias for alias in aliases)]

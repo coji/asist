@@ -15,7 +15,7 @@ export const weatherInputSchema = z.object({
     .describe(
       bilingual({
         ja: '天気を知りたい場所。日本は正式な都道府県名または市区町村名(例: 北海道、札幌市、東京都府中市)。日本以外は都市名で、同名の都市があるなら国名を添える(例: Munich, Germany)。省略・通称・現在地は不可',
-        en: 'The place to show the weather for. In Japan the full name of a prefecture or municipality; elsewhere a city, with its country when several cities share the name (for example "Munich, Germany"). A nickname or "here" is not accepted.'
+        en: 'The place to show the weather for. In Japan the full name of a prefecture or municipality, in Japanese or in romaji, with its prefecture after a comma when several share the name (for example "Fuchu, Tokyo"); elsewhere a city, with its country when several cities share the name (for example "Munich, Germany"). A nickname or "here" is not accepted.'
       })
     ),
   date: z.enum(['today', 'tomorrow']).default('today'),
