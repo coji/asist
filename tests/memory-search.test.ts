@@ -4,6 +4,7 @@ import {
   compareAuthority,
   dominantTokenKind,
   exactNameHit,
+  ftsKeywordQuery,
   ftsQuery,
   ftsTokens,
   matchRatio,
@@ -25,9 +26,17 @@ describe('bigram tokenization', () => {
   })
 
   it('writes the FTS column as space-separated bigrams and the query as quoted bigrams joined by OR', () => {
-    expect(ftsTokens('最寄り駅は中野')).toBe('最寄 寄り り駅 駅は は中 中野')
+    expect(ftsTokens('最寄り駅は中野')).toBe('最寄 寄り り駅 駅は は中 中野 野\uE000')
     expect(ftsQuery('中野駅')).toBe('"中野" OR "野駅"')
     expect(ftsQuery('')).toBeNull()
+  })
+
+  it('ends each run in the FTS column with its last character, and matches a keyword of one character as a whole as a prefix, so that any of its characters is found', () => {
+    expect(ftsTokens('本人の猫')).toBe('本人 人の の猫 猫\uE000')
+    expect(ftsKeywordQuery('猫')).toBe('"猫"*')
+    expect(ftsKeywordQuery('my 猫')).toBe('"my" OR "猫"')
+    expect(ftsKeywordQuery('中野駅')).toBe('"中野" OR "野駅"')
+    expect(ftsQuery('猫')).toBe('"猫"')
   })
 
   it('reports the share of the query bigrams that the text contains', () => {
@@ -62,7 +71,7 @@ describe('tokenization of a language written with spaces', () => {
 
   it('yields both kinds of token for text that mixes the scripts', () => {
     expect(searchTokens('Tokyoの天気')).toEqual(['tokyo', 'の天', '天気'])
-    expect(ftsTokens('ASIST、中野の話')).toBe('asist 中野 野の の話')
+    expect(ftsTokens('ASIST、中野の話')).toBe('asist 中野 野の の話 話\uE000')
     expect(ftsQuery('Tokyoの天気')).toBe('"tokyo" OR "の天" OR "天気"')
   })
 

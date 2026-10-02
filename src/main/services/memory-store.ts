@@ -18,6 +18,7 @@ import {
   unitsOfPage,
   validateDocument
 } from '@shared/memory-page'
+import { writeFileAtomicSync } from './atomic-json'
 import { conversationLocale } from './conversation-locale'
 import * as git from './git'
 import { t } from './i18n'
@@ -83,9 +84,9 @@ const notRegular = (file: string): Error => new Error(errorText('memory.errors.n
 
 /**
  * Reads a file of the memory, or returns null when there is none. Anything but a regular file is refused
- * before a byte of it is read. A curation worktree can hold what git never shows, a named pipe anywhere or
- * a symbolic link in a path the Agent added to .gitignore, and assertInsideMemory sees only what git
- * shows: reading a pipe blocks the main process until a writer appears, and a link to /dev/zero never
+ * before a byte of it is read. The memory folder can hold a named pipe or a symbolic link that was put there
+ * by hand, and ensureRepo commits a link like any file, so a checkout of a curation's merge can hold one
+ * too: reading a pipe blocks the main process until a writer appears, and a link to /dev/zero never
  * ends. The file is opened without following a link and without waiting for a writer, and its type is
  * checked on the open descriptor, so nothing can be put in its place in between.
  *
@@ -275,13 +276,16 @@ export function deleteDocument(file: string, dir = memoryDir()): void {
  * Puts one file in its new state, removing it for null, and commits it; when the commit fails the file
  * goes back to what it held. Each change from the screen is meant to be a commit: the curation cuts its
  * worktree from HEAD and would not see a change left on disk, and the screen would take such a change for
- * someone else's and refuse its own next save of the document.
+ * someone else's and refuse its own next save of the document. The text replaces the file only once it is
+ * whole on the disk, because a document cut short by a full disk or a power loss would be committed as the
+ * memory by the next curation, which commits whatever is on disk before it starts; a write that fails
+ * therefore leaves the file as it was, with nothing to put back.
  */
 function commitFile(dir: string, file: string, text: string | null, message: string): void {
   const full = path.join(dir, file)
   const put = (content: string | null): void => {
     if (content === null) fs.rmSync(full, { force: true })
-    else fs.writeFileSync(full, content, { mode: 0o600 })
+    else writeFileAtomicSync(full, content)
   }
   const before = readFileOf(dir, file)
   put(text)

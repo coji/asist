@@ -160,6 +160,85 @@ it('discards a job whose merge conflicts with an edit made on the memory screen 
   expect(fs.readFileSync(path.join(repo, 'memory.md'), 'utf8')).toBe('edited\n')
 })
 
+/**
+ * A curation checked by the real rules, whose Agent adds a section under the heading given after the first
+ * section of user.md, while the user adds the section "趣味" at its end on the memory screen. Each side alone
+ * keeps the rules.
+ */
+async function curateBesideScreenEdit(heading: string) {
+  const actual = await vi.importActual<typeof import('../src/main/services/memory-store')>('../src/main/services/memory-store')
+  mocks.readAll.mockImplementation((dir: string) => actual.readAll(dir))
+  const repo = path.join(mocks.root, 'repo')
+  const user = '---\nupdated: 2026-09-10\n---\n# ユーザー\n\n## 属性\n東京に住んでいる。\n\n## 好み\n辛いものは控えめが好き。\n'
+  fs.writeFileSync(path.join(repo, 'instruction.md'), '# いつも覚えておくこと\n\n## この人について\n東京に住んでいる。\n')
+  fs.writeFileSync(path.join(repo, 'user.md'), user)
+  git(repo, 'add', '.')
+  git(repo, 'commit', '-qm', 'memory')
+  const { curation, agent } = await setup()
+  const job = curation.pendingJob()!
+  const edited = `${user}\n## 趣味\n釣りが好き。\n`
+  fs.writeFileSync(path.join(repo, 'user.md'), edited)
+  git(repo, 'commit', '-qam', 'asist: edit user.md')
+  fs.writeFileSync(path.join(job.cwd, 'user.md'), user.replace('## 好み', `## ${heading}\n将棋が好きらしい。\n\n## 好み`))
+  expect(actual.readAll(job.cwd).errors).toEqual([])
+  lastLaunch().onExit(0)
+  return { curation, agent, job, repo, edited, readAll: actual.readAll }
+}
+
+it('merges a curation that keeps the rules together with an edit made on the memory screen meanwhile', async () => {
+  const { curation, agent, job, repo, readAll } = await curateBesideScreenEdit('対局')
+  expect(agent.get(job.id)?.mergeState).toBe('merged')
+  expect(curation.curatedThrough()).toBe('2026-09-11')
+  expect(fs.readFileSync(path.join(repo, 'user.md'), 'utf8')).toContain('## 対局\n将棋が好きらしい。')
+  expect(fs.readFileSync(path.join(repo, 'user.md'), 'utf8')).toContain('## 趣味\n釣りが好き。')
+  expect(readAll(repo).errors).toEqual([])
+})
+
+it('discards a job whose merge with an edit made on the memory screen meanwhile breaks the rules that neither side breaks alone, and curates again the next day', async () => {
+  const { curation, agent, job, repo, edited, readAll } = await curateBesideScreenEdit('趣味')
+  expect(agent.get(job.id)?.mergeState).toBe('discarded')
+  expect(curation.lastFailure()?.message).toContain(ja('memory.check.duplicateHeading', { file: 'user.md', line: 15, heading: '趣味', first: 9 }))
+  expect(curation.pendingJob()).toBeNull()
+  expect(curation.curatedThrough()).toBeNull()
+  expect(fs.readFileSync(path.join(repo, 'user.md'), 'utf8')).toBe(edited)
+  expect(readAll(repo).errors).toEqual([])
+  vi.setSystemTime(now + DAY)
+  vi.advanceTimersByTime(MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+})
+
+// Windows ignores the read-only mode of a folder, so a folder that cannot be emptied is made with it elsewhere only.
+it.runIf(process.platform !== 'win32')('checks the merge without a branch or a worktree in the memory, and merges a curation that passed though its checked copy cannot be removed', async () => {
+  const { curation, agent } = await setup()
+  const job = curation.pendingJob()!
+  const repo = path.join(mocks.root, 'repo')
+  const refs = (): string => git(repo, 'for-each-ref', '--format=%(refname)')
+  const worktrees = (): string[] => git(repo, 'worktree', 'list', '--porcelain').split('\n').filter((line) => line.startsWith('worktree '))
+  const before = { refs: refs(), worktrees: worktrees() }
+  const during: Array<typeof before> = []
+  const checked: string[] = []
+  mocks.readAll.mockImplementation((dir: string) => {
+    during.push({ refs: refs(), worktrees: worktrees() })
+    // What a scanner holding a file just checked out does to the removal on Windows.
+    fs.chmodSync(dir, 0o500)
+    checked.push(dir)
+    return { errors: [] }
+  })
+  fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'curated\n')
+  try {
+    lastLaunch().onExit(0)
+  } finally {
+    for (const dir of checked) {
+      fs.chmodSync(dir, 0o700)
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  }
+  expect(during).toEqual([before])
+  expect(agent.get(job.id)?.mergeState).toBe('merged')
+  expect(curation.curatedThrough()).toBe('2026-09-11')
+  expect(fs.readFileSync(path.join(repo, 'memory.md'), 'utf8')).toBe('curated\n')
+})
+
 it('starts no job for a day the user did not speak on, whatever language the transcript is written in', async () => {
   mocks.conversationLocale = 'de-DE'
   mocks.day = [{ t: 1000, kind: 'assistant', text: 'Guten Morgen' }, { t: 2000, kind: 'notice', text: 'job done' }]

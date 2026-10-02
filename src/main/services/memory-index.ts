@@ -7,6 +7,7 @@ import {
   FTS5_TOKENIZE,
   dominantTokenKind,
   exactNameHit,
+  ftsKeywordQuery,
   ftsQuery,
   ftsTokens,
   mergeHybrid,
@@ -212,7 +213,7 @@ export class MemoryIndex {
     const isExact = (unit: MemoryUnit): boolean =>
       unit.kind === 'section' && unit.order === 0 && exactNameHit(query, [unit.page, ...unit.aliases])
     const lexical = new Map<string, LexicalHit<MemoryUnit>>()
-    const match = ftsQuery(query)
+    const match = mode === 'keyword' ? ftsKeywordQuery(query) : ftsQuery(query)
     if (match) {
       const rows = this.db
         .prepare(

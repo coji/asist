@@ -1,4 +1,6 @@
 import { isJobExecuting } from '@shared/job-status'
+import fs from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { app } from 'electron'
 import { errMessage } from '@shared/api-errors'
@@ -142,9 +144,9 @@ const MEMORY_FILE_MODES = new Set(['100644', '100755', '000000'])
  * The curation merges without asking anyone, and its prompt holds the day's transcript, which can carry
  * text from a mail or a web page written to steer the agent. So the merge takes only plain files of the
  * memory repository itself. A symbolic link counts as outside, because the reindex and the memory screen
- * would read the file it points to after the merge. This sees only what git shows; a named pipe, or a link
- * in a path the Agent added to .gitignore, reaches the check that follows, whose reader refuses anything
- * but a regular file.
+ * would read the file it points to after the merge. This sees only what git shows; what it does not show,
+ * such as a named pipe or a link in a path the Agent added to .gitignore, is never merged, and the check
+ * that follows reads a checkout of the merge rather than the Agent's worktree.
  */
 function assertInsideMemory(job: AgentJob): ReviewedMerge {
   const worktree = job.worktree
@@ -175,6 +177,35 @@ function assertInsideMemory(job: AgentJob): ReviewedMerge {
   return { commit: worktree.commit, base, into: git.checkedOut(worktree.repo) }
 }
 
+/**
+ * The memory as merging the job's commit would leave it: the tree the merge commits, as agentRunner.merge
+ * then makes it from the memory's HEAD, written out to a temporary folder outside the memory. The memory
+ * screen can commit while the Agent runs, and two changes that each keep the rules can break them together,
+ * as when both add the same heading to user.md or their sections together pass the length of
+ * instruction.md. Merged, such a job could be neither discarded nor completed, and no later curation would
+ * start. Null when the two conflict, which agentRunner.merge then records as for any job.
+ *
+ * Nothing but objects goes into the memory repository, so a check that a crash cuts short leaves nothing
+ * that stops the next one. The folder is removed afterwards, and a removal that fails, as on Windows while
+ * a scanner holds a file just written, is only logged: the check has already been made.
+ */
+function readMerged(job: AgentJob, commit: string): store.ReadResult | null {
+  const repo = job.worktree!.repo
+  const merged = git.mergedTree(repo, git.headCommit(repo), commit)
+  if ('conflict' in merged) return null
+  const dir = fs.mkdtempSync(path.join(tmpdir(), 'asist-memory-merge-'))
+  try {
+    git.checkoutTree(repo, merged.tree, dir)
+    return store.readAll(dir)
+  } finally {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+    } catch (error) {
+      console.error('memory curation: the checked copy of the merge could not be removed:', dir, errorMessage(error))
+    }
+  }
+}
+
 /** Events overlap, so a job is locked only while it is being processed. A failure is retried from the last saved step. */
 function processJob(job: AgentJob): void {
   if (!job.memoryCuration || job.memoryCuration.applied || job.status !== 'done' || processing.has(job.id)) return
@@ -183,8 +214,10 @@ function processJob(job: AgentJob): void {
   try {
     if (job.mergeState === 'pending') {
       const checked = assertInsideMemory(job)
-      const { errors } = store.readAll(job.cwd)
-      if (errors.length > 0) throw new Error(errorText('memory.errors.checkFailed', { errors: errors.slice(0, 10).join('\n') }))
+      const merged = readMerged(job, checked.commit)
+      if (merged !== null && merged.errors.length > 0) {
+        throw new Error(errorText('memory.errors.checkFailed', { errors: merged.errors.slice(0, 10).join('\n') }))
+      }
       agentRunner.merge(job.id, checked)
       // The update that merge emits is synchronous, so the job in hand is already stale and is read again.
       job = agentRunner.get(job.id)!

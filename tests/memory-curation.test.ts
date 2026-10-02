@@ -162,7 +162,7 @@ describe('what the worktree holds', () => {
     expect(worktreeAgentsMd('ja-JP')).toContain('git は操作しない')
     expect(worktreeAgentsMd('de-DE')).toContain('Do not run git')
     expect(JAPANESE.test(worktreeAgentsMd('de-DE'))).toBe(false)
-    expect(MEMORY_GITIGNORE.split('\n')).toEqual(['.claude/', '.agents/', 'AGENTS.md', ''])
+    expect(MEMORY_GITIGNORE.split('\n')).toEqual(expect.arrayContaining(['.claude/', '.agents/', 'AGENTS.md']))
   })
 
   it('takes the Japanese skill for a Japanese conversation and the English one for every other language', () => {

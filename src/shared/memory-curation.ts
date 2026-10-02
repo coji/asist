@@ -125,9 +125,10 @@ export const SKILL_DIRS = ['.claude/skills', '.agents/skills'] as const
 export const FORMAT_MODULE = 'memory-format.mjs'
 /**
  * The .gitignore of the memory repository. The app copies the skill and AGENTS.md in on every run, so
- * they stay out of the memory commits.
+ * they stay out of the memory commits. A save from the memory screen that a power loss cuts off before its
+ * rename leaves its temporary file beside the document, which ensureRepo would otherwise commit as memory.
  */
-export const MEMORY_GITIGNORE = ['.claude/', '.agents/', 'AGENTS.md', ''].join('\n')
+export const MEMORY_GITIGNORE = ['.claude/', '.agents/', 'AGENTS.md', '*.tmp', ''].join('\n')
 
 const AGENTS_MD: PromptText = {
   ja: `# ASIST の記憶

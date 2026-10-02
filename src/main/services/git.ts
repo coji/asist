@@ -702,6 +702,39 @@ export type MergeOutcome = { ok: true } | { ok: false; conflict: boolean; messag
 
 const firstLines = (text: string): string => text.trim().split('\n').slice(0, 5).join('\n')
 
+export type MergedTree = { tree: string } | { conflict: string }
+
+/**
+ * The tree a merge of incoming into head commits, or git's first messages about the conflict that stops
+ * it. merge-tree touches neither a working tree nor an index, and leaves only objects in the repository.
+ */
+export function mergedTree(repo: string, head: string, incoming: string): MergedTree {
+  try {
+    return { tree: git(repo, ['merge-tree', '--write-tree', '--name-only', head, incoming]).split('\n')[0] }
+  } catch (error) {
+    // Status 1 with a tree is a conflict. The lines after the blank one are git's messages about it.
+    const failure = error as { status?: number; stdout?: unknown }
+    if (failure.status !== 1 || typeof failure.stdout !== 'string' || !failure.stdout) throw error
+    return { conflict: firstLines(failure.stdout.split('\n\n')[1] ?? '') }
+  }
+}
+
+/**
+ * Writes the files of a tree into dir, a folder outside the repository, as a checkout writes them, through
+ * an index of its own in a folder of its own: neither the repository's index nor any of its working trees is
+ * touched, and nothing but objects is left in the repository.
+ */
+export function checkoutTree(repo: string, tree: string, dir: string): void {
+  const scratch = fs.mkdtempSync(path.join(tmpdir(), 'asist-index-'))
+  try {
+    const env = { GIT_INDEX_FILE: path.join(scratch, 'index') }
+    git(repo, ['read-tree', tree], { env })
+    git(repo, ['checkout-index', '--all', `--prefix=${dir}${path.sep}`], { env })
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true })
+  }
+}
+
 /**
  * Merges the branch into the user's repository as a merge commit. The commit is made by merge-tree and
  * commit-tree, which touch neither the working tree nor the index, and the working tree then moves to it
@@ -712,17 +745,10 @@ const firstLines = (text: string): string => text.trim().split('\n').slice(0, 5)
 export function mergeNoFf(repo: string, branch: string, message: string): MergeOutcome {
   const head = headCommit(repo)
   const incoming = headCommit(repo, branch)
-  let tree: string
-  try {
-    tree = git(repo, ['merge-tree', '--write-tree', '--name-only', head, incoming]).split('\n')[0]
-  } catch (error) {
-    // Status 1 with a tree is a conflict. The lines after the blank one are git's messages about it.
-    const failure = error as { status?: number; stdout?: unknown }
-    if (failure.status !== 1 || typeof failure.stdout !== 'string' || !failure.stdout) throw error
-    return { ok: false, conflict: true, message: firstLines(failure.stdout.split('\n\n')[1] ?? '') }
-  }
+  const merged = mergedTree(repo, head, incoming)
+  if ('conflict' in merged) return { ok: false, conflict: true, message: merged.conflict }
   const commit = git(repo, [
-    '-c', 'user.name=ASIST', '-c', 'user.email=asist@localhost', 'commit-tree', tree, '-p', head, '-p', incoming, '-m', message
+    '-c', 'user.name=ASIST', '-c', 'user.email=asist@localhost', 'commit-tree', merged.tree, '-p', head, '-p', incoming, '-m', message
   ]).trim()
   try {
     git(repo, ['merge', '--ff-only', '-q', commit])

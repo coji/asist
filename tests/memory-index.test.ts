@@ -59,8 +59,16 @@ describe('MemoryIndex', () => {
     const hits = index.search('キジトラ')
     expect(hits[0]).toMatchObject({ record: { id: 'u2' }, via: 'lexical', exact: false })
     expect(hits[0].bm25).toBeLessThan(0)
+  })
+
+  it('finds a memory by a keyword of one kanji in its text or its alias, without taking the one-character alias for an exact name', () => {
+    expect(index.search('桜').map((h) => h.record.id)).toEqual(['u4'])
+    // The last character of "最寄り駅は中野" begins no bigram.
+    expect(index.search('野').map((h) => h.record.id)).toEqual(['u5'])
     // A one-character alias such as "猫" matches almost anything, so it is never used for an exact match.
-    expect(index.search('猫')).toEqual([])
+    const hits = index.search('猫')
+    expect(hits.map((h) => h.record.id)).toEqual(['u2'])
+    expect(hits[0]).toMatchObject({ via: 'lexical', exact: false })
   })
 
   it('puts the summary of the page the utterance names or aliases exactly on top, and drops the weak lexical-only hits', () => {
@@ -213,6 +221,18 @@ describe('MemoryIndex over memories in several languages', () => {
     expect(ids('最寄り駅')).toEqual(['u5'])
     expect(ids('キジトラ')).toEqual(['u2'])
     expect(ids('松葉軒行ったんだけどさあ', { mode: 'utterance' })[0]).toBe('u1')
+  })
+
+  it('matches a recall keyword of one character wherever it stands, and a lone character inside an utterance only as a whole token', () => {
+    const journal = (id: string, heading: string, text: string): MemoryUnit =>
+      unit(id, text, { file: `journal/${id}.md`, kind: 'journal', page: '2026-09-25', heading, aliases: [], date: '2026-09-25' })
+    index.rebuild([...MULTI, journal('j-pasta', '料理', 'パスタは8分ゆでる。分量は100グラム。'), journal('j-tea', 'お茶', '緑茶を飲むと落ち着く。')])
+    expect(ids('分')).toEqual(['j-pasta'])
+    expect(ids('あと5分', { mode: 'utterance' })).toEqual([])
+    expect(ids('タイマー3分', { mode: 'utterance' })).toEqual([])
+    expect(ids('お', { mode: 'utterance' })).toEqual([])
+    // "パスタは" ends its run with "は", which the index holds marked so that a whole token never matches it.
+    expect(ids('は?', { mode: 'utterance' })).toEqual([])
   })
 
   it('injects a memory the utterance names and nothing for an utterance that only shares a common word', () => {
