@@ -362,17 +362,17 @@ export const calendar = defineMessages({
       'es-ES': 'ASIST no puede cambiar un evento que se repite ni uno con invitados. Cámbialo en Google Calendar.'
     },
     approvalHint: {
-      'ja-JP': '変更と削除は、実行前に macOS の確認画面で承認します。',
-      'en-US': 'A change or a deletion is approved in the macOS confirmation window before it runs.',
-      'fr-FR': "Une modification ou une suppression est approuvée dans la fenêtre de confirmation de macOS avant d'être appliquée.",
-      'de-DE': 'Eine Änderung oder eine Löschung bestätigen Sie vor dem Ausführen im Fenster von macOS.',
-      'hi-IN': 'बदलने और मिटाने की मंज़ूरी, चलने से पहले macOS की पुष्टि विंडो में दी जाती है।',
-      'id-ID': 'Perubahan dan penghapusan disetujui lewat jendela konfirmasi macOS sebelum dijalankan.',
-      'it-IT': "Una modifica o un'eliminazione si approva nella finestra di conferma di macOS prima di essere eseguita.",
-      'ko-KR': '변경과 삭제는 실행하기 전에 macOS 확인 창에서 승인합니다.',
-      'pt-BR': 'Uma alteração ou uma exclusão é aprovada na janela de confirmação do macOS antes de acontecer.',
-      'es-419': 'Un cambio o una eliminación se aprueban en la ventana de confirmación de macOS antes de ejecutarse.',
-      'es-ES': 'Los cambios y las eliminaciones se aprueban en la ventana de confirmación de macOS antes de ejecutarse.'
+      'ja-JP': '変更と削除は、実行前に確認画面で承認します。',
+      'en-US': 'You approve a change or a deletion in a confirmation window before it runs.',
+      'fr-FR': "Vous approuvez une modification ou une suppression dans une fenêtre de confirmation avant qu'elle soit appliquée.",
+      'de-DE': 'Eine Änderung oder eine Löschung bestätigen Sie vor dem Ausführen in einem Bestätigungsfenster.',
+      'hi-IN': 'बदलने और मिटाने की मंज़ूरी, चलने से पहले पुष्टि विंडो में दी जाती है।',
+      'id-ID': 'Perubahan dan penghapusan disetujui lewat jendela konfirmasi sebelum dijalankan.',
+      'it-IT': "Una modifica o un'eliminazione si approva in una finestra di conferma prima di essere eseguita.",
+      'ko-KR': '변경과 삭제는 실행하기 전에 확인 창에서 승인합니다.',
+      'pt-BR': 'Uma alteração ou uma exclusão é aprovada em uma janela de confirmação antes de acontecer.',
+      'es-419': 'Un cambio o una eliminación se aprueban en una ventana de confirmación antes de ejecutarse.',
+      'es-ES': 'Los cambios y las eliminaciones se aprueban en una ventana de confirmación antes de ejecutarse.'
     }
   },
   day: {
@@ -444,17 +444,17 @@ export const calendar = defineMessages({
       'es-ES': 'Elige en los ajustes dónde se guardan los eventos nuevos'
     },
     confirmHint: {
-      'ja-JP': '保存前に macOS の確認画面で内容を確かめます',
-      'en-US': 'The macOS confirmation window shows the event before it is saved',
-      'fr-FR': "La fenêtre de confirmation de macOS montre l'événement avant de l'enregistrer",
-      'de-DE': 'Vor dem Speichern zeigt das Fenster von macOS den Termin noch einmal',
-      'hi-IN': 'सेव करने से पहले macOS की पुष्टि विंडो इवेंट दिखाती है',
-      'id-ID': 'Jendela konfirmasi macOS menampilkan acaranya sebelum disimpan',
-      'it-IT': "La finestra di conferma di macOS mostra l'evento prima del salvataggio",
-      'ko-KR': '저장하기 전에 macOS 확인 창에서 내용을 확인합니다',
-      'pt-BR': 'A janela de confirmação do macOS mostra o evento antes de salvar',
-      'es-419': 'La ventana de confirmación de macOS muestra el evento antes de guardarlo',
-      'es-ES': 'La ventana de confirmación de macOS muestra el evento antes de guardarlo'
+      'ja-JP': '保存前に確認画面で内容を確かめます',
+      'en-US': 'A confirmation window shows the event before it is saved',
+      'fr-FR': "Une fenêtre de confirmation montre l'événement avant son enregistrement",
+      'de-DE': 'Vor dem Speichern zeigt ein Bestätigungsfenster den Termin noch einmal',
+      'hi-IN': 'सेव करने से पहले पुष्टि विंडो इवेंट दिखाती है',
+      'id-ID': 'Jendela konfirmasi menampilkan acaranya sebelum disimpan',
+      'it-IT': "Una finestra di conferma mostra l'evento prima del salvataggio",
+      'ko-KR': '저장하기 전에 확인 창에서 내용을 확인합니다',
+      'pt-BR': 'Uma janela de confirmação mostra o evento antes de salvar',
+      'es-419': 'Una ventana de confirmación muestra el evento antes de guardarlo',
+      'es-ES': 'Una ventana de confirmación muestra el evento antes de guardarlo'
     }
   },
   saved: {

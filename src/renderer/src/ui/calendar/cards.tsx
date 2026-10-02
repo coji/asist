@@ -242,8 +242,15 @@ export interface Draft {
   allDay: boolean
   location: string
   notes: string
+  /**
+   * The time zone an event with times is saved in: the event's own when it is edited, this computer's when
+   * it is new. Its start and end are instants, so any zone holds them. An all-day event is saved in this
+   * computer's zone instead, because its days are midnights in the zone the inputs are written in.
+   */
   timeZone: string
 }
+
+const localZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone
 
 /**
  * A draft of a new event on that day from 10:00 to 11:00. An all-day event being edited keeps these
@@ -259,7 +266,7 @@ export function newDraft(day: string, patch: Partial<Draft> = {}): Draft {
     allDay: false,
     location: '',
     notes: '',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timeZone: localZone(),
     ...patch
   }
 }
@@ -333,15 +340,16 @@ function localDate(date: string, time: string): Date {
 export function changeFromDraft(draft: Draft): CalendarChange | null {
   const title = draft.title.trim()
   if (!title) return null
-  const start = draft.allDay ? localDate(draft.startDate, '00:00') : localDate(draft.startDate, draft.startTime)
-  const end = draft.allDay ? addDays(localDate(draft.endDate, '00:00'), 1) : localDate(draft.endDate, draft.endTime)
+  const { start, end, timeZone } = draft.allDay
+    ? { start: localDate(draft.startDate, '00:00'), end: addDays(localDate(draft.endDate, '00:00'), 1), timeZone: localZone() }
+    : { start: localDate(draft.startDate, draft.startTime), end: localDate(draft.endDate, draft.endTime), timeZone: draft.timeZone }
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null
   const event = {
     title,
     start: start.toISOString(),
     end: end.toISOString(),
     allDay: draft.allDay,
-    timeZone: draft.timeZone,
+    timeZone,
     location: draft.location.trim(),
     notes: draft.notes
   }
