@@ -10,6 +10,7 @@ import { voiceController } from '../src/renderer/src/voice/VoiceController'
 import { liveVoice } from '../src/renderer/src/voice/LiveVoice'
 import { asrDownloadGb, asrModelSpec, recommendAsrModel } from '@shared/asr-models'
 import { isLiveEngine } from '@shared/voice-engine'
+import { defaultPersona } from '@shared/persona'
 import { MACOS, WINDOWS, WINDOWS_WITHOUT_GPU, platformCapabilities, setCapabilities } from './helpers/platform'
 
 // The voice modules build an AudioContext at import time, so they are replaced for a test that only renders the UI.
@@ -223,6 +224,22 @@ describe('first-run setup', () => {
     // Choosing the same language again leaves an engine picked since then as it is.
     await chooseLanguage('ja-JP')
     expect(api.saveSettings).toHaveBeenLastCalledWith({ uiLocale: 'ja-JP', conversationLocale: 'ja-JP', region: 'JP' })
+  })
+
+  it('gives the conversation the persona of the chosen language, which main wrote in the language of the system', async () => {
+    settings = { ...settings, uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', persona: defaultPersona('en-US') }
+    await render()
+    await chooseLanguage('ja-JP')
+    expect(settings).toMatchObject({ conversationLocale: 'ja-JP', persona: defaultPersona('ja-JP') })
+    await chooseLanguage('de-DE')
+    expect(settings).toMatchObject({ conversationLocale: 'de-DE', persona: defaultPersona('de-DE') })
+  })
+
+  it('leaves a persona the user wrote as it is when the language changes', async () => {
+    settings = { ...settings, persona: '名前は ミナ。短く答える。' }
+    await render()
+    await chooseLanguage('en-US')
+    expect(settings).toMatchObject({ conversationLocale: 'en-US', persona: '名前は ミナ。短く答える。' })
   })
 
   it('keeps the next button of the risks disabled until the box is ticked, and saves the acknowledgement', async () => {

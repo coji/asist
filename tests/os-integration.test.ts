@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Emitter } from 'mitt'
-import type { AgentJob, JobEvent } from '@shared/ipc'
+import { IpcChannel, type AgentJob, type JobEvent } from '@shared/ipc'
 import { MACOS, WINDOWS } from './helpers/platform'
 
 type Listener = (event: { preventDefault: () => void }) => void
@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   shutdown: vi.fn<() => Promise<void>>(),
   liveStop: vi.fn<() => Promise<void>>(),
   register: vi.fn((_accelerator: string, _callback: () => void) => true),
+  buildMenu: vi.fn((_template: Array<{ label?: string; click?: () => void }>) => ({})),
   settings: { globalHotkey: false },
   windows: false
 }))
@@ -42,7 +43,7 @@ vi.mock('electron', () => {
     },
     dialog: { showErrorBox: mocks.showErrorBox },
     globalShortcut: { unregister: vi.fn(), register: mocks.register, unregisterAll: vi.fn() },
-    Menu: { buildFromTemplate: vi.fn(() => ({})) },
+    Menu: { buildFromTemplate: mocks.buildMenu },
     nativeImage: { createFromDataURL: () => ({ setTemplateImage: vi.fn() }), createEmpty: () => ({ addRepresentation: vi.fn() }) },
     Notification,
     Tray
@@ -72,6 +73,8 @@ function hiddenWindow() {
       return !prevented
     },
     hide: vi.fn(),
+    show: vi.fn(),
+    focus: vi.fn(),
     isVisible: () => false,
     isFocused: () => false,
     isMinimized: () => false,
@@ -100,6 +103,7 @@ beforeEach(async () => {
   mocks.shutdown.mockReset()
   mocks.liveStop.mockReset().mockResolvedValue(undefined)
   mocks.register.mockReset().mockReturnValue(true)
+  mocks.buildMenu.mockClear()
   mocks.settings.globalHotkey = false
   mocks.windows = false
 })
@@ -231,5 +235,17 @@ describe('the global hotkey', () => {
     mocks.settings.globalHotkey = false
     os.refreshHotkey()
     expect(os.hotkeyStatus()).toBe('off')
+  })
+})
+
+describe('the tray menu', () => {
+  it('asks the page to toggle the microphone, which the hotkey that calls the window up only turns on', () => {
+    mocks.settings.globalHotkey = true
+    const window = hiddenWindow()
+    os.setupOsIntegration(window as never)
+    const template = mocks.buildMenu.mock.calls.at(-1)![0]
+    template.find((item) => item.label === 'app.tray.toggleMic')!.click!()
+    mocks.register.mock.calls[0][1]()
+    expect(window.webContents.send.mock.calls.map(([channel]) => channel)).toEqual([IpcChannel.ToggleMic, IpcChannel.HotkeyMic])
   })
 })

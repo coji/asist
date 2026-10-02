@@ -194,9 +194,10 @@ async function initializeConversation(): Promise<void> {
   void loadAizuchiBank()
   void classifier.check()
 
-  window.api.onStatusChanged((status) => {
-    const prev = useStatusStore.getState().status
-    useStatusStore.getState().apply(status)
+  // The conversation follows the status the store holds, which a read moves as well as a push, and which
+  // keeps a newer read over a push that arrives after it.
+  useStatusStore.subscribe(({ status }, { status: prev }) => {
+    if (status === null || status === prev) return
     voiceController.handleAsrStatus(status.asr)
     if (prev && (prev.asr !== status.asr || prev.tts !== status.tts)) {
       const parts: string[] = []
@@ -213,16 +214,14 @@ async function initializeConversation(): Promise<void> {
       })
     }
   })
+  window.api.onStatusChanged((status) => useStatusStore.getState().apply(status))
 
   // Coming back online, and becoming visible again after something like a sleep and wake, rebuild
   // the capture and audio context that froze and refresh the service status. A short window switch
   // must not disturb the microphone.
   let hiddenAt = 0
   const recoverAfterInterruption = (): void => {
-    void useStatusStore.getState().refresh().then(() => {
-      const status = useStatusStore.getState().status
-      if (status) voiceController.handleAsrStatus(status.asr)
-    })
+    void useStatusStore.getState().refresh()
     speechPlayer.recover()
     void voiceController.recover()
     void liveVoice.recover()
@@ -380,6 +379,7 @@ async function initializeConversation(): Promise<void> {
   startMiniAppReports()
   await startStoreSync({ onHeldConfirmationClosed: resumeHeldTurn })
   window.api.onHotkeyMic(() => void enableMic())
+  window.api.onToggleMic(() => void toggleMic())
 
   speechPlayer.events.on('segmentstart', ({ segment, durationMs }) => {
     interjectPlayback.markSegmentStarted(segment)

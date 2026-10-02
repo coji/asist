@@ -755,14 +755,14 @@ textarea.st-input.st-roots {
 }
 
 /*
- * The bar takes the whole width of its row, on a line of its own beside buttons. Sized by its label, it
- * grew and shrank as the label's text changed during a download.
+ * The bar goes on a line of its own, a block or a grid row across every column, where it fills the width
+ * its margins leave. Among buttons in a flex row it would take the width of its label, which changes as a
+ * download goes on, and a width of 100% would add its margins to the width of the line.
  */
 .st-progress-block {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 100%;
 }
 .st-progress {
   position: relative;

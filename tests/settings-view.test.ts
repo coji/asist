@@ -81,6 +81,7 @@ const settings = {
 } as unknown as AppSettings
 
 const status: AppStatus = {
+  sequence: 1,
   llm: true,
   conversationModel: { provider: 'openai', id: 'gpt-5.6-luna' },
   llmKeys: { anthropic: 'verified', openai: 'missing', google: 'missing', cerebras: 'saved' },
@@ -507,6 +508,43 @@ describe('settings dialog', () => {
     await useStatusStore.getState().refresh()
     expect(useToastStore.getState().toasts).toMatchObject([{ kind: 'error', title: t('app.status.checkFailed'), body: 'api-keys.json is damaged' }])
   })
+
+  it('keeps the status main read last, in whichever order a push and the answer to a read reach the page', async () => {
+    // Main pushes a status it read after it began answering a read, and the answer arrives last.
+    let answer!: (read: AppStatus) => void
+    api.getStatus.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)))
+    const refreshing = useStatusStore.getState().refresh()
+    useStatusStore.getState().apply({ ...status, sequence: 3, tts: true })
+    answer({ ...status, sequence: 2, tts: false })
+    await refreshing
+    expect(useStatusStore.getState().status).toMatchObject({ sequence: 3, tts: true })
+
+    // Main answers a read just after it pushed a status read before it, and the answer overtakes the push.
+    api.getStatus.mockResolvedValueOnce({ ...status, sequence: 5, tts: false })
+    await useStatusStore.getState().refresh()
+    useStatusStore.getState().apply({ ...status, sequence: 4, tts: true })
+    expect(useStatusStore.getState().status).toMatchObject({ sequence: 5, tts: false })
+  })
+
+  it('says in the page list that the costs could not be read, instead of leaving the line empty', async () => {
+    api.apiUsage.mockRejectedValueOnce(new Error('usage.jsonl is damaged'))
+    const view = await render()
+    expect(sub(view, 'usage')?.textContent).toBe(t('settingsModels.checkFailed'))
+    expect(sub(view, 'usage')?.getAttribute('data-tone')).toBe('warn')
+  })
+
+  it('gives on the about page the reason main could not tell the version or the state of the update', async () => {
+    api.appVersion.mockRejectedValueOnce(new Error('the version could not be read'))
+    api.appUpdateState.mockRejectedValueOnce(new Error('the updater is not ready'))
+    const view = await render()
+    await act(async () => nav(view, 'about').click())
+    await act(async () => {})
+    const row = (label: string): Element | undefined =>
+      [...view.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === label)
+    const shown = (one: Element | undefined): Array<string | null | undefined> => [one?.querySelector('.st-chip')?.textContent, one?.querySelector('.st-row-hint')?.textContent]
+    expect(shown(row(t('settingsAbout.version')))).toEqual([t('settingsModels.checkFailed'), 'the version could not be read'])
+    expect(shown(row(t('settingsAbout.update.label')))).toEqual([t('settingsModels.checkFailed'), 'the updater is not ready'])
+  })
 })
 
 describe('settings fields that are saved once the user leaves them', () => {
@@ -541,6 +579,15 @@ describe('settings fields that are saved once the user leaves them', () => {
     await act(async () => type(folder, '/Users/demo/projects'))
     expect(api.saveSettings).not.toHaveBeenCalled()
     await act(async () => root.render(React.createElement('div')))
+    expect(api.saveSettings.mock.calls).toEqual([[{ agentCwd: '/Users/demo/projects' }]])
+  })
+
+  it('saves the working folder without the spaces a paste leaves around it, which would name another folder', async () => {
+    const view = await render()
+    await act(async () => nav(view, 'agent').click())
+    const folder = view.querySelector<HTMLInputElement>(`[aria-label="${t('settingsAgent.workspace.parentLabel')}"]`)!
+    await act(async () => type(folder, ' /Users/demo/projects '))
+    await act(async () => leave(folder))
     expect(api.saveSettings.mock.calls).toEqual([[{ agentCwd: '/Users/demo/projects' }]])
   })
 

@@ -95,7 +95,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const [vap, setVap] = useState<StatusRead<VapStatus>>(null)
   const [embedding, setEmbedding] = useState<StatusRead<EmbeddingStatus>>(null)
   const [aizuchiClassifier, setAizuchiClassifier] = useState<StatusRead<AizuchiClassifierStatus>>(null)
-  const [last30, setLast30] = useState<number | null>(null)
+  const [last30, setLast30] = useState<StatusRead<number>>(null)
   const formatLocale = useFormatLocale()
   const uiLocale = useUiLocale()
   const mainRef = useRef<HTMLDivElement>(null)
@@ -133,10 +133,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   }, [open, prep.ended])
   useEffect(() => {
     if (!open) return
-    void window.api
-      .apiUsage()
-      .then((days) => setLast30(usageReport(days, localDate(new Date()), 30, 'kind').totalUsd))
-      .catch(() => setLast30(null))
+    void readStatus(async () => usageReport(await window.api.apiUsage(), localDate(new Date()), 30, 'kind').totalUsd, setLast30)
   }, [open])
 
   // The main process converts the memories in the background after semantic search is turned on or
@@ -247,7 +244,12 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     language: { text: `${UI_LOCALE_NAMES[settings.conversationLocale]} · ${regionName}` },
     appearance: { text: t(`settingsAppearance.themes.${settings.theme}.name`) },
     apiKeys: { text: t('settings.summary.apiKeys', { keys, total: LLM_PROVIDERS.length }), tone: has('key') ? 'warn' : undefined },
-    usage: { text: last30 === null ? '' : t('settings.summary.usage', { amount: formatUsd(last30) }) },
+    usage:
+      last30 === null
+        ? { text: '' }
+        : 'error' in last30
+          ? { text: t('settingsModels.checkFailed'), tone: 'warn' }
+          : { text: t('settings.summary.usage', { amount: formatUsd(last30.read) }) },
     about: { text: t('settings.summary.about') }
   }
   const title = (id: SettingsPage): string => t(`settings.pages.${id}`)

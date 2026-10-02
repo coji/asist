@@ -18,7 +18,7 @@ export function AgentPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
     })
   }
   const t = useT()
-  const cwd = useFieldDraft(settings.agentCwd, { format: (folder) => folder, parse: (text) => text, save: (agentCwd) => set({ agentCwd }) })
+  const cwd = useFieldDraft(settings.agentCwd, { format: (folder) => folder, parse: (text) => text.trim(), save: (agentCwd) => set({ agentCwd }) })
   const roots = useFieldDraft(settings.fileRoots, {
     format: (folders) => folders.join('\n'),
     parse: (text) => text.split('\n').map((line) => line.trim()).filter(Boolean),

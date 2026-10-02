@@ -6,6 +6,7 @@ import { errorText } from '@shared/i18n/error-text'
 import { isLocalTtsEngine, localTtsRuns, recommendLocalTts, ttsEngineRuns } from '@shared/tts-models'
 import { defaultRegion, defaultTtsEngine, type ConversationLocale } from '@shared/conversation-locale'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
+import { defaultPersona, isDefaultPersona } from '@shared/persona'
 import { useSettingsStore, useStatusStore } from '@/state/stores'
 import { startMicAtLaunch } from '@/conversation'
 import { voiceController } from '@/voice/VoiceController'
@@ -158,13 +159,15 @@ export function SetupWizard(): React.JSX.Element | null {
   }
 
   /**
-   * Saves the one language choice: the interface, the conversation and the region move together, and
-   * the speech engine moves to the one the new language starts with, which the speech step comes after.
+   * Saves the one language choice: the interface, the conversation and the region move together, the
+   * speech engine moves to the one the new language starts with, which the speech step comes after, and a
+   * persona main wrote in the language of the system moves to the one of the new language.
    */
   const chooseLocale = (next: ConversationLocale): void => {
     setError('')
     const engine = next === settings.conversationLocale ? {} : { ttsEngine: defaultTtsEngine(next, capabilities.localSpeech) }
-    void saveSettings({ uiLocale: next, conversationLocale: next, region: defaultRegion(next), ...engine })
+    const persona = isDefaultPersona(settings.persona) ? { persona: defaultPersona(next) } : {}
+    void saveSettings({ uiLocale: next, conversationLocale: next, region: defaultRegion(next), ...engine, ...persona })
       .then(() => refresh())
       .catch((err: unknown) => setError(displayError(err)))
   }

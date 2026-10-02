@@ -4,6 +4,8 @@ import { osMessageKey } from '@shared/i18n/os-message'
 import type { AppUpdateState } from '@shared/app-update'
 import { ASIST_LICENSE, creditsOf, type Credit, type CreditGroup } from '@shared/credits'
 import { Btn, Chip, Group, Page, Row } from '../primitives'
+import { readFailure, readStatus, statusOf, type StatusRead } from '../context'
+import { UnreadChip } from '../preparation'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
 import { displayError } from '@/display-error'
@@ -12,15 +14,16 @@ import type { Translate } from '@shared/i18n'
 /** The about page: the version of the app, its log, and every model and data source it uses, with its license. */
 export function AboutPage(): React.JSX.Element {
   const t = useT()
-  const [version, setVersion] = useState('')
+  const [version, setVersion] = useState<StatusRead<string>>(null)
   useEffect(() => {
-    void window.api.appVersion().then(setVersion)
+    void readStatus(() => window.api.appVersion(), setVersion)
   }, [])
+  const versionRead = statusOf(version)
   return (
     <Page title={t('settingsAbout.title')} lead={t('settingsAbout.lead')}>
       <Group title="ASIST">
-        <Row label={t('settingsAbout.version')}>
-          <span className="st-value">{version}</span>
+        <Row label={t('settingsAbout.version')} hint={readFailure(version) ?? undefined}>
+          {versionRead === null ? <UnreadChip status={version} /> : <span className="st-value">{versionRead}</span>}
         </Row>
         <Update t={t} />
         <Row label={t('settingsAbout.license')}>
@@ -46,15 +49,24 @@ export function AboutPage(): React.JSX.Element {
   )
 }
 
-/** Where the automatic update stands. A build that does not come from a release has no row. */
+/** Where the automatic update stands. A build that does not come from a release has no row, unless main could not tell. */
 function Update({ t }: { t: Translate }): React.JSX.Element | null {
-  const [state, setState] = useState<AppUpdateState | null>(null)
+  const [read, setRead] = useState<StatusRead<AppUpdateState>>(null)
   const [installError, setInstallError] = useState<string | null>(null)
   useEffect(() => {
-    const unsubscribe = window.api.onAppUpdateChanged(setState)
-    void window.api.appUpdateState().then(setState)
+    const unsubscribe = window.api.onAppUpdateChanged((state) => setRead({ read: state }))
+    void readStatus(() => window.api.appUpdateState(), setRead)
     return unsubscribe
   }, [])
+  const failure = readFailure(read)
+  if (failure !== null) {
+    return (
+      <Row label={t('settingsAbout.update.label')} hint={failure}>
+        <UnreadChip status={read} />
+      </Row>
+    )
+  }
+  const state = statusOf(read)
   if (!state || state.phase === 'off') return null
   const install = (): void => {
     setInstallError(null)

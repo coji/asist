@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import mitt from 'mitt'
+import type { AppStatus } from '@shared/ipc'
 
 /**
  * The conversation driven by the events of the voice pipeline: the voice controller and the speech
@@ -61,7 +62,11 @@ const mocks = vi.hoisted(() => {
     voice: null as unknown,
     live: null as unknown,
     /** The requests the conversation put on the confirmation sheet. */
-    confirmOpened: [] as unknown[]
+    confirmOpened: [] as unknown[],
+    /** The toasts the conversation raised. */
+    toasts: [] as unknown[],
+    /** The app's own status store, loaded afresh for each test. */
+    status: null as null | typeof import('../src/renderer/src/state/stores').useStatusStore
   }
 })
 
@@ -96,7 +101,7 @@ vi.mock('@/voice/VoiceController', async () => {
     current: 'listening',
     msSinceBackchannel: Infinity,
     events: mittFactory(),
-    handleAsrStatus: () => {},
+    handleAsrStatus: vi.fn(),
     recover: async () => {},
     setHangover: () => {},
     enable: vi.fn(async () => {}),
@@ -188,8 +193,11 @@ vi.mock('@/state/stores', () => {
         return () => {}
       }
     },
-    useStatusStore: plain({ status: { asr: true, tts: true } }),
-    useToastStore: plain(),
+    useStatusStore: {
+      getState: () => mocks.status!.getState(),
+      subscribe: (...args: Parameters<NonNullable<typeof mocks.status>['subscribe']>) => mocks.status!.subscribe(...args)
+    },
+    useToastStore: plain({ push: (toast: unknown) => mocks.toasts.push(toast) }),
     useTaskStore: plain(),
     useNoteStore: plain(),
     useMailStore: plain()
@@ -209,7 +217,7 @@ function api(overrides: Record<string, unknown>): unknown {
     get(target, key: string) {
       if (key in target) return target[key]
       if (key.startsWith('on')) return () => () => {}
-      if (key === 'getStatus') return async () => ({ asr: true, tts: true })
+      if (key === 'getStatus') return async () => ({ sequence: 1, asr: true, tts: true })
       if (key === 'confirmPending') return async () => []
       if (key === 'aizuchiClassifierStatus') return async () => ({ runtimeInstalled: true, modelInstalled: true, running: true })
       return async () => undefined
@@ -252,8 +260,10 @@ async function start(overrides: Record<string, unknown>): Promise<typeof import(
   return conversation
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
+  mocks.status = (await vi.importActual<typeof import('../src/renderer/src/state/stores')>('../src/renderer/src/state/stores')).useStatusStore
+  mocks.toasts = []
   mocks.playing = false
   mocks.readingTurn = -1
   mocks.turn.phase = 'idle'
@@ -870,7 +880,62 @@ describe('the measurements shown in the HUD', () => {
   })
 })
 
-describe('the global shortcut and the tray item that turn the microphone on', () => {
+describe('the tray item that toggles the microphone', () => {
+  it('turns the microphone off when it is on, and on again when it is off', async () => {
+    let toggle!: () => void
+    await start({
+      onToggleMic: (callback: () => void) => {
+        toggle = callback
+        return () => {}
+      }
+    })
+    voice().current = 'listening'
+    toggle()
+    await flush()
+    expect(voice().disable).toHaveBeenCalledOnce()
+    expect(voice().enable).not.toHaveBeenCalled()
+
+    voice().current = 'off'
+    toggle()
+    await flush()
+    expect(voice().enable).toHaveBeenCalledOnce()
+  })
+})
+
+describe('the state of the speech services', () => {
+  async function startPushed(): Promise<{ push: (status: AppStatus) => void; handled: Mock }> {
+    let push!: (status: AppStatus) => void
+    await start({
+      getStatus: async () => ({ sequence: 1, asr: false, tts: true }),
+      onStatusChanged: (callback: (status: AppStatus) => void) => {
+        push = callback
+        return () => {}
+      }
+    })
+    const handled = (mocks.voice as { handleAsrStatus: Mock }).handleAsrStatus
+    handled.mockClear()
+    return { push, handled }
+  }
+
+  it('tells the conversation and the user that speech recognition came back when main pushes it', async () => {
+    const { push, handled } = await startPushed()
+    push({ sequence: 2, asr: true, tts: true } as AppStatus)
+    expect(handled.mock.calls).toEqual([[true]])
+    expect(mocks.toasts).toMatchObject([{ body: 'voice.services.recognitionBack' }])
+  })
+
+  it('tells them as well when a read of the settings overtook the push and the store keeps the read', async () => {
+    const { push, handled } = await startPushed()
+    // Main read status 2 for the push that says the server is back and status 3 for the settings just
+    // after, and the answer to the settings arrives first.
+    mocks.status!.getState().apply({ sequence: 3, asr: true, tts: true } as AppStatus)
+    push({ sequence: 2, asr: true, tts: true } as AppStatus)
+    expect(handled.mock.calls).toEqual([[true]])
+    expect(mocks.toasts).toMatchObject([{ body: 'voice.services.recognitionBack' }])
+  })
+})
+
+describe('the global shortcut that turns the microphone on', () => {
   async function pressShortcut(): Promise<void> {
     let hotkey!: () => void
     await start({
@@ -885,19 +950,19 @@ describe('the global shortcut and the tray item that turn the microphone on', ()
     voice().current = 'listening'
   }
 
-  it('leave the microphone off during the first-run setup', async () => {
+  it('leaves the microphone off during the first-run setup', async () => {
     Object.assign(mocks.settings, { onboardingVersion: 0, safetyNoticeVersion: 0 })
     await pressShortcut()
     expect(voice().enable).not.toHaveBeenCalled()
   })
 
-  it('leave the microphone off while the notice of the risks is unanswered', async () => {
+  it('leaves the microphone off while the notice of the risks is unanswered', async () => {
     Object.assign(mocks.settings, { onboardingVersion: 1, safetyNoticeVersion: 0 })
     await pressShortcut()
     expect(voice().enable).not.toHaveBeenCalled()
   })
 
-  it('turn the microphone on once both are answered', async () => {
+  it('turns the microphone on once both are answered', async () => {
     await pressShortcut()
     expect(voice().enable).toHaveBeenCalledOnce()
   })
