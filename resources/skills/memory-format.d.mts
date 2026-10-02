@@ -1,6 +1,6 @@
 /** The types of memory-format.mjs, which stays plain JavaScript so that validate.mjs runs it without a build. */
 
-export type DocumentKind = 'me' | 'user' | 'page' | 'journal'
+export type DocumentKind = 'instruction' | 'me' | 'user' | 'page' | 'journal'
 
 export interface PageFrontmatter {
   present: boolean
@@ -29,6 +29,7 @@ export interface ParsedPage {
 }
 
 export type DocumentIssue =
+  | { kind: 'frontmatterNotAllowed' }
   | { kind: 'frontmatterMissing' }
   | { kind: 'frontmatterUnclosed' }
   | { kind: 'obsoleteKey'; key: string }
@@ -53,7 +54,7 @@ export interface PromptSize extends TextAmount {
   tokens: number
 }
 
-export type PromptDocumentKind = 'me' | 'user'
+export type PromptDocumentKind = 'instruction' | 'me' | 'user'
 
 export declare const SUMMARY_HEADING: { readonly ja: '要約'; readonly en: 'Summary' }
 export declare const PROMPT_DOCUMENTS: ReadonlyArray<{ readonly kind: PromptDocumentKind; readonly file: string }>

@@ -11,17 +11,16 @@ import { SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-f
 const dir = path.resolve(process.argv[2] ?? '.')
 const problems = []
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const TOP_LEVEL = ['user.md', 'me.md', 'AGENTS.md']
-/** The files an earlier form of the memory kept, which the curation empties into user.md and me.md. */
-const OBSOLETE = ['profile.md', 'instruction.md']
+const TOP_LEVEL = ['user.md', 'me.md', 'instruction.md', 'AGENTS.md']
 
 const MESSAGES = {
+  frontmatterNotAllowed: () => 'it takes no frontmatter; delete it',
   frontmatterMissing: () => 'there is no frontmatter',
   frontmatterUnclosed: () => 'the frontmatter is not closed (there is only one ---)',
   obsoleteKey: ({ key }) => `${key} in the frontmatter is no longer used; delete it`,
   aliasesOnlyOnPages: () => 'aliases belong only on the pages under pages/; delete it',
   updatedNotDate: () => 'updated must be a date in the form YYYY-MM-DD',
-  titleMissing: () => 'there is no "# name" line',
+  titleMissing: (_, kind) => (kind === 'instruction' ? 'there is no "# Always keep in mind" line' : 'there is no "# name" line'),
   noHeadings: (_, kind) =>
     kind === 'journal' ? 'there is not one "## heading" (a journal entry is divided by ## into its subjects)' : 'there is not one "## heading"',
   duplicateHeading: ({ heading, first }) =>
@@ -56,6 +55,9 @@ function listMd(sub) {
 
 check('user.md', 'user')
 check('me.md', 'me')
+if (!check('instruction.md', 'instruction')) {
+  problems.push('instruction.md: it is missing (it is the summary that goes into every conversation; write it from user.md, me.md and the pages)')
+}
 for (const file of listMd('pages')) {
   const nameIssue = pageNameIssue(path.basename(file, '.md'))
   if (nameIssue) problems.push(`${file}: ${NAME_MESSAGES[nameIssue]}`)
@@ -65,12 +67,12 @@ for (const file of listMd('journal')) {
   if (DATE.test(path.basename(file, '.md'))) check(file, 'journal')
   else problems.push(`${file}: the file name must be YYYY-MM-DD.md`)
 }
-for (const file of OBSOLETE) {
-  if (fs.existsSync(path.join(dir, file))) problems.push(`${file}: it is no longer used; move what it holds into user.md and me.md, then delete it`)
+if (fs.existsSync(path.join(dir, 'profile.md'))) {
+  problems.push('profile.md: it is no longer used; move what it holds into instruction.md / user.md, then delete it')
 }
 if (fs.existsSync(path.join(dir, 'forget.jsonl'))) problems.push('forget.jsonl: it is no longer used; delete it')
 for (const stray of fs.readdirSync(dir)) {
-  if (/\.md$/.test(stray) && !OBSOLETE.includes(stray) && !TOP_LEVEL.includes(stray)) {
+  if (/\.md$/.test(stray) && stray !== 'profile.md' && !TOP_LEVEL.includes(stray)) {
     problems.push(`${stray}: this is in the wrong place (a person, a place or a subject belongs in pages/, a record in journal/)`)
   }
 }

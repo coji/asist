@@ -68,7 +68,7 @@ Costs tend to grow when:
 
 ## The conversation goes to the providers you chose
 
-The text of the conversation, the two memory documents that go into every conversation (About me, The user), and the other parts of memory that relate to it go to the provider of the conversation model you chose. With a Live API voice engine, the microphone audio goes there too. For an Agent job, the instructions and the contents of the files the CLI reads go to the service behind the CLI. The full list of what goes where is in [What ASIST sends out](/en/docs/privacy/external/).
+The text of the conversation, the three memory documents that go into every conversation (Always keep in mind, About me, The user), and the other parts of memory that relate to it go to the provider of the conversation model you chose. With a Live API voice engine, the microphone audio goes there too. For an Agent job, the instructions and the contents of the files the CLI reads go to the service behind the CLI. The full list of what goes where is in [What ASIST sends out](/en/docs/privacy/external/).
 
 How long a provider keeps that data, and whether it uses it to train models, is set by that provider's terms. Before you talk about work secrets or other people's personal information, check the provider's terms and your employer's rules.
 

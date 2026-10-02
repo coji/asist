@@ -12,7 +12,6 @@ import {
   classifyFile,
   documentKindOf,
   documentOf,
-  foldInstruction,
   parseMemoryPageInput,
   parsePage,
   promptBody,
@@ -35,6 +34,7 @@ import { t } from './i18n'
  * in memory-index.ts is built from these files.
  */
 
+export const INSTRUCTION_FILE = 'instruction.md'
 export const ME_FILE = 'me.md'
 export const USER_FILE = 'user.md'
 export const PAGES_DIR = 'pages'
@@ -49,8 +49,7 @@ const WRITES = {
   prepared: { ja: 'asist: 置き場を整える', en: 'asist: tidy the memory directory' },
   edited: { ja: 'asist: 手直し {file}', en: 'asist: edit {file}' },
   pageCreated: { ja: 'asist: ページを作る {name}', en: 'asist: create the page {name}' },
-  deleted: { ja: 'asist: 消す {file}', en: 'asist: delete {file}' },
-  instructionFolded: { ja: 'asist: instruction.md の中身を me.md と user.md に移す', en: 'asist: move what instruction.md held into me.md and user.md' }
+  deleted: { ja: 'asist: 消す {file}', en: 'asist: delete {file}' }
 } as const satisfies Record<string, PromptText>
 
 const written = (of: keyof typeof WRITES, values: Record<string, string> = {}): string =>
@@ -59,28 +58,19 @@ const written = (of: keyof typeof WRITES, values: Record<string, string> = {}): 
 export interface ReadResult {
   units: MemoryUnit[]
   pages: number
-  /** Problems that should stop a curation from being merged, such as a document over its limit or a heading with no body. */
+  /** Problems that should stop a curation from being merged, such as a missing instruction.md or a heading with no body. */
   errors: string[]
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-/**
- * instruction.md, the summary that rode in every turn before me.md and user.md did. ensureRepo moves what it
- * held into them, and a curation that writes it again is refused like the other files an earlier form of the
- * memory kept.
- */
-const INSTRUCTION_FILE = 'instruction.md'
-/** The files an earlier form of the memory kept: profile.md, which instruction.md replaced, forget.jsonl and instruction.md. */
-const OBSOLETE_FILES = ['profile.md', 'forget.jsonl', INSTRUCTION_FILE]
+/** The files an earlier form of the memory kept: profile.md, which instruction.md replaced, and forget.jsonl. */
+const OBSOLETE_FILES = ['profile.md', 'forget.jsonl']
 
 export function memoryDir(): string {
   return path.join(app.getPath('userData'), 'memory')
 }
 
-/**
- * Prepares the directory and its repository, creating .gitignore and placing the first commit on the first run,
- * and moves what an instruction.md held into me.md and user.md.
- */
+/** Prepares the directory and the git repository, creating .gitignore and placing the first commit on the first run. */
 export function ensureRepo(dir = memoryDir()): void {
   fs.mkdirSync(dir, { recursive: true })
   for (const sub of [PAGES_DIR, JOURNAL_DIR]) fs.mkdirSync(path.join(dir, sub), { recursive: true })
@@ -92,19 +82,6 @@ export function ensureRepo(dir = memoryDir()): void {
   // above it, which git may refuse to open, such as one an administrator made at the top of a drive.
   if (!fs.existsSync(path.join(dir, '.git'))) git.init(dir)
   git.commitAll(dir, written(git.hasHead(dir) ? 'prepared' : 'created'))
-  foldInstructionIntoPromptDocuments(dir)
-}
-
-/**
- * Moves what instruction.md holds into me.md and user.md and removes it, in one commit. Its text goes over
- * word for word, so nothing the user wrote there is lost; the two documents may then pass their limit until
- * the next curation folds the moved sections into their own headings.
- */
-function foldInstructionIntoPromptDocuments(dir: string): void {
-  const instruction = readFileOf(dir, INSTRUCTION_FILE)
-  if (instruction === null) return
-  const folded = foldInstruction(instruction, { me: readFileOf(dir, ME_FILE), user: readFileOf(dir, USER_FILE) }, localDateKey(new Date()))
-  commitFiles(dir, { [ME_FILE]: folded.me, [USER_FILE]: folded.user, [INSTRUCTION_FILE]: null }, written('instructionFolded'))
 }
 
 const notRegular = (file: string): Error => new Error(errorText('memory.errors.notRegular', { file }))
@@ -213,14 +190,15 @@ export function readAll(dir = memoryDir()): ReadResult {
   for (const { file } of PROMPT_DOCUMENTS) {
     const markdown = read(file)
     if (markdown !== null) errors.push(...validateDocument(file, markdown, t))
+    else if (file === INSTRUCTION_FILE) errors.push(t('memory.check.instructionMissing', { file }))
   }
   for (const file of OBSOLETE_FILES) if (fs.existsSync(path.join(dir, file))) errors.push(t('memory.check.obsoleteFile', { file }))
   return { units, pages, errors }
 }
 
-/** The documents in the order the screen shows them: me.md, user.md, the pages by name, then the journal with the newest day first. */
+/** The documents in the order the screen shows them: instruction.md, me.md, user.md, the pages by name, then the journal with the newest day first. */
 export function listDocuments(dir = memoryDir()): MemoryDocument[] {
-  const files = [ME_FILE, USER_FILE, ...listMarkdown(dir, PAGES_DIR), ...listMarkdown(dir, JOURNAL_DIR).reverse()]
+  const files = [INSTRUCTION_FILE, ME_FILE, USER_FILE, ...listMarkdown(dir, PAGES_DIR), ...listMarkdown(dir, JOURNAL_DIR).reverse()]
   return files.flatMap((file) => {
     const markdown = DOCUMENT_FILE.test(file) ? readFileOf(dir, file) : null
     return markdown === null ? [] : [documentOf(file, markdown)]
@@ -255,7 +233,7 @@ export function writeDocument(file: string, markdown: string, base: string, dir 
   const errors = validateDocument(file, markdown, t)
   if (errors.length > 0) throw new Error(errors.join(' / '))
   const text = markdown.endsWith('\n') ? markdown : `${markdown}\n`
-  commitFiles(dir, { [file]: text }, written('edited', { file }))
+  commitFile(dir, file, text, written('edited', { file }))
   return documentOf(file, text)
 }
 
@@ -270,7 +248,7 @@ export function createPage(name: string, template: string, dir = memoryDir()): M
     .replace(/^# .*$/m, () => `# ${input.name}`)
   const errors = validateDocument(file, markdown, t)
   if (errors.length > 0) throw new Error(errorText('memory.errors.templateInvalid', { errors: errors.join(' / ') }))
-  commitFiles(dir, { [file]: markdown }, written('pageCreated', { name: input.name }))
+  commitFile(dir, file, markdown, written('pageCreated', { name: input.name }))
   return documentOf(file, markdown)
 }
 
@@ -282,33 +260,30 @@ export function deleteDocument(file: string, dir = memoryDir()): void {
   const kind = documentKindOf(file)
   if (kind !== 'page' && kind !== 'journal') throw new Error(errorText('memory.errors.deleteKind'))
   if (!fs.existsSync(documentPath(dir, file))) throw new Error(errorText('memory.errors.notFound', { file }))
-  commitFiles(dir, { [file]: null }, written('deleted', { file }))
+  commitFile(dir, file, null, written('deleted', { file }))
 }
 
 /**
- * Puts each file in its new state, removing it for null, and commits them together; when a write or the
- * commit fails, every file already put goes back to what it held. Each change from the screen is meant to be a
- * commit: the curation cuts its worktree from HEAD and would not see a change left on disk, and the screen
- * would take such a change for someone else's and refuse its own next save of the document. A text replaces
- * its file only once it is whole on the disk, because a document cut short by a full disk or a power loss
- * would be committed as the memory by the next curation, which commits whatever is on disk before it starts;
- * a write that fails therefore leaves its own file as it was, with nothing to put back.
+ * Puts one file in its new state, removing it for null, and commits it; when the commit fails the file
+ * goes back to what it held. Each change from the screen is meant to be a commit: the curation cuts its
+ * worktree from HEAD and would not see a change left on disk, and the screen would take such a change for
+ * someone else's and refuse its own next save of the document. The text replaces the file only once it is
+ * whole on the disk, because a document cut short by a full disk or a power loss would be committed as the
+ * memory by the next curation, which commits whatever is on disk before it starts; a write that fails
+ * therefore leaves the file as it was, with nothing to put back.
  */
-function commitFiles(dir: string, changes: Record<string, string | null>, message: string): void {
-  const put = (file: string, content: string | null): void => {
-    if (content === null) fs.rmSync(path.join(dir, file), { force: true })
-    else writeFileAtomicSync(path.join(dir, file), content)
+function commitFile(dir: string, file: string, text: string | null, message: string): void {
+  const full = path.join(dir, file)
+  const put = (content: string | null): void => {
+    if (content === null) fs.rmSync(full, { force: true })
+    else writeFileAtomicSync(full, content)
   }
-  const before = new Map(Object.keys(changes).map((file) => [file, readFileOf(dir, file)]))
-  const done: string[] = []
+  const before = readFileOf(dir, file)
+  put(text)
   try {
-    for (const [file, text] of Object.entries(changes)) {
-      put(file, text)
-      done.push(file)
-    }
     git.commitAll(dir, message)
   } catch (error) {
-    for (const file of done) put(file, before.get(file) ?? null)
+    put(before)
     throw error
   }
 }

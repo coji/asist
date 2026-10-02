@@ -21,7 +21,7 @@ import { getSettings } from './settings'
  * by memory-store.ts, and search runs against the index built from it by memory-index.ts in
  * userData/memory-index.db.
  *
- * There are three ways memory is read: me.md and user.md, which become the memory block in
+ * There are three ways memory is read: instruction.md, me.md and user.md, which become the memory block in
  * the system prompt and are read again only when at least 5 minutes have passed since the previous turn or
  * after a change ASIST made to them; the injection that runs ahead of a turn, through search; and the
  * recall tool, also through search. The pages and the journal are reached only through search.
@@ -46,13 +46,17 @@ const MISSING_SCAN = 32
 
 /** The line each document of the memory block stands under in the system prompt, read by the model in its language. */
 export const PROMPT_DOCUMENT_HEADERS: Record<PromptDocumentKind, PromptText> = {
+  instruction: {
+    ja: '# いつも覚えておくこと(instruction.md。この人のこと、私自身のこと、頼まれていることの要約。毎日の整理が書き、本人も直す)',
+    en: '# Always keep in mind (instruction.md: the gist of this person, of myself, and of what I have been asked. The daily curation writes it, and the user edits it too.)'
+  },
   me: {
     ja: '# 私について(me.md。私自身のこと。人柄、大事にしていること、この人との関係、いま思っていること。毎日の整理が書き、本人も直す)',
     en: '# About me (me.md: myself. Who I am, what I care about, how the two of us get on, what is on my mind. The daily curation writes it, and the user edits it too.)'
   },
   user: {
-    ja: '# ユーザー(user.md。この人のこと。属性、好み、習慣、ASIST への期待。「ASIST への期待」は本人に頼まれたこと。毎日の整理が書き、本人も直す)',
-    en: '# The user (user.md: this person. Their details, preferences, habits, and what they expect of me, which is what they have asked of me. The daily curation writes it, and the user edits it too.)'
+    ja: '# ユーザー(user.md。この人のこと。属性、好み、習慣、ASIST への期待。毎日の整理が書き、本人も直す)',
+    en: '# The user (user.md: this person. Their details, preferences, habits, and what they expect of me. The daily curation writes it, and the user edits it too.)'
   }
 }
 
@@ -131,7 +135,7 @@ function requireOpen(): void {
   ensureLoaded()
 }
 
-/** The documents in the order the screen shows them: me.md, user.md, the pages, then the journal with the newest day first. */
+/** The documents in the order the screen shows them: instruction.md, me.md, user.md, the pages, then the journal with the newest day first. */
 export function documents(): MemoryDocument[] {
   requireOpen()
   return store.listDocuments()
@@ -321,7 +325,7 @@ export function embeddingStatus(): EmbeddingStatus {
 }
 
 /**
- * The memory block built from me.md and user.md. It is rebuilt only when at least 5 minutes
+ * The memory block built from instruction.md, me.md and user.md. It is rebuilt only when at least 5 minutes
  * have passed since the previous turn, and stays frozen while the prompt cache is alive.
  */
 const block = new FrozenMemoryBlock(() => {

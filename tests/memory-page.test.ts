@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   documentOf,
-  foldInstruction,
   parseMemoryPageInput,
   validateDocument,
   classifyFile,
@@ -152,7 +151,7 @@ describe('units', () => {
   it('decides the kind from the file path, with fixed names for user.md and me.md, journal/ for entries and pages/ for pages', () => {
     expect(classifyFile('user.md')).toEqual({ kind: 'user', title: 'ユーザー' })
     expect(classifyFile('me.md')).toEqual({ kind: 'me', title: '私について' })
-    expect(classifyFile('instruction.md').kind).toBeNull()
+    expect(classifyFile('instruction.md')).toEqual({ kind: 'instruction', title: 'いつも覚えておくこと' })
     expect(classifyFile('profile.md').kind).toBeNull()
     expect(classifyFile('pages/田中部長.md')).toEqual({ kind: 'page', title: '田中部長' })
     expect(classifyFile('journal/2026-09-07.md')).toEqual({ kind: 'journal', title: '2026-09-07' })
@@ -213,6 +212,7 @@ describe('documents', () => {
     })
     expect(documentOf('journal/2026-09-07.md', '# 2026-09-07\n## 四季の話\n春は桜を勧めた。\n')).toMatchObject({ kind: 'journal', title: '2026-09-07', updated: '2026-09-07', headings: ['四季の話'] })
     expect(documentOf('me.md', '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 私は誰か\n落ち着いた声で話す。\n')).toMatchObject({ kind: 'me', title: '私について' })
+    expect(documentOf('instruction.md', '# いつも覚えておくこと\n\n## この人について\n東京に住む。\n')).toMatchObject({ kind: 'instruction', title: 'いつも覚えておくこと' })
     expect(() => documentOf('notes.md', '')).toThrow(errorText('memory.errors.notADocument', { file: 'notes.md' }))
   })
 
@@ -225,9 +225,6 @@ describe('documents', () => {
     expect(validateDocument('journal/2026-09-07.md', '# 2026-09-07\n## 四季の話\n春は桜を勧めた。\n', ja)).toEqual([])
     expect(validateDocument('../me.md', '', ja)).toEqual([ja('memory.check.wrongPlace', { file: '../me.md' })])
     expect(validateDocument('profile.md', '# 要点\n## 要点\n本文\n', ja)).toEqual([ja('memory.check.wrongPlace', { file: 'profile.md' })])
-    expect(validateDocument('instruction.md', '# いつも覚えておくこと\n## この人について\n東京に住む。\n', ja)).toEqual([
-      ja('memory.check.wrongPlace', { file: 'instruction.md' })
-    ])
   })
 
   it('refuses the obsolete frontmatter keys kind and links', () => {
@@ -279,27 +276,18 @@ describe('documents', () => {
     ])
   })
 
-  it('moves what an instruction.md held into me.md and user.md word for word, its section about the assistant into me.md', () => {
-    const instruction = '# いつも覚えておくこと\n\n## この人について\n三鷹に住んでいる。\n\n## 私について\n落ち着いて短く話す。\n\n## 頼まれていること\n「一言で」と言われたら一言で返す。\n'
-    const me = '---\nupdated: 2026-09-20\n---\n# 私について\n\n## 私は誰か\n声の相棒。\n'
-    const user = '---\nupdated: 2026-09-20\n---\n# ユーザー\n\n## 属性\n猫と暮らしている。\n\n## ASIST への期待\n答えは短く。\n'
-    const folded = foldInstruction(instruction, { me, user }, '2026-10-02')
-    expect(folded.me).toBe(`${me}\n## 私について\n落ち着いて短く話す。\n`)
-    expect(folded.user).toBe(`${user}\n## この人について\n三鷹に住んでいる。\n\n## 頼まれていること\n「一言で」と言われたら一言で返す。\n`)
-    for (const [file, markdown] of [['me.md', folded.me!], ['user.md', folded.user!]]) expect([file, validateDocument(file, markdown, ja)]).toEqual([file, []])
-  })
-
-  it('adds a moved section to the section of the same heading, so that no heading stands twice, and starts a document that did not exist', () => {
-    const instruction = '# Always keep in mind\n\n## What they expect of ASIST\nKeep it to one word when asked for one.\n\n## About me\nA calm voice.\n'
-    const user = '---\nupdated: 2026-09-20\n---\n# The user\n\n## What they expect of ASIST\nShort answers.\n\n## Habits\nUp at seven.\n'
-    const folded = foldInstruction(instruction, { me: null, user }, '2026-10-02')
-    expect(folded.user).toBe(
-      '---\nupdated: 2026-09-20\n---\n# The user\n\n## What they expect of ASIST\nShort answers.\n\nKeep it to one word when asked for one.\n\n## Habits\nUp at seven.\n'
-    )
-    expect(folded.me).toBe('---\nupdated: 2026-10-02\n---\n# About me\n\n## About me\nA calm voice.\n')
-    expect(validateDocument('user.md', folded.user!, ja)).toEqual([])
-    // An instruction.md without a section about the assistant leaves me.md as it was.
-    expect(foldInstruction('# いつも覚えておくこと\n\n## 頼まれていること\n短く話す。\n', { me: null, user: null }, '2026-10-02').me).toBeNull()
+  it('accepts instruction.md with a # line and headings, and refuses one with frontmatter, without a # line or without headings', () => {
+    const valid = '# いつも覚えておくこと\n\n## この人について\n東京に住む。\n\n## 頼まれていること\n朝は短く話す。\n'
+    expect(validateDocument('instruction.md', valid, ja)).toEqual([])
+    expect(validateDocument('instruction.md', `---\nupdated: 2026-09-09\n---\n${valid}`, ja)).toEqual([
+      ja('memory.check.frontmatterNotAllowed', { file: 'instruction.md' })
+    ])
+    expect(validateDocument('instruction.md', '## この人について\n東京に住む。\n', ja)).toEqual([
+      ja('memory.check.titleMissing', { file: 'instruction.md' })
+    ])
+    expect(validateDocument('instruction.md', '# いつも覚えておくこと\n東京に住む。\n', ja)).toEqual([
+      ja('memory.check.noHeadings', { file: 'instruction.md' })
+    ])
   })
 
   it('refuses a heading that stands twice in one file, since a section is found by its file and heading', () => {
@@ -320,6 +308,7 @@ describe('documents', () => {
 
   it('caps each document of the prompt by the tokens its body costs there, and not by the length of a section', () => {
     const shapes = {
+      'instruction.md': (body: string) => `# いつも覚えておくこと\n\n## この人について\n${body}\n`,
       'me.md': (body: string) => `---\nupdated: 2026-09-20\n---\n# 私について\n\n${body}\n`,
       'user.md': (body: string) => `---\nupdated: 2026-09-20\n---\n# ユーザー\n\n## 好み\n${body}\n`
     }

@@ -688,7 +688,7 @@ export interface MemoryUnit {
  * journal entry, the assistant's own page me.md, the user's page user.md and the summary
  * profile.md.
  */
-export type MemoryDocumentKind = 'me' | 'user' | 'page' | 'journal'
+export type MemoryDocumentKind = 'instruction' | 'me' | 'user' | 'page' | 'journal'
 
 export interface MemoryDocument {
   /** The path relative to the memory directory. */

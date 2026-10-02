@@ -17,8 +17,9 @@ vi.mock('@/platform', () => import('./helpers/platform'))
 const t = createTranslator('ja-JP')
 
 const FILES: Record<string, string> = {
+  'instruction.md': '# いつも覚えておくこと\n\n## この人について\n最寄り駅は中野。\n',
   'me.md': '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 私は誰か\n落ち着いて話す。\n',
-  'user.md': '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 属性\n最寄り駅は中野。\n\n## 好み\nコーヒーは砂糖なし。\n',
+  'user.md': '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 好み\nコーヒーは砂糖なし。\n',
   'journal/2026-09-14.md': '# 2026-09-14\n\n## 電気料金の話\n私は記事の筋をなぞって話しすぎた。大川俊介さんとの打ち合わせが近い。\n\n## 今日の私\n**まず何が分かっているか**を言う。\n',
   'journal/2026-09-13.md': '# 2026-09-13\n\n## 天気\n仙台と東京の天気を何度も聞かれた。\n',
   'pages/松葉軒.md': '---\naliases: [松葉軒, ラーメン屋]\nupdated: 2026-09-09\n---\n# 松葉軒\n\n## 要約\n本人の行きつけのラーメン屋。\n\n## 私の印象\n疲れた日に名前が出る。\n',
@@ -26,7 +27,7 @@ const FILES: Record<string, string> = {
 }
 let files: Record<string, string>
 /** The order in which main's listDocuments returns the files; a page created later comes after the existing pages. */
-const order = ['me.md', 'user.md', 'pages/大川俊介.md', 'pages/松葉軒.md', 'journal/2026-09-14.md', 'journal/2026-09-13.md']
+const order = ['instruction.md', 'me.md', 'user.md', 'pages/大川俊介.md', 'pages/松葉軒.md', 'journal/2026-09-14.md', 'journal/2026-09-13.md']
 const listed = (): string[] => {
   const known = order.filter((file) => files[file] !== undefined)
   const extra = Object.keys(files).filter((file) => !order.includes(file))
@@ -117,7 +118,7 @@ describe('links in a memory page', () => {
 describe('the memory screen', () => {
   it('groups the list into self and user, the journal by month with the newest day first, and the pages in the order main lists them, and opens the latest entry', async () => {
     const view = await render()
-    expect(itemTitles(view, t('memory.self'))).toEqual([t('memory.kind.me'), t('memory.kind.user')])
+    expect(itemTitles(view, t('memory.self'))).toEqual([t('memory.kind.instruction'), t('memory.kind.me'), t('memory.kind.user')])
     expect(itemTitles(view, t('memory.journals'))).toEqual(['9/14(月)', '9/13(日)'])
     expect(view.querySelector(`.my-group[aria-label="${t('memory.journals')}"] h4`)?.textContent).toBe('2026年9月')
     expect(itemTitles(view, t('memory.pages'))).toEqual(['大川俊介', '松葉軒'])
@@ -170,12 +171,12 @@ describe('the memory screen', () => {
 
   it('does not save over a document a curation changed while it was being edited, keeps the draft, and shows the current version once the editor is left', async () => {
     const view = await render()
-    await act(async () => itemByTitle(view, t('memory.kind.user')).click())
+    await act(async () => itemByTitle(view, t('memory.kind.instruction')).click())
     await act(async () => {})
     await act(async () => [...view.querySelectorAll<HTMLButtonElement>('.my-btn')].find((b) => b.textContent === t('memory.doc.edit'))!.click())
-    const curated = FILES['user.md'].replace('最寄り駅は中野。', '最寄り駅は中野。\n猫のムギと暮らす。')
-    files['user.md'] = curated
-    const draft = FILES['user.md'].replace('最寄り駅は中野。', '最寄り駅は中野。駅から徒歩10分。')
+    const curated = FILES['instruction.md'].replace('最寄り駅は中野。', '最寄り駅は中野。\n猫のムギと暮らす。')
+    files['instruction.md'] = curated
+    const draft = FILES['instruction.md'].replace('最寄り駅は中野。', '最寄り駅は中野。駅から徒歩10分。')
     await act(async () => setValue(view.querySelector<HTMLTextAreaElement>('textarea')!, draft))
     await act(async () => [...view.querySelectorAll<HTMLButtonElement>('.my-btn')].find((b) => b.textContent?.startsWith(t('common.save')))!.click())
     await settle()
@@ -184,7 +185,7 @@ describe('the memory screen', () => {
       title: t('memory.saveFailed'),
       body: t('memory.errors.changedSinceOpened')
     })
-    expect(files['user.md']).toBe(curated)
+    expect(files['instruction.md']).toBe(curated)
     expect(view.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe(draft)
 
     await act(async () => [...view.querySelectorAll<HTMLButtonElement>('.my-btn')].find((b) => b.textContent === t('common.cancel'))!.click())
@@ -196,7 +197,7 @@ describe('the memory screen', () => {
     await act(async () => setValue(view.querySelector<HTMLTextAreaElement>('textarea')!, redone))
     await act(async () => [...view.querySelectorAll<HTMLButtonElement>('.my-btn')].find((b) => b.textContent?.startsWith(t('common.save')))!.click())
     await settle()
-    expect(files['user.md']).toBe(redone)
+    expect(files['instruction.md']).toBe(redone)
     expect(useToastStore.getState().toasts.at(-1)?.title).toBe(t('memory.saved'))
   })
 

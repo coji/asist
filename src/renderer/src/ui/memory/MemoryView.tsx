@@ -31,12 +31,13 @@ const fullDate = (date: string, locale: string): string =>
   parseDate(date).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
 
 const kindLabel = (doc: MemoryDocument, t: Translate): string => t(`memory.kind.${doc.kind}`)
-/** The diary is titled by its date, a page by its own name, and the two fixed documents by what they hold. */
+/** The diary is titled by its date, a page by its own name, and the three fixed documents by what they hold. */
 const titleOf = (doc: MemoryDocument, t: Translate, locale: string): string =>
   doc.kind === 'journal' ? fullDate(doc.title, locale) : doc.kind === 'page' ? doc.title : t(`memory.kind.${doc.kind}`)
 const metaOf = (doc: MemoryDocument, t: Translate): string => {
   if (doc.kind === 'journal') return t('memory.meta.topics', { count: doc.headings.length })
   if (doc.kind === 'me') return t('memory.meta.me')
+  if (doc.kind === 'instruction') return t('memory.meta.instruction')
   if (doc.kind === 'user') return t('memory.meta.user')
   const parts = [
     doc.updated ? t('memory.meta.updated', { date: doc.updated }) : null,
@@ -149,7 +150,7 @@ export function MemoryView({ open }: { open: boolean }): React.JSX.Element {
 
   const doc = mode.kind === 'edit' ? mode.doc : (documents.find((candidate) => candidate.file === selected) ?? null)
   const shown = useMemo(() => documents.filter((candidate) => matches(candidate, filter)), [documents, filter])
-  const self = shown.filter((candidate) => candidate.kind === 'me' || candidate.kind === 'user')
+  const self = shown.filter((candidate) => candidate.kind === 'instruction' || candidate.kind === 'me' || candidate.kind === 'user')
   const journals = shown.filter((candidate) => candidate.kind === 'journal')
   const pages = shown.filter((candidate) => candidate.kind === 'page')
   const months: Array<{ label: string; docs: MemoryDocument[] }> = []
