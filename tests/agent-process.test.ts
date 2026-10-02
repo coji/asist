@@ -174,7 +174,7 @@ describe('launchAgentProcess', () => {
     expect(mocks.spawn).not.toHaveBeenCalled()
   })
 
-  it('stops preparing the Python of a memory curation stopped before its CLI starts, and starts nothing', async () => {
+  it('stops preparing the Python of a memory curation stopped before its CLI starts, and reports the stop rather than a start that failed', async () => {
     let signal!: AbortSignal
     mocks.prepareCurationScripts.mockImplementation((given) => {
       signal = given
@@ -186,6 +186,23 @@ describe('launchAgentProcess', () => {
     run.stop()
     await run.completion
     expect(signal.aborted).toBe(true)
+    expect(handlers.onError).not.toHaveBeenCalled()
+    expect(handlers.onExit).toHaveBeenCalledExactlyOnceWith(null)
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('stops preparing the Python of a memory curation whose CLI cannot be located, and reports the missing CLI', async () => {
+    mocks.installed.mockReturnValue(false)
+    let signal!: AbortSignal
+    mocks.prepareCurationScripts.mockImplementation((given) => {
+      signal = given
+      return new Promise<void>((_, reject) => given.addEventListener('abort', () => reject(new Error('aborted'))))
+    })
+    const handlers = { onSpawn: vi.fn(), onEvent: vi.fn(), onStderr: vi.fn(), onError: vi.fn(), onExit: vi.fn() }
+    const { launchAgentProcess } = await import('../src/main/services/agent-process')
+    await launchAgentProcess({ ...job, memoryCuration: { through: '2026-10-01', applied: false } }, ['exec'], handlers).completion
+    expect(signal.aborted).toBe(true)
+    expect(handlers.onError).toHaveBeenCalledExactlyOnceWith(new Error(errorText('jobs.start.cliMissing', { engine: 'codex' })))
     expect(handlers.onExit).toHaveBeenCalledExactlyOnceWith(null)
     expect(mocks.spawn).not.toHaveBeenCalled()
   })

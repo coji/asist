@@ -65,15 +65,23 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
   }
   const preparation = new AbortController()
   const ready = Promise.all([requireCli(job.engine), job.memoryCuration ? prepareCurationScripts(preparation.signal) : undefined])
-  const completion = ready.then(([cli]) => {
-    if (stopped) return handlers.onExit(null)
-    try {
-      running = startCli(job, cli, args, handlers)
-    } catch (error) {
-      return notStarted(error)
+  const completion = ready.then(
+    ([cli]) => {
+      if (stopped) return handlers.onExit(null)
+      try {
+        running = startCli(job, cli, args, handlers)
+      } catch (error) {
+        return notStarted(error)
+      }
+      return running.completion
+    },
+    (error: unknown) => {
+      // A CLI that cannot be located leaves the Python's download with nothing to wait for.
+      preparation.abort()
+      // A stop ends the preparation by aborting it, which is the end the stop asked for, not a start that failed.
+      return stopped ? handlers.onExit(null) : notStarted(error)
     }
-    return running.completion
-  }, notStarted)
+  )
   // A rejection that happens before anyone awaits must not become an unhandled rejection. The caller
   // still receives the original promise.
   void completion.catch(() => {})
