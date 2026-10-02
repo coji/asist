@@ -1,19 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type openPdf from '@/preview/methods/pdf'
+import type { PageSize, PdfSummary } from '@/preview/methods/pdf'
 import { Frame, FRAME_MAX_HEIGHT } from './Frame'
-import type { PdfDocument, PdfLoader, PdfPage } from './pdf-types'
+import { openPreviewDocument, type PreviewFile } from './preview-client'
 import type { Viewer, ViewerProps } from './types'
+import { useNear } from './use-near'
 import './PdfViewer.css'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import type { Translate } from '@shared/i18n'
 
 /**
- * A PDF drawn onto a canvas. Parsing and rendering belong to pdf.js (pdf-loader.ts), and this part decides
- * only which page is drawn at which size.
+ * A PDF, opened in the preview page (preview/methods/pdf.ts), where pdf.js reads it by ranges and draws each page
+ * into a bitmap that a canvas here shows. This part decides only which page is drawn at which size.
  * - card: page 1 alone, fitted into the Frame's height.
- * - focus: every page stacked vertically, each one drawn as it comes into view (IntersectionObserver), so
- *   that even a document of 100 pages opens without delay.
- * The canvas holds devicePixelRatio times the pixels, and its CSS size is the size in pt times the scale.
+ * - focus: every page stacked vertically, each laid out at page 1's size until its own is known. Only a page within
+ *   a screen of the view has a canvas; one that leaves gives up its bitmap and lets the preview page release
+ *   what it decoded for it, so that paging through a long document holds a few pages at a time.
+ * The canvas shows devicePixelRatio times the pixels, and its CSS size is the size in pt times the scale.
  * There is no text layer, so nothing in a page can be selected or copied.
  */
 
@@ -21,20 +25,6 @@ import type { Translate } from '@shared/i18n'
 const PAD = 10
 /** The height of one note line, 12px of text plus a 10px gap. A card subtracts it when it sizes page 1. */
 const NOTE_HEIGHT = 22
-/** The assumed aspect ratio, portrait A4, of a page whose size is not known yet. It reserves the room for a page the focus view has not reached. */
-const PLACEHOLDER_RATIO = 842 / 595
-
-let injectedLoader: PdfLoader | null = null
-
-/** Replaces the way a document is loaded, so that a test does not have to load pdf.js. null restores the real pdf-loader. */
-export function setPdfLoader(loader: PdfLoader | null): void {
-  injectedLoader = loader
-}
-
-async function load(url: string): Promise<PdfDocument> {
-  const loader = injectedLoader ?? (await import('./pdf-loader')).loadPdf
-  return loader(url)
-}
 
 export interface PageBox {
   width: number
@@ -44,22 +34,15 @@ export interface PageBox {
 }
 
 /** Spreads a page over the full width, as the focus view does with every page. */
-export function fitToWidth(page: { width: number; height: number }, frameWidth: number): PageBox {
+export function fitToWidth(page: PageSize, frameWidth: number): PageBox {
   const scale = frameWidth / page.width
   return { width: frameWidth, height: page.height * scale, scale }
 }
 
 /** Fits a page into both the width and the height, as a card does with page 1. */
-export function fitToHeight(page: { width: number; height: number }, frameWidth: number, maxHeight: number): PageBox {
+export function fitToHeight(page: PageSize, frameWidth: number, maxHeight: number): PageBox {
   const scale = Math.min(frameWidth / page.width, maxHeight / page.height)
   return { width: page.width * scale, height: page.height * scale, scale }
-}
-
-/** A card takes page 1 alone, and the focus view takes every page. */
-export function pageRange(pageCount: number, mode: ViewerProps['mode']): number[] {
-  if (pageCount <= 0) return []
-  if (mode === 'card') return [1]
-  return Array.from({ length: pageCount }, (_, i) => i + 1)
 }
 
 /** The text of the note. A Title comes first, and the page count appears in a card only when there is more than one page, and always in focus. */
@@ -75,30 +58,67 @@ export function cardPageHeight(size: ViewerProps['size'], hasNote: boolean): num
   return FRAME_MAX_HEIGHT[size] - PAD * 2 - (hasNote ? NOTE_HEIGHT : 0)
 }
 
-type State = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; doc: PdfDocument }
+/** Ids for the drawings of every PDF viewer, which a card and the focus view of one file ask of the same document. */
+let nextDrawing = 0
+
+/** A page being drawn into a bitmap: null when it was released before it was done. */
+interface PageDrawing {
+  bitmap: Promise<ImageBitmap | null>
+  release(): void
+}
+
+/** The viewer's side of a PDF open in the preview page. */
+interface PdfPages {
+  summary(): Promise<PdfSummary>
+  size(number: number): Promise<PageSize>
+  draw(number: number, scale: number): PageDrawing
+  close(): void
+}
+
+/**
+ * Opens the file in the preview page. Closing the document ends its drawings there, so a drawing released after
+ * the close, as a page's canvas does when the whole viewer goes, asks nothing of the page.
+ */
+function openPdfPages(file: PreviewFile): PdfPages {
+  const doc = openPreviewDocument<typeof openPdf>('pdf', file)
+  let open = true
+  return {
+    summary: () => doc.call('summary', undefined),
+    size: (number) => doc.call('size', number),
+    draw(number, scale) {
+      const id = nextDrawing++
+      return {
+        bitmap: doc.call('draw', { id, number, scale }),
+        release() {
+          // A frame that died took the drawing with it, which leaves nothing to release.
+          if (open) doc.call('release', id).catch(() => undefined)
+        }
+      }
+    },
+    close() {
+      open = false
+      doc.release()
+    }
+  }
+}
+
+type State = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; pages: PdfPages; summary: PdfSummary }
 
 export const PdfViewer: Viewer = ({ item, mode, size }) => {
   const t = useT()
   const [state, setState] = useState<State>({ status: 'loading' })
   const [width, setWidth] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
+  const { url, sizeBytes, modifiedAt } = item
 
   useEffect(() => {
-    if (!item.url) {
-      setState({ status: 'error', message: t('files.viewer.pdfFailed') })
-      return
-    }
+    if (!url) return
+    const pages = openPdfPages({ url, sizeBytes, modifiedAt })
     let cancelled = false
-    let doc: PdfDocument | undefined
     setState({ status: 'loading' })
-    load(item.url).then(
-      (loaded) => {
-        if (cancelled) {
-          loaded.destroy()
-          return
-        }
-        doc = loaded
-        setState({ status: 'ready', doc: loaded })
+    pages.summary().then(
+      (summary) => {
+        if (!cancelled) setState({ status: 'ready', pages, summary })
       },
       (error: unknown) => {
         if (!cancelled) setState({ status: 'error', message: displayError(error) })
@@ -106,9 +126,9 @@ export const PdfViewer: Viewer = ({ item, mode, size }) => {
     )
     return () => {
       cancelled = true
-      doc?.destroy()
+      pages.close()
     }
-  }, [item.url, t])
+  }, [url, sizeBytes, modifiedAt])
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -120,110 +140,119 @@ export const PdfViewer: Viewer = ({ item, mode, size }) => {
     return () => observer.disconnect()
   }, [])
 
-  const note = state.status === 'ready' ? noteText(state.doc, mode, t) : ''
+  const shown: State = url ? state : { status: 'error', message: t('files.viewer.pdfFailed') }
+  const note = shown.status === 'ready' ? noteText(shown.summary, mode, t) : ''
   return (
     <Frame mode={mode} size={size}>
       <div className="fv-pdf" ref={ref} data-mode={mode}>
-        {state.status === 'loading' && <p className="fv-note">{t('files.viewer.loading')}</p>}
-        {state.status === 'error' && (
+        {shown.status === 'loading' && <p className="fv-note">{t('files.viewer.loading')}</p>}
+        {shown.status === 'error' && (
           <p className="fv-note" data-tone="error">
-            {state.message}
+            {shown.message}
           </p>
         )}
-        {state.status === 'ready' && note && <p className="fv-note">{note}</p>}
-        {state.status === 'ready' &&
+        {shown.status === 'ready' && note && <p className="fv-note">{note}</p>}
+        {shown.status === 'ready' &&
           width > 0 &&
-          pageRange(state.doc.pageCount, mode).map((number) => (
-            <Page
-              key={number}
-              doc={state.doc}
-              number={number}
-              width={width}
-              maxHeight={mode === 'card' ? cardPageHeight(size, note !== '') : undefined}
-              lazy={mode === 'focus'}
-            />
+          (mode === 'card' ? (
+            <CardPage pages={shown.pages} box={fitToHeight(shown.summary.firstPage, width, cardPageHeight(size, note !== ''))} />
+          ) : (
+            Array.from({ length: shown.summary.pageCount }, (_, i) => (
+              <FocusPage key={i + 1} pages={shown.pages} number={i + 1} pageCount={shown.summary.pageCount} firstPage={shown.summary.firstPage} width={width} />
+            ))
           ))}
       </div>
     </Frame>
   )
 }
 
-function Page({ doc, number, width, maxHeight, lazy }: { doc: PdfDocument; number: number; width: number; maxHeight?: number; lazy: boolean }): React.JSX.Element {
+function PageFailed({ number, message }: { number: number; message: string }): React.JSX.Element {
   const t = useT()
-  const [visible, setVisible] = useState(!lazy)
-  const [page, setPage] = useState<PdfPage | null>(null)
+  return (
+    <p className="fv-note" data-tone="error">
+      {t('files.viewer.pdfPageFailed', { number, message })}
+    </p>
+  )
+}
+
+function CardPage({ pages, box }: { pages: PdfPages; box: PageBox }): React.JSX.Element {
   const [failed, setFailed] = useState<string | null>(null)
+  return (
+    <div className="fv-pdf-page" data-page={1}>
+      {failed ? <PageFailed number={1} message={failed} /> : <PageCanvas pages={pages} number={1} box={box} onFailed={setFailed} />}
+    </div>
+  )
+}
+
+function FocusPage({ pages, number, pageCount, firstPage, width }: { pages: PdfPages; number: number; pageCount: number; firstPage: PageSize; width: number }): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  // A render starts only once the previous one has finished, because pdf.js throws when two renders overlap
-  // on the same canvas.
-  const queue = useRef<Promise<void>>(Promise.resolve())
+  const near = useNear(ref)
+  const [size, setSize] = useState<PageSize | null>(number === 1 ? firstPage : null)
+  const [failed, setFailed] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!lazy) return
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '400px 0px' }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [lazy])
-
-  useEffect(() => {
-    if (!visible) return
-    let cancelled = false
-    doc.page(number).then(
-      (loaded) => {
-        if (!cancelled) setPage(loaded)
+    if (!near || size) return
+    let current = true
+    pages.size(number).then(
+      (known) => {
+        if (current) setSize(known)
       },
       (error: unknown) => {
-        if (!cancelled) setFailed(displayError(error))
+        if (current) setFailed(displayError(error))
       }
     )
     return () => {
-      cancelled = true
+      current = false
     }
-  }, [doc, number, visible])
+  }, [pages, number, near, size])
 
-  const box = page ? (maxHeight === undefined ? fitToWidth(page, width) : fitToHeight(page, width, maxHeight)) : null
-  const boxWidth = box?.width ?? 0
-  const boxHeight = box?.height ?? 0
-  const boxScale = box?.scale ?? 0
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!page || !canvas || boxWidth <= 0) return
-    const dpr = window.devicePixelRatio || 1
-    queue.current = queue.current.then(async () => {
-      canvas.width = Math.round(boxWidth * dpr)
-      canvas.height = Math.round(boxHeight * dpr)
-      await page.render(canvas, boxScale * dpr)
-    })
-    queue.current = queue.current.catch((error: unknown) => setFailed(displayError(error)))
-  }, [page, boxWidth, boxHeight, boxScale])
-
-  const placeholderHeight = maxHeight ?? Math.round(width * PLACEHOLDER_RATIO)
+  const box = fitToWidth(size ?? firstPage, width)
+  let content: React.JSX.Element
+  if (failed) content = <PageFailed number={number} message={failed} />
+  else if (near && size) content = <PageCanvas pages={pages} number={number} box={box} onFailed={setFailed} />
+  else content = <div className="fv-pdf-blank" style={{ width: `${box.width}px`, height: `${box.height}px` }} />
   return (
-    <div className="fv-pdf-page" ref={ref} data-page={number} data-rendered={page ? 'true' : undefined}>
-      {failed ? (
-        <p className="fv-note" data-tone="error">
-          {t('files.viewer.pdfPageFailed', { number, message: failed })}
-        </p>
-      ) : (
-        <canvas ref={canvasRef} style={box ? { width: `${boxWidth}px`, height: `${boxHeight}px` } : { width: `${width}px`, height: `${placeholderHeight}px` }} />
-      )}
-      {lazy && (
-        <span className="fv-pdf-num">
-          {number} / {doc.pageCount}
-        </span>
-      )}
+    <div className="fv-pdf-page" ref={ref} data-page={number}>
+      {content}
+      <span className="fv-pdf-num">
+        {number} / {pageCount}
+      </span>
     </div>
   )
+}
+
+/**
+ * A page's canvas, blank until its bitmap arrives. The bitmap moves into the canvas without a copy, and the canvas
+ * gives it up when it goes or is drawn again at another size, rather than when it is collected.
+ */
+function PageCanvas({ pages, number, box, onFailed }: { pages: PdfPages; number: number; box: PageBox; onFailed: (message: string) => void }): React.JSX.Element {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const scale = box.scale * (window.devicePixelRatio || 1)
+
+  useEffect(() => {
+    const canvas = ref.current!
+    const drawing = pages.draw(number, scale)
+    let current = true
+    drawing.bitmap.then(
+      (bitmap) => {
+        if (!current || !bitmap) {
+          bitmap?.close()
+          return
+        }
+        canvas.width = bitmap.width
+        canvas.height = bitmap.height
+        canvas.getContext('bitmaprenderer')!.transferFromImageBitmap(bitmap)
+      },
+      (error: unknown) => {
+        if (current) onFailed(displayError(error))
+      }
+    )
+    return () => {
+      current = false
+      drawing.release()
+      canvas.getContext('bitmaprenderer')?.transferFromImageBitmap(null)
+    }
+  }, [pages, number, scale, onFailed])
+
+  return <canvas ref={ref} style={{ width: `${box.width}px`, height: `${box.height}px` }} />
 }

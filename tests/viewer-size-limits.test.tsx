@@ -5,24 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_TEXT_BYTES, WHOLE_READ_LIMIT, type FileItem, type FileKind } from '@shared/files'
 import { createTranslator } from '@shared/i18n'
 import { FileViewer } from '@/panels/viewers'
-import { setPdfLoader } from '@/panels/viewers/PdfViewer'
 
 /**
  * The viewers that read a whole file into the page and parse it there. A file larger than its kind's limit is not
  * read at all, and the viewer says it is too large to show here; the card's own button shows it in Finder or File
- * Explorer. fetch and the PDF loader are replaced, so a read shows up as a call to one of them.
+ * Explorer. fetch is replaced, so a read shows up as a call to it.
  */
 
 const t = createTranslator('ja-JP')
-const WHOLE_KINDS: FileKind[] = ['docx', 'xlsx', 'pptx', 'pdf']
+const WHOLE_KINDS: FileKind[] = ['docx', 'xlsx', 'pptx']
 const itemOf = (kind: FileKind, sizeBytes: number): FileItem => ({ path: `/tmp/big.${kind}`, name: `big.${kind}`, kind, sizeBytes, url: `/demo-files/big.${kind}` })
 
 let container: HTMLDivElement
 let root: Root
 const fetch = vi.fn(async () => ({ ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) }))
-const loadPdf = vi.fn(async () => {
-  throw new Error('missing')
-})
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
@@ -30,8 +26,6 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetch)
   vi.stubGlobal('AudioContext', class { decodeAudioData = vi.fn(async () => ({ numberOfChannels: 0, getChannelData: () => new Float32Array() })); close = async (): Promise<void> => {} })
   fetch.mockClear()
-  loadPdf.mockClear()
-  setPdfLoader(loadPdf)
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -39,7 +33,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount())
   container.remove()
-  setPdfLoader(null)
   vi.unstubAllGlobals()
 })
 
@@ -55,7 +48,7 @@ async function render(item: FileItem, size: 'l' | 'focus' = 'l'): Promise<HTMLEl
   return container
 }
 
-const reads = (): number => fetch.mock.calls.length + loadPdf.mock.calls.length
+const reads = (): number => fetch.mock.calls.length
 
 describe('the size limit of a viewer that reads the whole file', () => {
   it.each(WHOLE_KINDS)('does not read a %s file far larger than any viewer could parse, in the card or the focus view, and says it is too large', async (kind) => {

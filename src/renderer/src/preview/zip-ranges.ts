@@ -1,4 +1,5 @@
 import { errorKey } from '@shared/i18n/error-key'
+import { fetchRange, loadFailed, readRange, type Bytes } from './ranges'
 
 /**
  * A zip container (docx, xlsx, pptx) read by HTTP ranges, so that a viewer reads the directory and the entries
@@ -8,8 +9,6 @@ import { errorKey } from '@shared/i18n/error-key'
  * when a count, a size or an offset does not fit in its field, the central directory, and each entry's local
  * header in front of its data.
  */
-
-type Bytes = Uint8Array<ArrayBuffer>
 
 /** One file inside the zip, as the central directory describes it before any of its bytes are read. */
 export interface ZipEntry {
@@ -72,33 +71,6 @@ const VERSION_NEEDED = 20
 const TAIL_LENGTH = END_LENGTH + U16_FULL + ZIP64_LOCATOR_LENGTH
 
 const damaged = (): Error => new Error(errorKey('files.errors.zipDamaged'))
-const changed = (): Error => new Error(errorKey('files.errors.changedWhileReading'))
-const loadFailed = (status: number): Error => new Error(errorKey('files.errors.loadFailed', { status }))
-
-/** The bytes of an answer to a Range request, where they start in the file, and how long the file is now. */
-interface Answer {
-  bytes: Bytes
-  start: number
-  size: number
-}
-
-/**
- * Asks for a range of the file, and reads from the answer's Content-Range which bytes it holds and the file's
- * length. asist-file answers a range that holds no byte of the file with a 200 and the whole file, which is left
- * unread, and null stands for it.
- */
-async function fetchRange(url: string, range: string): Promise<Answer | null> {
-  const response = await fetch(url, { headers: { Range: range } })
-  if (!response.ok) throw loadFailed(response.status)
-  const answered = /^bytes (\d+)-\d+\/(\d+)$/.exec(response.headers.get('Content-Range') ?? '')
-  if (response.status !== 206 || !answered) {
-    await response.body?.cancel()
-    // A 206 always names its range, so one whose Content-Range cannot be read is not an answer this can use.
-    if (response.status === 206) throw loadFailed(response.status)
-    return null
-  }
-  return { bytes: new Uint8Array(await response.arrayBuffer()), start: Number(answered[1]), size: Number(answered[2]) }
-}
 
 const viewOf = (bytes: Bytes): DataView => new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
 
@@ -312,17 +284,11 @@ export async function openZip(url: string): Promise<RangedZip> {
   const { size, start: tailStart } = tail
   // A server that does not take a suffix range, such as Vite's for a file over 64 KB, sends other bytes.
   if (tailStart !== Math.max(0, size - TAIL_LENGTH) || tail.bytes.length !== size - tailStart) throw loadFailed(206)
-  const fetchBytes = async (start: number, end: number): Promise<Bytes> => {
-    if (start === end) return new Uint8Array(0)
-    const answer = await fetchRange(url, `bytes=${start}-${end - 1}`)
-    if (!answer || answer.size !== size || answer.start !== start || answer.bytes.length !== end - start) throw changed()
-    return answer.bytes
-  }
   const bytes = async (start: number, end: number): Promise<Bytes> => {
     if (start >= tailStart) return tail.bytes.subarray(start - tailStart, end - tailStart)
-    if (end <= tailStart) return fetchBytes(start, end)
+    if (end <= tailStart) return readRange(url, start, end, size)
     const joined = new Uint8Array(end - start)
-    joined.set(await fetchBytes(start, tailStart))
+    joined.set(await readRange(url, start, tailStart, size))
     joined.set(tail.bytes.subarray(0, end - tailStart), tailStart - start)
     return joined
   }

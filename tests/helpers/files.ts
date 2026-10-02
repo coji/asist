@@ -5,8 +5,7 @@ const LIMITED_FILE_NAMES: Partial<Record<FileKind, string>> = {
   notebook: 'analysis.ipynb',
   xlsx: 'sales.xlsx',
   docx: 'report.docx',
-  pptx: 'deck.pptx',
-  pdf: 'scan.pdf'
+  pptx: 'deck.pptx'
 }
 
 /**

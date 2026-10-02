@@ -1218,19 +1218,6 @@ export const files = defineMessages({
       'es-419': 'No se pudo cargar el archivo (HTTP {status})',
       'es-ES': 'No se ha podido cargar el archivo (HTTP {status})'
     },
-    pdfCanvasUnavailable: {
-      'ja-JP': 'PDF を描けませんでした。',
-      'en-US': "Couldn't draw the PDF.",
-      'fr-FR': 'Impossible de dessiner le PDF.',
-      'de-DE': 'Das PDF konnte nicht gezeichnet werden.',
-      'hi-IN': 'PDF दिखाया नहीं जा सका।',
-      'id-ID': 'Tidak bisa menggambar PDF-nya.',
-      'it-IT': 'Impossibile disegnare il PDF.',
-      'ko-KR': 'PDF를 그리지 못했습니다.',
-      'pt-BR': 'Não foi possível desenhar o PDF.',
-      'es-419': 'No se pudo dibujar el PDF.',
-      'es-ES': 'No se ha podido dibujar el PDF.'
-    },
     xmlUnreadable: {
       'ja-JP': 'PowerPoint の XML を読めませんでした({detail})',
       'en-US': "Couldn't read the PowerPoint XML ({detail})",
