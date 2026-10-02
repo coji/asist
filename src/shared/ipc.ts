@@ -5,7 +5,7 @@ import type { AppUpdateState } from './app-update'
 import type { CalendarChange, CalendarChangeResult, CalendarEvent, CalendarListRange, CalendarStatus } from './calendar'
 import type { ConfirmEvent, ConfirmRequest } from './confirm'
 import type { MiniAppTarget, MiniAppView } from './mini-apps'
-import type { NoteSummary } from './notes'
+import type { NoteChange, NoteSummary } from './notes'
 import type { PlatformCapabilities } from './platform'
 import type {
   MailAccount,
@@ -1095,8 +1095,8 @@ export interface RendererApi {
   noteWrite(id: string, markdown: string): Promise<NoteSummary>
   /** Moves the note's file to the macOS Trash. */
   noteRemove(id: string): Promise<void>
-  /** Every note, once a change has been written. */
-  onNotesChanged(callback: (notes: NoteSummary[]) => void): () => void
+  /** Each note saved or removed, once the change has been written. */
+  onNotesChanged(callback: (change: NoteChange) => void): () => void
 
   /** A notification in Notification Center, for instance when a timer expires. */
   notify(title: string, body: string): Promise<void>

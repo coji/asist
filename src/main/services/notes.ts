@@ -9,6 +9,7 @@ import {
   noteMatches,
   normalizeNoteMarkdown,
   summarizeNote,
+  type NoteChange,
   type NoteRecord,
   type NoteSummary
 } from '@shared/notes'
@@ -21,8 +22,13 @@ export interface NoteServiceOptions {
   trash: (filePath: string) => Promise<void>
   now?: () => Date
   random?: () => string
-  /** Receives every note once a change has been written, and feeds the notes screen and the card. */
-  onChanged?: (notes: NoteSummary[]) => void
+  /**
+   * Receives each change once it has been written, and feeds the notes screen and the card. It is told
+   * the one note that changed rather than every note, because reading 40,000 notes back after a save
+   * took 1.3 to 3.1 s (Apple M5, 2026-10-02), inside the 2 s that add_note and the search_notes queued
+   * behind it are given.
+   */
+  onChanged?: (change: NoteChange) => void
 }
 
 export interface NoteService {
@@ -77,10 +83,9 @@ export function createNoteService(options: NoteServiceOptions): NoteService {
     return records.sort(byUpdated)
   }
   const summaries = async (): Promise<NoteSummary[]> => (await readAll()).map(({ markdown: _, ...summary }) => summary)
-  const notify = async (): Promise<void> => {
-    if (!options.onChanged) return
+  const notify = (change: NoteChange): void => {
     try {
-      options.onChanged(await summaries())
+      options.onChanged?.(change)
     } catch (error) {
       console.warn('note change listener failed:', error)
     }
@@ -88,9 +93,9 @@ export function createNoteService(options: NoteServiceOptions): NoteService {
   const save = async (id: string, markdown: string, signal?: AbortSignal): Promise<NoteSummary> => {
     const file = fileOf(id)
     await writeFileAtomic(file, markdown, signal)
-    const stat = await fs.stat(file)
-    await notify()
-    return summarizeNote(id, markdown, stat.mtimeMs)
+    const note = summarizeNote(id, markdown, (await fs.stat(file)).mtimeMs)
+    notify({ type: 'saved', note })
+    return note
   }
   const exists = async (id: string): Promise<boolean> => {
     try {
@@ -139,7 +144,7 @@ export function createNoteService(options: NoteServiceOptions): NoteService {
       enqueue(async () => {
         if (!(await exists(checkedId(id)))) throw new Error(errorText('notes.errors.notFound'))
         await options.trash(fileOf(id))
-        await notify()
+        notify({ type: 'removed', id })
       })
   }
 }

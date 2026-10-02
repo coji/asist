@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { noteMatches, summarizeNote, type NoteSummary } from '@shared/notes'
+import { noteMatches, summarizeNote, type NoteChange, type NoteSummary } from '@shared/notes'
 import { createTranslator } from '@shared/i18n'
 import { NotesView } from '../src/renderer/src/ui/notes/NotesView'
 import { useNoteStore, useToastStore } from '../src/renderer/src/state/stores'
@@ -21,26 +21,23 @@ let clock = 100
 
 const list = (): NoteSummary[] =>
   [...bodies.entries()].map(([id, note]) => summarizeNote(id, note.markdown, note.updatedAt)).sort((a, b) => b.updatedAt - a.updatedAt)
-/** Main broadcasts every note once a change is written; the fake does the same through the store. */
-const broadcast = (): void => useNoteStore.getState().apply(list())
+/** Main tells the store each change once it is written; the fake does the same. */
+const tell = (change: NoteChange): void => useNoteStore.getState().apply(change)
+const save = (id: string, markdown: string): NoteSummary => {
+  bodies.set(id, { markdown, updatedAt: ++clock })
+  const note = summarizeNote(id, markdown, clock)
+  tell({ type: 'saved', note })
+  return note
+}
 const api = {
   notesList: vi.fn(async () => list()),
   notesSearch: vi.fn(async (query: string) => list().filter((note) => noteMatches({ ...note, markdown: bodies.get(note.id)!.markdown }, query))),
   noteRead: vi.fn(async (id: string) => bodies.get(id)!.markdown),
-  noteCreate: vi.fn(async (markdown: string) => {
-    const id = '20260923-100000-aaaa'
-    bodies.set(id, { markdown, updatedAt: ++clock })
-    broadcast()
-    return summarizeNote(id, markdown, clock)
-  }),
-  noteWrite: vi.fn(async (id: string, markdown: string) => {
-    bodies.set(id, { markdown, updatedAt: ++clock })
-    broadcast()
-    return summarizeNote(id, markdown, clock)
-  }),
+  noteCreate: vi.fn(async (markdown: string) => save('20260923-100000-aaaa', markdown)),
+  noteWrite: vi.fn(async (id: string, markdown: string) => save(id, markdown)),
   noteRemove: vi.fn(async (id: string) => {
     bodies.delete(id)
-    broadcast()
+    tell({ type: 'removed', id })
   }),
   openExternal: vi.fn(async () => {})
 }
@@ -95,6 +92,12 @@ describe('the notes screen', () => {
     expect(titles(view)).toEqual(['提案書の構成', '旅行の持ち物'])
     expect(heading(view)).toBe('旅行の持ち物')
     expect(view.querySelector('.nv-doc p')?.textContent).toBe('充電器と傘')
+  })
+
+  it('shows every note when a change arrives before the list has been read, not that note alone', async () => {
+    save('20260923-100000-aaaa', '# 買い物\n\n牛乳\n')
+    const view = await render()
+    expect(titles(view)).toEqual(['買い物', '提案書の構成', '旅行の持ち物'])
   })
 
   it('saves an edit through main, and writes a new note that it then shows', async () => {

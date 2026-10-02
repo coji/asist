@@ -10,7 +10,7 @@ import type {
   TimerEvent,
   TurnEvent
 } from '@shared/ipc'
-import { noteIdOf, noteMatches, normalizeNoteMarkdown, type NoteSummary } from '@shared/notes'
+import { noteIdOf, noteMatches, normalizeNoteMarkdown, type NoteChange, type NoteSummary } from '@shared/notes'
 import {
   applyTaskPatch,
   buildTask,
@@ -70,7 +70,7 @@ import { isLiveEngine } from '@shared/voice-engine'
 const turnListeners = new Set<(e: TurnEvent) => void>()
 const jobListeners = new Set<(e: JobEvent) => void>()
 const timerListeners = new Set<(e: TimerEvent) => void>()
-const noteListeners = new Set<(notes: NoteSummary[]) => void>()
+const noteListeners = new Set<(change: NoteChange) => void>()
 const demoTimers = new Map<string, Extract<TimerEvent, { type: 'updated' }>['timer']>()
 const taskListeners = new Set<(tasks: Task[]) => void>()
 let demoTasks: Task[] = DEMO_TASKS.map((task) => ({ ...task }))
@@ -290,7 +290,7 @@ const demoTask = (id: string): Task => {
   return { ...task }
 }
 const demoNoteList = (): NoteSummary[] => [...demoNotes].sort((a, b) => b.updatedAt - a.updatedAt).map(demoNoteSummary)
-const emitNotes = (): void => noteListeners.forEach((listener) => listener(demoNoteList()))
+const emitNoteChange = (change: NoteChange): void => noteListeners.forEach((listener) => listener(change))
 const demoNote = (id: string): DemoNote => {
   const note = demoNotes.find((candidate) => candidate.id === id)
   if (!note) throw new Error(errorText('notes.errors.notFound'))
@@ -557,19 +557,19 @@ export const mockApi: RendererApi = {
   noteCreate: async (markdown) => {
     const note = { id: noteIdOf(new Date(), Math.random().toString(16).slice(2, 6).padEnd(4, '0')), markdown: normalizeNoteMarkdown(markdown), updatedAt: Date.now() }
     demoNotes = [note, ...demoNotes]
-    emitNotes()
+    emitNoteChange({ type: 'saved', note: demoNoteSummary(note) })
     return demoNoteSummary(note)
   },
   noteWrite: async (id, markdown) => {
     const note = { ...demoNote(id), markdown: normalizeNoteMarkdown(markdown), updatedAt: Date.now() }
     demoNotes = demoNotes.map((candidate) => (candidate.id === id ? note : candidate))
-    emitNotes()
+    emitNoteChange({ type: 'saved', note: demoNoteSummary(note) })
     return demoNoteSummary(note)
   },
   noteRemove: async (id) => {
     demoNote(id)
     demoNotes = demoNotes.filter((candidate) => candidate.id !== id)
-    emitNotes()
+    emitNoteChange({ type: 'removed', id })
   },
   onNotesChanged: (callback) => {
     noteListeners.add(callback)

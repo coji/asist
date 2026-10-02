@@ -13,7 +13,7 @@ import {
   type TtsEngine
 } from '@shared/ipc'
 import type { ConfirmEvent } from '@shared/confirm'
-import type { NoteSummary } from '@shared/notes'
+import type { NoteChange } from '@shared/notes'
 import type { MailEvent } from '@shared/mail'
 import type { Task } from '@shared/tasks'
 
@@ -98,7 +98,7 @@ const api: RendererApi = {
   noteCreate: (markdown) => ipcRenderer.invoke(IpcChannel.NoteCreate, markdown),
   noteWrite: (id, markdown) => ipcRenderer.invoke(IpcChannel.NoteWrite, id, markdown),
   noteRemove: (id) => ipcRenderer.invoke(IpcChannel.NoteRemove, id),
-  onNotesChanged: subscribe<NoteSummary[]>(IpcChannel.NotesChanged),
+  onNotesChanged: subscribe<NoteChange>(IpcChannel.NotesChanged),
   notify: (title, body) => ipcRenderer.invoke(IpcChannel.Notify, title, body),
   reportMiniAppView: (view) => ipcRenderer.invoke(IpcChannel.MiniAppView, view),
   onHotkeyMic: subscribe<void>(IpcChannel.HotkeyMic),

@@ -97,3 +97,12 @@ export function noteMatches(note: NoteRecord, query: string): boolean {
 export function byUpdated(a: NoteSummary, b: NoteSummary): number {
   return b.updatedAt - a.updatedAt || b.id.localeCompare(a.id)
 }
+
+/** One change main has written: a note saved, new or rewritten, or a note moved to the trash. */
+export type NoteChange = { type: 'saved'; note: NoteSummary } | { type: 'removed'; id: string }
+
+/** The list of notes, newest change first, after one change. */
+export function applyNoteChange(notes: NoteSummary[], change: NoteChange): NoteSummary[] {
+  if (change.type === 'removed') return notes.filter((note) => note.id !== change.id)
+  return [...notes.filter((note) => note.id !== change.note.id), change.note].sort(byUpdated)
+}

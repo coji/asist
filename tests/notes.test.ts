@@ -1,8 +1,9 @@
 import fs from 'node:fs'
+import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MAX_NOTE_CHARS, noteMatches, normalizeNoteMarkdown, summarizeNote } from '@shared/notes'
+import { MAX_NOTE_CHARS, applyNoteChange, noteMatches, normalizeNoteMarkdown, summarizeNote } from '@shared/notes'
 import { createNoteService } from '../src/main/services/notes'
 
 describe('note summaries', () => {
@@ -28,6 +29,18 @@ describe('note summaries', () => {
     expect(noteMatches(note, 'trip 傘')).toBe(false)
   })
 
+  it('keeps the list newest change first as the changes main writes arrive', () => {
+    const older = summarizeNote('20260901-090000-0001', '# 旅行\n', 1)
+    const newer = summarizeNote('20260902-090000-0002', '# 買い物\n', 2)
+    const rewritten = summarizeNote(older.id, '# 旅行の持ち物\n', 3)
+    const added = summarizeNote('20260903-090000-0003', '# 提案書\n', 4)
+    let notes = applyNoteChange([newer, older], { type: 'saved', note: rewritten })
+    expect(notes).toEqual([rewritten, newer])
+    notes = applyNoteChange(notes, { type: 'saved', note: added })
+    expect(notes).toEqual([added, rewritten, newer])
+    expect(applyNoteChange(notes, { type: 'removed', id: newer.id })).toEqual([added, rewritten])
+  })
+
   it('rejects a body that is only whitespace or too long instead of trimming it to fit', () => {
     expect(() => normalizeNoteMarkdown(' \n ')).toThrow()
     expect(() => normalizeNoteMarkdown('a'.repeat(MAX_NOTE_CHARS + 1))).toThrow()
@@ -40,7 +53,10 @@ describe('note service', () => {
   beforeEach(() => {
     directory = fs.mkdtempSync(path.join(tmpdir(), 'asist-notes-'))
   })
-  afterEach(() => fs.rmSync(directory, { recursive: true, force: true }))
+  afterEach(() => {
+    vi.restoreAllMocks()
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
 
   const setup = () => {
     const trashed: string[] = []
@@ -104,8 +120,21 @@ describe('note service', () => {
     await service.remove(note.id)
     expect(trashed).toEqual([path.join(directory, 'notes', `${note.id}.md`)])
     expect(await service.list()).toEqual([])
-    expect(changed).toHaveBeenLastCalledWith([])
+    expect(changed).toHaveBeenLastCalledWith({ type: 'removed', id: note.id })
     await expect(service.remove(note.id)).rejects.toThrow()
+  })
+
+  it('tells the listener the note it saved or removed without reading any other note back', async () => {
+    const { service, changed } = setup()
+    const folder = path.join(directory, 'notes')
+    fs.mkdirSync(folder)
+    for (const id of ['20260901-090000-0001', '20260902-090000-0002']) fs.writeFileSync(path.join(folder, `${id}.md`), `# ${id}\n`)
+    const readFile = vi.spyOn(fsp, 'readFile')
+    const created = await service.create('# 新しいメモ\n')
+    const rewritten = await service.write(created.id, '# 書き直したメモ\n')
+    await service.remove(created.id)
+    expect(readFile).not.toHaveBeenCalled()
+    expect(changed.mock.calls).toEqual([[{ type: 'saved', note: created }], [{ type: 'saved', note: rewritten }], [{ type: 'removed', id: created.id }]])
   })
 
   it('finds the notes whose body contains every word, and ignores a stray file in the folder', async () => {
