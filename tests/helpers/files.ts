@@ -3,7 +3,6 @@ import { WHOLE_READ_LIMIT, type FileKind } from '@shared/files'
 /** A file name of each kind whose viewer may have a size limit (WHOLE_READ_LIMIT); audio is shown at any size. */
 const LIMITED_FILE_NAMES: Partial<Record<FileKind, string>> = {
   notebook: 'analysis.ipynb',
-  xlsx: 'sales.xlsx',
   docx: 'report.docx',
   pptx: 'deck.pptx',
   pdf: 'scan.pdf'

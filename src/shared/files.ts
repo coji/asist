@@ -130,8 +130,6 @@ const MB = 1024 * 1024
  * and in the focus view, the slower of the two given. Most limits sit where the costliest likely file of the kind took
  * about a second to show and grew the page by less than a gigabyte, so that a machine two or three times slower still
  * shows it within a few seconds. docx and audio are set higher, for the files they most often are.
- * - xlsx, 8 MB: sales records took 1.2 s for 9.3 MB and 4.9 s for 37 MB, and a grid of small numbers 1.1 s for 5.8 MB
- *   and 2.0 s for 11.6 MB, all of it holding the page's thread.
  * - docx, 16 MB: a Word file this large is most often one with a few photos, which cost 0.03 s per MB. Prose costs ten
  *   times as much for its size (5.5 MB took 1.8 s, holding the thread, and grew the page by 1.1 GB), but a file of
  *   that much prose is rare.
@@ -143,7 +141,6 @@ const MB = 1024 * 1024
  *   growing it by 1.3 GB.
  */
 export const WHOLE_READ_LIMIT: Partial<Record<FileKind, number>> = {
-  xlsx: 8 * MB,
   docx: 16 * MB,
   pptx: 32 * MB,
   pdf: 256 * MB,

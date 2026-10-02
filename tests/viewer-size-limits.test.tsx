@@ -14,7 +14,7 @@ import { setPdfLoader } from '@/panels/viewers/PdfViewer'
  */
 
 const t = createTranslator('ja-JP')
-const WHOLE_KINDS: FileKind[] = ['docx', 'xlsx', 'pptx', 'pdf']
+const WHOLE_KINDS: FileKind[] = ['docx', 'pptx', 'pdf']
 const itemOf = (kind: FileKind, sizeBytes: number): FileItem => ({ path: `/tmp/big.${kind}`, name: `big.${kind}`, kind, sizeBytes, url: `/demo-files/big.${kind}` })
 
 let container: HTMLDivElement

@@ -9,18 +9,19 @@ You see files on file cards. Markdown appears as a document, CSV as a table, ima
 
 A folder with many entries lists its first 200 and gives the total in its heading. To see the rest, use "Show in Finder" on a Mac, or "Show in File Explorer" on Windows.
 
-Word, Excel, PowerPoint and PDF files and Jupyter notebooks are read whole before they are drawn. Reading a large one would stop the app, so a file over the limit below isn't read, and the card says "This file is too large to show here". To see its contents, use "Show in Finder" ("Show in File Explorer" on Windows) and open it in its usual app.
+Word, PowerPoint and PDF files and Jupyter notebooks are read whole before they are drawn. Reading a large one would stop the app, so a file over the limit below isn't read, and the card says "This file is too large to show here". To see its contents, use "Show in Finder" ("Show in File Explorer" on Windows) and open it in its usual app.
 
 | Type | Limit |
 | --- | ---: |
 | Word | 16 MB |
-| Excel | 8 MB |
 | PowerPoint | 32 MB |
 | PDF | 256 MB |
 | Jupyter notebook | 512 KB |
 | Audio waveform | 8 MB |
 
 Audio plays at any size. Over the limit, only its waveform is left out.
+
+An Excel workbook is read one sheet at a time, the sheet you have selected. The card shows its first 20 rows, and the enlarged view shows every row, reading only the rows you scroll to. A sheet whose XML is over 256 MB (about 700,000 rows of sales records with 11 columns) isn't read, and the card says "This file is too large to show here".
 
 HTML appears as a page, and "Source" switches to the original HTML. The page's scripts run, but it loads only the CSS, images and scripts in its own folder and below it, nothing from a remote server. The page runs in a frame that is cut off from the app, so it can't touch the app's screens or features and can't read the contents of files in other folders. It connects to no server, submits no form, and can't be moved to another site. A link in the page doesn't open inside the app; to follow one, open the file in your browser yourself.
 

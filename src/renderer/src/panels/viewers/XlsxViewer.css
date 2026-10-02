@@ -30,3 +30,24 @@
 .card[data-size='s'] .fv-xlsx-tabs {
   padding: 6px 8px 4px;
 }
+
+/* The focus view's grid scrolls on its own, under its sheet tabs and its header row, rather than with the focus
+   card, so that it draws only the rows in view. The rest of the focus card, with sheet tabs, took 251px at window
+   size l (2026-10-02), and the 280px left for it keep the focus card from scrolling as well, a note on the columns
+   left out included. A cell keeps one line in the middle of its row, so that every row has the height the grid
+   counts with, its text and an empty one alike. */
+.fv-xlsx-grid {
+  max-height: max(240px, calc(82vh - 280px));
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-line) transparent;
+}
+.fv-xlsx-grid tbody td {
+  padding-block: 0;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+.fv-xlsx-grid .fv-xlsx-spacer td {
+  padding: 0;
+  border: 0;
+}
