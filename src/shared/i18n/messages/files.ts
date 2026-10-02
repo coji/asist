@@ -681,19 +681,6 @@ export const files = defineMessages({
       'es-419': 'La hoja está vacía',
       'es-ES': 'La hoja está vacía'
     },
-    emptyZip: {
-      'ja-JP': '空の zip です',
-      'en-US': 'The zip is empty',
-      'fr-FR': 'Le zip est vide',
-      'de-DE': 'Das ZIP ist leer',
-      'hi-IN': 'zip खाली है',
-      'id-ID': 'Zip-nya kosong',
-      'it-IT': 'Lo zip è vuoto',
-      'ko-KR': '빈 zip입니다',
-      'pt-BR': 'O zip está vazio',
-      'es-419': 'El zip está vacío',
-      'es-ES': 'El zip está vacío'
-    },
     jsonFailed: {
       'ja-JP': 'JSON として読めません: {message}',
       'en-US': "Couldn't read it as JSON: {message}",
@@ -914,71 +901,6 @@ export const files = defineMessages({
       'pt-BR': 'Não foi possível desenhar a página {number}: {message}',
       'es-419': 'No se pudo dibujar la página {number}: {message}',
       'es-ES': 'No se ha podido dibujar la página {number}: {message}'
-    },
-    zipLoadFailed: {
-      'ja-JP': 'zip を読み込めません',
-      'en-US': "Couldn't load the zip",
-      'fr-FR': 'Impossible de charger le zip',
-      'de-DE': 'Das ZIP konnte nicht geladen werden',
-      'hi-IN': 'zip लोड नहीं हो सका',
-      'id-ID': 'Tidak bisa memuat zip-nya',
-      'it-IT': 'Impossibile caricare lo zip',
-      'ko-KR': 'zip을 불러올 수 없습니다',
-      'pt-BR': 'Não foi possível carregar o zip',
-      'es-419': 'No se pudo cargar el zip',
-      'es-ES': 'No se ha podido cargar el zip'
-    },
-    zipEncrypted: {
-      'ja-JP': 'パスワード付きの zip はここでは開けません',
-      'en-US': "A zip with a password can't be opened here",
-      'fr-FR': "Un zip protégé par mot de passe ne s'ouvre pas ici",
-      'de-DE': 'Ein ZIP mit Passwort lässt sich hier nicht öffnen',
-      'hi-IN': 'पासवर्ड वाला zip यहाँ नहीं खुल सकता',
-      'id-ID': 'Zip berkata sandi tidak bisa dibuka di sini',
-      'it-IT': 'Uno zip con password non si può aprire qui',
-      'ko-KR': '암호가 걸린 zip은 여기에서 열 수 없습니다',
-      'pt-BR': 'Um zip com senha não pode ser aberto aqui',
-      'es-419': 'Un zip con contraseña no se puede abrir aquí',
-      'es-ES': 'Aquí no se puede abrir un zip con contraseña'
-    },
-    zipFailed: {
-      'ja-JP': 'zip として読めません: {message}',
-      'en-US': "Couldn't read it as a zip: {message}",
-      'fr-FR': 'Impossible de le lire comme un zip : {message}',
-      'de-DE': 'Das ließ sich nicht als ZIP lesen: {message}',
-      'hi-IN': 'zip के रूप में पढ़ा नहीं जा सका: {message}',
-      'id-ID': 'Tidak bisa dibaca sebagai zip: {message}',
-      'it-IT': 'Impossibile leggerlo come zip: {message}',
-      'ko-KR': 'zip으로 읽을 수 없습니다: {message}',
-      'pt-BR': 'Não foi possível ler como zip: {message}',
-      'es-419': 'No se pudo leer como zip: {message}',
-      'es-ES': 'No se ha podido leer como zip: {message}'
-    },
-    zipEntry: {
-      'ja-JP': '{size} · 圧縮後 {compressed}',
-      'en-US': '{size} · {compressed} compressed',
-      'fr-FR': '{size} · {compressed} compressé',
-      'de-DE': '{size} · komprimiert {compressed}',
-      'hi-IN': '{size} · कंप्रेस करके {compressed}',
-      'id-ID': '{size} · {compressed} terkompresi',
-      'it-IT': '{size} · {compressed} compressi',
-      'ko-KR': '{size} · 압축 후 {compressed}',
-      'pt-BR': '{size} · {compressed} compactado',
-      'es-419': '{size} · {compressed} comprimido',
-      'es-ES': '{size} · {compressed} comprimido'
-    },
-    zipTotals: {
-      'ja-JP': '{files} ファイル · 合計 {size}(圧縮後 {compressed})',
-      'en-US': '{files} files · {size} in total ({compressed} compressed)',
-      'fr-FR': '{files} fichiers · {size} au total ({compressed} compressé)',
-      'de-DE': '{files} Dateien · {size} insgesamt ({compressed} komprimiert)',
-      'hi-IN': '{files} फ़ाइलें · कुल {size} (कंप्रेस करके {compressed})',
-      'id-ID': '{files} file · total {size} ({compressed} terkompresi)',
-      'it-IT': '{files} file · {size} in tutto ({compressed} compressi)',
-      'ko-KR': '{files}개 파일 · 합계 {size}(압축 후 {compressed})',
-      'pt-BR': '{files} arquivos · {size} no total ({compressed} compactado)',
-      'es-419': '{files} archivos · {size} en total ({compressed} comprimidos)',
-      'es-ES': '{files} archivos · {size} en total ({compressed} comprimido)'
     },
     audioFailed: {
       'ja-JP': '音声を読み込めません',
@@ -1254,6 +1176,19 @@ export const files = defineMessages({
         'es-419': 'Solo se leyeron los primeros {listed} de {count}. Abre la carpeta en el Explorador de archivos para ver el resto',
         'es-ES': 'Solo se han leído los primeros {listed} de {count}. Abre la carpeta en el Explorador de archivos para ver el resto'
       }
+    },
+    tooLarge: {
+      'ja-JP': '大きいので、ここでは中身を出しません',
+      'en-US': 'This file is too large to show here',
+      'fr-FR': 'Ce fichier est trop volumineux pour être affiché ici',
+      'de-DE': 'Diese Datei ist zu groß, um sie hier zu zeigen',
+      'hi-IN': 'यह फ़ाइल यहाँ दिखाने के लिए बहुत बड़ी है',
+      'id-ID': 'File ini terlalu besar untuk ditampilkan di sini',
+      'it-IT': 'Questo file è troppo grande per mostrarlo qui',
+      'ko-KR': '파일이 커서 여기에서는 내용을 보여 주지 않습니다',
+      'pt-BR': 'Este arquivo é grande demais para ser exibido aqui',
+      'es-419': 'Este archivo es demasiado grande para mostrarlo aquí',
+      'es-ES': 'Este archivo es demasiado grande para mostrarlo aquí'
     }
   },
   source: {

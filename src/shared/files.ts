@@ -90,7 +90,7 @@ export function classifyFile(filePath: string): FileKind {
 export const TEXT_KINDS: ReadonlySet<FileKind> = new Set(['markdown', 'text', 'table', 'data', 'code', 'notebook'])
 
 /** The kinds the viewer fetches by URL instead. */
-const URL_KINDS: ReadonlySet<FileKind> = new Set(['image', 'pdf', 'docx', 'pptx', 'xlsx', 'video', 'audio', 'archive'])
+const URL_KINDS: ReadonlySet<FileKind> = new Set(['image', 'pdf', 'docx', 'pptx', 'xlsx', 'video', 'audio'])
 
 const PAGE_EXT = new Set(['.html', '.htm'])
 
@@ -115,6 +115,45 @@ export function carriesUrl(kind: FileKind, filePath: string): boolean {
  * set, which the viewer shows as an invitation to open the file.
  */
 export const MAX_TEXT_BYTES = 512 * 1024
+
+const MB = 1024 * 1024
+
+/**
+ * The largest file, by its size on disk, that each viewer reads whole into the page and parses there. A larger one
+ * is not read: the viewer says it is too large to show here, above the card's button that shows it in Finder or File
+ * Explorer. Audio still plays, since <audio> reads it by ranges, and only its waveform, which decodes the whole file,
+ * is left out. The kinds not listed travel as text up to MAX_TEXT_BYTES, or are loaded by the page's own image,
+ * media and frame elements.
+ *
+ * Measured on 2026-10-02 in the demo under headless Chrome on an Apple M5 with 32 GB, opening generated files in a card
+ * and in the focus view, the slower of the two given. Most limits sit where the costliest likely file of the kind took
+ * about a second to show and grew the page by less than a gigabyte, so that a machine two or three times slower still
+ * shows it within a few seconds. docx and audio are set higher, for the files they most often are.
+ * - xlsx, 8 MB: sales records took 1.2 s for 9.3 MB and 4.9 s for 37 MB, and a grid of small numbers 1.1 s for 5.8 MB
+ *   and 2.0 s for 11.6 MB, all of it holding the page's thread.
+ * - docx, 16 MB: a Word file this large is most often one with a few photos, which cost 0.03 s per MB. Prose costs ten
+ *   times as much for its size (5.5 MB took 1.8 s, holding the thread, and grew the page by 1.1 GB), but a file of
+ *   that much prose is rare.
+ * - pptx, 32 MB: a photo on every slide took 0.9 s for 36 MB and 1.8 s for 69 MB, holding the thread at most 0.1 s.
+ * - pdf, 256 MB: scanned pages took 0.7 s for 281 MB and grew the page by 0.6 GB, and 1.7 s for 1.1 GB by 2.3 GB.
+ *   Little of it holds the thread, so the memory sets the limit.
+ * - audio, 8 MB: an ordinary song keeps its waveform. 9.2 MB of 128 kbps stereo (10 minutes) grew the page by 0.68 GB
+ *   while it decoded off the thread; speech at 32 kbps mono costs twice as much for its size, 9.2 MB (40 minutes)
+ *   growing it by 1.3 GB.
+ */
+export const WHOLE_READ_LIMIT: Partial<Record<FileKind, number>> = {
+  xlsx: 8 * MB,
+  docx: 16 * MB,
+  pptx: 32 * MB,
+  pdf: 256 * MB,
+  audio: 8 * MB
+}
+
+/** Whether the item's file is larger than its viewer reads whole (WHOLE_READ_LIMIT). */
+export function tooLargeToRead(item: Pick<FileItem, 'kind' | 'sizeBytes'>): boolean {
+  const limit = WHOLE_READ_LIMIT[item.kind]
+  return limit !== undefined && item.sizeBytes > limit
+}
 
 export interface FileEntry {
   name: string

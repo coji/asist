@@ -9,8 +9,8 @@ import { DEMO_JOB } from './fixtures/jobs'
 import { DEMO_FILES_DIR, DEMO_IMAGE_PATHS, DEMO_MIXED_PATHS, demoFileItems } from './fixtures/files'
 import { DEMO_PDF_PATHS } from './fixtures/files-pdf'
 import { DEMO_CODE_PATH, DEMO_HTML_PATH, DEMO_JSON_PATH, DEMO_NOTEBOOK_PATH } from './fixtures/files-code'
-import { DEMO_ARCHIVE_PATH, DEMO_AUDIO_PATH, DEMO_VIDEO_PATH } from './fixtures/files-media'
-import { DEMO_DOCX_PATH, DEMO_PPTX_PATH, DEMO_XLSX_PATH } from './fixtures/files-office'
+import { DEMO_AUDIO_PATH, DEMO_VIDEO_PATH } from './fixtures/files-media'
+import { DEMO_DOCX_PATH, DEMO_LARGE_XLSX_PATH, DEMO_PPTX_PATH, DEMO_XLSX_PATH } from './fixtures/files-office'
 import { DEMO_MAIL_BODIES, DEMO_MAIL_CARD, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGE_CARD } from './fixtures/mail'
 import { createDemoDraft } from './mail-state'
 import { DEMO_NEWS, DEMO_SEARCH } from './fixtures/reading'
@@ -206,6 +206,9 @@ export function respondTo(text: string): DemoResponse {
   if (/word|ワード|docx/i.test(text)) {
     return { cards: [fetched('files', { paths: [DEMO_DOCX_PATH] })], reply: '調査レポートの Word を開きました。' }
   }
+  if (/売上/.test(text) && /excel|エクセル|xlsx/i.test(text)) {
+    return { cards: [fetched('files', { paths: [DEMO_LARGE_XLSX_PATH] })], reply: '売上の Excel は大きいので、Finder で開いてください。' }
+  }
   if (/excel|エクセル|xlsx/i.test(text)) {
     return { cards: [fetched('files', { paths: [DEMO_XLSX_PATH] })], reply: '料金の Excel を開きました。シートは2枚あります。' }
   }
@@ -238,9 +241,6 @@ export function respondTo(text: string): DemoResponse {
   }
   if (/音声|録音|聞かせて/.test(text)) {
     return { cards: [fetched('files', { paths: [DEMO_AUDIO_PATH], title: 'ヒアリングの録音' })], reply: 'ヒアリングの録音を出しました。再生ボタンで聞けます。' }
-  }
-  if (/zip|書庫|アーカイブ/i.test(text)) {
-    return { cards: [fetched('files', { paths: [DEMO_ARCHIVE_PATH], title: '配布資料' })], reply: '配布資料の zip の中身を一覧にしました。' }
   }
   if (/レポート|報告書|見せて|開いて/.test(text)) {
     return { cards: [fetched('files', { paths: [`${DEMO_FILES_DIR}/report.md`], title: '調査レポート' })], reply: '調査レポートを開きました。差が大きいのは同時接続数の上限です。' }

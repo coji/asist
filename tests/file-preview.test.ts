@@ -289,7 +289,7 @@ describe('readFileItem', () => {
     expect(item.modifiedAt).toBeGreaterThan(0)
   })
 
-  it('passes images, documents, audio, video and archives by URL instead of by text', () => {
+  it('passes images, documents, audio and video by URL instead of by text', () => {
     const file = path.join(dir, 'dot.png')
     writeFileSync(file, Buffer.from('89504e470d0a1a0a', 'hex'))
     const item = readFileItem(file, toUrl)

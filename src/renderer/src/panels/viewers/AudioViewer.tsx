@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatBytes } from '@shared/files'
+import { formatBytes, tooLargeToRead } from '@shared/files'
 import { Frame } from './Frame'
 import { downsampleWaveform, formatTime } from './media'
 import { MediaControls, useMediaState } from './MediaControls'
@@ -11,20 +11,19 @@ import { useT } from '@/i18n'
 /**
  * Audio. The <audio> element stays hidden and the waveform together with MediaControls drives it. The
  * waveform is built by fetching the bytes, decoding them with Web Audio and drawing each bucket's peak
- * amplitude on a canvas. Decoding costs memory, so it stops at WAVEFORM_MAX_BYTES (20MB) and anything larger
- * gets a flat bar and a note instead. Playback itself belongs to <audio src>, so a large file can still be
- * listened to. Pressing the waveform seeks to that position.
+ * amplitude on a canvas. Decoding costs memory, so a file larger than the audio limit of WHOLE_READ_LIMIT gets a
+ * flat bar and a note instead. Playback itself belongs to <audio src>, so a large file can still be listened to.
+ * Pressing the waveform seeks to that position.
  */
-const WAVEFORM_MAX_BYTES = 20 * 1024 * 1024
 const BUCKETS = 400
 
 type Waveform = { state: 'loading' } | { state: 'ready'; peaks: number[] } | { state: 'skipped' } | { state: 'failed'; message: string }
 
-function useWaveform(url: string | undefined, sizeBytes: number): Waveform {
+function useWaveform(url: string | undefined, tooLarge: boolean): Waveform {
   const [waveform, setWaveform] = useState<Waveform>({ state: 'loading' })
   useEffect(() => {
     if (!url) return
-    if (sizeBytes > WAVEFORM_MAX_BYTES) {
+    if (tooLarge) {
       setWaveform({ state: 'skipped' })
       return
     }
@@ -50,7 +49,7 @@ function useWaveform(url: string | undefined, sizeBytes: number): Waveform {
     return () => {
       cancelled = true
     }
-  }, [url, sizeBytes])
+  }, [url, tooLarge])
   return waveform
 }
 
@@ -96,7 +95,7 @@ export const AudioViewer: Viewer = ({ item, mode, size }) => {
   const ref = useRef<HTMLAudioElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const state = useMediaState(ref)
-  const waveform = useWaveform(item.url, item.sizeBytes)
+  const waveform = useWaveform(item.url, tooLargeToRead(item))
   const [error, setError] = useState<string | null>(null)
   const progress = state.duration > 0 ? state.current / state.duration : 0
   const peaks = waveform.state === 'ready' ? waveform.peaks : null

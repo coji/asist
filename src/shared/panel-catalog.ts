@@ -262,8 +262,8 @@ export const PANEL_CATALOG: PanelCatalogEntry[] = [
   {
     type: 'files',
     description: {
-      ja: 'ファイルやフォルダをカードで見せる。markdown、テキスト、csv、json、コード、画像(複数なら並べる)、PDF、Word、PowerPoint、Excel、動画、音声、ipynb、zip、フォルダの中身をアプリの中で読める。ジョブの成果物を見せるとき、「見せて」「開いて」と言われたときに使う。パスはジョブの artifacts、フォルダなら cwd、ユーザーが指した場所(デスクトップ、ダウンロード、書類)から。',
-      en: 'Shows files and folders on a card. Markdown, text, csv, json, code, images (several are laid out side by side), PDF, Word, PowerPoint, Excel, video, audio, ipynb, zip and the contents of a folder can all be read inside the app. Use it to show what a job produced, and whenever the user asks to see or open something. Take the paths from a job\'s artifacts, from its cwd for a folder, or from the place the user pointed at, such as the desktop, the downloads folder or the documents folder.'
+      ja: 'ファイルやフォルダをカードで見せる。markdown、テキスト、csv、json、コード、画像(複数なら並べる)、PDF、Word、PowerPoint、Excel、動画、音声、ipynb、フォルダの中身をアプリの中で読める。ジョブの成果物を見せるとき、「見せて」「開いて」と言われたときに使う。パスはジョブの artifacts、フォルダなら cwd、ユーザーが指した場所(デスクトップ、ダウンロード、書類)から。',
+      en: 'Shows files and folders on a card. Markdown, text, csv, json, code, images (several are laid out side by side), PDF, Word, PowerPoint, Excel, video, audio, ipynb and the contents of a folder can all be read inside the app. Use it to show what a job produced, and whenever the user asks to see or open something. Take the paths from a job\'s artifacts, from its cwd for a folder, or from the place the user pointed at, such as the desktop, the downloads folder or the documents folder.'
     },
     slot: 'right',
     tool: true,

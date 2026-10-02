@@ -1,21 +1,19 @@
 // @vitest-environment happy-dom
-import JSZip from 'jszip'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatBytes, type FileItem } from '@shared/files'
 import { createTranslator } from '@shared/i18n'
-import { archiveTotals, flattenArchive } from '@/panels/viewers/archive'
-import { ArchiveViewer, listZip } from '@/panels/viewers/ArchiveViewer'
+import { FileViewer } from '@/panels/viewers'
 import { AudioViewer } from '@/panels/viewers/AudioViewer'
 import { downsampleWaveform, formatTime } from '@/panels/viewers/media'
 import { VideoViewer } from '@/panels/viewers/VideoViewer'
 import type { ViewerProps } from '@/panels/viewers/types'
 
 /**
- * The video, audio and zip viewers: the pure logic (time formatting, waveform downsampling, the zip tree and its
- * totals) and the DOM behavior of the controls. happy-dom does not play media, so play and pause on the media
- * element are replaced and the events are dispatched by hand.
+ * The video and audio viewers, the pure logic (time formatting, waveform downsampling) and the DOM behavior of the
+ * controls, and the placard a zip gets. happy-dom does not play media, so play and pause on the media element are
+ * replaced and the events are dispatched by hand.
  */
 
 describe('time formatting', () => {
@@ -39,49 +37,6 @@ describe('waveform downsampling', () => {
     expect(downsampleWaveform([new Float32Array([0, 0])], 4)).toEqual([0, 0, 0, 0])
     expect(downsampleWaveform([new Float32Array([0.5])], 2)).toHaveLength(2)
     expect(downsampleWaveform([], 3)).toEqual([])
-  })
-})
-
-describe('the zip tree', () => {
-  const entries = [
-    { path: 'b.txt', dir: false, size: 30, compressedSize: 20 },
-    { path: 'docs/', dir: true, size: 0, compressedSize: 0 },
-    { path: 'docs/readme.md', dir: false, size: 100, compressedSize: 60 },
-    { path: 'img/deep/x.png', dir: false, size: 500, compressedSize: 490 },
-    { path: 'a.txt', dir: false, size: 10, compressedSize: 5 },
-    { path: '__MACOSX/._a.txt', dir: false, size: 99, compressedSize: 99 },
-    { path: '.DS_Store', dir: false, size: 99, compressedSize: 99 }
-  ]
-
-  it('puts folders first and sorts by name at each level, builds a missing folder from the paths, and hides hidden files', () => {
-    const rows = flattenArchive(entries)
-    expect(rows.map((row) => `${'  '.repeat(row.depth)}${row.name}${row.dir ? '/' : ''}`)).toEqual([
-      'docs/',
-      '  readme.md',
-      'img/',
-      '  deep/',
-      '    x.png',
-      'a.txt',
-      'b.txt'
-    ])
-    expect(rows.find((row) => row.name === 'img')).toMatchObject({ dir: true, children: 1 })
-  })
-
-  it('counts only files in the totals and leaves out what is hidden', () => {
-    expect(archiveTotals(flattenArchive(entries))).toEqual({ files: 4, size: 640, compressedSize: 575 })
-  })
-
-  it('carries both the uncompressed and the compressed size of every entry read with jszip', async () => {
-    const zip = new JSZip()
-    zip.file('long.txt', 'a'.repeat(4000))
-    zip.folder('sub')!.file('n.txt', 'x')
-    const bytes = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' })
-    const listed = await listZip(bytes)
-    const long = listed.find((entry) => entry.path === 'long.txt')!
-    expect(long.size).toBe(4000)
-    expect(long.compressedSize).toBeGreaterThan(0)
-    expect(long.compressedSize).toBeLessThan(4000)
-    expect(listed.find((entry) => entry.path === 'sub/')).toMatchObject({ dir: true })
   })
 })
 
@@ -237,73 +192,17 @@ describe('viewer rendering', () => {
     expect(el.currentTime).toBe(2)
   })
 
-  async function zipBytes(): Promise<ArrayBuffer> {
-    const zip = new JSZip()
-    zip.file('README.md', '# 資料\n')
-    zip.file('transcript.txt', 'x'.repeat(2000))
-    zip.folder('slides')!.file('agenda.md', '# 議題\n')
-    zip.folder('slides')!.file('pricing.csv', 'a,b\n1,2\n')
-    zip.folder('slides/figures')!.file('shot.png', new Uint8Array(300))
-    zip.file('notes/followup.md', '- 1\n')
-    return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' })
-  }
-  const stubFetch = (bytes: ArrayBuffer): void => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, arrayBuffer: async () => bytes })))
-  }
-  const archive: FileItem = { path: '/v/handout.zip', name: 'handout.zip', kind: 'archive', sizeBytes: 2249, url: '/demo-files/media/handout.zip' }
-  const settle = async (): Promise<void> => {
+  it('shows a zip as a file it has no viewer for, with its path and size, and never reads it', async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    const archive: FileItem = { path: '/v/handout.zip', name: 'handout.zip', kind: 'archive', sizeBytes: 2249, url: '/demo-files/media/handout.zip' }
+    const card = await render(FileViewer, archive)
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
-  }
-
-  it('lays the zip out as a folder tree, keeps 3 rows at size s with the count and totals in the note, and shows all of it in the focus view', async () => {
-    const bytes = await zipBytes()
-    const totals = archiveTotals(flattenArchive(await listZip(bytes)))
-    stubFetch(bytes)
-    const small = await render(ArchiveViewer, archive, 's')
-    await settle()
-    const rows = [...small.querySelectorAll<HTMLElement>('.fv-archive-row')]
-    expect(rows.map((row) => row.querySelector('.card-row-title')?.textContent)).toEqual(['notes', 'followup.md', 'slides'])
-    expect(rows.map((row) => row.style.getPropertyValue('--fv-archive-depth'))).toEqual(['0', '1', '0'])
-    expect(rows[0].querySelector('.card-row-meta')?.textContent).toBe('1件')
-    expect(rows[0].querySelector('button')).toBeNull()
-    expect(small.querySelector('.fv-note')?.textContent).toBe(`他 6 件は拡大表示で · 6 ファイル · 合計 ${formatBytes(totals.size)}(圧縮後 ${formatBytes(totals.compressedSize)})`)
-
-    const focus = await render(ArchiveViewer, archive, 'focus')
-    await settle()
-    expect([...focus.querySelectorAll('.fv-archive-row .card-row-title')].map((el) => el.textContent)).toEqual([
-      'notes',
-      'followup.md',
-      'slides',
-      'figures',
-      'shot.png',
-      'agenda.md',
-      'pricing.csv',
-      'README.md',
-      'transcript.txt'
-    ])
-    expect(focus.querySelector('.fv-note')?.textContent).toBe(`6 ファイル · 合計 ${formatBytes(totals.size)}(圧縮後 ${formatBytes(totals.compressedSize)})`)
-  })
-
-  it('shows the reason in a red note for a password-protected or a corrupt zip', async () => {
-    // jszip cannot build a password-protected archive, so the encryption bit of the general purpose flag is set by hand.
-    const bytes = new Uint8Array(await zipBytes())
-    for (let i = 0; i < bytes.length - 4; i++) {
-      const sig = bytes[i] | (bytes[i + 1] << 8) | (bytes[i + 2] << 16) | (bytes[i + 3] << 24)
-      if (sig === 0x04034b50) bytes[i + 6] |= 1
-      if (sig === 0x02014b50) bytes[i + 8] |= 1
-    }
-    stubFetch(bytes.buffer)
-    const encrypted = await render(ArchiveViewer, archive)
-    await settle()
-    expect(encrypted.querySelector('.fv-note')?.getAttribute('data-tone')).toBe('error')
-    expect(encrypted.querySelector('.fv-note')?.textContent).toBe(createTranslator('ja-JP')('files.viewer.zipEncrypted'))
-
-    stubFetch(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer)
-    const corrupt = await render(ArchiveViewer, archive)
-    await settle()
-    expect(corrupt.querySelector('.fv-note')?.getAttribute('data-tone')).toBe('error')
-    expect(corrupt.querySelector('.fv-note')?.textContent).toMatch(/^zip として読めません: /)
+    expect(fetch).not.toHaveBeenCalled()
+    const t = createTranslator('ja-JP')
+    expect(card.querySelector('.fv-stub span')?.textContent).toBe(t('files.viewer.stub', { kind: t('files.kind.archive') }))
+    expect(card.querySelector('.fv-stub small')?.textContent).toBe(`/v/handout.zip · ${formatBytes(2249)}`)
   })
 })

@@ -6,8 +6,8 @@ import { DEMO_JOB } from './jobs'
 import { DEMO_DOWNLOADS_DIR, DEMO_FILES_DIR, DEMO_IMAGE_PATHS, DEMO_MIXED_PATHS, demoFileItems } from './files'
 import { DEMO_PDF_PATHS } from './files-pdf'
 import { DEMO_CODE_PATH, DEMO_HTML_PATH, DEMO_JSON_PATH, DEMO_NOTEBOOK_PATH } from './files-code'
-import { DEMO_ARCHIVE_PATH, DEMO_AUDIO_PATH, DEMO_VIDEO_PATH } from './files-media'
-import { DEMO_DOCX_PATH, DEMO_PPTX_PATH, DEMO_XLSX_PATH } from './files-office'
+import { DEMO_AUDIO_PATH, DEMO_VIDEO_PATH } from './files-media'
+import { DEMO_DOCX_PATH, DEMO_LARGE_XLSX_PATH, DEMO_PPTX_PATH, DEMO_XLSX_PATH } from './files-office'
 import { DEMO_MAIL_CARD, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGE_CARD } from './mail'
 import { DEMO_NEWS, DEMO_SEARCH, DEMO_SEARCH_GOOGLE } from './reading'
 import { DEMO_TIMER, demoClock } from './time'
@@ -90,10 +90,10 @@ export const CARD_GROUPS: Array<{ command: string; label: string; cards: CardFix
       { type: 'files', variant: 'notebook', props: { paths: [DEMO_NOTEBOOK_PATH], items: demoFileItems([DEMO_NOTEBOOK_PATH]) }, source: 'notebook' },
       { type: 'files', variant: 'video', props: { paths: [DEMO_VIDEO_PATH], title: 'ヒアリングの録画', items: demoFileItems([DEMO_VIDEO_PATH]) }, source: 'video' },
       { type: 'files', variant: 'audio', props: { paths: [DEMO_AUDIO_PATH], title: 'ヒアリングの録音', items: demoFileItems([DEMO_AUDIO_PATH]) }, source: 'audio' },
-      { type: 'files', variant: 'archive', props: { paths: [DEMO_ARCHIVE_PATH], title: '配布資料', items: demoFileItems([DEMO_ARCHIVE_PATH]) }, source: 'archive' },
       { type: 'files', variant: 'docx', props: { paths: [DEMO_DOCX_PATH], items: demoFileItems([DEMO_DOCX_PATH]) }, source: 'docx' },
       { type: 'files', variant: 'xlsx', props: { paths: [DEMO_XLSX_PATH], items: demoFileItems([DEMO_XLSX_PATH]) }, source: 'xlsx' },
-      { type: 'files', variant: 'pptx', props: { paths: [DEMO_PPTX_PATH], items: demoFileItems([DEMO_PPTX_PATH]) }, source: 'pptx' }
+      { type: 'files', variant: 'pptx', props: { paths: [DEMO_PPTX_PATH], items: demoFileItems([DEMO_PPTX_PATH]) }, source: 'pptx' },
+      { type: 'files', variant: 'too-large', props: { paths: [DEMO_LARGE_XLSX_PATH], items: demoFileItems([DEMO_LARGE_XLSX_PATH]) }, source: 'xlsx' }
     ]
   }
 ]
