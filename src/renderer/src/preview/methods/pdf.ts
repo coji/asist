@@ -11,8 +11,8 @@ import type { OpenPreviewDocument } from '../serve'
  * decoded pictures and its operator list until the viewer releases the drawing.
  *
  * pdf.js needs nothing beyond the page's policy: its worker is one of the page's own scripts, the ranges reach it
- * from the page, and an embedded font is loaded from its bytes. It is given no wasmUrl, as it was before it moved
- * here, so pictures in JBIG2, CCITT fax or JPEG 2000, which pdf.js decodes with WebAssembly alone, are left out.
+ * from the page, and an embedded font is loaded from its bytes. It is given no wasmUrl, so pictures in JBIG2, CCITT
+ * fax or JPEG 2000, which pdf.js decodes with WebAssembly alone, are left out.
  */
 
 GlobalWorkerOptions.workerSrc = workerUrl
