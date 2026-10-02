@@ -1,5 +1,5 @@
 import mitt, { type Emitter } from 'mitt'
-import type { LiveConnection, LiveStartResult } from '@shared/ipc'
+import type { LiveAudio, LiveConnection, LiveEvent, LiveStartResult } from '@shared/ipc'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { LLM_PROVIDER_INFO } from '@shared/llm-catalog'
 import { errMessage } from '@shared/api-errors'
@@ -15,7 +15,7 @@ import { buildLiveSystemInstruction } from '../brain/prompt'
 import { summarizeToolInput, summarizeToolResult } from '../brain/conversation-log'
 import { executeClientTool, toolGuide, toolRegistry, tools } from '../brain/tools'
 import { memoryIdsInToolResult } from '@shared/memory-injection'
-import { GeminiLiveEngine, type LiveEngineEvents } from './gemini-live'
+import { GeminiLiveEngine } from './gemini-live'
 import { toGeminiFunctionDeclarations } from './gemini-tools'
 import { connectGemini } from './gemini-connect'
 
@@ -25,10 +25,12 @@ import { connectGemini } from './gemini-connect'
  * talks to.
  */
 
-export const events: Emitter<LiveEngineEvents> = mitt<LiveEngineEvents>()
+export const events: Emitter<{ audio: LiveAudio; event: LiveEvent }> = mitt<{ audio: LiveAudio; event: LiveEvent }>()
 
 let engine: GeminiLiveEngine | null = null
 let starting: Promise<LiveStartResult> | null = null
+/** How many engines have been created, which numbers each run. The engine running, if any, is the last one. */
+let runs = 0
 
 export const connection = (): LiveConnection => engine?.state ?? 'off'
 
@@ -90,7 +92,7 @@ function createEngine(): GeminiLiveEngine {
 export function start(): Promise<LiveStartResult> {
   if (starting) return starting
   starting = (async (): Promise<LiveStartResult> => {
-    if (engine) return { ok: true }
+    if (engine) return { ok: true, run: runs }
     const settings = getSettings()
     if (!isLiveEngine(settings.voiceEngine)) return { ok: false, reason: errorText('voice.live.notLiveEngine') }
     const info = LIVE_ENGINE_INFO[settings.voiceEngine]
@@ -99,12 +101,13 @@ export function start(): Promise<LiveStartResult> {
       return { ok: false, reason: errorText('llmModels.errors.keyMissing', { provider: provider.label, envKey: provider.envKey }) }
     }
     const created = createEngine()
+    const run = ++runs
     const liveEngine = settings.voiceEngine
     const model = settings.geminiLive.model
     // The engine reports its usage as a running total, so what is recorded is the growth since the
     // report before.
     let reported = { seconds: 0, costUsd: 0 }
-    created.events.on('audio', (samples) => events.emit('audio', samples))
+    created.events.on('audio', (samples) => events.emit('audio', { run, samples }))
     created.events.on('event', (event) => {
       if (event.type === 'usage') {
         if (event.usage.costUsd > reported.costUsd) {
@@ -131,7 +134,7 @@ export function start(): Promise<LiveStartResult> {
       await teardown()
       return { ok: false, reason: errMessage(err) }
     }
-    return { ok: true }
+    return { ok: true, run }
   })().finally(() => {
     starting = null
   })

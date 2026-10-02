@@ -1,9 +1,11 @@
-import { Behavior, FunctionResponseScheduling, GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai'
+import { Behavior, FunctionResponseScheduling, GoogleGenAI, Modality, ThinkingLevel, type LiveServerMessage } from '@google/genai'
 import { speechTag } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from '../conversation-locale'
-import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
+import { LIVE_ENGINE_INFO, type LiveThinkingLevel } from '@shared/voice-engine'
 import type { GeminiConnectParams, GeminiServerMessage, GeminiSession } from './gemini-live'
+
+const THINKING_LEVEL: Record<LiveThinkingLevel, ThinkingLevel> = { low: ThinkingLevel.LOW, medium: ThinkingLevel.MEDIUM, high: ThinkingLevel.HIGH }
 
 /**
  * Wraps the Gemini Live SDK in the shape GeminiLiveEngine expects, so that the engine itself does not
@@ -19,6 +21,7 @@ import type { GeminiConnectParams, GeminiServerMessage, GeminiSession } from './
 export async function connectGemini(apiKey: string, params: GeminiConnectParams): Promise<GeminiSession> {
   const ai = new GoogleGenAI({ apiKey })
   const language = speechTag(conversationLocale())
+  const thinkingLevel = LIVE_ENGINE_INFO['gemini-live'].models.find((model) => model.id === params.model)?.thinkingLevel
   const session = await ai.live.connect({
     model: params.model,
     config: {
@@ -41,7 +44,8 @@ export async function connectGemini(apiKey: string, params: GeminiConnectParams)
       inputAudioTranscription: { languageCodes: [language] },
       outputAudioTranscription: { languageCodes: [language] },
       contextWindowCompression: { slidingWindow: {} },
-      sessionResumption: params.resumptionHandle ? { handle: params.resumptionHandle } : {}
+      sessionResumption: params.resumptionHandle ? { handle: params.resumptionHandle } : {},
+      ...(thinkingLevel ? { thinkingConfig: { thinkingLevel: THINKING_LEVEL[thinkingLevel] } } : {})
     },
     callbacks: {
       onmessage: (message: LiveServerMessage) => params.callbacks.onmessage(message as GeminiServerMessage),

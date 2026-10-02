@@ -514,6 +514,11 @@ export class GeminiLiveEngine implements ConversationOwner {
           excludeIds: this.memoriesHeld()
         })
         if (!note) return
+        // The SDK says any client content interrupts the generation in progress, but content with
+        // turnComplete false does not. Measured on gemini-3.8-live and its extended-thinking model on
+        // 2026-10-02: a note sent 0.2 to 5 seconds into a reply never brought `interrupted` in 24 runs,
+        // and the reply went on to its turnComplete, while a user turn with turnComplete true sent 1.5
+        // seconds in interrupted the reply within 0.1 seconds.
         session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: note.text }] }], turnComplete: false })
         this.memoriesSent(note.ids)
         this.deps.recordNote(turnId, note.text, note.ids)

@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   IpcChannel,
   type JobEvent,
+  type LiveAudio,
   type LiveEvent,
   type PanelEvent,
   type RendererApi,
@@ -57,7 +58,7 @@ const api: RendererApi = {
   livePush: (samples) => ipcRenderer.invoke(IpcChannel.LivePush, samples),
   liveActivity: (active) => ipcRenderer.invoke(IpcChannel.LiveActivity, active),
   liveText: (text) => ipcRenderer.invoke(IpcChannel.LiveText, text),
-  onLiveAudio: subscribe<Float32Array>(IpcChannel.LiveAudio),
+  onLiveAudio: subscribe<LiveAudio>(IpcChannel.LiveAudio),
   onLiveEvent: subscribe<LiveEvent>(IpcChannel.LiveEvent),
 
   panelFetch: (type, props) => ipcRenderer.invoke(IpcChannel.PanelFetch, type, props),

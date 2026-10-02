@@ -159,7 +159,7 @@ export const CREDITS = [
   {
     id: 'google',
     group: 'api',
-    name: 'Gemini 3.8 Flash, Gemini 3.5 Flash Lite, gemini-3.8-live',
+    name: 'Gemini 3.8 Flash, Gemini 3.5 Flash Lite, gemini-3.8-live, gemini-3.8-live-extended-thinking',
     provider: 'Google',
     license: null,
     url: 'https://ai.google.dev/gemini-api/terms'

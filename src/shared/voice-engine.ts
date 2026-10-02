@@ -52,11 +52,15 @@ export const liveModelSettingSchema = z.strictObject({
 type ModelNote = Extract<MessageKey, `voiceEngines.models.${string}`>
 type VoiceNote = Extract<MessageKey, `voiceEngines.voices.${string}`>
 
+/** The depths of thinking a Live model can be opened with. */
+export type LiveThinkingLevel = 'low' | 'medium' | 'high'
+
 export interface LiveEngineInfo {
   label: string
   /** The provider whose API key is read, through the envKey of llm-catalog. */
   provider: LlmProvider
-  models: ReadonlyArray<{ id: string; label: string; note: ModelNote }>
+  /** `thinkingLevel` is sent when a session of the model opens; a model without one is opened without a level. */
+  models: ReadonlyArray<{ id: string; label: string; note: ModelNote; thinkingLevel?: LiveThinkingLevel }>
   /**
    * The voices the provider offers. A note names the one-phrase description from the provider's
    * documentation, and is null when the documentation gives none.
@@ -70,9 +74,17 @@ export const LIVE_ENGINE_INFO: Record<LiveEngine, LiveEngineInfo> = {
   'gemini-live': {
     label: 'Gemini Live',
     provider: 'google',
+    // Without a thinking level the extended-thinking model's session is closed at setup with "Thinking
+    // level must be specified for this model."; it refuses minimal and opens with low, medium and high
+    // (2026-10-02), whose replies started within the same 1.6 to 2.3 seconds of the end of speech.
     models: [
       { id: 'gemini-3.8-live', label: 'Gemini 3.8 Live', note: 'voiceEngines.models.gemini38Live' },
-      { id: 'gemini-3.8-live-extended-thinking', label: 'Gemini 3.8 Live (extended thinking)', note: 'voiceEngines.models.gemini38LiveExtendedThinking' }
+      {
+        id: 'gemini-3.8-live-extended-thinking',
+        label: 'Gemini 3.8 Live (extended thinking)',
+        note: 'voiceEngines.models.gemini38LiveExtendedThinking',
+        thinkingLevel: 'high'
+      }
     ],
     // The 30 voices of the speech-generation documentation. On 2026-09-16 every one of them was
     // confirmed to return audio on gemini-3.8-live.

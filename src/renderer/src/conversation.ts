@@ -361,9 +361,7 @@ async function initializeConversation(): Promise<void> {
   })
   liveVoice.events.on('error', (message) => toasts.push({ kind: 'error', title: translate('voice.micLiveFailed'), body: message }))
   window.api.onLiveEvent((event) => handleLiveEvent(event))
-  window.api.onLiveAudio((samples) => {
-    speechPlayer.streamPush(samples instanceof Float32Array ? samples : new Float32Array(samples), 24_000)
-  })
+  liveVoice.events.on('audio', (samples) => speechPlayer.streamPush(samples, 24_000))
   speechPlayer.events.on('streamstart', () => useTurnStore.getState().setPhase('speak'))
   speechPlayer.events.on('streamidle', () => {
     const t = useTurnStore.getState()

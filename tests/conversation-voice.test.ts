@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import mitt from 'mitt'
-import type { AppStatus } from '@shared/ipc'
+import type { AppStatus, LiveAudio } from '@shared/ipc'
 
 /**
  * The conversation driven by the events of the voice pipeline: the voice controller and the speech
@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => {
     player: null as unknown,
     voice: null as unknown,
     live: null as unknown,
+    realLive: null as object | null,
     /** The requests the conversation put on the confirmation sheet. */
     confirmOpened: [] as unknown[],
     /** The toasts the conversation raised. */
@@ -108,7 +109,17 @@ vi.mock('@/voice/LiveVoice', async () => {
   const { default: mittFactory } = await import('mitt')
   const liveVoice = { current: 'off', events: mittFactory(), recover: async () => {}, enable: vi.fn(async () => {}), disable: vi.fn() }
   mocks.live = liveVoice
-  return { liveVoice }
+  // A test that puts a real LiveVoice in mocks.realLive has the conversation it starts use that one instead.
+  const source = (): object => mocks.realLive ?? liveVoice
+  return {
+    liveVoice: new Proxy(liveVoice, {
+      get: (_target, key) => {
+        const value: unknown = Reflect.get(source(), key)
+        return typeof value === 'function' ? value.bind(source()) : value
+      },
+      set: (_target, key, value) => Reflect.set(source(), key, value)
+    })
+  }
 })
 vi.mock('@/voice/SpeechPlayer', async () => {
   const { default: mittFactory } = await import('mitt')
@@ -280,6 +291,7 @@ beforeEach(async () => {
   mocks.turn.activeTurnId = -1
   mocks.turn.timings = {}
   mocks.confirmOpened = []
+  mocks.realLive = null
   mocks.feed.lines.length = 0
   for (const key of Object.keys(mocks.settings)) delete mocks.settings[key]
   Object.assign(mocks.settings, structuredClone(baseSettings))
@@ -1180,6 +1192,53 @@ describe('a change of how long a quiet live session stays open', () => {
 
     expect(live.disable).toHaveBeenCalled()
     live.current = 'off'
+  })
+})
+
+describe('the voice of the live engine', () => {
+  it('plays none of what main sent before it handled the microphone being turned off, even when the microphone turns on again at once', async () => {
+    Object.assign(mocks.settings, { voiceEngine: 'gemini-live' })
+    const { LiveVoice } = await vi.importActual<typeof import('@/voice/LiveVoice')>('@/voice/LiveVoice')
+    const live = new LiveVoice()
+    Object.assign(live, {
+      microphone: { start: async () => {}, stop: () => {}, close: () => {} },
+      silero: { init: async () => {}, push: () => {}, currentProb: () => null, dispose: () => {} }
+    })
+    mocks.realLive = live
+    const listeners = new Set<(audio: LiveAudio) => void>()
+    let runs = 0
+    const conversation = await start({
+      requestMicPermission: async () => true,
+      liveStart: async () => ({ ok: true, run: ++runs }),
+      onLiveAudio: (listener: (audio: LiveAudio) => void) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      }
+    })
+    const streamPush = vi.spyOn(mocks.player as { streamPush: (samples: Float32Array, rate: number) => void }, 'streamPush')
+    /** A chunk of the voice of the engine main started as `run`, which reaches the page some time later. */
+    const chunkFromMain = (run: number): void => {
+      for (const listener of [...listeners]) listener({ run, samples: new Float32Array(2400) })
+    }
+
+    await conversation.toggleMic()
+    chunkFromMain(1)
+    expect(streamPush).toHaveBeenCalledOnce()
+
+    await conversation.toggleMic()
+    chunkFromMain(1)
+    expect(streamPush).toHaveBeenCalledOnce()
+
+    // Coming back after a sleep turns the microphone off and on again in one go, and the stopped run's
+    // voice still on its way arrives while the new one starts.
+    await conversation.toggleMic()
+    const recovering = live.recover()
+    chunkFromMain(2)
+    await recovering
+    expect(streamPush).toHaveBeenCalledOnce()
+    chunkFromMain(3)
+    expect(streamPush).toHaveBeenCalledTimes(2)
+    live.disable()
   })
 })
 

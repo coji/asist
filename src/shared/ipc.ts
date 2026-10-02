@@ -396,9 +396,17 @@ export type LiveEvent =
   /** The message of an error as it was thrown, key and all, which the renderer words when it shows it. */
   | { type: 'error'; message: string }
 
-export interface LiveStartResult {
-  ok: boolean
-  reason?: string
+/** `run` numbers this start of the engine, and every piece of voice the engine speaks carries it. */
+export type LiveStartResult = { ok: true; run: number } | { ok: false; reason?: string }
+
+/**
+ * A piece of the live model's voice, mono Float32 at 24 kHz, with the run of the engine that spoke it.
+ * Electron does not keep a send in order with the answer to an invoke, so the voice of a stopped engine
+ * can arrive after the answer to the next start, and only the run tells whose voice it is.
+ */
+export interface LiveAudio {
+  run: number
+  samples: Float32Array
 }
 
 export type PanelSlot = 'left' | 'right'
@@ -987,8 +995,8 @@ export interface RendererApi {
   liveActivity(active: boolean): Promise<void>
   /** Typed input, which Gemini receives as a text turn. */
   liveText(text: string): Promise<void>
-  /** The live model's audio, 24 kHz mono Float32, to be played in the order it arrives. */
-  onLiveAudio(callback: (samples: Float32Array) => void): () => void
+  /** The live model's audio, to be played in the order it arrives by the run that started its engine. */
+  onLiveAudio(callback: (audio: LiveAudio) => void): () => void
   onLiveEvent(callback: (event: LiveEvent) => void): () => void
 
   /** Fetches a built-in panel's data through the fetcher in main and returns the completed props. */

@@ -7,10 +7,10 @@ import { osMessageKey } from '@shared/i18n/os-message'
 import { platformCapabilities } from '@/platform'
 
 /**
- * The microphone input for the live engine, Gemini Live. The 16 kHz frames go to the
- * main process untouched, because the live model itself decides what it hears and when speech has
- * ended. The renderer only signals the main process when it catches a voice, so that a closed
- * session opens, and reports the level the orb displays.
+ * The microphone input for the live engine, Gemini Live, and the engine's voice that comes back. The
+ * 16 kHz frames go to the main process untouched, because the live model itself decides what it hears
+ * and when speech has ended. The renderer only signals the main process when it catches a voice, so
+ * that a closed session opens, and reports the level the orb displays.
  */
 
 export type LiveVoiceState = 'off' | 'loading' | 'on'
@@ -19,6 +19,8 @@ type LiveVoiceEvents = {
   state: LiveVoiceState
   level: number
   error: string
+  /** The model's voice, mono Float32 at 24 kHz, in the order it arrives. */
+  audio: Float32Array
 }
 
 /** A frame counts as voiced when Silero's voice probability reaches this. */
@@ -39,6 +41,12 @@ export class LiveVoice {
   private voicedMs = 0
   private quietMs = 0
   private speaking = false
+  /**
+   * Stops listening to the voice of the engine this run started. Main sends voice until it has handled
+   * the stop and does not keep it in order with the answer to the next start, so a run hands on only the
+   * voice that carries the number main gave its own start.
+   */
+  private stopVoice: (() => void) | null = null
   /** Set from the settings. The change takes effect the next time the microphone is turned on. */
   nativeMicPreferred = true
   noiseSuppression = true
@@ -60,6 +68,10 @@ export class LiveVoice {
       const started = await window.api.liveStart()
       if (!current()) return
       if (!started.ok) throw new Error(started.reason ?? errorText('voice.live.startFailed'))
+      const run = started.run
+      this.stopVoice = window.api.onLiveAudio(({ run: spokenBy, samples }) => {
+        if (spokenBy === run) this.events.emit('audio', samples instanceof Float32Array ? samples : new Float32Array(samples))
+      })
       const feed = (frame: Float32Array): void => {
         if (!current()) return
         this.silero.push(frame)
@@ -99,6 +111,8 @@ export class LiveVoice {
 
   private shutDown(): void {
     this.generation++
+    this.stopVoice?.()
+    this.stopVoice = null
     this.silero.dispose()
     this.speaking = false
     this.voicedMs = 0

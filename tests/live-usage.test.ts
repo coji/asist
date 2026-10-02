@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Emitter } from 'mitt'
-import type { LiveEvent } from '@shared/ipc'
+import type { LiveAudio, LiveEvent, LiveStartResult } from '@shared/ipc'
 import type { LiveEngineEvents } from '../src/main/services/live/gemini-live'
 
 /** The entry point of the live engine between the engine, the usage ledger and the renderer. */
@@ -57,7 +57,7 @@ describe('the usage of the live engine', () => {
     const live = await import('../src/main/services/live')
     const forwarded: LiveEvent[] = []
     live.events.on('event', (event) => forwarded.push(event))
-    await expect(live.start()).resolves.toEqual({ ok: true })
+    await expect(live.start()).resolves.toMatchObject({ ok: true })
     const [engine] = mocks.engines
     engine.events.emit('event', { type: 'usage', usage: { sessionSeconds: 10, costUsd: 0.001 } })
     engine.stopping = () => {
@@ -69,5 +69,31 @@ describe('the usage of the live engine', () => {
 
     expect(mocks.recordUsage.mock.calls.map(([item]) => item.seconds)).toEqual([10, 60])
     expect(forwarded.map((event) => event.type)).toEqual(['usage', 'assistantTranscript'])
+  })
+})
+
+describe('the voice of the live engine', () => {
+  it("tags each engine's voice with the run its start answered, so that a stopped engine's voice never carries the next run", async () => {
+    const live = await import('../src/main/services/live')
+    const forwarded: LiveAudio[] = []
+    live.events.on('audio', (audio) => forwarded.push(audio))
+    const first = await live.start()
+    const [stopped] = mocks.engines
+    stopped.events.emit('audio', new Float32Array(1))
+    await live.stop()
+    const second = await live.start()
+    const [, running] = mocks.engines
+    stopped.events.emit('audio', new Float32Array(2))
+    running.events.emit('audio', new Float32Array(3))
+
+    const runOf = (result: LiveStartResult): number | null => (result.ok ? result.run : null)
+    expect(runOf(first)).not.toBeNull()
+    expect(runOf(second)).not.toBe(runOf(first))
+    expect(forwarded.map(({ run, samples }) => [run, samples.length])).toEqual([
+      [runOf(first), 1],
+      [runOf(first), 2],
+      [runOf(second), 3]
+    ])
+    await live.stop()
   })
 })
