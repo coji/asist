@@ -1,4 +1,4 @@
-import { userText, type ConversationMessage } from '@shared/conversation'
+import { hasContent, userText, type ConversationMessage } from '@shared/conversation'
 import { promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
 import { estimateTokens } from '@shared/token-estimate'
 import { interruptedBeforeReply, interruptedWhileSpeaking, markInterruptedReply } from '@shared/turn-recovery'
@@ -12,7 +12,7 @@ import { stampUserMessage } from './prompt'
  * only the records after it are replayed.
  *
  * The history is a single thread. The messages sent to the API during a turn, the assistant responses
- * and the user messages carrying tool results, are kept as message records and sent again in the same
+ * and the user messages carrying tool results, are kept as they were sent and sent again in the same
  * shape on the next turn. Because nothing but the end changes, the prefix stays stable and the prompt
  * cache keeps working, and ids or paths a tool returned can still be referred to in later turns.
  *
@@ -121,15 +121,35 @@ const LOG_TOOL_FAILED: PromptText = { ja: ` → 失敗`, en: ` -> failed` }
 /** A system notice interrupted before any reply is withdrawn, because the retry of the report puts it back. */
 const withdrawn = (turn: HistoryTurn): boolean => Boolean(turn.notice) && turn.interrupted === 'before-reply'
 
-/** The part of what was spoken that is not already in the text of the assistant messages sent during the turn. */
+/**
+ * The part of what was spoken that is not already in the text of the assistant messages sent during the
+ * turn. What was spoken holds those texts in order, with a space between two of them where the model's
+ * text paused in a language that writes words apart, and the whitespace an adapter leaves out of the parts.
+ */
 function unsentReply(turn: HistoryTurn): string {
   const spoken = turn.assistant ?? ''
-  let sent = ''
+  let at = 0
   for (const message of turn.messages) {
     if (message.role !== 'assistant') continue
-    for (const part of message.parts) if (part.type === 'text') sent += part.text
+    for (const part of message.parts) {
+      if (part.type !== 'text') continue
+      while (!spoken.startsWith(part.text, at) && /\s/.test(spoken.charAt(at))) at++
+      if (!spoken.startsWith(part.text, at)) return spoken
+      at += part.text.length
+    }
   }
-  return sent && spoken.startsWith(sent) ? spoken.slice(sent.length) : spoken
+  return spoken.slice(at)
+}
+
+/**
+ * The message of a record written one message a line. Such a log can hold a response with nothing in it,
+ * which the API refuses anywhere but at the end of a request, so that one is read as no message. A turn
+ * now leaves such a response out itself, and what it writes without parts is a paused search the
+ * provider needs back.
+ */
+function oneMessageALine(record: Extract<ConversationRecord, { kind: 'message' }>): ConversationMessage[] {
+  const message: ConversationMessage = { role: record.role, parts: record.parts, ...(record.native ? { native: record.native } : {}) }
+  return hasContent(message) ? [message] : []
 }
 
 function highestTurnId(records: readonly ConversationRecord[]): number {
@@ -239,12 +259,12 @@ export class ConversationHistory {
       }
       return
     }
-    if (record.kind === 'message') {
-      if (own) {
-        const message: ConversationMessage = { role: record.role, parts: record.parts, ...(record.native ? { native: record.native } : {}) }
-        own.messages.push(message)
+    if (record.kind === 'messages' || record.kind === 'message') {
+      const sent = record.kind === 'messages' ? record.messages : oneMessageALine(record)
+      if (own && sent.length > 0) {
+        own.messages.push(...sent)
         own.records.push(record)
-        this.addedTokens += messageTokens(message)
+        for (const message of sent) this.addedTokens += messageTokens(message)
       }
       return
     }

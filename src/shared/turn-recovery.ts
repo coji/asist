@@ -1,4 +1,4 @@
-import { toolCallsOf, type ConversationMessage, type ConversationPart } from './conversation'
+import { hasContent, toolCallsOf, type ConversationMessage, type ConversationPart } from './conversation'
 import { promptText, type ConversationLocale, type PromptText } from './conversation-locale'
 import type { ToolRoundResult } from './tool-round'
 
@@ -31,7 +31,10 @@ export function markInterruptedReply(locale: ConversationLocale, visibleReply: s
 /**
  * The messages appended to resume a response that stopped short: the confirmed part of the response,
  * then a user message with a result for every confirmed tool call and the note asking for the rest. A
- * tool call without a result makes the next request invalid, so a missing result throws.
+ * tool call without a result makes the next request invalid, so a missing result throws. A response that
+ * confirmed nothing, such as one whose only tool call the output limit cut off, is left out with whatever
+ * provider output it carries: an assistant message without content is refused anywhere but at the end of
+ * a request, and so is a reasoning item with nothing after it.
  */
 export function buildResumeMessages(
   recorded: ConversationMessage,
@@ -51,5 +54,6 @@ export function buildResumeMessages(
       ...(result.execution.isError ? { isError: true } : {})
     })
   }
-  return [recorded, { role: 'user', parts: [...parts, { type: 'text', text: note }] }]
+  const request: ConversationMessage = { role: 'user', parts: [...parts, { type: 'text', text: note }] }
+  return hasContent(recorded) ? [recorded, request] : [request]
 }

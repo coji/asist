@@ -1,8 +1,8 @@
 import type { ConversationLocale } from './conversation-locale'
 
 /**
- * Assembles streaming deltas into whole sentences, so that each sentence can be sent to TTS as soon as
- * it is complete.
+ * Assembles the streaming text of a reply: it joins the deltas into the text the screen and the log show,
+ * and cuts whole sentences out of it, so that each sentence can be sent to TTS as soon as it is complete.
  */
 
 const SENTENCE_END = /[。!?！？\n]/
@@ -27,13 +27,36 @@ interface Splitter {
 /** The sentences of a stream of text, in the rules of the language it is written in. */
 export class SegmentAssembler {
   private readonly splitter: Splitter
+  /** What goes between the text before a pause and the text after it. Japanese writes words without spaces. */
+  private readonly gap: string
+  private lastDelta = ''
+  private paused = false
 
   constructor(locale: ConversationLocale) {
-    this.splitter = locale === 'ja-JP' ? new JapaneseSplitter() : new IntlSplitter(locale)
+    const japanese = locale === 'ja-JP'
+    this.splitter = japanese ? new JapaneseSplitter() : new IntlSplitter(locale)
+    this.gap = japanese ? '' : ' '
   }
 
-  push(delta: string): string[] {
-    return this.splitter.push(delta)
+  /** Takes the next delta, and returns it as it joins the text before it, with the sentences it completes. */
+  push(delta: string): { text: string; sentences: string[] } {
+    const text = this.paused && /\S$/.test(this.lastDelta) && /^\S/.test(delta) ? `${this.gap}${delta}` : delta
+    if (text) {
+      this.lastDelta = text
+      this.paused = false
+    }
+    return { text, sentences: this.splitter.push(text) }
+  }
+
+  /**
+   * Ends the sentence in progress where the model's text stops for a while, as while its tools or a web
+   * search run. The sentence said before the pause is complete, and holding it for the text
+   * after it would keep it silent through the whole pause. A model starts the text after a pause without
+   * a space, so the next delta gets one where words are written apart, rather than running on ("up.It").
+   */
+  pause(): string[] {
+    this.paused = true
+    return this.splitter.flush()
   }
 
   flush(): string[] {
@@ -112,10 +135,12 @@ class IntlSplitter implements Splitter {
    * Where to cut a sentence that has grown too long to wait for, or 0. Speech starts sooner when a
    * long sentence is read in clauses, and a clause boundary is the only place a cut is not heard as
    * an interruption. The limit is in words because a character means far less here than in Japanese:
-   * 20 words at 150 words a minute is eight seconds, about what the 50 characters of Japanese are.
+   * 20 words at 150 words a minute is eight seconds, about what the 50 characters of Japanese are. A
+   * clause ends only where the comma or semicolon ends a word: one with a digit after it is inside a
+   * number (14,000,000, or 3,5 in German), and one at the end of the text waits for what follows.
    */
   private clauseCut(): number {
-    for (const match of this.pending.matchAll(/[,;]/g)) {
+    for (const match of this.pending.matchAll(/[,;](?=\s)/g)) {
       const end = match.index + 1
       if (this.wordCount(this.pending.slice(0, end)) > 20) return end
     }

@@ -200,6 +200,22 @@ describe('the Google stream', () => {
     ])
   })
 
+  it('ends the text part where a search starts, so the text said before the search and the answer after it stay two parts', async () => {
+    mocks.chunks = [
+      chunk([{ text: 'Let me look that up.' }]),
+      chunk([{ toolCall: { toolType: 'GOOGLE_SEARCH_WEB', args: { queries: ['weather'] }, id: 's1' }, thoughtSignature: 'sig-call' }]),
+      chunk([{ toolResponse: { toolType: 'GOOGLE_SEARCH_WEB', response: {}, id: 's1' }, thoughtSignature: 'sig-result' }]),
+      chunk([{ text: 'It will be sunny tomorrow.' }], { finishReason: 'STOP' })
+    ]
+    const { stream } = await open({ webSearch: true, locale: 'en-US' })
+    const result = await stream.final()
+    // The conversation reads the pause at the search as the end of a sentence, and matches what it said to these parts.
+    expect(result.message.parts).toEqual([
+      { type: 'text', text: 'Let me look that up.' },
+      { type: 'text', text: 'It will be sunny tomorrow.' }
+    ])
+  })
+
   it('keeps the tokens of search results out of the context a grounded answer reports, since they are never sent again', async () => {
     mocks.chunks = [
       chunk([{ text: 'ニュースです。' }], { finishReason: 'STOP' }),

@@ -6,7 +6,7 @@ import mitt from 'mitt'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConfirmEvent } from '@shared/confirm'
 import type { AgentJob, TurnEvent, TurnPlaybackAckStatus } from '@shared/ipc'
-import type { ConversationMessage, ConversationPart, ConversationResult, StopReason } from '@shared/conversation'
+import type { ConversationMessage, ConversationPart, ConversationResult, NativeOutput, SearchEvent, StopReason } from '@shared/conversation'
 import { marker } from '@shared/conversation-markers'
 import { createTranslator } from '@shared/i18n'
 import { errorText, readErrorText } from '@shared/i18n/error-text'
@@ -34,12 +34,17 @@ interface RoundEmitter {
   /** Streams a delta without closing the block, as for a sentence cut off midway. */
   textDelta: (chunk: string) => void
   toolUse: (id: string, name: string, input: Record<string, unknown>) => void
+  /** Reports the progress of a web search that runs on the provider's side, inside the same response. */
+  search: (event: SearchEvent) => void
   /** Rejects once the caller aborts the turn, and never resolves otherwise. */
   untilAborted: () => Promise<never>
 }
 
-/** A round that returns `usage: null` finished without the provider's usage, as a Cerebras stream cut after its finish reason does. */
-type RoundScript = (round: RoundEmitter) => Promise<{ stop?: StopReason; usage?: null }>
+/**
+ * A round that returns `usage: null` finished without the provider's usage, as a Cerebras stream cut after its finish
+ * reason does. `native` is the provider's own output the response carries beside its parts.
+ */
+type RoundScript = (round: RoundEmitter) => Promise<{ stop?: StopReason; usage?: null; native?: NativeOutput }>
 
 const USAGE = { input: 100, cacheRead: 900, cacheCreation: 0, output: 20 }
 
@@ -84,6 +89,7 @@ class FakeStream {
         this.parts.push(call)
         this.fire('toolCall', call)
       },
+      search: (event) => this.fire('search', event),
       untilAborted: () =>
         new Promise<never>((_, reject) => {
           const abort = (): void => reject(new DOMException('aborted', 'AbortError'))
@@ -92,7 +98,11 @@ class FakeStream {
         })
     }
     const partial = await this.script(emitter)
-    return { message: { role: 'assistant', parts: [...this.parts] }, stop: partial.stop ?? 'end', usage: partial.usage === null ? null : USAGE }
+    return {
+      message: { role: 'assistant', parts: [...this.parts], ...(partial.native ? { native: partial.native } : {}) },
+      stop: partial.stop ?? 'end',
+      usage: partial.usage === null ? null : USAGE
+    }
   }
 }
 
@@ -253,6 +263,13 @@ function unansweredCalls(messages: ConversationMessage[]): string[] {
   })
 }
 
+/** The assistant messages that carry nothing, which the Messages API refuses anywhere but at the end with a 400. */
+const withoutContent = (messages: ConversationMessage[]): ConversationMessage[] =>
+  messages.filter((message) => message.role === 'assistant' && message.parts.length === 0)
+
+const spokenIn = (events: TurnEvent[]): string[] => events.flatMap((e) => (e.type === 'segment' ? [e.segment.text] : []))
+const shownIn = (events: TurnEvent[]): string => events.flatMap((e) => (e.type === 'delta' ? [e.text] : [])).join('')
+
 const weatherPanel = { props: { location: '東京都', date: 'tomorrow', weather: DEMO_WEATHER_TOKYO }, source: 'test' }
 
 describe('brain turn', () => {
@@ -305,10 +322,10 @@ describe('brain turn', () => {
     expect(usage).toMatchObject({ timings: { inputTokens: 100, cacheReadTokens: 900, contextTokens: 1000, rounds: 1, toolCalls: 0 } })
     expect(readLog().map((r) => [r.kind, r.text])).toEqual([
       ['user', '明日の天気は'],
-      ['message', undefined],
+      ['messages', undefined],
       ['assistant', '明日は晴天です。']
     ])
-    expect(readLog()[1]).toMatchObject({ kind: 'message', role: 'assistant', parts: [{ type: 'text', text: '明日は晴天です。' }] })
+    expect(readLog()[1]).toMatchObject({ kind: 'messages', messages: [said('明日は晴天です。')] })
   })
 
   it('reports no token counts for a turn whose round finished without its usage, and keeps the history estimating its context', async () => {
@@ -485,7 +502,7 @@ describe('brain turn', () => {
       expect(first.signal.aborted).toBe(true)
       expect(mocks.requests).toHaveLength(1)
       expect(JSON.stringify(mocks.requests[0])).toContain(INTERRUPTED_BEFORE_REPLY)
-      expect(readLog().filter((r) => r.kind !== 'message').map((r) => [r.kind, r.turnId, r.text])).toEqual([
+      expect(readLog().filter((r) => r.kind !== 'messages').map((r) => [r.kind, r.turnId, r.text])).toEqual([
         ['user', first.turnId, '明日の天気は'],
         ['assistant', first.turnId, ''],
         ['user', second.turnId, 'あ、明後日で'],
@@ -565,7 +582,7 @@ describe('brain turn', () => {
     const checkpoint = readLog().findLast((r) => r.kind === 'checkpoint')!
     expect(checkpoint.summary).toBe('以前の会話の引き継ぎ')
     expect((checkpoint.records as Array<{ kind: string; turnId: number }>).slice(-3).map((r) => [r.kind, r.turnId])).toEqual([
-      [kind, first.turnId], ['message', first.turnId], ['assistant', first.turnId]
+      [kind, first.turnId], ['messages', first.turnId], ['assistant', first.turnId]
     ])
     // The next turn carries the summary in system and rebuilds the history from what stayed.
     mocks.rounds.push(async (round) => { round.text('了解です。'); return {} })
@@ -1048,6 +1065,240 @@ describe('brain turn', () => {
     expect(events.some((e) => e.type === 'error')).toBe(false)
   })
 
+  it('asks for the rest without sending back a reply whose only part was a tool call the output limit cut off', async () => {
+    // The adapter drops a tool call the limit cut off, so nothing of the response is left.
+    mocks.rounds.push(async () => ({ stop: 'max_tokens' }))
+    mocks.rounds.push(async (round) => { round.text('メモに書きました。'); return {} })
+    const { brain } = await loadBrain()
+    await runToDone(brain, '長いメモを書いて')
+    expect(mocks.requests).toHaveLength(2)
+    expect(withoutContent(mocks.requests[1].messages)).toEqual([])
+    expect(withoutContent(await historyMessages())).toEqual([])
+  })
+
+  it('never sends back the lone reasoning item of a response the output limit cut off before any text, after its tool call was dropped', async () => {
+    // OpenAI keeps the reasoning item in the provider's output even when the call after it was cut off and
+    // dropped, and a reasoning item with nothing after it is refused when it is sent back.
+    const reasoningOnly: NativeOutput = { provider: 'openai', model: 'gpt-5.5', payload: [{ type: 'reasoning', id: 'rs_cut', encrypted_content: 'enc' }] }
+    mocks.rounds.push(async () => ({ stop: 'max_tokens', native: reasoningOnly }))
+    mocks.rounds.push(async (round) => { round.text('メモに書きました。'); return {} })
+    mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+    const { brain } = await loadBrain()
+    await runToDone(brain, '長いメモを書いて')
+    await runToDone(brain, 'ありがとう')
+    expect(mocks.requests).toHaveLength(3)
+    for (const request of mocks.requests) {
+      expect(withoutContent(request.messages)).toEqual([])
+      expect(JSON.stringify(request.messages)).not.toContain('rs_cut')
+    }
+    expect(JSON.stringify(await historyMessages())).not.toContain('rs_cut')
+    expect(readLog().some((r) => JSON.stringify(r).includes('rs_cut'))).toBe(false)
+  })
+
+  it('asks the model once to go on after a reply that came back with nothing in it, and keeps no assistant message without content', async () => {
+    mocks.rounds.push(async () => ({}))
+    mocks.rounds.push(async (round) => { round.text('明日は晴れです。'); return {} })
+    mocks.rounds.push(async (round) => { round.text('どういたしまして。'); return {} })
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '明日の天気は')
+    await runToDone(brain, 'ありがとう')
+    expect(mocks.requests).toHaveLength(3)
+    for (const request of mocks.requests) expect(withoutContent(request.messages)).toEqual([])
+    expect(withoutContent(await historyMessages())).toEqual([])
+    expect(spokenIn(events)).toEqual(['明日は晴れです。', 'どういたしまして。'])
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+  })
+
+  it('ends the turn with a prepared sentence when the reply comes back empty a second time and the turn has neither said nor done anything', async () => {
+    mocks.rounds.push(async () => ({}))
+    mocks.rounds.push(async () => ({}))
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '明日の天気は')
+    expect(mocks.requests).toHaveLength(2)
+    expect(events.some((e) => e.type === 'error')).toBe(true)
+    const carried = await historyMessages()
+    expect(withoutContent(carried)).toEqual([])
+    expect(carried.at(-1)?.role).toBe('assistant')
+  })
+
+  it('ends the turn as it is when a response comes back empty after an earlier round already said the answer', async () => {
+    mocks.fetchPanel.mockResolvedValue(weatherPanel)
+    mocks.rounds.push(async (round) => {
+      round.text('明日の東京は晴れです。')
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    mocks.rounds.push(async () => ({}))
+    mocks.rounds.push(async (round) => { round.text('明日の東京は晴れです。'); return {} })
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '明日の天気は')
+    expect(mocks.requests).toHaveLength(2)
+    expect(spokenIn(events)).toEqual(['明日の東京は晴れです。'])
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+    expect(withoutContent(await historyMessages())).toEqual([])
+  })
+
+  it('ends the turn quietly when the reply comes back empty twice after a tool ran, rather than invite the user to ask for it again', async () => {
+    mocks.fetchPanel.mockResolvedValue(weatherPanel)
+    mocks.rounds.push(async (round) => {
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    mocks.rounds.push(async () => ({}))
+    mocks.rounds.push(async () => ({}))
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '明日の天気を出して')
+    expect(mocks.requests).toHaveLength(3)
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+    const carried = await historyMessages()
+    expect(withoutContent(carried)).toEqual([])
+    expect(carried.at(-1)?.role).toBe('assistant')
+  })
+
+  it('appends no request for a reply that would never be sent, when the last round allowed comes back empty', async () => {
+    mocks.fetchPanel.mockResolvedValue(weatherPanel)
+    for (let i = 0; i < 5; i++) {
+      mocks.rounds.push(async (round) => {
+        round.toolUse(`t${i}`, 'show_weather', { location: '東京都' })
+        return { stop: 'tool_calls' }
+      })
+    }
+    mocks.rounds.push(async () => ({}))
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, '天気')
+    expect(mocks.requests).toHaveLength(6)
+    // Every message the turn kept was sent in one of its requests.
+    const kept = readLog().flatMap((r) => (r.kind === 'messages' ? (r.messages as ConversationMessage[]) : []))
+    const lastSent = mocks.requests.at(-1)!.messages
+    expect(lastSent.slice(-kept.length)).toEqual(kept)
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+  })
+
+  it('sends a pause response back as it is, even with no text, so the search it holds goes on rather than starting again', async () => {
+    // Anthropic pauses a long server-side search and continues it from the paused blocks sent back.
+    const paused: NativeOutput = {
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      payload: [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'tokyo marathon' } }]
+    }
+    mocks.rounds.push(async (round) => {
+      round.search({ phase: 'start' })
+      return { stop: 'pause', native: paused }
+    })
+    mocks.rounds.push(async (round) => { round.text('東京マラソンは3月に移りました。'); return {} })
+    mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+    const { brain } = await loadBrain()
+    await runToDone(brain, '東京マラソンのニュースは')
+    await runToDone(brain, 'ありがとう')
+    expect(mocks.requests).toHaveLength(3)
+    expect(JSON.stringify(mocks.requests[1].messages)).toContain('srvtoolu_1')
+    // The answer that followed may refer to the search, so the next turn sends the paused blocks too.
+    expect(JSON.stringify(mocks.requests[2].messages)).toContain('srvtoolu_1')
+  })
+
+  it.each([
+    ['a dropped stream', 'en-US', 'The weather tomorrow will be su', 'nny and warm.'],
+    ['the output limit', 'ja-JP', '明日の天気は晴', 'れで暖かいです。']
+  ] as const)('reads a sentence that %s cut in the middle of a word as one sentence, without a space in it', async (cut, locale, before, after) => {
+    mocks.conversationLocale = locale
+    mocks.rounds.push(async (round) => {
+      if (cut === 'a dropped stream') {
+        round.textDelta(before)
+        throw new Error('fetch failed')
+      }
+      round.text(before)
+      return { stop: 'max_tokens' }
+    })
+    mocks.rounds.push(async (round) => { round.text(after); return {} })
+    const { brain, events } = await loadBrain()
+    await runToDone(brain, 'weather')
+    expect(spokenIn(events)).toEqual([`${before}${after}`])
+    expect(shownIn(events)).toBe(`${before}${after}`)
+  })
+
+  it('never replays a tool call without its result after a restart, even when a line of the log could not be written', async () => {
+    mocks.fetchPanel.mockResolvedValue(weatherPanel)
+    mocks.rounds.push(async (round) => {
+      round.text('見てみますね。')
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    mocks.rounds.push(async (round) => { round.text('明日は晴れです。'); return {} })
+    // The disk fills up as the results of the tool are appended, which the log reports and passes over.
+    const append = fs.appendFileSync
+    vi.spyOn(fs, 'appendFileSync').mockImplementation((file, data, options) => {
+      if (typeof data === 'string' && data.includes('"tool_result"')) {
+        throw Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' })
+      }
+      return append(file, data, options)
+    })
+    const { brain } = await loadBrain()
+    try {
+      await runToDone(brain, '明日の天気は')
+    } finally {
+      vi.mocked(fs.appendFileSync).mockRestore()
+    }
+    // The app starts again, and a fresh history replays the same log.
+    vi.resetModules()
+    const { history } = await import('../src/main/services/brain/session')
+    history.ensureLoaded()
+    const replayed = history.toMessages()
+    expect(unansweredCalls(replayed)).toEqual([])
+    // The call and its results are gone together, and the rest of the turn stays.
+    expect(replayed.map(textOf)).toEqual([expect.stringContaining('明日の天気は'), '明日は晴れです。'])
+  })
+
+  it('speaks the sentence said before a slow tool while the tool runs in a language that writes words apart, and keeps it apart from the answer', async () => {
+    mocks.conversationLocale = 'en-US'
+    let finishFetch!: () => void
+    mocks.fetchPanel.mockImplementation(() => new Promise((resolve) => { finishFetch = () => resolve(weatherPanel) }))
+    mocks.rounds.push(async (round) => {
+      round.text('Let me look that up.')
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    mocks.rounds.push(async (round) => { round.text('It will be sunny tomorrow.'); return {} })
+    const { brain, events } = await loadBrain()
+    const handle = brain.beginTurn({ text: 'What is the weather tomorrow?' }, {}, 'user', false)!
+    try {
+      await vi.waitFor(() => expect(finishFetch).toBeDefined())
+      await vi.waitFor(() => expect(spokenIn(events)).toEqual(['Let me look that up.']))
+    } finally {
+      finishFetch?.()
+      await handle.completion
+    }
+    expect(spokenIn(events)).toEqual(['Let me look that up.', 'It will be sunny tomorrow.'])
+    // The screen and the log read the two rounds as two sentences too.
+    expect(shownIn(events)).toBe('Let me look that up. It will be sunny tomorrow.')
+    expect(events.at(-1)).toMatchObject({ type: 'done', fullText: shownIn(events) })
+    expect(readLog().findLast((r) => r.kind === 'assistant')).toMatchObject({ text: shownIn(events) })
+  })
+
+  it('speaks the sentence said before a web search while the search runs in a language that writes words apart', async () => {
+    mocks.conversationLocale = 'en-US'
+    let finishSearch!: () => void
+    const searching = new Promise<void>((resolve) => { finishSearch = resolve })
+    // The search runs on the provider's side inside the same response, as with Anthropic, OpenAI and Gemini.
+    mocks.rounds.push(async (round) => {
+      round.text('Let me check the latest news on that.')
+      round.search({ phase: 'start' })
+      await searching
+      round.search({ phase: 'done', query: 'tokyo marathon', sources: [] })
+      round.text('The Tokyo Marathon was moved to March.')
+      return {}
+    })
+    const { brain, events } = await loadBrain()
+    const handle = brain.beginTurn({ text: 'Any news about the Tokyo Marathon?' }, {}, 'user', false)!
+    try {
+      await vi.waitFor(() => expect(spokenIn(events)).toEqual(['Let me check the latest news on that.']))
+    } finally {
+      finishSearch()
+      await handle.completion
+    }
+    expect(spokenIn(events)).toEqual(['Let me check the latest news on that.', 'The Tokyo Marathon was moved to March.'])
+    expect(events.at(-1)).toMatchObject({ type: 'done', fullText: 'Let me check the latest news on that. The Tokyo Marathon was moved to March.' })
+  })
+
   it('closes a turn that has no key for its model with a failed reply in the log, so the utterance counts as answered', async () => {
     mocks.key = undefined
     const { brain, events } = await loadBrain()
@@ -1080,7 +1331,7 @@ describe('brain turn', () => {
     acknowledgeLikeTheRenderer(brain, acknowledgePlayback)
     initJobReporting()
     await finishJob()
-    await vi.waitFor(() => expect(readLog().some((r) => r.kind === 'message')).toBe(true))
+    await vi.waitFor(() => expect(readLog().some((r) => r.kind === 'messages')).toBe(true))
     // A report counted as not delivered goes out again at once, so a second request would have started by now.
     await new Promise((resolve) => setTimeout(resolve, 200))
     expect(mocks.requests).toHaveLength(1)
@@ -1165,7 +1416,7 @@ describe('brain turn', () => {
     const { brain, events } = await loadBrain()
     const handle = brain.beginTurn({ text: '明日の天気は' }, {}, 'user', false)!
     // The stream has ended and the turn waits for the synthesis of its sentences.
-    await vi.waitFor(() => expect(readLog().some((r) => r.kind === 'message')).toBe(true))
+    await vi.waitFor(() => expect(readLog().some((r) => r.kind === 'messages')).toBe(true))
     brain.abortTurn(handle.turnId)
     await handle.completion
     expect(events.some((e) => e.type === 'segment')).toBe(false)

@@ -68,4 +68,14 @@ describe('buildResumeMessages', () => {
     const messages = buildResumeMessages({ role: 'assistant', parts: [{ type: 'text', text: '途中まで' }] }, [], NOTE)
     expect(messages[1].parts).toEqual([{ type: 'text', text: NOTE }])
   })
+
+  it('leaves out a response that confirmed nothing, whatever provider output it carries, and only asks to continue', () => {
+    // A reasoning item alone is what OpenAI keeps of a response whose only tool call the output limit cut off.
+    const cut: ConversationMessage = {
+      role: 'assistant',
+      parts: [],
+      native: { provider: 'openai', model: 'gpt-5.5', payload: [{ type: 'reasoning', id: 'rs_1', encrypted_content: 'enc' }] }
+    }
+    expect(buildResumeMessages(cut, [], NOTE)).toEqual([{ role: 'user', parts: [{ type: 'text', text: NOTE }] }])
+  })
 })

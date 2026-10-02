@@ -1,5 +1,5 @@
 import type { RoundUsage, TurnStartOptions } from '@shared/ipc'
-import type { ConversationMessage, ConversationResult, ConversationStream, SystemLayer } from '@shared/conversation'
+import { hasContent, type ConversationMessage, type ConversationResult, type ConversationStream, type SystemLayer } from '@shared/conversation'
 import { waitWithAbort, withTimeoutSignal } from '@shared/abort'
 import { apiErrorKey, errMessage, isTransientApiError } from '@shared/api-errors'
 import type { MessageKey } from '@shared/i18n'
@@ -76,10 +76,20 @@ const ALREADY_SPOKEN: Readonly<Record<'aizuchi' | 'bridge' | 'bridgePending' | '
   }
 }
 
-/** Asks for the rest of a reply the output limit cut off. */
+/**
+ * Asks for the rest of a reply the output limit cut off. The adapters drop a tool call the limit cut
+ * off, so the model is told it did not run; otherwise it may go on as if it had, saying a note was saved
+ * that never was.
+ */
 const CONTINUE_AFTER_MAX_TOKENS: PromptText = {
-  ja: `直前の回答が上限に達した。重複せず、残りの結論だけを短く続けてください。`,
-  en: `The reply you were giving hit the output limit. Continue with the conclusion that is left, briefly, and do not repeat yourself.`
+  ja: `直前の回答が上限に達した。上限で途中に切れたツールの呼び出しがあれば、それは実行されていない。まだ必要なら呼び直すこと。重複せず、残りの結論だけを短く続けてください。`,
+  en: `The reply you were giving hit the output limit. A tool call the limit cut off did not run; call it again if it is still needed. Continue with the conclusion that is left, briefly, and do not repeat yourself.`
+}
+
+/** Asks for a reply after a response that ended with nothing in it, which the API documents for text placed right after tool results. */
+const REPLY_AFTER_EMPTY: PromptText = {
+  ja: `直前の応答が空だった。ユーザーへの返事をここで短く話すこと。この注記には言及しない。`,
+  en: `Your last reply came back empty. Give the user your reply now, briefly. Never mention this note.`
 }
 
 /** Stands for the job status once it has emptied after the model saw one, which it would otherwise go on reading as current. */
@@ -345,8 +355,14 @@ async function runTurn(
       ttftSent = true
       emit({ type: 'metrics', turnId, timings: { ttftMs: Date.now() - startedAt } })
     }
-    emit({ type: 'delta', turnId, text: delta })
-    for (const sentence of assembler.push(delta)) synth.push(sentence)
+    const { text, sentences } = assembler.push(delta)
+    visibleReply += text
+    emit({ type: 'delta', turnId, text })
+    for (const sentence of sentences) synth.push(sentence)
+  }
+  // The model's text stops where a response ends to wait for its tools and where a web search begins.
+  const pauseText = (): void => {
+    for (const sentence of assembler.pause()) synth.push(sentence)
   }
 
   // A filler that keeps the pause alive while a search or a tool takes long. It plays a pre-synthesized
@@ -368,15 +384,6 @@ async function runTurn(
         }
       })
       .catch((err) => console.error('work filler failed:', errMessage(err)))
-  }
-
-  // The messages sent to the API during the turn are written to the conversation log in the shape they
-  // were sent, because the next turn sends them the same way. An assistant message with tool calls is
-  // recorded together with the user message holding their results.
-  const recordMessages = (...sent: ConversationMessage[]): void => {
-    for (const message of sent) {
-      record({ kind: 'message', turnId, role: message.role, parts: message.parts, ...(message.native ? { native: message.native } : {}) })
-    }
   }
 
   // A tool that opens a confirmation holds the turn until its round's results are recorded. The user's
@@ -460,7 +467,6 @@ async function runTurn(
         stream.on('text', (delta) => {
           if (toolRound.signal.aborted) return
           emittedThisAttempt = true
-          visibleReply += delta
           pushText(delta)
         })
         // A tool call that is complete starts running without waiting for the end of the response.
@@ -473,6 +479,7 @@ async function runTurn(
           if (toolRound.signal.aborted) return
           if (event.phase === 'start') {
             searchActive = true
+            pauseText()
             emit({ type: 'tool', turnId, name: 'web_search', status: 'start' })
             return
           }
@@ -525,13 +532,22 @@ async function runTurn(
       // left undone.
       visibleReply = say('spoken.historyFull')
       emit({ type: 'delta', turnId, text: visibleReply })
-      for (const sentence of assembler.push(visibleReply)) synth.push(sentence)
+      for (const sentence of assembler.push(visibleReply).sentences) synth.push(sentence)
       await closeReply()
       return
     }
     const messages: ConversationMessage[] = history.toMessages()
+    // The messages sent to the API during the turn are written to the conversation log in the shape they
+    // were sent, because the next turn sends them the same way. Those appended together are one record,
+    // a single line of the log, so an assistant message with tool calls and the user message holding
+    // their results are kept or lost together.
+    const appendMessages = (...sent: ConversationMessage[]): void => {
+      messages.push(...sent)
+      record({ kind: 'messages', turnId, messages: sent })
+    }
     let completed = false
     let maxTokenContinuations = 0
+    let askedForReply = false
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       if (signal.aborted) break
       const toolRound = newToolRound()
@@ -551,10 +567,7 @@ async function runTurn(
           if (signal.aborted || resumed || !recorded || !isTransientApiError(err)) throw err
           resumed = true
           console.warn('brain: stream dropped after speaking, resuming:', errMessage(err))
-          const results = await toolRound.settle()
-          const resume = buildResumeMessages(recorded, results, resumeAfterDisconnectNote(locale))
-          messages.push(...resume)
-          recordMessages(...resume)
+          appendMessages(...buildResumeMessages(recorded, await toolRound.settle(), resumeAfterDisconnectNote(locale)))
           continue
         }
         roundUsages.push(result.usage)
@@ -565,16 +578,32 @@ async function runTurn(
         }
 
         if (result.stop === 'end') {
+          if (hasContent(result.message)) {
+            completed = true
+            appendMessages(result.message)
+            break
+          }
+          // The response has nothing in it, and the Messages API refuses an assistant message without
+          // content anywhere but at the end, so it never enters the history. A turn that has said nothing
+          // yet asks the model for its reply once, while another round can still be sent. One that spoke
+          // or ran a tool ends as it is: asking again would say the answer twice, and the prepared sentence
+          // would invite the user to have the tool run twice.
+          const said = visibleReply.trim() !== ''
+          if (!said && !askedForReply && round + 1 < MAX_TOOL_ROUNDS) {
+            askedForReply = true
+            appendMessages({ role: 'user', parts: [{ type: 'text', text: promptText(locale, REPLY_AFTER_EMPTY) }] })
+            continue
+          }
+          if (!said && toolCalls === 0) throw new TurnStopError('spoken.cannotAnswer')
           completed = true
-          messages.push(result.message)
-          recordMessages(result.message)
           break
         }
 
         if (result.stop === 'pause') {
-          // A provider-side tool ran long, so the response is appended unchanged and the same request continues.
-          messages.push(result.message)
-          recordMessages(result.message)
+          // A provider-side tool ran long, so the response is appended unchanged and the same request
+          // continues from it. It can hold no parts, only the blocks of a search in progress, which the
+          // provider needs back.
+          appendMessages(result.message)
           continue
         }
 
@@ -585,9 +614,7 @@ async function runTurn(
           maxTokenContinuations++
           // A tool call the response finished before the limit has already started, and the API refuses
           // the request for the rest while any call in it has no result.
-          const continuation = buildResumeMessages(result.message, await toolRound.settle(), promptText(locale, CONTINUE_AFTER_MAX_TOKENS))
-          messages.push(...continuation)
-          recordMessages(...continuation)
+          appendMessages(...buildResumeMessages(result.message, await toolRound.settle(), promptText(locale, CONTINUE_AFTER_MAX_TOKENS)))
           continue
         }
 
@@ -595,16 +622,17 @@ async function runTurn(
           throw new TurnStopError('spoken.cannotAnswer')
         }
 
-        // The response with its tool calls is appended, and the results of the tools started during
-        // the stream are awaited.
-        messages.push(result.message)
+        // The response ended to wait for its tools, so the sentence said before them is complete and is
+        // read while they run. The results of the tools started during the stream are awaited. Failures go
+        // back to the model as results marked isError, and on the round before the limit the message also
+        // tells the model that the next round is the last.
+        pauseText()
         const results = await toolRound.settle()
         if (results.length === 0) break
-        // Failures go back to the model as results marked isError, and on the round before the limit
-        // the message also tells the model that the next round is the last.
-        const resultsMessage = buildToolResultsMessage(results, { index: round, maxRounds: MAX_TOOL_ROUNDS, allowNote: !result.pendingServerTool, locale })
-        messages.push(resultsMessage)
-        recordMessages(result.message, resultsMessage)
+        appendMessages(
+          result.message,
+          buildToolResultsMessage(results, { index: round, maxRounds: MAX_TOOL_ROUNDS, allowNote: !result.pendingServerTool, locale })
+        )
       } finally {
         if (slowToolTimer) clearTimeout(slowToolTimer)
         slowToolTimer = null

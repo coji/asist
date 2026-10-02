@@ -143,6 +143,12 @@ export interface ConversationStream {
   snapshot(): ConversationMessage | null
 }
 
+/**
+ * Whether a message carries anything the model can read back. A response can end with nothing in it, and
+ * the Messages API refuses an assistant message without content anywhere but at the end of a request.
+ */
+export const hasContent = (message: ConversationMessage): boolean => message.parts.length > 0
+
 export const textOf = (message: ConversationMessage): string =>
   message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('')
 

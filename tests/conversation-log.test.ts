@@ -110,6 +110,16 @@ describe('ConversationLog', () => {
     expect(errors).toEqual([])
   })
 
+  it('writes the first record after a line that a crash cut off on a line of its own, so neither the record nor the lines before are lost', () => {
+    const now = new Date(2026, 9, 2, 12, 0)
+    const { log, dir } = makeLog({ now: () => now })
+    const whole = JSON.stringify({ t: now.getTime() - 2000, kind: 'user', turnId: 1, text: '前の発話' })
+    fs.writeFileSync(path.join(dir, logFileName(now)), `${whole}\n{"t":${now.getTime() - 1000},"kind":"assistant","turnId":1,"text":"途中`)
+    log.append({ kind: 'user', turnId: 2, text: '再起動後の最初の発話' })
+    log.append({ kind: 'assistant', turnId: 2, text: 'はい。' })
+    expect(log.readDay(now).map((record) => ('text' in record ? record.text : null))).toEqual(['前の発話', '再起動後の最初の発話', 'はい。'])
+  })
+
   it('reports an invalid retention period through onError, deletes nothing, and keeps appending', () => {
     const { log, dir, errors } = makeLog({ retentionDays: 0, now: () => new Date(2026, 8, 8) })
     fs.writeFileSync(path.join(dir, '2020-01-01.jsonl'), '')
@@ -120,20 +130,23 @@ describe('ConversationLog', () => {
     expect(errors[0]).toContain('prune')
   })
 
-  it('stores a message with its parts and the provider payload, and skips lines without parts', () => {
+  it('stores the messages with their parts and the provider payload, and skips lines whose messages have no parts', () => {
     const now = new Date(2026, 8, 8, 12, 0)
     const { log, dir, errors } = makeLog({ now: () => now })
     const native = { provider: 'openai' as const, model: 'gpt-5.5', payload: [{ type: 'reasoning', id: 'rs_1', encrypted_content: 'enc' }] }
-    log.append({ kind: 'message', turnId: 1, role: 'assistant', parts: [{ type: 'text', text: '快晴です。' }], native })
-    fs.appendFileSync(path.join(dir, logFileName(now)), JSON.stringify({ t: 1, kind: 'message', turnId: 2, role: 'assistant', content: 'x' }) + '\n')
+    const sent = { role: 'assistant' as const, parts: [{ type: 'text' as const, text: '快晴です。' }], native }
+    log.append({ kind: 'messages', turnId: 1, messages: [sent] })
+    const file = path.join(dir, logFileName(now))
+    fs.appendFileSync(file, JSON.stringify({ t: 1, kind: 'messages', turnId: 2, messages: [{ role: 'assistant', content: 'x' }] }) + '\n')
+    fs.appendFileSync(file, JSON.stringify({ t: 1, kind: 'message', turnId: 2, role: 'assistant', content: 'x' }) + '\n')
     fs.appendFileSync(
-      path.join(dir, logFileName(now)),
+      file,
       JSON.stringify({ t: 2, kind: 'checkpoint', summary: 's', records: [{ t: 1, kind: 'message', turnId: 2, role: 'user', content: [] }] }) + '\n'
     )
     // An unreadable line kept in the history would send a message the API cannot accept.
-    expect(log.readDay(now)).toEqual([expect.objectContaining({ kind: 'message', turnId: 1, parts: [{ type: 'text', text: '快晴です。' }], native })])
+    expect(log.readDay(now)).toEqual([expect.objectContaining({ kind: 'messages', turnId: 1, messages: [sent] })])
     // However many lines are unreadable, the error is reported once per file.
-    expect(errors).toEqual(['read: 2026-09-08.jsonl: skipped 2 unreadable line(s)'])
+    expect(errors).toEqual(['read: 2026-09-08.jsonl: skipped 3 unreadable line(s)'])
   })
 })
 

@@ -52,12 +52,20 @@ const tool = (turnId: number, name: string, input: string, result: string, isErr
   durationMs: 10,
   ...(isError ? { isError: true } : {})
 })
+/** One message a line, the form the log was written in before the messages appended together went into one record. */
 const message = (turnId: number, role: 'user' | 'assistant', parts: ConversationPart[]): ConversationRecord => ({
   t: T0 + turnId * 1000 + 300,
   kind: 'message',
   turnId,
   role,
   parts
+})
+/** The messages a turn appended together, such as a tool call and its results, as the log writes them now. */
+const messages = (turnId: number, ...sent: ConversationMessage[]): ConversationRecord => ({
+  t: T0 + turnId * 1000 + 300,
+  kind: 'messages',
+  turnId,
+  messages: sent
 })
 
 /** A memory note a live engine sent to the model once the utterance of the turn was already recorded. */
@@ -76,10 +84,13 @@ const textOf = (m: ConversationMessage): string => m.parts.map((part) => (part.t
 /** The records of a turn that calls one tool and then answers, in the form the API receives. */
 const toolTurn = (turnId: number, result: string): ConversationRecord[] => [
   user(turnId, '大阪の天気'),
-  message(turnId, 'assistant', [{ type: 'tool_call', id: `t${turnId}`, name: 'show_weather', input: { location: '大阪' } }]),
-  message(turnId, 'user', [{ type: 'tool_result', callId: `t${turnId}`, name: 'show_weather', content: result }]),
+  messages(
+    turnId,
+    { role: 'assistant', parts: [{ type: 'tool_call', id: `t${turnId}`, name: 'show_weather', input: { location: '大阪' } }] },
+    { role: 'user', parts: [{ type: 'tool_result', callId: `t${turnId}`, name: 'show_weather', content: result }] }
+  ),
   tool(turnId, 'show_weather', '{"location":"大阪"}', result.slice(0, 200)),
-  message(turnId, 'assistant', [{ type: 'text', text: '晴天です。' }]),
+  messages(turnId, text('assistant', '晴天です。')),
   assistant(turnId, '晴天です。')
 ]
 
@@ -210,6 +221,47 @@ describe('ConversationHistory, derived from the conversation log', () => {
     history.apply(message(2, 'assistant', [{ type: 'text', text: '晴天です。' }]))
     history.apply(assistant(2, '晴天です。', { interrupted: 'while-speaking' }))
     expect(history.toMessages().at(-1)).toEqual(text('assistant', INTERRUPTED_WHILE_SPEAKING))
+  })
+
+  it('adds only the marker after a reply whose rounds were all sent, when what was spoken puts a space between them', () => {
+    const { history } = makeHistory()
+    history.apply(user(1, 'What is the weather tomorrow?'))
+    history.apply(messages(
+      1,
+      { role: 'assistant', parts: [{ type: 'text', text: 'Let me look that up.' }, { type: 'tool_call', id: 't1', name: 'show_weather', input: {} }] },
+      { role: 'user', parts: [{ type: 'tool_result', callId: 't1', name: 'show_weather', content: '{}' }] }
+    ))
+    history.apply(messages(1, text('assistant', 'It will be sunny tomorrow.')))
+    // The words of a language that writes them apart are kept apart on the screen and in the log across the pause.
+    history.apply(assistant(1, 'Let me look that up. It will be sunny tomorrow.', { interrupted: 'while-speaking' }))
+    expect(history.toMessages().at(-1)).toEqual(text('assistant', INTERRUPTED_WHILE_SPEAKING))
+  })
+
+  it('reads a tool call and its results written one message a line, as the log held them before they went into one record', () => {
+    const { history } = makeHistory()
+    history.apply(user(1, '大阪の天気'))
+    history.apply(message(1, 'assistant', [{ type: 'tool_call', id: 't1', name: 'show_weather', input: {} }]))
+    history.apply(message(1, 'user', [{ type: 'tool_result', callId: 't1', name: 'show_weather', content: '{"temp":28}' }]))
+    history.apply(message(1, 'assistant', [{ type: 'text', text: '晴天です。' }]))
+    history.apply(assistant(1, '晴天です。'))
+    const sent = history.toMessages()
+    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant'])
+    expect(sent[2].parts).toEqual([{ type: 'tool_result', callId: 't1', name: 'show_weather', content: '{"temp":28}' }])
+  })
+
+  it('reads a log that holds an assistant message without content as if the message were not there', () => {
+    const { history } = makeHistory({
+      stored: [
+        user(1, 'ありがとう'),
+        { ...message(1, 'assistant', []), native: { provider: 'anthropic', model: 'claude-sonnet-5', payload: [] } } as ConversationRecord,
+        assistant(1, ''),
+        user(2, '明日の天気は')
+      ]
+    })
+    history.ensureLoaded()
+    const sent = history.toMessages()
+    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user'])
+    expect(sent.every((m) => m.parts.length > 0)).toBe(true)
   })
 
   it('drops a system notice interrupted before the reply, because the retry of the report adds it again', () => {

@@ -49,8 +49,8 @@ export function statusError(status: number, message: string, cause?: unknown): E
 
 /**
  * The base every adapter's stream builds on: it dispatches the events and keeps what is confirmed so
- * far. Text deltas accumulate and become one text part at the next tool call or at the end of the
- * response; text that is only whitespace is never confirmed.
+ * far. Text deltas accumulate and become one text part at the next tool call, at the start of a search
+ * or at the end of the response; text that is only whitespace is never confirmed.
  */
 export abstract class AdapterStream implements ConversationStream {
   private readonly textListeners: Array<(delta: string) => void> = []
@@ -114,7 +114,13 @@ export abstract class AdapterStream implements ConversationStream {
     for (const listener of this.toolCallListeners) listener(call)
   }
 
+  /**
+   * A search that starts ends the text before it, where the conversation pauses. Gemini goes on writing
+   * the same text part after its search, and a part that ran across the pause would not match the spoken
+   * reply, which puts a space there in a language that writes words apart.
+   */
   protected emitSearch(event: SearchEvent): void {
+    if (event.phase === 'start') this.closeText()
     for (const listener of this.searchListeners) listener(event)
   }
 }

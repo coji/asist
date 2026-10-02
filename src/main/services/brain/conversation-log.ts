@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { expiredDatedFiles, localDateKey } from '@shared/local-date'
-import type { ConversationPart, NativeOutput } from '@shared/conversation'
+import type { ConversationMessage, ConversationPart, NativeOutput } from '@shared/conversation'
 import { errorText } from '@shared/i18n/error-text'
 
 /**
@@ -59,19 +59,18 @@ export type ConversationRecord =
   | {
       t: number
       /**
-       * A message sent to the API during the turn. These follow the user's utterance in the order
-       * they were sent, and the next turn sends them in the same shape, so the history only grows at
-       * the end and the prompt cache keeps working. An assistant message that contains tool calls is
-       * recorded only once the user message with their results is ready, so that the history never
-       * holds a tool call without a result.
+       * Messages sent to the API during the turn, the ones appended together. These follow the user's
+       * utterance in the order they were sent, and the next turn sends them in the same shape, so the
+       * history only grows at the end and the prompt cache keeps working. An assistant message that
+       * contains tool calls is in the same record as the user message with their results, so a line the
+       * log lost takes both and the history never holds a tool call without a result.
        */
-      kind: 'message'
+      kind: 'messages'
       turnId: number
-      role: 'user' | 'assistant'
-      parts: ConversationPart[]
-      /** The provider's output as returned, on assistant messages only. It is sent back as is to the same model of the same provider. */
-      native?: NativeOutput
+      /** An assistant message carries the provider's output as returned in `native`, which is sent back as is to the same model of the same provider. */
+      messages: ConversationMessage[]
     }
+  | MessageRecord
   | {
       t: number
       kind: 'assistant'
@@ -96,9 +95,9 @@ export type ConversationRecord =
       kind: 'tool'
       turnId: number
       name: string
-      /** The input as JSON, clipped. The full input is in the tool call of the message record of the same turn. */
+      /** The input as JSON, clipped. The full input is in the tool call of the messages record of the same turn. */
       input: string
-      /** The beginning of the result. The full result is in the tool result of the message record of the same turn. */
+      /** The beginning of the result. The full result is in the tool result of the messages record of the same turn. */
       result: string
       /** The length in characters of the full result, not of the clipped `result` above. */
       resultLength: number
@@ -113,7 +112,21 @@ export type ConversationRecord =
       memoryIds?: string[]
     }
 
-export type ConversationRecordInput = ConversationRecord extends infer R
+/**
+ * One message a line, the form the log was written in until the messages appended together went into one
+ * record. A log of that time is still read, and the record is no longer written.
+ */
+interface MessageRecord {
+  t: number
+  kind: 'message'
+  turnId: number
+  role: 'user' | 'assistant'
+  parts: ConversationPart[]
+  native?: NativeOutput
+}
+
+/** What is appended to the log, which takes the time itself and writes only the current forms. */
+export type ConversationRecordInput = Exclude<ConversationRecord, MessageRecord> extends infer R
   ? R extends ConversationRecord
     ? Omit<R, 't'>
     : never
@@ -125,7 +138,7 @@ export function logFileName(date: Date): string {
   return `${localDateKey(date)}.jsonl`
 }
 
-/** Serializes the input to JSON and clips it at the limit; the full input stays in the message record. */
+/** Serializes the input to JSON and clips it at the limit; the full input stays in the messages record. */
 export function summarizeToolInput(input: unknown, max = SUMMARY_MAX): string {
   let text: string
   try {
@@ -145,14 +158,37 @@ function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)}…`
 }
 
-/** A message record must carry `parts`. A line without them comes from a different log format and is skipped as unreadable. */
-const usable = (record: ConversationRecord): boolean =>
-  record.kind === 'message' ? Array.isArray(record.parts) : record.kind === 'checkpoint' ? record.records.every(usable) : true
+/** A message must carry `parts`. A line without them comes from a different log format and is skipped as unreadable. */
+function usable(record: ConversationRecord): boolean {
+  if (record.kind === 'messages') return Array.isArray(record.messages) && record.messages.every((message) => Array.isArray(message.parts))
+  if (record.kind === 'message') return Array.isArray(record.parts)
+  return record.kind === 'checkpoint' ? record.records.every(usable) : true
+}
 
 function parseRecord(line: string): ConversationRecord {
   const record = JSON.parse(line) as ConversationRecord
   if (!usable(record)) throw new Error(`conversation log: unreadable ${record.kind} record`)
   return record
+}
+
+/** Whether the file is missing, empty or ends in a newline, so that what is appended next starts a line of its own. */
+function endsLine(file: string): boolean {
+  let fd: number
+  try {
+    fd = fs.openSync(file, 'r')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return true
+    throw err
+  }
+  try {
+    const { size } = fs.fstatSync(fd)
+    if (size === 0) return true
+    const last = Buffer.alloc(1)
+    fs.readSync(fd, last, 0, 1, size - 1)
+    return last[0] === 0x0a
+  } finally {
+    fs.closeSync(fd)
+  }
 }
 
 export interface ConversationLogOptions {
@@ -179,8 +215,11 @@ export class ConversationLog {
         this.currentFile = file
         this.prune(now)
       }
+      // A crash or a failed write can leave the file ending inside a line, and a record appended to that
+      // line would be lost with it when the file is read.
+      const line = `${JSON.stringify(full)}\n`
       // The log holds everything said and every tool result, mail bodies included, so only the user may read it.
-      fs.appendFileSync(file, JSON.stringify(full) + '\n', { mode: 0o600 })
+      fs.appendFileSync(file, endsLine(file) ? line : `\n${line}`, { mode: 0o600 })
     } catch (err) {
       this.options.onError?.('append', err)
     }

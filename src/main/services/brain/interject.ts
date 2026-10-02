@@ -25,7 +25,7 @@ export async function interject(text: string): Promise<void> {
     const locale = conversationLocale()
     const synth = route.open({ turnId, signal, emit, locale })
     const assembler = new SegmentAssembler(locale)
-    for (const s of assembler.push(text + '\n')) synth.push(s)
+    for (const s of assembler.push(text + '\n').sentences) synth.push(s)
     for (const s of assembler.flush()) synth.push(s)
     await synth.drain()
     // A newer turn that took over meanwhile leaves unknown how much of the sentence was heard, so it is
