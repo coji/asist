@@ -1198,6 +1198,34 @@ export const files = defineMessages({
       'pt-BR': 'Destino do link não encontrado',
       'es-419': 'Destino del enlace no encontrado',
       'es-ES': 'Destino del enlace no encontrado'
+    },
+    entriesCut: {
+      macos: {
+        'ja-JP': '{count} 件のうち先頭の {listed} 件だけ読み込み。残りは Finder で開く',
+        'en-US': 'Only the first {listed} of {count} were read. Open the folder in Finder for the rest',
+        'fr-FR': 'Seuls les {listed} premiers sur {count} ont été lus. Ouvrez le dossier dans le Finder pour la suite',
+        'de-DE': 'Nur die ersten {listed} von {count} wurden gelesen. Den Rest im Finder öffnen',
+        'hi-IN': '{count} में से सिर्फ़ पहले {listed} पढ़े गए। बाकी के लिए फ़ोल्डर Finder में खोलें',
+        'id-ID': 'Hanya {listed} pertama dari {count} yang dibaca. Buka foldernya di Finder untuk sisanya',
+        'it-IT': 'Sono stati letti solo i primi {listed} su {count}. Apri la cartella nel Finder per il resto',
+        'ko-KR': '{count}개 중 처음 {listed}개만 읽었습니다. 나머지는 Finder에서 폴더를 열어 보십시오',
+        'pt-BR': 'Só os primeiros {listed} de {count} foram lidos. Abra a pasta no Finder para ver o resto',
+        'es-419': 'Solo se leyeron los primeros {listed} de {count}. Abre la carpeta en el Finder para ver el resto',
+        'es-ES': 'Solo se han leído los primeros {listed} de {count}. Abre la carpeta en el Finder para ver el resto'
+      },
+      windows: {
+        'ja-JP': '{count} 件のうち先頭の {listed} 件だけ読み込み。残りはエクスプローラーで開く',
+        'en-US': 'Only the first {listed} of {count} were read. Open the folder in File Explorer for the rest',
+        'fr-FR': "Seuls les {listed} premiers sur {count} ont été lus. Ouvrez le dossier dans l'Explorateur de fichiers pour la suite",
+        'de-DE': 'Nur die ersten {listed} von {count} wurden gelesen. Den Rest im Explorer öffnen',
+        'hi-IN': '{count} में से सिर्फ़ पहले {listed} पढ़े गए। बाकी के लिए फ़ोल्डर फ़ाइल एक्सप्लोरर में खोलें',
+        'id-ID': 'Hanya {listed} pertama dari {count} yang dibaca. Buka foldernya di Penjelajah File untuk sisanya',
+        'it-IT': 'Sono stati letti solo i primi {listed} su {count}. Apri la cartella in Esplora file per il resto',
+        'ko-KR': '{count}개 중 처음 {listed}개만 읽었습니다. 나머지는 파일 탐색기에서 폴더를 열어 보십시오',
+        'pt-BR': 'Só os primeiros {listed} de {count} foram lidos. Abra a pasta no Explorador de Arquivos para ver o resto',
+        'es-419': 'Solo se leyeron los primeros {listed} de {count}. Abre la carpeta en el Explorador de archivos para ver el resto',
+        'es-ES': 'Solo se han leído los primeros {listed} de {count}. Abre la carpeta en el Explorador de archivos para ver el resto'
+      }
     }
   },
   source: {
@@ -1239,19 +1267,6 @@ export const files = defineMessages({
       'pt-BR': 'Isto não é um arquivo',
       'es-419': 'Esto no es un archivo',
       'es-ES': 'Esto no es un archivo'
-    },
-    folderFailed: {
-      'ja-JP': 'フォルダを読めません: {message}',
-      'en-US': "Couldn't read the folder: {message}",
-      'fr-FR': 'Impossible de lire le dossier : {message}',
-      'de-DE': 'Der Ordner ließ sich nicht lesen: {message}',
-      'hi-IN': 'फ़ोल्डर पढ़ा नहीं जा सका: {message}',
-      'id-ID': 'Tidak bisa membaca foldernya: {message}',
-      'it-IT': 'Impossibile leggere la cartella: {message}',
-      'ko-KR': '폴더를 읽을 수 없습니다: {message}',
-      'pt-BR': 'Não foi possível ler a pasta: {message}',
-      'es-419': 'No se pudo leer la carpeta: {message}',
-      'es-ES': 'No se ha podido leer la carpeta: {message}'
     },
     readFailed: {
       'ja-JP': '読めません: {message}',
@@ -1356,6 +1371,19 @@ export const files = defineMessages({
       'pt-BR': 'Não há referência para o slide {relId}.',
       'es-419': 'No hay una referencia para la diapositiva {relId}.',
       'es-ES': 'No hay ninguna referencia para la diapositiva {relId}.'
+    },
+    denied: {
+      'ja-JP': 'この場所を開く許可がありません',
+      'en-US': "ASIST isn't allowed to open this location",
+      'fr-FR': "ASIST n'a pas l'autorisation d'ouvrir cet emplacement",
+      'de-DE': 'ASIST darf diesen Ort nicht öffnen',
+      'hi-IN': 'ASIST को यह जगह खोलने की अनुमति नहीं है',
+      'id-ID': 'ASIST tidak diizinkan membuka lokasi ini',
+      'it-IT': 'ASIST non ha il permesso di aprire questa posizione',
+      'ko-KR': 'ASIST에 이 위치를 열 권한이 없습니다',
+      'pt-BR': 'O ASIST não tem permissão para abrir este local',
+      'es-419': 'ASIST no tiene permiso para abrir esta ubicación',
+      'es-ES': 'ASIST no tiene permiso para abrir esta ubicación'
     }
   }
 })

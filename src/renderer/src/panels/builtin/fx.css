@@ -3,8 +3,10 @@
   --card-hue: #6fd6b8;
   --card-focus-width: 540px;
 }
+/* The rate and its unit stay on one line, and the card scales a rate wider than itself down to fit. */
 .fx .card-big strong {
   color: var(--ui-text-strong);
+  white-space: nowrap;
 }
 .fx-asof {
   font-size: 9px;

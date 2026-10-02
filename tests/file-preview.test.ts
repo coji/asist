@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 // readFileItem writes the reason a file could not be read in the language of the interface.
 const mocks = vi.hoisted(() => ({ userData: '' }))
@@ -11,7 +11,7 @@ beforeAll(() => {
 })
 
 import { createTranslator } from '@shared/i18n'
-import { allowedPath, classifyFile, listDirectory, readFileItem, type PathSystem } from '../src/main/services/file-preview'
+import { allowedPath, classifyFile, fileItem, listDirectory, MAX_DIRECTORY_ENTRIES, readFileItem, type PathSystem } from '../src/main/services/file-preview'
 import { filesLayout, formatBytes, isHtmlPage, MAX_TEXT_BYTES } from '../src/shared/files'
 
 describe('isHtmlPage', () => {
@@ -273,9 +273,66 @@ describe('readFileItem', () => {
     expect(listDirectory(folder)).toHaveLength(3)
   })
 
+  it('lists only the first entries of a crowded folder and says how many it holds', () => {
+    const folder = path.join(dir, 'crowded')
+    mkdirSync(folder)
+    const count = MAX_DIRECTORY_ENTRIES + 5
+    for (let i = 0; i < count; i++) writeFileSync(path.join(folder, `file-${i}.txt`), '')
+    writeFileSync(path.join(folder, '.hidden'), '')
+    const item = readFileItem(folder, toUrl)
+    expect(item.entries).toHaveLength(MAX_DIRECTORY_ENTRIES)
+    expect(item.entryCount).toBe(count)
+  })
+})
+
+describe('fileItem, the check and the read of one path of show_files', () => {
+  const t = createTranslator('ja-JP')
+  const toUrl = (p: string): string => `asist-file://${p}`
+  const base = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-file-item-')))
+  const root = path.join(base, 'root')
+  mkdirSync(root)
+
   it('returns an item carrying an error for a missing path instead of throwing', () => {
-    const item = readFileItem(path.join(dir, 'missing.txt'), toUrl)
-    expect(item).toMatchObject({ name: 'missing.txt', error: createTranslator('ja-JP')('files.errors.missing') })
+    expect(fileItem(path.join(root, 'missing.txt'), [root], toUrl)).toMatchObject({ name: 'missing.txt', error: t('files.errors.missing') })
+  })
+
+  it('reports a path that runs through a file as missing', () => {
+    writeFileSync(path.join(root, 'plain.md'), 'x')
+    expect(fileItem(path.join(root, 'plain.md', 'sub'), [root], toUrl)).toMatchObject({ error: t('files.errors.missing') })
+  })
+
+  // A file or folder whose mode refuses the process stands in for what macOS keeps behind its privacy settings,
+  // which it refuses with EPERM where the mode gives EACCES. Root and Windows read them all.
+  describe.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('a place the OS refuses', () => {
+    const locked: string[] = []
+    const lock = (target: string, mode: number): string => {
+      chmodSync(target, mode)
+      locked.push(target)
+      return target
+    }
+    afterAll(() => {
+      for (const target of locked) chmodSync(target, 0o755)
+    })
+
+    it('words the refusal the same way whether the OS refuses to resolve, open or list the path', () => {
+      writeFileSync(path.join(root, 'secret.md'), 'secret')
+      const file = lock(path.join(root, 'secret.md'), 0o000)
+      mkdirSync(path.join(root, 'unlisted'))
+      const folder = lock(path.join(root, 'unlisted'), 0o311)
+      mkdirSync(path.join(root, 'closed'))
+      writeFileSync(path.join(root, 'closed', 'inside.md'), 'x')
+      lock(path.join(root, 'closed'), 0o000)
+      for (const target of [file, folder, path.join(root, 'closed', 'inside.md')]) {
+        expect(fileItem(target, [root], toUrl), target).toMatchObject({ error: t('files.errors.denied') })
+      }
+    })
+
+    it('answers a path under no root as outside the roots even when the OS refuses to resolve it', () => {
+      mkdirSync(path.join(base, 'elsewhere'))
+      writeFileSync(path.join(base, 'elsewhere', 'b.md'), 'x')
+      lock(path.join(base, 'elsewhere'), 0o000)
+      expect(fileItem(path.join(base, 'elsewhere', 'b.md'), [root], toUrl)).toMatchObject({ error: t('files.errors.outsideRoots') })
+    })
   })
 })
 

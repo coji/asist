@@ -25,7 +25,7 @@ const propsOf = (spec: PanelSpec): FilesProps => spec.props as unknown as FilesP
 
 function itemMeta(item: FileItem, t: Translate): string {
   const parts = [t(`files.kind.${item.kind}`)]
-  if (item.kind === 'directory') parts.push(t('files.entries', { count: item.entries?.length ?? 0 }))
+  if (item.kind === 'directory') parts.push(t('files.entries', { count: item.entryCount ?? 0 }))
   else if (item.sizeBytes > 0) parts.push(formatBytes(item.sizeBytes))
   if (item.modifiedAt) parts.push(relativeTime(item.modifiedAt))
   return parts.join(' · ')
@@ -40,8 +40,13 @@ function useSelect(spec: PanelSpec): (index: number, focus: boolean) => void {
   }
 }
 
-function Reveal({ item }: { item: FileItem }): React.JSX.Element {
+/**
+ * Shows the item in Finder or File Explorer. An item that could not be read is not offered, since main reveals
+ * only a path it can resolve under a root.
+ */
+function Reveal({ item }: { item: FileItem }): React.JSX.Element | null {
   const t = useT()
+  if (item.error) return null
   return (
     <Actions>
       <Action leadsTo="outside" onClick={() => void window.api.revealPath(item.path)}>{t(osMessageKey('files.reveal', platformCapabilities().os))}</Action>

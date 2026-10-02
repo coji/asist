@@ -96,14 +96,31 @@ DEMO_FILES[DIR] = {
     { name: 'config.json', path: `${DIR}/config.json`, kind: 'data', sizeBytes: 120 },
     { name: 'pricing.csv', path: `${DIR}/pricing.csv`, kind: 'table', sizeBytes: 214 },
     { name: 'report.md', path: `${DIR}/report.md`, kind: 'markdown', sizeBytes: 1830 }
-  ]
+  ],
+  entryCount: 6
 }
 DEMO_FILES[`${DIR}/charts`] = {
   path: `${DIR}/charts`,
   name: 'charts',
   kind: 'directory',
   sizeBytes: 0,
-  entries: ['chart-revenue.png', 'chart-users.png', 'screenshot.png'].map((name) => ({ name, path: `${DIR}/charts/${name}`, kind: 'image' as const, sizeBytes: DEMO_FILES[`${DIR}/charts/${name}`].sizeBytes }))
+  entries: ['chart-revenue.png', 'chart-users.png', 'screenshot.png'].map((name) => ({ name, path: `${DIR}/charts/${name}`, kind: 'image' as const, sizeBytes: DEMO_FILES[`${DIR}/charts/${name}`].sizeBytes })),
+  entryCount: 3
+}
+
+const DOWNLOADS = '/Users/demo/Downloads'
+/** A folder holding more entries than main lists, which sends the first 200 and the number the folder holds. */
+DEMO_FILES[DOWNLOADS] = {
+  path: DOWNLOADS,
+  name: 'Downloads',
+  kind: 'directory',
+  sizeBytes: 0,
+  modifiedAt: now - 20 * 60_000,
+  entries: Array.from({ length: 200 }, (_, i) => {
+    const name = `IMG_${4021 + i}.jpeg`
+    return { name, path: `${DOWNLOADS}/${name}`, kind: 'image' as const, sizeBytes: 1_800_000 + i * 3517 }
+  }),
+  entryCount: 5214
 }
 
 Object.assign(DEMO_FILES, Object.fromEntries(DEMO_PDF_ITEMS.map((item) => [item.path, item])))
@@ -111,6 +128,7 @@ Object.assign(DEMO_FILES, Object.fromEntries(DEMO_MEDIA_ITEMS.map((item) => [ite
 Object.assign(DEMO_FILES, Object.fromEntries(DEMO_OFFICE_ITEMS.map((item) => [item.path, item])))
 
 export const DEMO_FILES_DIR = DIR
+export const DEMO_DOWNLOADS_DIR = DOWNLOADS
 
 Object.assign(DEMO_FILES, Object.fromEntries(DEMO_CODE_ITEMS.map((item) => [item.path, item])))
 export const DEMO_IMAGE_PATHS = ['chart-revenue.png', 'chart-users.png', 'screenshot.png'].map((name) => `${DIR}/charts/${name}`)

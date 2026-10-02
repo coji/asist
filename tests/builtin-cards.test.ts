@@ -20,7 +20,7 @@ import { tableAmounts } from '@/panels/builtin/fx'
 import { diffLabel, offsetMinutes, phaseOf, zoned } from '@/panels/builtin/clock'
 import { remainingText } from '@/panels/builtin/timer'
 import { elapsedLabel } from '@/panels/builtin/agent-job'
-import { relativeDayLabel, relativeTime } from '@/panels/primitives/format'
+import { clockTime, relativeDayLabel, relativeTime } from '@/panels/primitives/format'
 import { DEMO_CALENDAR_CARD } from '@/demo/fixtures/calendar'
 import { DEMO_FX } from '@/demo/fixtures/finance'
 import { DEMO_JOB, DEMO_JOB_LOG, DEMO_JOBS } from '@/demo/fixtures/jobs'
@@ -28,6 +28,8 @@ import { DEMO_FILES_DIR, DEMO_IMAGE_PATHS, DEMO_MIXED_PATHS, DEMO_REPORT_MD, dem
 import { DEMO_MAIL_CARD, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGE_CARD } from '@/demo/fixtures/mail'
 import { DEMO_NEWS, DEMO_SEARCH, DEMO_SEARCH_GOOGLE } from '@/demo/fixtures/reading'
 import { DEMO_CLOCKS } from '@/demo/fixtures/time'
+import { osMessageKey } from '@shared/i18n/os-message'
+import { platformCapabilities } from '@/platform'
 
 /**
  * These tests cover what each built-in card folds away per size, how it leads to the focus view, the actions it
@@ -121,6 +123,7 @@ beforeEach(() => {
   observers.length = 0
   for (const fn of Object.values(api)) fn.mockClear()
   api.jobLog.mockResolvedValue([])
+  api.timerList.mockResolvedValue([])
   sendTypedMessage.mockClear()
   usePanelStore.setState({ panels: [], focusedKey: null })
   useJobStore.setState({ jobs: [], logs: {} })
@@ -439,7 +442,7 @@ describe('todo and notes cards', () => {
 describe('timer card', () => {
   it('counts down the timer it reads from main, and on stop deletes it in main before closing the card', async () => {
     const endsAt = Date.now() + 90_000
-    api.timerList.mockResolvedValueOnce([
+    api.timerList.mockResolvedValue([
       { id: 'timer:test', label: 'パスタ', seconds: 180, createdAt: endsAt - 180_000, endsAt, status: 'active' }
     ])
     const card = await renderAt(spec('timer', { seconds: 180, label: 'パスタ' }), L)
@@ -452,13 +455,22 @@ describe('timer card', () => {
   })
 
   it('shows that the time is up and a close button once the timer is over, and draws no ring at size s', async () => {
-    api.timerList.mockResolvedValueOnce([
+    api.timerList.mockResolvedValue([
       { id: 'timer:test', label: '茶', seconds: 60, createdAt: Date.now() - 61_000, endsAt: Date.now() - 1000, status: 'finished' }
     ])
     const card = await renderAt(spec('timer', { seconds: 60, label: '茶' }), S)
     expect(card.querySelector('.card-big time')?.textContent).toBe(t('cardsTime.timer.done'))
     expect(card.querySelector('.card-action')?.textContent).toBe(t('common.close'))
     expect(card.querySelector('.tm-ring')).toBeNull()
+  })
+
+  it('takes the end time in the header and the body from the timer main keeps, not from when the card was made', async () => {
+    // A 30-minute timer started 20 minutes ago, whose card TimerRestorer has just made again after a restart.
+    const endsAt = Date.now() + 10 * 60_000
+    api.timerList.mockResolvedValue([{ id: 'timer:test', label: 'パスタ', seconds: 1800, createdAt: endsAt - 1_800_000, endsAt, status: 'active' }])
+    const card = await renderAt(spec('timer', { seconds: 1800, label: 'パスタ' }), L)
+    expect(card.querySelector('.panel-meta')?.textContent).toBe(t('cardsTime.timer.endsAt', { time: clockTime(endsAt) }))
+    expect(card.querySelector('.card-note')?.textContent).toBe(t('cardsTime.timer.endsAt', { time: clockTime(endsAt) }))
   })
 
   it('says so when main has no such timer', async () => {
@@ -750,6 +762,28 @@ describe('files card', () => {
     expect(usePanelStore.getState().panels.some((panel) => panel.key === `files:${DEMO_FILES_DIR}/charts`)).toBe(true)
   })
 
+  it('gives the number of entries a folder holds when main cut its list short, and says in the focus view that the rest is not listed', async () => {
+    const entries = Array.from({ length: 200 }, (_, i) => ({ name: `file-${i}.txt`, path: `/Users/me/Downloads/file-${i}.txt`, kind: 'text' as const, sizeBytes: 10 }))
+    const folder: FileItem = { path: '/Users/me/Downloads', name: 'Downloads', kind: 'directory', sizeBytes: 0, entries, entryCount: 5000 }
+    const card = await renderAt(spec('files', { paths: [folder.path], items: [folder] }), L)
+    expect(card.querySelector('.card-hero p')?.textContent).toContain(t('files.entries', { count: 5000 }))
+    await act(async () => {
+      root.render(React.createElement('section', { 'data-surface': 'focus' }, React.createElement(FocusOverlay)))
+      usePanelStore.getState().setFocused('files:test')
+    })
+    const focus = container.querySelector<HTMLElement>('[data-surface="focus"]')!
+    expect(focus.querySelectorAll('.fv-entry')).toHaveLength(200)
+    expect(focus.textContent).toContain(t(osMessageKey('files.viewer.entriesCut', platformCapabilities().os), { listed: 200, count: 5000 }))
+  })
+
+  it('offers to show a file in Finder only when it could read the file, since main refuses to reveal a path it cannot read', async () => {
+    const denied: FileItem = { path: '/Users/me/Downloads/statement.pdf', name: 'statement.pdf', kind: 'binary', sizeBytes: 0, error: t('files.errors.denied') }
+    const unreadable = await renderAt(spec('files', { paths: [denied.path], items: [denied] }), L)
+    expect(unreadable.querySelector('.card-action')).toBeNull()
+    const readable = await renderAt(filesSpec([`${DEMO_FILES_DIR}/report.md`]), L)
+    expect(readable.querySelector('.card-action')).not.toBeNull()
+  })
+
   it('writes the markdown fixture in real markdown syntax', () => {
     expect(DEMO_REPORT_MD).toContain('| サービス |')
   })
@@ -921,6 +955,10 @@ describe('mail draft card', () => {
   })
 })
 
+/** Whether the text writes the value, to within 1%, as a number written the way ja-JP writes one. */
+const writes = (text: string | null | undefined, value: number): boolean =>
+  (text?.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).some((written) => Math.abs(Number(written.replace(/,/g, '')) / value - 1) < 0.01)
+
 describe('numbers and times on cards', () => {
   it('puts the requested amount first in the currency table and keeps three rows at size s', () => {
     expect(tableAmounts('USD', null, 5)).toEqual([1, 10, 100, 1000, 10000])
@@ -931,8 +969,16 @@ describe('numbers and times on cards', () => {
   it('highlights the row of the requested amount on the fx card and shows the inverse rate among the facts', async () => {
     const card = await renderAt(spec('fx', DEMO_FX), L)
     expect(card.querySelector('.card-row[aria-current]')?.textContent).toContain('162,350 円')
-    expect(card.querySelector('.card-facts')?.textContent).toContain('1 円 = 0.0062 ドル')
+    expect(writes(card.querySelector('.card-facts dd')?.textContent, 1 / (DEMO_FX.rate as number))).toBe(true)
     expect(card.querySelector('.panel-meta')?.textContent).toContain(t('cardsFinance.fx.updated', { time: '' }).trim())
+  })
+
+  it('shows a rate far below one, such as one dong in dollars, as that rate rather than as zero, in the headline and in the inverse', async () => {
+    const rate = 0.000038
+    const card = await renderAt(spec('fx', { base: 'VND', quote: 'USD', rate, amount: null }), L)
+    expect(writes(card.querySelector('.card-big strong')?.textContent, rate)).toBe(true)
+    const reverse = await renderAt(spec('fx', { base: 'USD', quote: 'VND', rate: 1 / rate, amount: null }), L)
+    expect(writes(reverse.querySelector('.card-facts dd')?.textContent, rate)).toBe(true)
   })
 
   it('computes the time in a zone and its difference from the machine', () => {

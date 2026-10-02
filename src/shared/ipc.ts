@@ -422,6 +422,11 @@ export interface PanelSpec {
   error?: string
   /** The turn that owns the panel, so the renderer can clean up panels a finished turn left unfinished. */
   ownerTurnId?: number
+  /**
+   * The panel as it was before a later call started fetching it again, which it goes back to when that call is
+   * abandoned. Only a panel that is loading again after it showed something carries it.
+   */
+  beforeRefresh?: PanelSpec
   createdAt: number
   updatedAt: number
 }

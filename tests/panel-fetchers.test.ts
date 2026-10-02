@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -56,10 +56,53 @@ describe('the requests a card makes for the conversation language and the region
   })
 
   it('looks a Japanese city up under its English name, with or without the suffix of a prefecture or a city', async () => {
+    const kyoto = { name: '京都市', latitude: 35, longitude: 135.7, timezone: 'Asia/Tokyo', country: '日本' }
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => Response.json(new URL(url).searchParams.get('name') === 'Kyoto' ? { results: [kyoto] } : {})))
+    for (const city of ['京都', '京都府', '京都市']) {
+      const { props } = await fetchPanel('clock', { city })
+      expect(props, city).toMatchObject({ city: '京都市', timezone: 'Asia/Tokyo' })
+    }
+  })
+
+  it('takes a suffixed name the geocoding knows for that place, before the table gives the name without the suffix another city', async () => {
+    // "沖縄市" is a city of its own, while the table reads "沖縄" as Naha.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        Response.json({
+          results: [
+            new URL(url).searchParams.get('name') === '沖縄市'
+              ? { name: '沖縄市', latitude: 26.33, longitude: 127.8, timezone: 'Asia/Tokyo', country: '日本' }
+              : { name: '那覇市', latitude: 26.21, longitude: 127.68, timezone: 'Asia/Tokyo', country: '日本' }
+          ]
+        })
+      )
+    )
+    const { props } = await fetchPanel('clock', { city: '沖縄市' })
+    expect(props.city).toBe('沖縄市')
+  })
+
+  it('looks a city the table lacks up under its whole name first, since its last character may belong to the name', async () => {
     const urls: string[] = []
-    respond({ results: [{ name: '京都市', latitude: 35, longitude: 135.7, timezone: 'Asia/Tokyo', country: '日本' }] }, urls)
-    for (const city of ['京都', '京都府', '京都市']) await fetchPanel('clock', { city })
-    expect(urls.map((url) => new URL(url).searchParams.get('name'))).toEqual(['Kyoto', 'Kyoto', 'Kyoto'])
+    respond({ results: [{ name: '成都市', latitude: 30.66, longitude: 104.06, timezone: 'Asia/Shanghai', country: '中国' }] }, urls)
+    const { props } = await fetchPanel('clock', { city: '成都' })
+    expect(urls.map((url) => new URL(url).searchParams.get('name'))).toEqual(['成都'])
+    expect(props.timezone).toBe('Asia/Shanghai')
+  })
+
+  it('still finds a city the table lacks whose name the geocoding knows only without its suffix', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        Response.json(
+          new URL(url).searchParams.get('name') === '横須賀'
+            ? { results: [{ name: '横須賀市', latitude: 35.28, longitude: 139.67, timezone: 'Asia/Tokyo', country: '日本' }] }
+            : {}
+        )
+      )
+    )
+    const { props } = await fetchPanel('clock', { city: '横須賀市' })
+    expect(props).toMatchObject({ city: '横須賀市', timezone: 'Asia/Tokyo' })
   })
 
   it('looks up a city whose name is also a member of every object under that name', async () => {
@@ -71,9 +114,9 @@ describe('the requests a card makes for the conversation language and the region
 
   it('keeps the Japanese request of the clock card unchanged', async () => {
     const urls: string[] = []
-    respond({ results: [{ name: '東京都', latitude: 35.6, longitude: 139.6, timezone: 'Asia/Tokyo', country: '日本' }] }, urls)
-    await fetchPanel('clock', { city: '東京都' })
-    expect(urls).toEqual(['https://geocoding-api.open-meteo.com/v1/search?name=Tokyo&count=1&language=ja'])
+    respond({ results: [{ name: '大阪市', latitude: 34.69, longitude: 135.5, timezone: 'Asia/Tokyo', country: '日本' }] }, urls)
+    await fetchPanel('clock', { city: '大阪' })
+    expect(urls).toEqual(['https://geocoding-api.open-meteo.com/v1/search?name=Osaka&count=1&language=ja'])
   })
 
   it('takes the Google News edition from the language and the region', async () => {
@@ -209,6 +252,29 @@ describe('the files card (show_files)', () => {
     }
     expect(items[1]).toMatchObject({ path: path.join(root, 'secret.txt'), text: 'inside' })
   })
+
+  // A folder the process may not search answers realpath with EACCES, as macOS answers with EPERM for a folder
+  // its privacy settings keep from the app. Root and Windows search any folder.
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'shows the readable file beside a path the OS refuses to resolve, and gives that path alone a reason the screen words',
+    async () => {
+      const root = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'asist-show-files-')))
+      const locked = path.join(root, 'locked')
+      mkdirSync(locked)
+      writeFileSync(path.join(root, 'report.md'), '# report')
+      writeFileSync(path.join(locked, 'secret.md'), 'secret')
+      chmodSync(locked, 0o000)
+      mocks.roots = [root]
+      try {
+        const { props } = await fetchPanel('files', { paths: [path.join(root, 'report.md'), path.join(locked, 'secret.md')] })
+        const items = props.items as Array<{ name: string; text?: string; error?: string }>
+        expect(items[0]).toMatchObject({ name: 'report.md', text: '# report' })
+        expect(items[1]).toMatchObject({ name: 'secret.md', error: createTranslator('ja-JP')('files.errors.denied') })
+      } finally {
+        chmodSync(locked, 0o755)
+      }
+    }
+  )
 })
 
 describe('the news card', () => {

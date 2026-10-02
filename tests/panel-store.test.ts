@@ -210,6 +210,29 @@ describe('usePanelStore', () => {
     expect(store().panels.map((panel) => panel.key).sort()).toEqual(['new-loading', 'old-ready'])
   })
 
+  it('puts a card a later turn was fetching again back as it was when that turn is abandoned, and removes a card the turn was making', () => {
+    // Turn 3 showed the exchange rate, and the card is complete.
+    store().apply({ op: 'create', key: 'fx:USD:JPY', type: 'fx', slot: 'left', props: { base: 'USD', quote: 'JPY' }, state: 'loading' }, { ownerTurnId: 3 })
+    store().apply({ op: 'patch', key: 'fx:USD:JPY', props: { rate: 147.2 }, state: 'ready', source: 'open.er-api.com' }, { ownerTurnId: 3 })
+    const shown = store().panels[0]
+    // Turn 9 asks for the same pair again, and for the news, and is cut off before either fetch ends.
+    store().apply({ op: 'create', key: 'fx:USD:JPY', type: 'fx', slot: 'left', props: { base: 'USD', quote: 'JPY' }, state: 'loading' }, { ownerTurnId: 9 })
+    store().apply({ op: 'create', key: 'news', type: 'news', slot: 'right', props: {}, state: 'loading' }, { ownerTurnId: 9 })
+    expect(store().panels[0].state).toBe('loading')
+
+    store().dismissLoadingOwnedBy(9)
+
+    expect(store().panels).toEqual([shown])
+  })
+
+  it('forgets what a refreshed card showed once the new fetch has ended', () => {
+    store().apply({ op: 'create', key: 'fx:USD:JPY', type: 'fx', slot: 'left', props: { base: 'USD', quote: 'JPY', rate: 147.2 }, state: 'ready' }, { ownerTurnId: 3 })
+    store().apply({ op: 'create', key: 'fx:USD:JPY', type: 'fx', slot: 'left', props: { base: 'USD', quote: 'JPY' }, state: 'loading' }, { ownerTurnId: 9 })
+    store().apply({ op: 'patch', key: 'fx:USD:JPY', state: 'error', error: 'fetch failed' }, { ownerTurnId: 9 })
+    store().dismissLoadingOwnedBy(9)
+    expect(store().panels).toEqual([expect.objectContaining({ key: 'fx:USD:JPY', state: 'error', error: 'fetch failed' })])
+  })
+
   it('clears the focus when the focused panel expires', () => {
     store().apply({
       op: 'create',

@@ -136,8 +136,10 @@ export interface FileItem {
   truncated?: boolean
   /** The URL a binary kind is fetched from. */
   url?: string
-  /** The contents of a directory, by name and without hidden files. */
+  /** The contents of a directory, folders first and by name, without hidden files; only the first of a large one. */
   entries?: FileEntry[]
+  /** How many entries the directory holds, which is more than `entries` carries when its list was cut short. */
+  entryCount?: number
 }
 
 /** The props of show_files: `paths` is the input and `items` is what the main process read. */

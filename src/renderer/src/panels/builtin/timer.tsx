@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppTimer } from '@shared/ipc'
 import { translate, useT } from '@/i18n'
 import { usePanelStore } from '@/state/stores'
@@ -38,45 +38,50 @@ function Ring({ percent, done }: { percent: number; done: boolean }): React.JSX.
   )
 }
 
-function EndsAt({ spec }: CardContext): React.JSX.Element {
-  const t = useT()
-  const seconds = Number(spec.props.seconds ?? 0)
-  return <span className="tm-ends">{t('cardsTime.timer.endsAt', { time: clockTime(spec.createdAt + seconds * 1000) })}</span>
-}
-
-function TimerBody({ spec, size }: CardContext): React.JSX.Element {
-  const t = useT()
-  const seconds = Number(spec.props.seconds ?? 0)
-  const label = String(spec.props.label ?? t('cardsTime.timer.defaultLabel'))
-  const fallbackEndAt = useMemo(() => spec.createdAt + seconds * 1000, [spec.createdAt, seconds])
-  const [timer, setTimer] = useState<AppTimer | null>(null)
-  const [now, setNow] = useState(Date.now)
-  const [error, setError] = useState('')
-  const [cancelling, setCancelling] = useState(false)
-  const dismiss = usePanelStore((s) => s.dismiss)
-
+/**
+ * The timer main keeps under the card's key, as main last reported it. Its times are the only ones the card shows:
+ * the panel itself is made again whenever the timer is restored, after a restart for one, so the panel's own
+ * times say nothing about the timer. Until main answers there is neither a timer nor an error.
+ */
+function useTimer(key: string): { timer?: AppTimer; error?: string } {
+  const [state, setState] = useState<{ timer?: AppTimer; error?: string }>({})
   useEffect(() => {
     let mounted = true
     const unsubscribe = window.api.onTimerEvent((event) => {
-      if (event.type === 'updated' && event.timer.id === spec.key) setTimer(event.timer)
-      if (event.type === 'removed' && event.id === spec.key) setTimer(null)
+      if (event.type === 'updated' && event.timer.id === key) setState({ timer: event.timer })
+      if (event.type === 'removed' && event.id === key) setState({ error: translate('cardsTime.timer.notRunning') })
     })
     void window.api
       .timerList()
       .then((timers) => {
         if (!mounted) return
-        const existing = timers.find((candidate) => candidate.id === spec.key)
-        if (existing) setTimer(existing)
-        else setError(translate('cardsTime.timer.notRunning'))
+        const existing = timers.find((candidate) => candidate.id === key)
+        setState(existing ? { timer: existing } : { error: translate('cardsTime.timer.notRunning') })
       })
       .catch((err: unknown) => {
-        if (mounted) setError(displayError(err))
+        if (mounted) setState({ error: displayError(err) })
       })
     return () => {
       mounted = false
       unsubscribe()
     }
-  }, [label, seconds, spec.key])
+  }, [key])
+  return state
+}
+
+function EndsAt({ spec }: CardContext): React.JSX.Element | null {
+  const t = useT()
+  const { timer } = useTimer(spec.key)
+  return timer ? <span className="tm-ends">{t('cardsTime.timer.endsAt', { time: clockTime(timer.endsAt) })}</span> : null
+}
+
+function TimerBody({ spec, size }: CardContext): React.JSX.Element {
+  const t = useT()
+  const { timer, error } = useTimer(spec.key)
+  const [now, setNow] = useState(Date.now)
+  const [cancelError, setCancelError] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const dismiss = usePanelStore((s) => s.dismiss)
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 200)
@@ -89,24 +94,31 @@ function TimerBody({ spec, size }: CardContext): React.JSX.Element {
     if (cancelling) return
     setCancelling(true)
     void window.api
-      .timerCancel(timer?.id ?? spec.key)
+      .timerCancel(spec.key)
       .then(() => dismiss(spec.key))
-      .catch((err: unknown) => setError(displayError(err)))
+      .catch((err: unknown) => setCancelError(displayError(err)))
       .finally(() => setCancelling(false))
   }
 
-  const endAt = timer?.endsAt ?? fallbackEndAt
-  const startAt = timer?.createdAt ?? spec.createdAt
-  const remain = Math.max(0, endAt - now)
+  if (!timer) {
+    return (
+      <div className="card tm" data-size={size}>
+        <p className="card-missing" role={error ? 'alert' : 'status'}>
+          {error ?? t('common.loading')}
+        </p>
+      </div>
+    )
+  }
+  const remain = Math.max(0, timer.endsAt - now)
   const remainingSeconds = Math.ceil(remain / 1000)
-  const percent = seconds > 0 ? Math.min(100, (remain / (seconds * 1000)) * 100) : 0
-  const done = timer?.status === 'finished' || remain <= 0
+  const percent = timer.seconds > 0 ? Math.min(100, (remain / (timer.seconds * 1000)) * 100) : 0
+  const done = timer.status === 'finished' || remain <= 0
   return (
     <div className="card tm" data-size={size} data-done={done || undefined}>
       <div className="tm-top">
         <div className="card-hero">
-          <h3>{timer?.label ?? label}</h3>
-          <p>{t('cardsTime.timer.duration', { duration: durationLabel(seconds) })}</p>
+          <h3>{timer.label}</h3>
+          <p>{t('cardsTime.timer.duration', { duration: durationLabel(timer.seconds) })}</p>
           <div className="card-big">
             <strong>
               <time aria-live={done ? 'assertive' : undefined}>
@@ -116,8 +128,8 @@ function TimerBody({ spec, size }: CardContext): React.JSX.Element {
           </div>
           <p className="card-note">
             {done
-              ? t('cardsTime.timer.endedAt', { time: clockTime(endAt) })
-              : t('cardsTime.timer.endsAt', { time: clockTime(endAt) })}
+              ? t('cardsTime.timer.endedAt', { time: clockTime(timer.endsAt) })
+              : t('cardsTime.timer.endsAt', { time: clockTime(timer.endsAt) })}
           </p>
         </div>
         {size !== 's' && <Ring percent={percent} done={done} />}
@@ -136,15 +148,15 @@ function TimerBody({ spec, size }: CardContext): React.JSX.Element {
         <Box title={t('cardsTime.timer.times')}>
           <Facts
             items={[
-              [t('cardsTime.timer.start'), clockTime(startAt)],
-              [t('cardsTime.timer.end'), clockTime(endAt)]
+              [t('cardsTime.timer.start'), clockTime(timer.createdAt)],
+              [t('cardsTime.timer.end'), clockTime(timer.endsAt)]
             ]}
           />
         </Box>
       )}
-      {error && (
+      {cancelError && (
         <p className="card-missing" role="alert">
-          {error}
+          {cancelError}
         </p>
       )}
       <Actions>

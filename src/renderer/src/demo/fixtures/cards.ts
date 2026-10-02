@@ -1,9 +1,9 @@
 import type { PanelState } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { DEMO_CALENDAR_CARD } from './calendar'
-import { DEMO_FX } from './finance'
+import { DEMO_FX, demoFx } from './finance'
 import { DEMO_JOB } from './jobs'
-import { DEMO_FILES_DIR, DEMO_IMAGE_PATHS, DEMO_MIXED_PATHS, demoFileItems } from './files'
+import { DEMO_DOWNLOADS_DIR, DEMO_FILES_DIR, DEMO_IMAGE_PATHS, DEMO_MIXED_PATHS, demoFileItems } from './files'
 import { DEMO_PDF_PATHS } from './files-pdf'
 import { DEMO_CODE_PATH, DEMO_HTML_PATH, DEMO_JSON_PATH, DEMO_NOTEBOOK_PATH } from './files-code'
 import { DEMO_ARCHIVE_PATH, DEMO_AUDIO_PATH, DEMO_VIDEO_PATH } from './files-media'
@@ -42,6 +42,7 @@ export const CARD_GROUPS: Array<{ command: string; label: string; cards: CardFix
       { type: 'weather', props: { location: '長野県', date: 'today', weather: DEMO_WEATHER_NAGANO } },
       { type: 'weather', variant: 'world', props: { location: 'Munich', date: 'today', weather: DEMO_WEATHER_MUNICH } },
       { type: 'fx', props: DEMO_FX, source: 'open.er-api.com' },
+      { type: 'fx', variant: 'small-rate', props: demoFx('VND', 'USD', null), source: 'open.er-api.com' },
       { type: 'clock', props: demoClock('ニューヨーク'), source: 'America/New_York' },
       { type: 'timer', props: DEMO_TIMER }
     ]
@@ -80,6 +81,7 @@ export const CARD_GROUPS: Array<{ command: string; label: string; cards: CardFix
       { type: 'files', variant: 'images', props: { paths: DEMO_IMAGE_PATHS, title: '調査のグラフ', items: demoFileItems(DEMO_IMAGE_PATHS) }, get source() { return translate('files.source', { count: 3 }) } },
       { type: 'files', variant: 'mixed', props: { paths: DEMO_MIXED_PATHS, title: '競合サービスの調査', items: demoFileItems(DEMO_MIXED_PATHS) }, get source() { return translate('files.source', { count: 6 }) } },
       { type: 'files', variant: 'directory', props: { paths: [DEMO_FILES_DIR], items: demoFileItems([DEMO_FILES_DIR]) }, source: 'directory' },
+      { type: 'files', variant: 'large-directory', props: { paths: [DEMO_DOWNLOADS_DIR], items: demoFileItems([DEMO_DOWNLOADS_DIR]) }, source: 'directory' },
       { type: 'files', variant: 'table', props: { paths: [`${DEMO_FILES_DIR}/pricing.csv`], items: demoFileItems([`${DEMO_FILES_DIR}/pricing.csv`]) }, source: 'table' },
       { type: 'files', variant: 'pdf', props: { paths: DEMO_PDF_PATHS, items: demoFileItems(DEMO_PDF_PATHS) }, source: 'pdf' },
       { type: 'files', variant: 'code', props: { paths: [DEMO_CODE_PATH], items: demoFileItems([DEMO_CODE_PATH]) }, source: 'code' },

@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { errorText } from '@shared/i18n/error-text'
 import { languageOf, regionCurrency } from '@shared/conversation-locale'
 import { conversationLocale, region } from './conversation-locale'
@@ -9,9 +8,8 @@ import { addDays } from '@shared/calendar-layout'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
 import { searchCalendar } from './calendar'
 import { getMailService } from './mail'
-import { allowedPath, readFileItem } from './file-preview'
+import { fileItem } from './file-preview'
 import { fileUrl } from '../file-protocol'
-import type { FileItem } from '@shared/files'
 import { allowedFileRoots } from './agent'
 import { userAgent } from './user-agent'
 import { fetchFailure } from './fetch-failure'
@@ -76,10 +74,14 @@ async function geocodeOnce(name: string, signal: AbortSignal): Promise<GeoResult
 
 async function geocode(place: string, signal: AbortSignal): Promise<GeoResult> {
   const name = place.trim()
-  // The suffix is dropped only after the name as given misses the table, or "京都" would be looked up as "京".
+  // The suffix is dropped only after the name as given misses, both in the table and in the geocoding, because
+  // the character may belong to the name itself: "京都" would be looked up as "京", and "成都" (Chengdu) as "成",
+  // while "沖縄市" is a city of its own and not the Naha the table gives for "沖縄".
   const bare = name.replace(/(都|府|県|市)$/, '')
-  const result = await geocodeOnce(JP_PLACES.get(name) ?? JP_PLACES.get(bare) ?? bare, signal)
-  if (result) return result
+  for (const query of new Set([JP_PLACES.get(name) ?? name, JP_PLACES.get(bare) ?? bare])) {
+    const result = await geocodeOnce(query, signal)
+    if (result) return result
+  }
   throw new Error(errorText('panels.errors.placeNotFound', { place }))
 }
 
@@ -240,12 +242,7 @@ const files: Fetcher = async (props) => {
   const paths = Array.isArray(props.paths) ? props.paths.map(String) : []
   if (paths.length === 0) throw new Error(errorText('panels.errors.noPaths'))
   const roots = allowedFileRoots()
-  const items: FileItem[] = paths.map((target) => {
-    const allowed = allowedPath(target, roots)
-    return allowed !== null
-      ? readFileItem(allowed, fileUrl)
-      : { path: target, name: path.basename(target), kind: 'binary', sizeBytes: 0, error: t('files.errors.outsideRoots') }
-  })
+  const items = paths.map((target) => fileItem(target, roots, fileUrl))
   if (items.every((item) => item.error)) {
     throw new Error(errorText('panels.errors.filesUnreadable', { files: items.map((item) => `${item.name}: ${item.error}`).join(' / ') }))
   }

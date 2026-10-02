@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import type { PanelSpec } from '@shared/ipc'
 import type { Translate } from '@shared/i18n'
 import { useT, useFormatLocale } from '@/i18n'
@@ -34,11 +35,17 @@ const currencyUnit = (code: string, count: number, t: Translate): string =>
 /** Drops decimals as the value grows: four below 1, two below 100, none above that. */
 const amountText = (value: number, locale: string): string =>
   value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 4 : value < 100 ? 2 : 0 })
+/**
+ * A rate below 1 keeps up to four significant digits, since a fixed count of decimals would round a rate such as
+ * one dong in dollars (about 0.000038) to zero.
+ */
 const rateText = (rate: number, locale: string): string =>
-  rate.toLocaleString(locale, {
-    minimumFractionDigits: rate < 1 ? 4 : 2,
-    maximumFractionDigits: rate < 1 ? 4 : 3
-  })
+  rate.toLocaleString(
+    locale,
+    rate < 1
+      ? { minimumSignificantDigits: 2, maximumSignificantDigits: 4 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 3 }
+  )
 const asOfText = (asOf: string | undefined, locale: string): string | null => {
   const at = asOf ? Date.parse(asOf) : NaN
   return Number.isNaN(at)
@@ -60,6 +67,42 @@ function AsOf({ spec }: CardContext): React.JSX.Element | null {
   return text ? <span className="fx-asof">{t('cardsFinance.fx.updated', { time: text })}</span> : null
 }
 
+/**
+ * The rate and its unit on one line, scaled down when they are wider than the card. A rate written with many
+ * characters, such as 0.00003835 or 26,315.789, is wider at the type size of l, m and s than the card is.
+ */
+function Rate({ text, unit, size }: { text: string; unit: string; size: CardContext['size'] }): React.JSX.Element {
+  const ref = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const strong = ref.current
+    const row = strong?.parentElement
+    if (!strong || !row) return
+    const fit = (): void => {
+      strong.style.zoom = ''
+      const room = row.clientWidth / strong.offsetWidth
+      // Rounded down, since layout rounds the scaled width and a share of a pixel would still pass the edge.
+      if (room < 1) strong.style.zoom = String(Math.floor(room * 100) / 100)
+    }
+    fit()
+    // The row's width follows the card alone, so scaling the rate inside it never sets the observer off again.
+    // A theme brings its own type for the number, which changes the width the rate needs.
+    const resize = new ResizeObserver(fit)
+    resize.observe(row)
+    const theme = new MutationObserver(fit)
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => {
+      resize.disconnect()
+      theme.disconnect()
+    }
+  }, [text, unit, size])
+  return (
+    <strong ref={ref}>
+      {text}
+      <small>{unit}</small>
+    </strong>
+  )
+}
+
 function FxBody({ spec, size }: CardContext): React.JSX.Element {
   const t = useT()
   const locale = useFormatLocale()
@@ -77,10 +120,7 @@ function FxBody({ spec, size }: CardContext): React.JSX.Element {
           </b>
         </p>
         <div className="card-big">
-          <strong>
-            {rateText(rate, locale)}
-            <small>{currencyUnit(quote, rate, t)}</small>
-          </strong>
+          <Rate text={rateText(rate, locale)} unit={currencyUnit(quote, rate, t)} size={size} />
         </div>
         <p className="card-note">{t('cardsFinance.fx.per', { unit: currencyUnit(base, 1, t) })}</p>
       </div>
@@ -105,7 +145,7 @@ function FxBody({ spec, size }: CardContext): React.JSX.Element {
                 t('cardsFinance.fx.inverse'),
                 t('cardsFinance.fx.inverseRate', {
                   quote: currencyUnit(quote, 1, t),
-                  amount: amountText(1 / rate, locale),
+                  amount: rateText(1 / rate, locale),
                   base: currencyUnit(base, 1 / rate, t)
                 })
               ],

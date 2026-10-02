@@ -15,6 +15,11 @@ import type { PdfDocument, PdfPage } from '@/panels/viewers/pdf-types'
 
 const t = createTranslator('ja-JP')
 const A4 = { width: 595, height: 842 }
+
+// The loader's own test replaces pdf.js, whose getDocument it watches; the viewer's tests never import either.
+const pdfjs = vi.hoisted(() => ({ getDocument: vi.fn() }))
+vi.mock('pdfjs-dist', () => ({ GlobalWorkerOptions: {}, getDocument: pdfjs.getDocument }))
+vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: 'pdf.worker.js' }))
 const LANDSCAPE = { width: 842, height: 595 }
 
 describe('page size', () => {
@@ -178,5 +183,30 @@ describe('PdfViewer rendering', () => {
     await settle()
     await act(async () => root.render(<div />))
     expect(destroyed).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('loadPdf', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    pdfjs.getDocument.mockReset()
+  })
+
+  // pdf.js starts a worker for every document it is given no worker for, and only the loading task's destroy ends
+  // it, holding the bytes of the file until then.
+  it.each([
+    ['a document that does not open, such as one asking for a password', () => Promise.reject(Object.assign(new Error('No password given'), { name: 'PasswordException' }))],
+    ['a document whose metadata cannot be read', () => Promise.resolve({ getMetadata: () => Promise.reject(new Error('bad xref')) })]
+  ])('ends the loading task, and with it the worker, for %s', async (_case, opened) => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([37, 80, 68, 70]))))
+    const destroy = vi.fn(async () => {})
+    pdfjs.getDocument.mockImplementation(() => {
+      const promise = opened()
+      promise.catch(() => {})
+      return { promise, destroy }
+    })
+    const { loadPdf } = await import('@/panels/viewers/pdf-loader')
+    await expect(loadPdf('asist-file:///Users/me/statement.pdf')).rejects.toThrow()
+    expect(destroy).toHaveBeenCalledTimes(1)
   })
 })

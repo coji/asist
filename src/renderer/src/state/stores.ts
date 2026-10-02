@@ -196,7 +196,10 @@ interface PanelState {
     opts?: { ownerTurnId?: number }
   ) => void
   dismiss: (key: string) => void
-  /** Removes only the unfinished cards left behind by a superseded or aborted turn, matched by the turn that owns them. */
+  /**
+   * Settles what a superseded or aborted turn left unfinished, matched by the turn that owns it: a card the turn
+   * was making is removed, and a card it was fetching again goes back to what it showed before.
+   */
   dismissLoadingOwnedBy: (turnId: number) => void
   setFocused: (key: string | null) => void
 }
@@ -253,6 +256,36 @@ export function advancePanelLifecycle(now = Date.now()): void {
   schedulePanelLifecycle()
 }
 
+/** Whether a panel in this state is waiting for data, which the shell draws as a skeleton in place of the card. */
+const fetching = (state: PanelSpec['state']): boolean => state === 'loading' || state === 'skeleton'
+
+/**
+ * The panel after a patch, or after a create for a key already on screen, which merges its props into the old
+ * ones like a patch. Props without a state make a patched panel ready.
+ */
+function changed(
+  panel: PanelSpec,
+  event: Extract<PanelEvent, { op: 'create' | 'patch' }>,
+  ownerTurnId: number | undefined,
+  now: number
+): PanelSpec {
+  const state = event.state ?? (event.op === 'patch' && event.props ? 'ready' : panel.state)
+  return {
+    ...panel,
+    props: event.props ? { ...panel.props, ...event.props } : panel.props,
+    state,
+    source: event.source ?? panel.source,
+    error: event.op === 'patch' ? event.error : panel.error,
+    ttl: event.ttl === undefined ? panel.ttl : normalizeTtl(event.ttl),
+    staleAt: state === 'stale' ? (panel.staleAt ?? now) : undefined,
+    ownerTurnId: ownerTurnId ?? panel.ownerTurnId,
+    // A card that a later call fetches again keeps what it showed until the new data arrives, to go back to if
+    // that call is abandoned.
+    beforeRefresh: !fetching(state) ? undefined : fetching(panel.state) ? panel.beforeRefresh : panel,
+    updatedAt: now
+  }
+}
+
 export const usePanelStore = create<PanelState>((set) => ({
   panels: [],
   focusedKey: null,
@@ -265,49 +298,8 @@ export const usePanelStore = create<PanelState>((set) => ({
           focusedKey: s.focusedKey === event.key ? null : s.focusedKey
         }
       }
-      if (event.op === 'patch') {
-        return {
-          panels: s.panels.map((p) =>
-            p.key === event.key
-              ? (() => {
-                  const state = event.state ?? (event.props ? 'ready' : p.state)
-                  return {
-                  ...p,
-                  props: event.props ? { ...p.props, ...event.props } : p.props,
-                  state,
-                  source: event.source ?? p.source,
-                  error: event.error,
-                  ttl: event.ttl === undefined ? p.ttl : normalizeTtl(event.ttl),
-                  staleAt: state === 'stale' ? (p.staleAt ?? now) : undefined,
-                  ownerTurnId: opts?.ownerTurnId ?? p.ownerTurnId,
-                  updatedAt: now
-                  }
-                })()
-              : p
-          )
-        }
-      }
-      const existing = s.panels.find((p) => p.key === event.key)
-      if (existing) {
-        return {
-          panels: s.panels.map((p) =>
-            p.key === event.key
-              ? (() => {
-                  const state = event.state ?? p.state
-                  return {
-                  ...p,
-                  props: { ...p.props, ...event.props },
-                  state,
-                  source: event.source ?? p.source,
-                  ttl: event.ttl === undefined ? p.ttl : normalizeTtl(event.ttl),
-                  staleAt: state === 'stale' ? (p.staleAt ?? now) : undefined,
-                  ownerTurnId: opts?.ownerTurnId ?? p.ownerTurnId,
-                  updatedAt: now
-                  }
-                })()
-              : p
-          )
-        }
+      if (event.op === 'patch' || s.panels.some((p) => p.key === event.key)) {
+        return { panels: s.panels.map((p) => (p.key === event.key ? changed(p, event, opts?.ownerTurnId, now) : p)) }
       }
       // The array keeps the order in which panels appeared, and patch and upsert never reorder it.
       // A new panel takes a free slot, and when both sides are full it takes over the place of the
@@ -348,10 +340,8 @@ export const usePanelStore = create<PanelState>((set) => ({
   },
   dismissLoadingOwnedBy: (turnId) => {
     set((s) => {
-      const panels = s.panels.filter(
-        (panel) =>
-          panel.ownerTurnId !== turnId ||
-          (panel.state !== 'loading' && panel.state !== 'skeleton')
+      const panels = s.panels.flatMap((panel) =>
+        panel.ownerTurnId !== turnId || !fetching(panel.state) ? [panel] : panel.beforeRefresh ? [panel.beforeRefresh] : []
       )
       return {
         panels,
