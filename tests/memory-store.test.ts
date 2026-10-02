@@ -15,7 +15,9 @@ import * as store from '../src/main/services/memory-store'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
-import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '@shared/memory-format'
+import { PROMPT_DOCUMENTS, PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens, type DocumentIssue } from '@shared/memory-format'
+import { documentIssueText } from '@shared/memory-page'
+import CASES from './fixtures/memory-format-cases.json'
 import { sectionsOverTheLimit } from './helpers/memory'
 import { longTempFolder } from './helpers/temp'
 
@@ -49,6 +51,28 @@ beforeEach(() => {
 })
 
 const subjects = (dir: string): string[] => git(dir, ['log', '--format=%s']).split('\n').filter(Boolean)
+
+type DirectoryProblem = { file: string; kind: string } & Record<string, unknown>
+
+/**
+ * The sentences ASIST refuses a merge with for a problem the curation's Python reports for a folder. A
+ * markdown file beside the documents and a page name another system cannot hold are refused by the Python
+ * alone, which only makes the Agent fix more than the merge needs.
+ */
+function mergeErrors({ file, kind, ...rest }: DirectoryProblem): string[] {
+  switch (kind) {
+    case 'journalFileName':
+      return [ja('memory.check.fileName', { file })]
+    case 'formerDocument':
+    case 'forgetFile':
+      return [ja('memory.check.obsoleteFile', { file })]
+    case 'strayFile':
+    case 'pageName':
+      return []
+    default:
+      return [documentIssueText(file, { kind, ...rest } as DocumentIssue, ja)]
+  }
+}
 
 describe('the memory store', () => {
   it('creates pages, journal and .gitignore with one initial commit, and adds nothing on a second call', () => {
@@ -459,5 +483,19 @@ describe('the memory store', () => {
       'asist: edit pages/Matsubaken.md',
       'asist: 記憶の置き場を作る'
     ])
+  })
+
+  it('reads every folder of the shared cases as the curation Python does, and refuses a merge for nothing the Python passes', () => {
+    for (const { name, files, problems, sizes } of CASES.directories) {
+      const dir = mkdtempSync(path.join(tmpdir(), 'asist-memory-case-'))
+      for (const [file, content] of Object.entries(files as Record<string, string | { hex: string }>)) {
+        fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+        fs.writeFileSync(path.join(dir, file), typeof content === 'string' ? content : Buffer.from(content.hex, 'hex'))
+      }
+      const refused = (problems as DirectoryProblem[]).flatMap(mergeErrors)
+      expect([name, [...store.readAll(dir).errors].sort()]).toEqual([name, refused.sort()])
+      const read = Object.fromEntries(PROMPT_DOCUMENTS.map(({ file }) => [file, ((text) => (text === null ? null : promptSize(text)))(store.readDocument(file, dir))]))
+      expect([name, read]).toEqual([name, sizes])
+    }
   })
 })

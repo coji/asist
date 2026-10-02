@@ -279,7 +279,7 @@ function appendToSection(markdown: string, heading: string, text: string): strin
 }
 
 /** A finding of documentIssues as a sentence in the language of the interface. */
-function issueText(file: string, issue: DocumentIssue, t: Translate): string {
+export function documentIssueText(file: string, issue: DocumentIssue, t: Translate): string {
   switch (issue.kind) {
     case 'duplicateHeading':
       return t('memory.check.duplicateHeading', { file, line: issue.line, heading: issue.heading, first: issue.first })
@@ -306,7 +306,7 @@ function issueText(file: string, issue: DocumentIssue, t: Translate): string {
 export function validateDocument(file: string, markdown: string, t: Translate): string[] {
   const kind = documentKindOf(file)
   if (!kind) return [t('memory.check.wrongPlace', { file })]
-  return documentIssues(kind, markdown).map((issue) => issueText(file, issue, t))
+  return documentIssues(kind, markdown).map((issue) => documentIssueText(file, issue, t))
 }
 
 export function parseMemoryPageInput(value: unknown): MemoryPageInput {

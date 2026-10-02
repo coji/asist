@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { documentIssues, pageNameIssue, promptSize, tokenEstimate, type DocumentKind } from '@shared/memory-format'
+import { documentIssues, isJournalName, pageNameIssue, promptSize, tokenEstimate, type DocumentKind } from '@shared/memory-format'
 import CASES from './fixtures/memory-format-cases.json'
 import { runPython } from './helpers/memory'
 
@@ -16,6 +16,7 @@ describe('the rules of the memory in TypeScript and in the curation Python', () 
       expect([name, documentIssues(kind as DocumentKind, markdown)]).toEqual([name, issues])
     }
     for (const { name, issue } of CASES.pageNames) expect([name, pageNameIssue(name)]).toEqual([name, issue])
+    for (const { name, valid } of CASES.journalNames) expect([name, isJournalName(name)]).toEqual([name, valid])
   })
 
   it('answers every shared case the same in the Python of the curation skills', () => {

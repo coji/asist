@@ -389,6 +389,119 @@
     {
       "name": "NUL",
       "issue": "reserved"
+    },
+    {
+      "name": "con\n",
+      "issue": null
+    }
+  ],
+  "journalNames": [
+    {
+      "name": "2026-10-01",
+      "valid": true
+    },
+    {
+      "name": "2026-10-01\n",
+      "valid": false
+    },
+    {
+      "name": "2026-1-01",
+      "valid": false
+    },
+    {
+      "name": "２０２６-10-01",
+      "valid": false
+    },
+    {
+      "name": "2026-10-01 ",
+      "valid": false
+    }
+  ],
+  "directories": [
+    {
+      "name": "bytes that are not UTF-8 read as replacement characters, one for each invalid sequence",
+      "files": {
+        "me.md": {
+          "hex": "2d2d2d0a757064617465643a20323032362d31302d30320a2d2d2d0a2320e7a781e381abe381a4e38184e381a60a0a232320e8a9b1e38197e696b90ae890bde381a1e79d80e38184e381a6e8a9b1e38199e38082ffe38141c080eda08080f49080800a"
+        },
+        "user.md": "---\nupdated: 2026-10-02\n---\n# ユーザー\n\n## 属性\n三鷹に住んでいる。\n"
+      },
+      "problems": [],
+      "sizes": {
+        "me.md": {
+          "tokens": 30,
+          "characters": 26,
+          "words": 3
+        },
+        "user.md": {
+          "tokens": 12,
+          "characters": 13,
+          "words": 3
+        }
+      }
+    },
+    {
+      "name": "lines that end in CRLF",
+      "files": {
+        "user.md": "---\r\nupdated: 2026-10-02\r\n---\r\n# ユーザー\r\n\r\n## 属性\r\n三鷹に住んでいる。\r\n"
+      },
+      "problems": [],
+      "sizes": {
+        "me.md": null,
+        "user.md": {
+          "tokens": 12,
+          "characters": 13,
+          "words": 3
+        }
+      }
+    },
+    {
+      "name": "a journal entry named other than by its date, and the files an earlier form of the memory kept",
+      "files": {
+        "journal/2026-1-01.md": "## 散歩\n公園を歩いた。\n",
+        "journal/2026-10-01.md": "## 散歩\n公園を歩いた。\n",
+        "instruction.md": "# いつも覚えておくこと\n\n## この人について\n三鷹に住んでいる。\n",
+        "forget.jsonl": ""
+      },
+      "problems": [
+        {
+          "file": "journal/2026-1-01.md",
+          "kind": "journalFileName"
+        },
+        {
+          "file": "instruction.md",
+          "kind": "formerDocument"
+        },
+        {
+          "file": "forget.jsonl",
+          "kind": "forgetFile"
+        }
+      ],
+      "sizes": {
+        "me.md": null,
+        "user.md": null
+      }
+    },
+    {
+      "name": "a markdown file beside the documents, which only the curation refuses",
+      "files": {
+        "notes.md": "# メモ\n",
+        "me.md": "---\nupdated: 2026-10-02\n---\n# 私について\n\n落ち着いて話す。\n"
+      },
+      "problems": [
+        {
+          "file": "notes.md",
+          "kind": "strayFile"
+        }
+      ],
+      "sizes": {
+        "me.md": {
+          "tokens": 8,
+          "characters": 8,
+          "words": 1
+        },
+        "user.md": null
+      }
     }
   ]
 }

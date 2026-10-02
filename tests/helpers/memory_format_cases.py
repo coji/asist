@@ -6,13 +6,15 @@ the Python rules answer as ASIST's TypeScript ones do.
 """
 
 import json
+import os
 import sys
+import tempfile
 
 # UTF-8 and \n whatever the code page and the line ending of the system, as the Agent and the tests read them.
 sys.stdout.reconfigure(encoding='utf-8', newline='\n')
 sys.path.insert(0, sys.argv[2])
 
-from memory_format import document_issues, page_name_issue, prompt_size, token_estimate  # noqa: E402
+from memory_format import directory_problems, document_issues, is_journal_name, page_name_issue, prompt_size, prompt_sizes, token_estimate  # noqa: E402
 
 with open(sys.argv[1], encoding='utf-8') as file:
     cases = json.load(file)
@@ -33,4 +35,15 @@ for case in cases['documents']:
     compare('documents', case['name'], case['issues'], document_issues(case['kind'], case['markdown']))
 for case in cases['pageNames']:
     compare('pageNames', case['name'], case['issue'], page_name_issue(case['name']))
+for case in cases['journalNames']:
+    compare('journalNames', case['name'], case['valid'], is_journal_name(case['name']))
+for case in cases['directories']:
+    with tempfile.TemporaryDirectory() as directory:
+        for file, content in case['files'].items():
+            target = os.path.join(directory, *file.split('/'))
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, 'wb') as handle:
+                handle.write(bytes.fromhex(content['hex']) if isinstance(content, dict) else content.encode('utf-8'))
+        compare('directories', case['name'], case['problems'], directory_problems(directory))
+        compare('directories', case['name'], case['sizes'], dict(prompt_sizes(directory)))
 print(json.dumps(differences, ensure_ascii=False))

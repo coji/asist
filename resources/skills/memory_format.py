@@ -70,17 +70,25 @@ def written_in_japanese(text):
     return re.search('[ぁ-ヿ]', text) is not None
 
 
-_DATE = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+# The patterns below are matched with fullmatch or end in \Z, because Python's $ also matches before a newline
+# at the end, which JavaScript's does not: a journal file named "2026-10-01\n.md" would pass here and be
+# refused at the merge.
+_DATE = re.compile('[0-9]{4}-[0-9]{2}-[0-9]{2}')
 _OBSOLETE_KEYS = ('kind', 'links')
 # JavaScript's dot takes no line terminator, where Python's takes everything but \n.
 _DOT = '[^\n\r\u2028\u2029]'
-_ITEM = re.compile('^' + _S + '*-' + _S + '*(' + _DOT + '+)$')
-_KEY = re.compile('^([A-Za-z_]+)' + _S + '*:' + _S + '*(' + _DOT + '*)$')
+_ITEM = re.compile(_S + '*-' + _S + '*(' + _DOT + '+)')
+_KEY = re.compile('([A-Za-z_]+)' + _S + '*:' + _S + '*(' + _DOT + '*)')
 _SPLIT = re.compile(_S + '+')
 
 
+def is_journal_name(name):
+    """Whether a journal entry's file name, without .md, is the date it stands for."""
+    return _DATE.fullmatch(name) is not None
+
+
 def _unquote(text):
-    return re.sub('^["\']|["\']$', '', _trim(text))
+    return re.sub('^["\']|["\']\\Z', '', _trim(text))
 
 
 def _split_lines(markdown):
@@ -98,12 +106,12 @@ def _parse_frontmatter(lines):
         raw = lines[i]
         if _trim(raw) == '---':
             return frontmatter, i + 1, False
-        item = _ITEM.match(raw)
+        item = _ITEM.fullmatch(raw)
         if item and list_key:
             if list_key == 'aliases':
                 frontmatter['aliases'].append(_unquote(item.group(1)))
             continue
-        match = _KEY.match(raw)
+        match = _KEY.fullmatch(raw)
         if not match:
             continue
         key, value = match.group(1), match.group(2)
@@ -116,7 +124,7 @@ def _parse_frontmatter(lines):
             frontmatter['updated'] = _trim(value) or None
         elif key == 'aliases':
             frontmatter['hasAliases'] = True
-            listed = re.sub(r'\]$', '', re.sub(r'^\[', '', _trim(value)))
+            listed = re.sub(r'\]\Z', '', re.sub(r'^\[', '', _trim(value)))
             frontmatter['aliases'] = [alias for alias in (_unquote(part) for part in listed.split(',')) if alias]
             if not _trim(value):
                 list_key = 'aliases'
@@ -173,14 +181,14 @@ def text_for_tokens(size, tokens):
     return {'characters': share(size['characters']), 'words': share(size['words'])}
 
 
-_WINDOWS_DEVICE_NAME = re.compile(r'^(con|conin\$|conout\$|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(\.' + _DOT + '*)?$', re.IGNORECASE)
+_WINDOWS_DEVICE_NAME = re.compile(r'(con|conin\$|conout\$|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(\.' + _DOT + '*)?', re.IGNORECASE)
 
 
 def page_name_issue(name):
     """'characters', 'reserved' or None, for a page's name, its file name without .md."""
     if re.search(r'[/\\:*?"<>|]', name) or name.startswith('.'):
         return 'characters'
-    if _WINDOWS_DEVICE_NAME.match(name):
+    if _WINDOWS_DEVICE_NAME.fullmatch(name):
         return 'reserved'
     return None
 
@@ -201,7 +209,7 @@ def document_issues(kind, markdown):
         issues.append({'kind': 'obsoleteKey', 'key': key})
     if kind in ('user', 'me') and frontmatter['hasAliases']:
         issues.append({'kind': 'aliasesOnlyOnPages'})
-    if frontmatter['updated'] and not _DATE.match(frontmatter['updated']):
+    if frontmatter['updated'] and not _DATE.fullmatch(frontmatter['updated']):
         issues.append({'kind': 'updatedNotDate'})
     if kind != 'journal' and title is None:
         issues.append({'kind': 'titleMissing'})
@@ -236,7 +244,9 @@ _FORMER_DOCUMENTS = ('profile.md', 'instruction.md')
 
 
 def _read(directory, file):
-    with open(os.path.join(directory, file), encoding='utf-8', newline='') as handle:
+    # Bytes that are not UTF-8 read as U+FFFD, one for each maximal invalid sequence, as Node reads them for ASIST,
+    # rather than stopping the check with a traceback.
+    with open(os.path.join(directory, file), encoding='utf-8', errors='replace', newline='') as handle:
         return handle.read()
 
 
@@ -269,7 +279,7 @@ def directory_problems(directory):
             problems.append({'file': file, 'kind': 'pageName', 'issue': name_issue})
         check(file, 'page')
     for file in _markdown_in(directory, 'journal'):
-        if _DATE.match(os.path.basename(file)[:-3]):
+        if is_journal_name(os.path.basename(file)[:-3]):
             check(file, 'journal')
         else:
             problems.append({'file': file, 'kind': 'journalFileName'})

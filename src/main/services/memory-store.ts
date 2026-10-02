@@ -6,6 +6,7 @@ import { errorText } from '@shared/i18n/error-text'
 import type { MemoryDocument, MemoryUnit } from '@shared/ipc'
 import { localDateKey } from '@shared/local-date'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
+import { isJournalName } from '@shared/memory-format'
 import {
   DOCUMENT_FILE,
   PROMPT_DOCUMENTS,
@@ -63,7 +64,6 @@ export interface ReadResult {
   errors: string[]
 }
 
-const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 /**
  * instruction.md, the summary that rode in every turn before me.md and user.md did. ensureRepo moves what it
  * held into them, and a curation that writes it again is refused like the other files an earlier form of the
@@ -204,7 +204,7 @@ export function readAll(dir = memoryDir()): ReadResult {
   for (const file of listMarkdown(dir, JOURNAL_DIR)) {
     const date = classifyFile(file).title
     const markdown = read(file) ?? ''
-    if (!DAY_PATTERN.test(date)) errors.push(t('memory.check.fileName', { file }))
+    if (!isJournalName(date)) errors.push(t('memory.check.fileName', { file }))
     else errors.push(...validateDocument(file, markdown, t))
     const page = parsePage(markdown, date)
     units.push(...unitsOfJournal(file, page, date))

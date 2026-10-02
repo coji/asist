@@ -134,6 +134,10 @@ export function tokenEstimate(text: string): number {
 export const writtenInJapanese = (text: string): boolean => /[ぁ-ヿ]/.test(text)
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Whether a journal entry's file name, without .md, is the date it stands for. */
+export const isJournalName = (name: string): boolean => DATE.test(name)
+
 const OBSOLETE_KEYS = new Set(['kind', 'links'])
 const unquote = (text: string): string => text.trim().replace(/^["']|["']$/g, '')
 
