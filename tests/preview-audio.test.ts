@@ -211,9 +211,24 @@ describe('reading the samples of a WAV file', () => {
     expect(await readWavFormat(await openRangedFile(URL))).toMatchObject({ dataStart: 44, dataEnd: 44 + 200 })
   })
 
-  it('reads no samples it cannot read, such as µ-law, and says so', async () => {
+  it.each([
+    // The silent and the loudest codes of µ-law and A-law, and a code of segment 5, as ITU-T G.711 expands them.
+    { tag: 7, codes: [0xff, 0x7f, 0x00], peak: 32_124 / 32_768 },
+    { tag: 7, codes: [0xff, 0xa0], peak: 7_932 / 32_768 },
+    { tag: 6, codes: [0xd5, 0x55, 0xaa], peak: 32_256 / 32_768 },
+    { tag: 6, codes: [0xd5, 0x0a], peak: 8_064 / 32_768 }
+  ])('reads telephone recordings in law $tag', async ({ tag, codes, peak }) => {
+    const file = wavFile({ bits: 8, channels: 1, sampleRate: 8000 }, codes.length, () => 0)
+    new DataView(file.buffer).setUint16(20, tag, true)
+    file.set(codes, 44)
+    serve(file)
+    const format = (await readWavFormat(await openRangedFile(URL)))!
+    expect(wavPeak(file, format.dataStart, codes.length, format)).toBeCloseTo(peak, 5)
+  })
+
+  it('reads no samples it cannot read, such as ADPCM, and says so', async () => {
     const file = wavFile({ bits: 8, channels: 1, sampleRate: 8000 }, 10, () => 0)
-    new DataView(file.buffer).setUint16(20, 7, true)
+    new DataView(file.buffer).setUint16(20, 2, true)
     serve(file)
     expect(await readWavFormat(await openRangedFile(URL))).toBeNull()
   })

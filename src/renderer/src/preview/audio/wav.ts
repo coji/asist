@@ -2,8 +2,9 @@ import type { Bytes } from '../fetch-range'
 import { audioDamaged, type RangedFile } from './ranged-file'
 
 /**
- * A WAV file's samples, read as they are: integer PCM of 8, 16, 24 or 32 bits and floating point of 32 or 64,
- * mono, stereo or more channels, in a RIFF file or in an RF64 one, which a recording past 4 GB is.
+ * A WAV file's samples, read as they are: integer PCM of 8, 16, 24 or 32 bits, floating point of 32 or 64, and
+ * the µ-law and A-law of telephone recordings, mono, stereo or more channels, in a RIFF file or in an RF64 one,
+ * which a recording past 4 GB is.
  */
 
 export interface WavFormat {
@@ -11,8 +12,8 @@ export interface WavFormat {
   sampleRate: number
   /** The bytes of one frame: a sample of every channel. */
   blockAlign: number
-  /** How a sample is written: unsigned 8-bit, signed integer or floating point, in this many bytes. */
-  encoding: 'u8' | 'int' | 'float'
+  /** How a sample is written: unsigned 8-bit, signed integer, floating point, µ-law or A-law, in this many bytes. */
+  encoding: 'u8' | 'int' | 'float' | 'mulaw' | 'alaw'
   bytesPerSample: number
   /** Where the samples start and end in the file. */
   dataStart: number
@@ -21,6 +22,8 @@ export interface WavFormat {
 
 const PCM = 1
 const IEEE_FLOAT = 3
+const ALAW = 6
+const MULAW = 7
 const EXTENSIBLE = 0xfffe
 /** The data size a writer leaves while it is still recording, or for a size kept elsewhere, as RF64 does. */
 const OPEN_SIZE = 0xffffffff
@@ -48,12 +51,13 @@ function formatOf(fmt: Bytes): Omit<WavFormat, 'dataStart' | 'dataEnd'> | null {
   const bytesPerSample = blockAlign / channels
   if (tag === PCM && bytesPerSample <= 4) return { channels, sampleRate, blockAlign, encoding: bytesPerSample === 1 ? 'u8' : 'int', bytesPerSample }
   if (tag === IEEE_FLOAT && (bytesPerSample === 4 || bytesPerSample === 8)) return { channels, sampleRate, blockAlign, encoding: 'float', bytesPerSample }
+  if ((tag === MULAW || tag === ALAW) && bytesPerSample === 1) return { channels, sampleRate, blockAlign, encoding: tag === MULAW ? 'mulaw' : 'alaw', bytesPerSample }
   return null
 }
 
 /**
  * The format and where the samples lie, read from the chunk headers, or null for samples this does not read,
- * such as ADPCM or µ-law. A data size of 0 or 0xFFFFFFFF, or one past the end of the file, runs to the end of the
+ * such as ADPCM. A data size of 0 or 0xFFFFFFFF, or one past the end of the file, runs to the end of the
  * file, as FFmpeg reads it: a recorder that stopped before it wrote the size leaves such a header, and <audio>
  * plays those samples.
  */
@@ -93,6 +97,18 @@ export async function readWavFormat(file: RangedFile): Promise<WavFormat | null>
 /** The value a full-scale sample of each integer size reaches, by which it is scaled into -1 to 1. */
 const FULL_SCALE = [0, 128, 32_768, 8_388_608, 2_147_483_648]
 
+/** The amplitude, from 0 to 1, of each byte of µ-law and of A-law, expanded as ITU-T G.711 does. */
+const MULAW_AMPLITUDE = Float32Array.from({ length: 256 }, (_, byte) => {
+  const u = ~byte & 0xff
+  return ((((u & 0x0f) << 3) + 0x84) << ((u >> 4) & 7)) - 0x84
+}).map((value) => value / FULL_SCALE[2])
+const ALAW_AMPLITUDE = Float32Array.from({ length: 256 }, (_, byte) => {
+  const a = byte ^ 0x55
+  const exponent = (a >> 4) & 7
+  const mantissa = a & 0x0f
+  return exponent === 0 ? (mantissa << 4) + 8 : ((mantissa << 4) + 0x108) << (exponent - 1)
+}).map((value) => value / FULL_SCALE[2])
+
 /**
  * The largest amplitude, from 0 to 1 for integer samples, among `frames` frames that start at `at` in `bytes`.
  * The bytes are read through a DataView, since a piece of the file starts on no particular boundary.
@@ -106,6 +122,12 @@ export function wavPeak(bytes: Bytes, at: number, frames: number, format: WavFor
     case 'u8':
       for (let i = at; i < end; i++) peak = Math.max(peak, Math.abs(bytes[i] - 128))
       return peak / FULL_SCALE[1]
+    case 'mulaw':
+      for (let i = at; i < end; i++) peak = Math.max(peak, MULAW_AMPLITUDE[bytes[i]])
+      return peak
+    case 'alaw':
+      for (let i = at; i < end; i++) peak = Math.max(peak, ALAW_AMPLITUDE[bytes[i]])
+      return peak
     case 'float':
       if (step === 4) for (let i = at; i < end; i += 4) peak = Math.max(peak, Math.abs(view.getFloat32(i, true)))
       else for (let i = at; i < end; i += 8) peak = Math.max(peak, Math.abs(view.getFloat64(i, true)))
