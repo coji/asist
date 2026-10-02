@@ -35,6 +35,12 @@ const isConnectionError = (err: unknown): boolean =>
 const PLAN_USAGE_LIMIT = 'subscription_sharing_usage_limit_exceeded'
 
 /**
+ * A ChatGPT sign-in that is missing or that OpenAI refused, which a new sign-in mends rather than a check of
+ * an API key. Its message carries the key of the sign-in's error text.
+ */
+export const isChatGptSignInFailure = (err: unknown): boolean => /settingsIntegrations\.chatgpt\.errors\.(signedOut|rejected|unreadable)\b/.test(errMessageChain(err))
+
+/**
  * The usage limit of a ChatGPT plan, which OpenAI sends as a 429 like a rate limit but which lasts hours, so
  * waiting a few seconds never clears it.
  */
@@ -73,6 +79,7 @@ export function apiErrorKey(err: unknown): ApiErrorKey {
   const msg = errMessage(err)
   const status = httpStatus(err)
   if (isPlanUsageLimit(err)) return 'conversation.reply.planLimit'
+  if (isChatGptSignInFailure(err)) return 'conversation.reply.chatgptSignIn'
   if (status === 529 || /overloaded/i.test(msg)) return 'conversation.reply.overloaded'
   if (status === 429 || /rate.?limit/i.test(msg)) return 'conversation.reply.rateLimit'
   if (status === 401 || status === 403 || /authentication|invalid.*api.?key/i.test(msg)) return 'conversation.reply.authentication'

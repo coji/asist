@@ -17,19 +17,24 @@ const mocks = vi.hoisted(() => ({
   response: null as unknown,
   params: [] as Array<Record<string, unknown>>,
   /** The key each client was built with, which is the access token for a ChatGPT sign-in. */
-  apiKeys: [] as string[]
+  apiKeys: [] as string[],
+  options: [] as Array<Record<string, unknown>>,
+  /** A failure the request itself raises before any event, as the SDK does for an HTTP error. */
+  rejectWith: null as Error | null
 }))
 
 vi.mock('openai', async () => ({
   // The class the openai package raises a failure inside a stream with, as its own parser does below.
   APIError: (await import('openai/core/error')).APIError,
   default: class FakeOpenAI {
-    constructor(options: { apiKey: string }) {
+    constructor(options: { apiKey: string; baseURL?: string; organization?: string | null }) {
       mocks.apiKeys.push(options.apiKey)
+      mocks.options.push(options)
     }
     responses = {
       create: async (params: Record<string, unknown>, options: { signal: AbortSignal }) => {
         mocks.params.push(params)
+        if (mocks.rejectWith) throw mocks.rejectWith
         if (params.stream !== true) return mocks.response
         if (mocks.sse !== null) {
           const { Stream } = await import('openai/core/streaming')
@@ -81,7 +86,7 @@ const completed = (usage = { input_tokens: 1000, input_tokens_details: { cached_
   response: { status: 'completed', usage }
 })
 
-const PLAN = { type: 'chatgpt' as const, account: 'oaiapp_1', accessToken: async () => 'plan-token' }
+const PLAN = { type: 'chatgpt' as const, account: 'oaiapp_1', accessToken: async () => 'plan-token', forgetToken: vi.fn() }
 
 async function open(over: Partial<ConversationRequest> = {}, credential: ProviderCredential = { type: 'api-key', key: 'key' }) {
   const { openaiAdapter } = await import('../src/main/services/llm/openai')
@@ -102,6 +107,9 @@ beforeEach(() => {
   mocks.response = null
   mocks.params.length = 0
   mocks.apiKeys.length = 0
+  mocks.options.length = 0
+  mocks.rejectWith = null
+  PLAN.forgetToken.mockClear()
 })
 
 describe('toResponsesInput', () => {
@@ -398,6 +406,21 @@ describe('OpenAI paid from the ChatGPT plan', () => {
     expect(mocks.apiKeys).toEqual(['plan-token'])
     expect(mocks.params[0]).toMatchObject({ stream: true, store: false })
     expect(mocks.params[0]).not.toHaveProperty('max_output_tokens')
+  })
+
+  it('sends the token to OpenAI itself, whatever base URL or organization the environment holds for an API key', async () => {
+    mocks.events = [{ type: 'response.output_item.done', item: SPOKEN }, completed()]
+    const { stream } = await open({}, PLAN)
+    await stream.final()
+    expect(mocks.options[0]).toMatchObject({ baseURL: 'https://api.openai.com/v1', organization: null, project: null })
+  })
+
+  it('makes the next call renew a token OpenAI refused, and says to sign in again rather than to check an API key', async () => {
+    const { errorText } = await import('@shared/i18n/error-text')
+    mocks.rejectWith = Object.assign(new Error('401 Unauthorized'), { status: 401 })
+    const { stream } = await open({}, PLAN)
+    await expect(stream.final()).rejects.toMatchObject({ status: 401, message: errorText('settingsIntegrations.chatgpt.errors.rejected') })
+    expect(PLAN.forgetToken).toHaveBeenCalledWith('plan-token')
   })
 
   it('keeps the output limit for the API key', async () => {

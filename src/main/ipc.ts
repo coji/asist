@@ -1,7 +1,7 @@
 import { shouldPushJobCard } from '@shared/job-cards'
 import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess, signOutCalendar } from './services/calendar'
 import { chatgptAuth, chatgptStatus } from './services/chatgpt'
-import { ChatGptSignInReplaced } from './services/chatgpt-oauth'
+import { SignInReplaced } from './services/oauth-loopback'
 import { events as mailEvents, getMailService, openMailGuide } from './services/mail'
 import { confirmEvents, pendingConfirms, resolveConfirm } from './services/confirm'
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
@@ -576,7 +576,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     try {
       await chatgptAuth().signIn()
     } catch (error) {
-      if (!(error instanceof ChatGptSignInReplaced)) throw error
+      if (!(error instanceof SignInReplaced)) throw error
       completed = false
     }
     return { completed, status: await computeStatus() }

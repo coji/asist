@@ -202,12 +202,13 @@ export function SetupWizard(): React.JSX.Element | null {
     try {
       const { completed } = await window.api.chatgptSignIn()
       if (completed) await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
-      await refresh()
     } catch (err) {
       setError(displayError(err))
     } finally {
       setChatgptSigningIn(false)
       setApiBusy(false)
+      // A sign-in that failed may still have dropped a sign-in that could not be read.
+      await refresh()
     }
   }
 

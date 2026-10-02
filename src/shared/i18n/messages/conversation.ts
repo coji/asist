@@ -226,6 +226,19 @@ export const conversation = defineMessages({
       'pt-BR': 'O limite de uso do seu plano do ChatGPT foi atingido. Confira o limite e quando ele é renovado em “Uso” nas configurações do ChatGPT.',
       'es-419': 'Se alcanzó el límite de uso de tu plan de ChatGPT. Revisa el límite y cuándo se restablece en «Uso» de la configuración de ChatGPT.',
       'es-ES': 'Se ha alcanzado el límite de uso de tu plan de ChatGPT. Revisa el límite y cuándo se restablece en «Uso» de los ajustes de ChatGPT.'
+    },
+    chatgptSignIn: {
+      'ja-JP': 'ChatGPT のログインが使えませんでした。設定の「API キー」で ChatGPT にログインし直してください。',
+      'en-US': 'The ChatGPT sign-in couldn’t be used. Sign in with ChatGPT again on the “API keys” page in Settings.',
+      'fr-FR': 'La connexion ChatGPT n’a pas pu être utilisée. Reconnectez-vous avec ChatGPT depuis la page « Clés API » des réglages.',
+      'de-DE': 'Die ChatGPT-Anmeldung konnte nicht verwendet werden. Melden Sie sich auf der Seite „API-Schlüssel“ in den Einstellungen erneut mit ChatGPT an.',
+      'hi-IN': 'ChatGPT साइन इन का उपयोग नहीं हो सका। सेटिंग में “API कुंजी” पेज पर ChatGPT से फिर से साइन इन करें।',
+      'id-ID': 'Data masuk ChatGPT tidak dapat dipakai. Masuk lagi dengan ChatGPT di halaman “Kunci API” pada Pengaturan.',
+      'it-IT': 'Non è stato possibile usare l’accesso a ChatGPT. Accedi di nuovo con ChatGPT dalla pagina «Chiavi API» delle impostazioni.',
+      'ko-KR': 'ChatGPT 로그인을 쓸 수 없었습니다. 설정의 ‘API 키’ 페이지에서 ChatGPT로 다시 로그인하십시오.',
+      'pt-BR': 'Não foi possível usar o login do ChatGPT. Entre de novo com o ChatGPT na página “Chaves de API” das configurações.',
+      'es-419': 'No se pudo usar el inicio de sesión de ChatGPT. Vuelve a iniciar sesión con ChatGPT en la página «Claves de API» de la configuración.',
+      'es-ES': 'No se ha podido usar el inicio de sesión de ChatGPT. Vuelve a iniciar sesión con ChatGPT en la página «Claves de API» de los ajustes.'
     }
   },
   logUnreadable: {

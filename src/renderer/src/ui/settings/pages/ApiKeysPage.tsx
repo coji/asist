@@ -92,12 +92,18 @@ function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
     setSigningIn(true)
     void window.api
       .chatgptSignIn()
-      .then(({ completed }) => {
-        if (completed) toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
-        return refreshStatus()
+      .then(async ({ completed }) => {
+        if (!completed) return
+        toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
+        // Signing in is choosing the plan, as the hint beside the button says.
+        if (settings.openaiAuth !== 'chatgpt') await set({ openaiAuth: 'chatgpt' })
       })
       .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signInFailedTitle'), body: displayError(err) }))
-      .finally(() => setSigningIn(false))
+      // A sign-in that failed may still have dropped a sign-in that could not be read.
+      .finally(() => {
+        setSigningIn(false)
+        void refreshStatus()
+      })
   }
   const signOut = (): void => {
     void window.api

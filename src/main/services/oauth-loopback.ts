@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { fetchFailure } from './fetch-failure'
 
 /**
  * The pieces an installed app's sign-in (RFC 8252) shares between Google and ChatGPT: the PKCE pair, and
@@ -10,6 +11,56 @@ import type { AddressInfo } from 'node:net'
  */
 
 export const base64url = (bytes: Buffer): string => bytes.toString('base64url')
+
+/** Compares a returned state with the one sent, in time that does not depend on where they differ. */
+export function sameText(a: string, b: string): boolean {
+  const left = Buffer.from(a)
+  const right = Buffer.from(b)
+  return left.length === right.length && timingSafeEqual(left, right)
+}
+
+/** The reason a sign-in stops when a newer one, a cancel or a sign-out takes its place. */
+export class SignInReplaced extends Error {}
+
+/**
+ * How long one request to a sign-in server may take. A refresh holds up every call that needs its token and
+ * a sign-out holds up saving the settings, so neither waits for undici's own limit of minutes.
+ */
+const TOKEN_REQUEST_TIMEOUT_MS = 15_000
+
+/** A form POST to a token or revocation endpoint. */
+export async function postForm(fetchImpl: typeof fetch, url: string, form: Record<string, string>): Promise<Response> {
+  try {
+    return await fetchImpl(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+      body: new URLSearchParams(form),
+      signal: AbortSignal.timeout(TOKEN_REQUEST_TIMEOUT_MS)
+    })
+  } catch (error) {
+    throw fetchFailure(url, error)
+  }
+}
+
+/** A GET with the same time limit as the token requests, for a provider's signing keys. */
+export async function getWithTimeout(fetchImpl: typeof fetch, url: string): Promise<Response> {
+  try {
+    return await fetchImpl(url, { signal: AbortSignal.timeout(TOKEN_REQUEST_TIMEOUT_MS) })
+  } catch (error) {
+    throw fetchFailure(url, error)
+  }
+}
+
+/**
+ * The OAuth error code of a failed token request, which is also logged: the code tells what to fix, and the
+ * body of an error never carries a token.
+ */
+export async function oauthErrorCode(response: Response, what: string): Promise<string | null> {
+  const body = (await response.json().catch(() => null)) as { error?: unknown; code?: unknown } | null
+  const code = typeof body?.error === 'string' ? body.error : typeof body?.code === 'string' ? body.code : null
+  console.warn(`${what} failed: HTTP ${response.status} ${code ?? '(no error code)'}`)
+  return code
+}
 
 /** A code verifier of 43 characters and its S256 challenge (RFC 7636). */
 export function pkcePair(): { verifier: string; challenge: string } {

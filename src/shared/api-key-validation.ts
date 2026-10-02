@@ -1,3 +1,4 @@
+import { errMessage, isChatGptSignInFailure } from './api-errors'
 import { errorText } from './i18n/error-text'
 import { LLM_PROVIDER_INFO, type LlmProvider } from './llm-catalog'
 
@@ -54,7 +55,7 @@ export function classifyApiKeyValidationError(
   const target = targetOf(model)
   const fail = (code: ApiKeyValidationFailure, message: string): ApiKeyValidationError =>
     new ApiKeyValidationError(code, message, model, { cause: error })
-  if (status === 401) return fail('authentication', errorText('llmModels.errors.authentication', { provider }))
+  if (status === 401) return fail('authentication', isChatGptSignInFailure(error) ? errMessage(error) : errorText('llmModels.errors.authentication', { provider }))
   if (status === 403) return fail('permission', errorText('llmModels.errors.permission', { provider, target }))
   if (status === 404) return fail('model-unavailable', errorText('llmModels.errors.modelUnavailable', { target }))
   if (status === 402) return fail('billing', errorText('llmModels.errors.billing', { provider }))

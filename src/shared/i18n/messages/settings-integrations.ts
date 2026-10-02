@@ -656,6 +656,19 @@ export const settingsIntegrations = defineMessages({
         'pt-BR': 'O arquivo de login do ChatGPT {file} está corrompido.',
         'es-419': 'El archivo de inicio de sesión de ChatGPT {file} está dañado.',
         'es-ES': 'El archivo de inicio de sesión de ChatGPT {file} está dañado.'
+      },
+      rejected: {
+        'ja-JP': 'ChatGPT がこのログインを受け付けませんでした。設定の「API キー」で ChatGPT にログインし直してください。',
+        'en-US': 'ChatGPT did not accept this sign-in. Sign in with ChatGPT again on the “API keys” page in Settings.',
+        'fr-FR': 'ChatGPT n’a pas accepté cette connexion. Reconnectez-vous avec ChatGPT depuis la page « Clés API » des réglages.',
+        'de-DE': 'ChatGPT hat diese Anmeldung nicht akzeptiert. Melden Sie sich auf der Seite „API-Schlüssel“ in den Einstellungen erneut mit ChatGPT an.',
+        'hi-IN': 'ChatGPT ने यह साइन इन स्वीकार नहीं किया। सेटिंग में “API कुंजी” पेज पर ChatGPT से फिर से साइन इन करें।',
+        'id-ID': 'ChatGPT tidak menerima data masuk ini. Masuk lagi dengan ChatGPT di halaman “Kunci API” pada Pengaturan.',
+        'it-IT': 'ChatGPT non ha accettato questo accesso. Accedi di nuovo con ChatGPT dalla pagina «Chiavi API» delle impostazioni.',
+        'ko-KR': 'ChatGPT가 이 로그인을 받아들이지 않았습니다. 설정의 ‘API 키’ 페이지에서 ChatGPT로 다시 로그인하십시오.',
+        'pt-BR': 'O ChatGPT não aceitou este login. Entre de novo com o ChatGPT na página “Chaves de API” das configurações.',
+        'es-419': 'ChatGPT no aceptó este inicio de sesión. Vuelve a iniciar sesión con ChatGPT en la página «Claves de API» de la configuración.',
+        'es-ES': 'ChatGPT no ha aceptado este inicio de sesión. Vuelve a iniciar sesión con ChatGPT en la página «Claves de API» de los ajustes.'
       }
     }
   }

@@ -14,7 +14,7 @@ export function providerCredential(provider: LlmProvider, openaiAuth: OpenAiAuth
   if (provider === 'openai' && openaiAuth === 'chatgpt') {
     const auth = chatgptAuth()
     const account = auth.account()
-    return account ? { type: 'chatgpt', account: account.clientId, accessToken: (signal) => auth.accessToken(signal) } : undefined
+    return account ? { type: 'chatgpt', account: account.clientId, accessToken: (signal) => auth.accessToken(signal), forgetToken: (token) => auth.forgetAccessToken(token) } : undefined
   }
   const key = providerKey(provider)
   return key === undefined ? undefined : apiKeyCredential(key)

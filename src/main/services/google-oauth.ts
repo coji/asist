@@ -2,8 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { errorText } from '@shared/i18n/error-text'
 import { SecretUnreadableError, type EncryptedSecretStore } from './encrypted-secrets'
-import { fetchFailure } from './fetch-failure'
-import { base64url, openLoopback, pkcePair, type LoopbackRead } from './oauth-loopback'
+import { SignInReplaced, base64url, oauthErrorCode, openLoopback, pkcePair, postForm, sameText, type LoopbackRead } from './oauth-loopback'
 
 /**
  * Signing in to Google as an installed app (RFC 8252): the system browser shows Google's consent page and
@@ -53,8 +52,7 @@ export class GoogleSignedOut extends Error {
   }
 }
 
-/** The reason a sign-in stops when a newer one or a sign-out takes its place. */
-export class SignInReplaced extends Error {}
+export { SignInReplaced }
 
 const tokenSchema = z.object({
   access_token: z.string().min(1),
@@ -65,33 +63,21 @@ const tokenSchema = z.object({
 
 /**
  * Google's answer on the root of the loopback server: a code that carries the state this sign-in sent, or
- * Google's error. A request with another state ends the sign-in, since only a page other than Google's
- * could have sent it.
+ * Google's error. A request with another state is not Google's answer and leaves the sign-in waiting,
+ * since any page in the browser can reach 127.0.0.1 and must not be able to end it.
  */
 function readGoogleReturn(state: string): (params: URLSearchParams) => LoopbackRead<string> {
   return (params) => {
+    if (params.getAll('state').length !== 1 || !sameText(params.get('state') ?? '', state)) return null
     const code = params.get('code')
     const failure =
-      params.get('state') !== state
-        ? 'calendar.errors.googleSignInFailed'
-        : params.get('error') === 'access_denied'
-          ? 'calendar.errors.googleSignInDenied'
-          : params.get('error') || !code
-            ? 'calendar.errors.googleSignInFailed'
-            : null
+      params.get('error') === 'access_denied'
+        ? 'calendar.errors.googleSignInDenied'
+        : params.get('error') || !code
+          ? 'calendar.errors.googleSignInFailed'
+          : null
     return failure || !code ? { error: new Error(errorText(failure ?? 'calendar.errors.googleSignInFailed')) } : { value: code }
   }
-}
-
-/**
- * The error code of a failed token request, which is also logged: redirect_uri_mismatch, invalid_client
- * and the like tell what to fix in the Google Cloud project. The body never carries a token.
- */
-async function googleError(response: Response, request: string): Promise<string | null> {
-  const body = (await response.json().catch(() => null)) as { error?: unknown } | null
-  const code = typeof body?.error === 'string' ? body.error : null
-  console.warn(`Google token ${request} failed: HTTP ${response.status} ${code ?? '(no error code)'}`)
-  return code
 }
 
 async function tokenOf(response: Response): Promise<z.infer<typeof tokenSchema>> {
@@ -154,7 +140,7 @@ export class GoogleAuth {
       client_secret: this.deps.client.secret
     })
     if (!response.ok) {
-      const body = await googleError(response, 'refresh')
+      const body = await oauthErrorCode(response, 'Google token refresh')
       // Google answers invalid_grant when the user took the access back, when the password changed, and when
       // a sign-in made while the app is in testing passes its seven days. Only a new sign-in helps then.
       if (response.status === 400 && body === 'invalid_grant') {
@@ -235,7 +221,7 @@ export class GoogleAuth {
       client_secret: this.deps.client.secret
     })
     if (!response.ok) {
-      await googleError(response, 'code exchange')
+      await oauthErrorCode(response, 'Google token code exchange')
       throw new Error(errorText('calendar.errors.googleSignInFailed'))
     }
     const token = await tokenOf(response)
@@ -282,15 +268,7 @@ export class GoogleAuth {
     this.access = null
   }
 
-  private async post(url: string, form: Record<string, string>): Promise<Response> {
-    try {
-      return await this.deps.fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(form)
-      })
-    } catch (error) {
-      throw fetchFailure(url, error)
-    }
+  private post(url: string, form: Record<string, string>): Promise<Response> {
+    return postForm(this.deps.fetch, url, form)
   }
 }

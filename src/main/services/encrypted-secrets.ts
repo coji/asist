@@ -61,6 +61,8 @@ export interface EncryptedSecretStore<Id extends string = string> {
   get(id: Id): string | null
   set(id: Id, secret: string): void
   remove(id: Id): void
+  /** Empties the file without reading it, for a sign-out or a new sign-in to replace a file that cannot be read. */
+  clear(): void
 }
 
 export function createEncryptedSecretStore<Id extends string = string>(options: EncryptedSecretStoreOptions<Id>): EncryptedSecretStore<Id> {
@@ -117,6 +119,7 @@ export function createEncryptedSecretStore<Id extends string = string>(options: 
       const secrets = { ...current.secrets }
       delete secrets[id]
       save({ secrets })
-    }
+    },
+    clear: () => save({ secrets: {} })
   }
 }

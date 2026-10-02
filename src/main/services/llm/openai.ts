@@ -10,6 +10,7 @@ import type {
 import type { ConversationMessage, ConversationRequest, ConversationResult, SearchSource, StopReason } from '@shared/conversation'
 import type { RoundUsage } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
+import { errorText } from '@shared/i18n/error-text'
 import { effortFor } from '@shared/llm-catalog'
 import {
   AdapterStream,
@@ -52,9 +53,42 @@ function clientFor(key: string): OpenAI {
   return cached.client
 }
 
-/** The access token of a ChatGPT sign-in is sent where the SDK would send an API key. */
-async function clientOf(credential: ProviderCredential, signal: AbortSignal): Promise<OpenAI> {
-  return clientFor(credential.type === 'api-key' ? credential.key : await credential.accessToken(signal))
+const PLAN_BASE_URL = 'https://api.openai.com/v1'
+
+let cachedPlan: { token: string; client: OpenAI } | null = null
+/**
+ * The access token of a ChatGPT sign-in is sent where the SDK would send an API key, to OpenAI itself: the
+ * SDK would otherwise take a base URL, an organization and a project from the environment, which belong to
+ * an API key and would send the token elsewhere or with headers it is not valid for.
+ */
+function planClientFor(token: string): OpenAI {
+  if (cachedPlan?.token !== token) {
+    cachedPlan = { token, client: new OpenAI({ apiKey: token, baseURL: PLAN_BASE_URL, organization: null, project: null, maxRetries: 0 }) }
+  }
+  return cachedPlan.client
+}
+
+type PlanCredential = Extract<ProviderCredential, { type: 'chatgpt' }>
+
+/**
+ * Runs a call with the client of the credential. OpenAI refusing a ChatGPT token before its expiry, as
+ * when the user disconnected ASIST in ChatGPT's settings, makes the next call renew it, and the failure
+ * says to sign in again rather than to check an API key.
+ */
+async function withClient<T>(credential: ProviderCredential, signal: AbortSignal, call: (client: OpenAI) => Promise<T>): Promise<T> {
+  if (credential.type === 'api-key') return call(clientFor(credential.key))
+  const token = await credential.accessToken(signal)
+  try {
+    return await call(planClientFor(token))
+  } catch (error) {
+    throw planFailure(credential, token, error)
+  }
+}
+
+function planFailure(credential: PlanCredential, token: string, error: unknown): unknown {
+  if ((error as { status?: unknown } | null)?.status !== 401) return error
+  credential.forgetToken(token)
+  return statusError(401, errorText('settingsIntegrations.chatgpt.errors.rejected'), error)
 }
 
 /** The output limit, which a request paid from the ChatGPT plan has to leave out. */
@@ -164,7 +198,7 @@ class OpenAIStream extends AdapterStream {
     private readonly request: ConversationRequest
   ) {
     super()
-    this.start(async () => this.run(await clientOf(credential, request.signal)))
+    this.start(() => withClient(credential, request.signal, (client) => this.run(client)))
   }
 
   protected nativeSnapshot(openText: string): ConversationMessage['native'] {
@@ -306,12 +340,14 @@ const outputText = (response: Response): string =>
   response.output.flatMap((item) => (item.type === 'message' ? item.content : [])).map((part) => (part.type === 'output_text' ? part.text : '')).join('')
 
 /**
- * The models a ChatGPT sign-in may use. This endpoint answers with `{ models: [{ slug }] }` instead of the
+ * The models a ChatGPT sign-in may use, whose slugs are the model ids the API takes: on 2026-10-02 a Plus
+ * account listed gpt-5.6-luna, gpt-5.6-terra and gpt-5.6-sol among them. This endpoint answers with `{ models: [{ slug }] }` instead of the
  * list the SDK parses, and fetching one model refuses the token for lack of the api.model.read scope.
  */
-async function planModels(credential: Extract<ProviderCredential, { type: 'chatgpt' }>, signal: AbortSignal): Promise<string[]> {
-  const response = await fetch('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${await credential.accessToken(signal)}` }, signal })
-  if (!response.ok) throw statusError(response.status, `OpenAI: listing the models of the ChatGPT plan failed (HTTP ${response.status})`)
+async function planModels(credential: PlanCredential, signal: AbortSignal): Promise<string[]> {
+  const token = await credential.accessToken(signal)
+  const response = await fetch(`${PLAN_BASE_URL}/models`, { headers: { authorization: `Bearer ${token}` }, signal })
+  if (!response.ok) throw planFailure(credential, token, statusError(response.status, `OpenAI: listing the models of the ChatGPT plan failed (HTTP ${response.status})`))
   const body = (await response.json()) as { models?: Array<{ slug?: unknown }> }
   if (!Array.isArray(body.models)) throw new Error('OpenAI: the models of the ChatGPT plan came back in an unknown form')
   return body.models.flatMap((model) => (typeof model.slug === 'string' ? [model.slug] : []))
@@ -322,7 +358,6 @@ export const openaiAdapter: ProviderAdapter = {
 
   async completeJson(request: JsonRequest, credential: ProviderCredential) {
     const effort = effortFor(request.model)
-    const client = await clientOf(credential, request.signal)
     const params = {
       model: request.model.id,
       instructions: request.system,
@@ -331,10 +366,11 @@ export const openaiAdapter: ProviderAdapter = {
       ...outputLimit(credential, request.maxTokens),
       store: false
     }
-    const response =
+    const response = await withClient(credential, request.signal, (client) =>
       credential.type === 'api-key'
-        ? await client.responses.create({ ...params, input: request.user }, { signal: request.signal })
-        : await streamedResponse(client, { ...params, input: [{ role: 'user', content: request.user }] }, request.signal)
+        ? client.responses.create({ ...params, input: request.user }, { signal: request.signal })
+        : streamedResponse(client, { ...params, input: [{ role: 'user', content: request.user }] }, request.signal)
+    )
     return {
       usage: roundUsage(response.usage, response.output),
       value: () => {

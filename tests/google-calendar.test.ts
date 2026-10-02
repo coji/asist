@@ -172,15 +172,20 @@ describe('signing in to Google', () => {
     expect(page.status).toBe(200)
   })
 
-  it('refuses a return with another state, exchanges nothing and saves nothing', async () => {
-    const { error, google, tokens, page } = await signIn(
-      (authorize) => `${authorize.searchParams.get('redirect_uri')}/?code=stolen&state=not-the-state`,
-      exchanges
-    )
-    expect(error?.message).toBe(errorText('calendar.errors.googleSignInFailed'))
-    expect(google.calls).toHaveLength(0)
-    expect(tokens.value).toBeNull()
-    expect(page.status).toBe(400)
+  it('refuses a return with another state without ending the sign-in, since any page can reach 127.0.0.1, and exchanges only the code Google sent', async () => {
+    const google = fakeGoogle(exchanges)
+    const tokens = memoryTokens(null)
+    const context = calendarWith(google, tokens)
+    const strays: number[] = []
+    context.openBrowser.mockImplementation(async (url: string) => {
+      const authorize = new URL(url)
+      strays.push((await globalThis.fetch(`${authorize.searchParams.get('redirect_uri')}/?code=stolen&state=not-the-state`)).status)
+      void globalThis.fetch(returnsCode(authorize))
+    })
+    await context.auth.signIn()
+    expect(strays).toEqual([400])
+    expect(google.calls.map((call) => new URLSearchParams(call.body).get('code'))).toEqual(['the-code'])
+    expect(tokens.value).toBe('refresh-new')
   })
 
   it('tells a consent the user declined from a failure', async () => {
