@@ -27,8 +27,8 @@ import { TranscriptTracker, type TranscriptRole } from './transcripts'
  * Functions are declared NON_BLOCKING so that the model keeps talking while one runs, and results come
  * back WHEN_IDLE so that they never cut the sentence being spoken. Tools still execute in the main
  * process, so the approval gate for writes keeps working. A session drops after about ten minutes and is
- * continued with a resumption handle, which is valid for two hours; without one, the history seed is sent
- * instead.
+ * continued with a resumption handle, which is valid for two hours; without one, or once me.md or user.md
+ * changed since the session it continues read them, the history seed is sent instead.
  *
  * The user and assistant lines of the conversation log are written from the input and output transcripts,
  * that is from what was actually heard, since no other text of the conversation exists. A turn id is
@@ -98,7 +98,8 @@ export interface GeminiLiveDeps {
   now?: () => number
   apiKey: () => string | undefined
   connect: (params: GeminiConnectParams) => Promise<GeminiSession>
-  systemInstruction: () => string
+  /** The system instruction of a session that opens with the memory block, which holds me.md and user.md. */
+  systemInstruction: (memoryBlock: string | null) => string
   /** The status of the agent jobs and the recent projects as the model is told it, or null when there is none. */
   jobContext: () => string | null
   functionDeclarations: () => GeminiFunctionDeclaration[]
@@ -108,7 +109,7 @@ export interface GeminiLiveDeps {
   recordTool: (turnId: number, name: string, input: Record<string, unknown>, execution: ToolExecution) => void
   /** Looks for the memories related to the user's utterance. */
   findMemories: (text: string) => Promise<readonly InjectableMemory[]>
-  /** The memory block of the system instruction, whose memories a note leaves out, or null when memory is unavailable. */
+  /** The memory block a session opening now puts in its system instruction, or null when memory is unavailable. */
   memoryBlock: () => string | null
   /** Records a note sent to the model after the utterance of the turn, with the ids of the memories it shows. */
   recordNote: (turnId: number, text: string, memoryIds: string[]) => void
@@ -166,16 +167,24 @@ export class GeminiLiveEngine implements ConversationOwner {
    */
   private owned: { session: GeminiSession | null; ready: boolean } | null = null
   /**
-   * The last handle the provider offered as resumable, with the memories and the job status the session
-   * held when it arrived. The provider offers none while it generates or runs a call. What a handle
-   * carries is not documented: one issued as a resumed session opened, before the session's opening note
-   * reached the server, still resumed with the note known (2 of 2 tries with gemini-3.8-live on
+   * The last handle the provider offered as resumable, with the memories, the job status and the memory block
+   * the session held when it arrived. The provider offers none while it generates or runs a call. What a
+   * handle carries is not documented: one issued as a resumed session opened, before the session's opening
+   * note reached the server, still resumed with the note known (2 of 2 tries with gemini-3.8-live on
    * 2026-10-02), so the opening note counts as held from the moment the session is created. Anything sent
    * later counts only for a later handle, which at worst shows a memory or the job status again.
    */
-  private resumption: { handle: string; at: number; memories: ReadonlyMap<string, number>; jobStatus: string | null } | null = null
+  private resumption: {
+    handle: string
+    at: number
+    memories: ReadonlyMap<string, number>
+    jobStatus: string | null
+    memoryBlock: string | null
+  } | null = null
   /** The job status the current session last read, in the form a note gives it, or null when it read none. */
   private sessionJobStatus: string | null = null
+  /** The memory block in the current session's system instruction: me.md and user.md as the session read them. */
+  private sessionMemoryBlock: string | null = null
   private inputSeconds = 0
   private outputSeconds = 0
   private readonly calls: GeminiCalls
@@ -254,11 +263,16 @@ export class GeminiLiveEngine implements ConversationOwner {
       throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
     }
     const settings = this.deps.settings().geminiLive
-    const resumption = this.resumption && this.now() - this.resumption.at < RESUMPTION_TTL_MS ? this.resumption : null
+    // Built before the timer exists, since building them reads the memory, the history and the jobs, which can fail.
+    const memoryBlock = this.deps.memoryBlock()
+    // A resumed session keeps the system instruction it first opened with, so once me.md or user.md has changed
+    // since, as a save on the memory screen or a merged curation changes them, the session opens blank with them
+    // and the recent history instead. They change a few times a day at most, and a blank session costs little.
+    const held = this.resumption && this.now() - this.resumption.at < RESUMPTION_TTL_MS ? this.resumption : null
+    const resumption = held && held.memoryBlock === memoryBlock ? held : null
     const resume = resumption?.handle ?? null
     const locale = conversationLocale()
-    // Built before the timer exists, since building them reads the history and the jobs, which can fail.
-    const systemInstruction = this.deps.systemInstruction()
+    const systemInstruction = this.deps.systemInstruction(memoryBlock)
     const shown = resumption?.jobStatus ?? null
     const jobStatus = jobStatusNote(locale, this.deps.jobContext(), shown)
     const owned: { session: GeminiSession | null; ready: boolean } = { session: null, ready: false }
@@ -267,6 +281,7 @@ export class GeminiLiveEngine implements ConversationOwner {
     // setupComplete before connecting resolves, and a resumption handle among them is tied to these.
     this.sessionMemories = new Map(resumption?.memories)
     this.sessionJobStatus = jobStatus ?? shown
+    this.sessionMemoryBlock = memoryBlock
     let connected!: Promise<GeminiSession>
     const setup = new Promise<void>((resolve, reject) => {
       const fail = (error: Error): void => {
@@ -421,7 +436,8 @@ export class GeminiLiveEngine implements ConversationOwner {
         handle: message.sessionResumptionUpdate.newHandle,
         at: this.now(),
         memories: new Map(this.sessionMemories),
-        jobStatus: this.sessionJobStatus
+        jobStatus: this.sessionJobStatus,
+        memoryBlock: this.sessionMemoryBlock
       }
     }
     if (message.goAway) console.warn(`gemini-live: GoAway (${message.goAway.timeLeft ?? '?'})`)
@@ -565,7 +581,7 @@ export class GeminiLiveEngine implements ConversationOwner {
         if (!session) return
         const note = buildMemoryInjection(memories, {
           locale: conversationLocale(),
-          memoryBlock: this.deps.memoryBlock(),
+          memoryBlock: this.sessionMemoryBlock,
           excludeIds: this.memoriesHeld()
         })
         if (!note) return

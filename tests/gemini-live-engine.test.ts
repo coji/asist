@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   conversationLocale: 'ja-JP' as 'ja-JP' | 'en-US',
   /** The status of the agent jobs as the engine reads it when a session opens. */
   jobContext: null as string | null,
+  /** The memory block, me.md and user.md as the prompt carries them, as the engine reads it when a session opens. */
+  memoryBlock: '' as string | null,
   /** What connecting waits for before the session arrives, as the socket opening does. */
   connected: Promise.resolve()
 }))
@@ -96,7 +98,7 @@ async function setup(execute?: ExecuteTool): Promise<{
       await mocks.connected
       return session
     },
-    systemInstruction: () => 'SYSTEM',
+    systemInstruction: (block) => (block ? `SYSTEM\n${block}` : 'SYSTEM'),
     jobContext: () => mocks.jobContext,
     functionDeclarations: () => [{ name: 'show_weather', parametersJsonSchema: { type: 'object' }, behavior: 'NON_BLOCKING' }],
     executeTool: executeTool as never,
@@ -104,7 +106,7 @@ async function setup(execute?: ExecuteTool): Promise<{
     isParallel: (name) => name.startsWith('show_'),
     recordTool,
     findMemories,
-    memoryBlock: () => '',
+    memoryBlock: () => mocks.memoryBlock,
     recordNote: (turnId, text, memoryIds) => mocks.record({ kind: 'note', turnId, text, memoryIds }),
     recordUser: (turnId, text) => mocks.record({ kind: 'user', turnId, text }),
     history: () => [{ role: 'user', content: '前の話' }],
@@ -158,6 +160,7 @@ describe('GeminiLiveEngine', () => {
     mocks.nextTurnId = 200
     mocks.conversationLocale = 'ja-JP'
     mocks.jobContext = null
+    mocks.memoryBlock = ''
     mocks.connected = Promise.resolve()
   })
   afterEach(() => vi.useRealTimers())
@@ -428,6 +431,40 @@ describe('GeminiLiveEngine', () => {
     const second = await open(engine, sessions)
     expect(second.params.resumptionHandle).toBe('h1')
     expect(openingNote(second).startsWith(noticeAt(resumedAt))).toBe(true)
+    await engine.stop()
+  })
+
+  it('opens a session blank, with me.md and user.md as they are now and the recent history, once they changed since the session a handle continues read them, and resumes while they have not', async () => {
+    mocks.memoryBlock = '# ユーザー\n猫と暮らしている。'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    expect(first.params.systemInstruction).toBe('SYSTEM\n# ユーザー\n猫と暮らしている。')
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const second = await open(engine, sessions)
+    expect(second.params.resumptionHandle).toBe('h1')
+    second.message({ sessionResumptionUpdate: { newHandle: 'h2', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    // A save on the memory screen, which a resumed session would never read.
+    mocks.memoryBlock = '# ユーザー\n猫と暮らしている。辛いものは苦手。'
+    const third = await open(engine, sessions)
+    expect(third.params.resumptionHandle).toBeNull()
+    expect(third.params.systemInstruction).toBe('SYSTEM\n# ユーザー\n猫と暮らしている。辛いものは苦手。')
+    expect((third.contents[0] as { turns: unknown[] }).turns[0]).toEqual({ role: 'user', parts: [{ text: '前の話' }] })
+    third.message({ sessionResumptionUpdate: { newHandle: 'h3', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const fourth = await open(engine, sessions)
+    expect(fourth.params.resumptionHandle).toBe('h3')
+    await engine.stop()
+  })
+
+  it('leaves out of a memory note only what the session\'s own instruction holds, not a save it has not read', async () => {
+    const { engine, sessions } = await setup()
+    const session = await open(engine, sessions)
+    mocks.memoryBlock = `# ユーザー\n${CAFE.text}`
+    session.message({ serverContent: { inputTranscription: { text: 'いつもの店を教えて', finished: true } } })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: CAFE_NOTE }] }], turnComplete: false })
     await engine.stop()
   })
 

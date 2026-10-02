@@ -35,14 +35,14 @@ let runs = 0
 
 export const connection = (): LiveConnection => engine?.state ?? 'off'
 
-function geminiSystemInstruction(): string {
+function geminiSystemInstruction(memoryBlock: string | null): string {
   history.ensureLoaded()
   const locale = conversationLocale()
   return buildLiveSystemInstruction({
     locale,
     persona: personaText(getSettings()),
     toolGuide: toolGuide(locale, { webSearch: false }),
-    memoryBlock: memory.promptBlock(),
+    memoryBlock,
     historySummary: history.summary
   })
 }
