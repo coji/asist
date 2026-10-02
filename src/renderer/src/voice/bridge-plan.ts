@@ -14,8 +14,6 @@ const MIN_FINISH_CHARS = 2
 
 export interface PlannerPorts {
   plan(input: BridgePlanRequest): Promise<BridgePlan>
-  /** Called whenever a plan comes back; the HUD displays it. */
-  onPlan(plan: BridgePlan, input: BridgePlanRequest): void
   onFailure(error: unknown): void
 }
 
@@ -26,7 +24,6 @@ export class BridgePlanner {
     this.lookahead = new PartialLookahead({
       request: (input) => ports.plan(input),
       fold: (_latest, plan) => plan,
-      onResult: (plan, input) => ports.onPlan(plan, input),
       onFailure: (error) => ports.onFailure(error)
     })
   }
@@ -50,7 +47,8 @@ export class BridgePlanner {
   /**
    * Marks the end of speech. If this capture has no plan and nothing in flight it sends the last
    * partial transcript, and if a request is in flight it waits for it. Waiting is allowed here
-   * because the bridging phrase only has to play before the answer itself.
+   * because the bridging phrase only has to play before the answer itself. It answers null when there
+   * was nothing to send, and rejects when every request of the capture failed.
    */
   finish(input: BridgePlanRequest): Promise<BridgePlan | null> {
     const text = input.text.trim()

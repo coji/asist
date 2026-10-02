@@ -454,6 +454,45 @@ export const hud = defineMessages({
       'pt-BR': '{tool} · {status}',
       'es-419': '{tool} · {status}',
       'es-ES': '{tool} · {status}'
+    },
+    bridgeLate: {
+      'ja-JP': '返事より遅れたつなぎの一言を省きました',
+      'en-US': 'Left out the bridge phrase, which came after the reply',
+      'fr-FR': 'Phrase de transition omise, la réponse est arrivée avant',
+      'de-DE': 'Überbrückungssatz ausgelassen, da die Antwort zuerst kam',
+      'hi-IN': 'जवाब पहले आ गया, इसलिए शुरुआती वाक्य छोड़ा',
+      'id-ID': 'Kalimat penyambung dilewati karena jawaban datang lebih dulu',
+      'it-IT': 'Frase di raccordo saltata: la risposta è arrivata prima',
+      'ko-KR': '대답보다 늦은 연결 멘트를 생략했습니다',
+      'pt-BR': 'Frase de transição omitida: a resposta chegou antes',
+      'es-419': 'Se omitió la frase de enlace porque la respuesta llegó antes',
+      'es-ES': 'Se ha omitido la frase de enlace porque la respuesta ha llegado antes'
+    },
+    bridgeUnsettled: {
+      'ja-JP': 'つなぎの一言が決まる前に返事を始めました',
+      'en-US': 'Started the reply before the bridge phrase was decided',
+      'fr-FR': 'Réponse commencée avant que la phrase de transition soit décidée',
+      'de-DE': 'Antwort begonnen, bevor der Überbrückungssatz feststand',
+      'hi-IN': 'शुरुआती वाक्य तय होने से पहले जवाब शुरू किया',
+      'id-ID': 'Jawaban dimulai sebelum kalimat penyambung ditentukan',
+      'it-IT': 'Risposta iniziata prima che la frase di raccordo fosse decisa',
+      'ko-KR': '연결 멘트가 정해지기 전에 대답을 시작했습니다',
+      'pt-BR': 'Resposta iniciada antes de a frase de transição ser definida',
+      'es-419': 'Se empezó la respuesta antes de decidir la frase de enlace',
+      'es-ES': 'Se ha empezado la respuesta antes de decidir la frase de enlace'
+    },
+    bridgeDeclined: {
+      'ja-JP': 'つなぎの一言は要らないと判断しました',
+      'en-US': 'Judged that no bridge phrase was needed',
+      'fr-FR': 'Aucune phrase de transition jugée nécessaire',
+      'de-DE': 'Kein Überbrückungssatz für nötig befunden',
+      'hi-IN': 'शुरुआती वाक्य की ज़रूरत नहीं समझी',
+      'id-ID': 'Kalimat penyambung dinilai tidak perlu',
+      'it-IT': 'Frase di raccordo ritenuta non necessaria',
+      'ko-KR': '연결 멘트가 필요 없다고 판단했습니다',
+      'pt-BR': 'Frase de transição considerada desnecessária',
+      'es-419': 'Se determinó que no hacía falta una frase de enlace',
+      'es-ES': 'Se ha determinado que no hacía falta una frase de enlace'
     }
   },
   toolStatus: {

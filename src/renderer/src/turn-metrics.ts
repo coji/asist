@@ -46,7 +46,8 @@ const IDLE_WAIT_MS = 120_000
  * or sent never lends that one its values. Values that arrive after the turn is complete, such as when
  * playback really started and how many barge-ins or ignored aizuchi occurred during speech, are appended
  * under the same id with the revision raised. The HUD shows the latest input's measurements, or the one
- * before when the latest yields no turn.
+ * before when the latest yields no turn, and is told which utterance they are of, so that what it shows
+ * beside them, such as the bridge, comes from the same turn.
  */
 export class TurnMetrics {
   /** The utterances, by when their capture began, until they yield no turn or their measurement closes. */
@@ -57,7 +58,8 @@ export class TurnMetrics {
 
   constructor(
     private readonly save: (payload: TurnMetricLog) => Promise<void>,
-    private readonly show: (timings: TurnTimings) => void,
+    /** Shows measurements in the HUD, with the utterance they are of, or null for typed input and before any input. */
+    private readonly show: (timings: TurnTimings, utterance: number | null) => void,
     private readonly now: () => number = () => performance.now(),
     private readonly wallNow: () => number = () => Date.now()
   ) {}
@@ -84,8 +86,7 @@ export class TurnMetrics {
     if (this.shown !== entry) return
     let before = entry.shownBefore
     while (before?.dropped) before = before.shownBefore
-    this.shown = before
-    this.show({ ...before?.timings })
+    this.display(before)
   }
 
   /** The input is sent. Only the newest request can become a turn, so older ones stop being measured. */
@@ -178,12 +179,12 @@ export class TurnMetrics {
   private merge(entry: Measurement, timings: TurnTimings): void {
     entry.timings = { ...entry.timings, ...timings }
     entry.dirty = true
-    if (entry === this.shown) this.show({ ...entry.timings })
+    if (entry === this.shown) this.display(entry)
   }
 
-  private display(entry: Measurement): void {
+  private display(entry: Measurement | null): void {
     this.shown = entry
-    this.show({ ...entry.timings })
+    this.show({ ...entry?.timings }, entry?.utterance ?? null)
   }
 
   private persist(entry: Requested): void {

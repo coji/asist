@@ -11,6 +11,8 @@
 
 interface Capture<I, R> {
   latest: R | null
+  /** The error of the request that failed last, if one did. */
+  failure: { error: unknown } | null
   lastText: string
   inflight: boolean
   pending: I | null
@@ -22,13 +24,14 @@ export interface LookaheadPorts<I, R> {
   request(input: I): Promise<R>
   /** Folds a result into the latest one of the capture. */
   fold(latest: R | null, result: R): R
-  /** Called whenever the latest result of the current capture changes; the HUD displays it. */
-  onResult(latest: R, input: I): void
+  /** Called whenever the latest result of the current capture changes. */
+  onResult?(latest: R, input: I): void
   onFailure(error: unknown): void
 }
 
 const newCapture = <I, R>(): Capture<I, R> => ({
   latest: null,
+  failure: null,
   lastText: '',
   inflight: false,
   pending: null,
@@ -70,11 +73,22 @@ export class PartialLookahead<I extends { text: string }, R> {
     return this.capture.inflight
   }
 
-  /** Waits until the current capture has nothing in flight or waiting, and returns its latest result, whatever capture has begun since. */
+  /**
+   * Waits until the current capture has nothing in flight or waiting, and returns its latest result,
+   * whatever capture has begun since: null when it sent nothing. A capture with no result because its
+   * requests failed rejects with the last failure, so that a model that failed is told apart from one
+   * that was never asked.
+   */
   settled(): Promise<R | null> {
     const capture = this.capture
-    if (!capture.inflight) return Promise.resolve(capture.latest)
-    return new Promise((resolve) => capture.waiters.push(() => resolve(capture.latest)))
+    return new Promise((resolve, reject) => {
+      const answer = (): void => {
+        if (capture.latest === null && capture.failure) reject(capture.failure.error)
+        else resolve(capture.latest)
+      }
+      if (capture.inflight) capture.waiters.push(answer)
+      else answer()
+    })
   }
 
   private settle(capture: Capture<I, R>): void {
@@ -88,8 +102,9 @@ export class PartialLookahead<I extends { text: string }, R> {
     try {
       const result = await this.ports.request(input)
       capture.latest = this.ports.fold(capture.latest, result)
-      if (capture === this.capture) this.ports.onResult(capture.latest, input)
+      if (capture === this.capture) this.ports.onResult?.(capture.latest, input)
     } catch (error) {
+      capture.failure = { error }
       if (capture === this.capture) this.ports.onFailure(error)
     } finally {
       capture.inflight = false

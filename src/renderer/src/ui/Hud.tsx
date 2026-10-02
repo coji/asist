@@ -42,7 +42,8 @@ function LiveHud(): React.JSX.Element {
 function RouterMetric(): React.JSX.Element {
   const t = useT()
   const note = useTurnStore((s) => s.routerNote)
-  const routerNote = note ? routerNoteText(note, t) : ''
+  const shownUtterance = useTurnStore((s) => s.shownUtterance)
+  const routerNote = note ? routerNoteText(note, t, shownUtterance) : ''
   return (
     <div className="hud-metric is-router">
       <span className="hud-label">{t('hud.metrics.router')}</span>
