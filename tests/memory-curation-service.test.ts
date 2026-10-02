@@ -460,7 +460,11 @@ it('discards a curation that leaves a document of the prompt over its token limi
   git(repo, 'commit', '-qm', 'memory')
   const { curation, agent } = await setup()
   const job = curation.pendingJob()!
-  const grown = me.replace('落ち着いて話す。', '落ち着いて話し、確かめてから答えることを大事にしている。'.repeat(80))
+  // Four sections, each within the cap of a section, which together pass the limit of the document.
+  const grown = me.replace(
+    '落ち着いて話す。',
+    ['私は誰か', '話し方', '好きなもの', 'この人との関係'].map((heading) => `## ${heading}\n${'落ち着いて話し、確かめてから答えることを大事にしている。'.repeat(20)}`).join('\n\n')
+  )
   fs.writeFileSync(path.join(job.cwd, 'me.md'), grown)
   lastLaunch().onExit(0)
   expect(agent.get(job.id)?.mergeState).toBe('discarded')

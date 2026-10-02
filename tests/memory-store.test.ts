@@ -393,15 +393,27 @@ describe('the memory store', () => {
     fs.writeFileSync(path.join(dir, 'user.md'), user)
     git(dir, ['add', '-A'])
     git(dir, ['commit', '-qm', 'user'])
-    const long = user.replace('コーヒーは砂糖なし。', '麺類が好きで、辛さは控えめを選ぶ。'.repeat(200))
-    const refusal = ja('memory.check.tooManyTokens', {
-      file: 'user.md',
-      tokens: promptSize(long).tokens,
-      limit: PROMPT_DOCUMENT_MAX_TOKENS,
-      characters: textForTokens(promptSize(long), promptSize(long).tokens - PROMPT_DOCUMENT_MAX_TOKENS).characters
-    })
-    expect(() => store.writeDocument('user.md', long, user)).toThrow(refusal)
+    // Sections each within the cap of a section, which together pass the limit of the document.
+    const long = user.replace(
+      'コーヒーは砂糖なし。',
+      ['麺類', '辛さ', '飲み物', '甘いもの'].map((heading, i) => `${i === 0 ? '' : `## ${heading}\n`}${'麺類が好きで、辛さは控えめを選ぶ。'.repeat(30)}`).join('\n\n')
+    )
+    let refused: unknown = null
+    try {
+      store.writeDocument('user.md', long, user)
+    } catch (error) {
+      refused = error
+    }
     expect(fs.readFileSync(path.join(dir, 'user.md'), 'utf8')).toBe(user)
+    const size = promptSize(long)
+    expect((refused as Error | null)?.message).toBe(
+      ja('memory.check.tooManyTokens', {
+        file: 'user.md',
+        tokens: size.tokens,
+        limit: PROMPT_DOCUMENT_MAX_TOKENS,
+        characters: textForTokens(size, size.tokens - PROMPT_DOCUMENT_MAX_TOKENS).characters
+      })
+    )
     expect(store.writeDocument('user.md', user.replace('砂糖なし', 'ミルク入り'), user).file).toBe('user.md')
   })
 
