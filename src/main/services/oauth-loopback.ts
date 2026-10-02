@@ -4,10 +4,10 @@ import type { AddressInfo } from 'node:net'
 import { fetchFailure } from './fetch-failure'
 
 /**
- * The pieces an installed app's sign-in (RFC 8252) shares between Google and ChatGPT: the PKCE pair, and
- * the server on 127.0.0.1 the system browser comes back to. Any page open in the browser can send requests
- * to that server while it waits, so nothing such a page sends can throw in main, and only what the
- * provider reads as an answer ends the wait.
+ * The parts of the ChatGPT sign-in, an installed app's sign-in (RFC 8252), that do not depend on OpenAI: the
+ * PKCE pair, the token requests, and the server on 127.0.0.1 the system browser comes back to. Any page open
+ * in the browser can send requests to that server while it waits, so nothing such a page sends can throw in
+ * main, and only what the provider reads as an answer ends the wait.
  */
 
 export const base64url = (bytes: Buffer): string => bytes.toString('base64url')
