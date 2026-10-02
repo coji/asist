@@ -177,6 +177,9 @@ function parseFrontmatter(lines: string[]): { frontmatter: PageFrontmatter; body
   return { frontmatter, bodyStart: lines.length, unclosed: true }
 }
 
+/** The index of the line a document's body starts on, the one after its frontmatter. */
+export const bodyStart = (lines: string[]): number => parseFrontmatter(lines).bodyStart
+
 interface Body {
   frontmatter: PageFrontmatter
   unclosed: boolean
@@ -238,7 +241,7 @@ export function parsePage(markdown: string, fallbackTitle: string): ParsedPage {
 export function promptBody(markdown: string): string {
   const lines = markdown.split(/\r?\n/)
   return lines
-    .slice(parseFrontmatter(lines).bodyStart)
+    .slice(bodyStart(lines))
     .filter((line) => !/^# /.test(line))
     .join('\n')
     .trim()

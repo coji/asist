@@ -239,45 +239,6 @@ export function documentOf(file: string, markdown: string): MemoryDocument {
   }
 }
 
-/** me.md and user.md as they are, null for one that does not exist. */
-export interface PromptDocuments {
-  me: string | null
-  user: string | null
-}
-
-/**
- * Where what an instruction.md held goes, now that me.md and user.md ride in every turn and it does not: its
- * section about the assistant into me.md, every other section into user.md. Each keeps its heading and its
- * text as they were, appended to the section of the same heading where the document has one, so nothing is
- * lost and no heading stands twice. A document that does not exist yet is started under its name in the form
- * the instruction was written in. The next curation folds the moved sections into the document's own headings.
- */
-export function foldInstruction(instruction: string, documents: PromptDocuments, today: string): PromptDocuments {
-  const { sections } = parsePage(instruction, '')
-  const form = writtenInJapanese(instruction) ? 'ja' : 'en'
-  const folded = { ...documents }
-  for (const target of ['me', 'user'] as const) {
-    const moved = sections.filter((section) => (section.heading === FIXED.me.ja || section.heading === FIXED.me.en) === (target === 'me'))
-    if (moved.length === 0) continue
-    let markdown = documents[target] ?? `---\nupdated: ${today}\n---\n# ${FIXED[target][form]}\n`
-    for (const { heading, text } of moved) markdown = appendToSection(markdown, heading, text)
-    folded[target] = markdown
-  }
-  return folded
-}
-
-/** The document with the text added at the end of the section under the heading, or in a new section at its end. */
-function appendToSection(markdown: string, heading: string, text: string): string {
-  const lines = markdown.replace(/\s+$/, '').split(/\r?\n/)
-  const at = lines.findIndex((line) => /^## /.test(line) && line.slice(3).trim() === heading)
-  if (at === -1) return `${lines.join('\n')}\n\n## ${heading}\n${text}\n`
-  let end = lines.findIndex((line, index) => index > at && /^## /.test(line))
-  if (end === -1) end = lines.length
-  while (end > at + 1 && !lines[end - 1].trim()) end--
-  lines.splice(end, 0, '', text)
-  return `${lines.join('\n')}\n`
-}
-
 /** A finding of documentIssues as a sentence in the language of the interface. */
 export function documentIssueText(file: string, issue: DocumentIssue, t: Translate): string {
   switch (issue.kind) {

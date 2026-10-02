@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   documentOf,
-  foldInstruction,
   parseMemoryPageInput,
   validateDocument,
   classifyFile,
@@ -277,29 +276,6 @@ describe('documents', () => {
     expect(validateDocument('user.md', '---\naliases: []\nupdated: 2026-09-09\n---\n# ユーザー\n## 好み\n辛さは控えめ。\n', ja)).toEqual([
       ja('memory.check.aliasesOnlyOnPages', { file: 'user.md' })
     ])
-  })
-
-  it('moves what an instruction.md held into me.md and user.md word for word, its section about the assistant into me.md', () => {
-    const instruction = '# いつも覚えておくこと\n\n## この人について\n三鷹に住んでいる。\n\n## 私について\n落ち着いて短く話す。\n\n## 頼まれていること\n「一言で」と言われたら一言で返す。\n'
-    const me = '---\nupdated: 2026-09-20\n---\n# 私について\n\n## 私は誰か\n声の相棒。\n'
-    const user = '---\nupdated: 2026-09-20\n---\n# ユーザー\n\n## 属性\n猫と暮らしている。\n\n## ASIST への期待\n答えは短く。\n'
-    const folded = foldInstruction(instruction, { me, user }, '2026-10-02')
-    expect(folded.me).toBe(`${me}\n## 私について\n落ち着いて短く話す。\n`)
-    expect(folded.user).toBe(`${user}\n## この人について\n三鷹に住んでいる。\n\n## 頼まれていること\n「一言で」と言われたら一言で返す。\n`)
-    for (const [file, markdown] of [['me.md', folded.me!], ['user.md', folded.user!]]) expect([file, validateDocument(file, markdown, ja)]).toEqual([file, []])
-  })
-
-  it('adds a moved section to the section of the same heading, so that no heading stands twice, and starts a document that did not exist', () => {
-    const instruction = '# Always keep in mind\n\n## What they expect of ASIST\nKeep it to one word when asked for one.\n\n## About me\nA calm voice.\n'
-    const user = '---\nupdated: 2026-09-20\n---\n# The user\n\n## What they expect of ASIST\nShort answers.\n\n## Habits\nUp at seven.\n'
-    const folded = foldInstruction(instruction, { me: null, user }, '2026-10-02')
-    expect(folded.user).toBe(
-      '---\nupdated: 2026-09-20\n---\n# The user\n\n## What they expect of ASIST\nShort answers.\n\nKeep it to one word when asked for one.\n\n## Habits\nUp at seven.\n'
-    )
-    expect(folded.me).toBe('---\nupdated: 2026-10-02\n---\n# About me\n\n## About me\nA calm voice.\n')
-    expect(validateDocument('user.md', folded.user!, ja)).toEqual([])
-    // An instruction.md without a section about the assistant leaves me.md as it was.
-    expect(foldInstruction('# いつも覚えておくこと\n\n## 頼まれていること\n短く話す。\n', { me: null, user: null }, '2026-10-02').me).toBeNull()
   })
 
   it('refuses a heading that stands twice in one file, since a section is found by its file and heading', () => {

@@ -5,6 +5,7 @@ import { fillPrompt, promptText, type PromptText } from '@shared/conversation-lo
 import { errorText } from '@shared/i18n/error-text'
 import type { MemoryDocument, MemoryUnit } from '@shared/ipc'
 import { localDateKey } from '@shared/local-date'
+import { foldInstruction } from '@shared/instruction-fold'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
 import { isJournalName } from '@shared/memory-format'
 import {
@@ -13,7 +14,6 @@ import {
   classifyFile,
   documentKindOf,
   documentOf,
-  foldInstruction,
   parseMemoryPageInput,
   parsePage,
   promptBody,
@@ -98,7 +98,9 @@ export function ensureRepo(dir = memoryDir()): void {
 /**
  * Moves what instruction.md holds into me.md and user.md and removes it, in one commit. Its text goes over
  * word for word, so nothing the user wrote there is lost; the two documents may then pass their limit until
- * the next curation folds the moved sections into their own headings.
+ * the next curation folds the moved sections into their own headings. A start that ended after me.md or
+ * user.md was written and before the commit leaves instruction.md, and the next start folds it again without
+ * adding its text twice.
  */
 function foldInstructionIntoPromptDocuments(dir: string): void {
   const instruction = readFileOf(dir, INSTRUCTION_FILE)
