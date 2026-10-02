@@ -1334,6 +1334,58 @@ export const files = defineMessages({
       'pt-BR': 'O ASIST não tem permissão para abrir este local',
       'es-419': 'ASIST no tiene permiso para abrir esta ubicación',
       'es-ES': 'ASIST no tiene permiso para abrir esta ubicación'
+    },
+    zipDamaged: {
+      'ja-JP': 'ファイルが壊れているか、形式が違います。',
+      'en-US': 'The file is damaged or in a different format.',
+      'fr-FR': "Le fichier est endommagé ou n'est pas au bon format.",
+      'de-DE': 'Die Datei ist beschädigt oder hat ein anderes Format.',
+      'hi-IN': 'फ़ाइल खराब है या उसका फ़ॉर्मैट अलग है।',
+      'id-ID': 'Filenya rusak atau formatnya berbeda.',
+      'it-IT': 'Il file è danneggiato o ha un altro formato.',
+      'ko-KR': '파일이 손상되었거나 형식이 다릅니다.',
+      'pt-BR': 'O arquivo está corrompido ou em outro formato.',
+      'es-419': 'El archivo está dañado o tiene otro formato.',
+      'es-ES': 'El archivo está dañado o tiene otro formato.'
+    },
+    zipEntryMissing: {
+      'ja-JP': 'ファイルの中に {path} がありません。',
+      'en-US': 'There is no {path} inside the file.',
+      'fr-FR': 'Le fichier ne contient pas {path}.',
+      'de-DE': 'In der Datei fehlt {path}.',
+      'hi-IN': 'फ़ाइल में {path} नहीं है।',
+      'id-ID': 'Di dalam file tidak ada {path}.',
+      'it-IT': 'Nel file manca {path}.',
+      'ko-KR': '파일 안에 {path} 항목이 없습니다.',
+      'pt-BR': 'O arquivo não contém {path}.',
+      'es-419': 'El archivo no contiene {path}.',
+      'es-ES': 'El archivo no contiene {path}.'
+    },
+    zipEntryUnsupported: {
+      'ja-JP': '{path} は ASIST が読めない方式で圧縮されています。',
+      'en-US': "{path} is compressed in a way ASIST can't read.",
+      'fr-FR': "{path} est compressé d'une manière qu'ASIST ne sait pas lire.",
+      'de-DE': '{path} ist auf eine Art komprimiert, die ASIST nicht lesen kann.',
+      'hi-IN': '{path} ऐसे तरीके से कंप्रेस किया गया है जिसे ASIST पढ़ नहीं सकता।',
+      'id-ID': '{path} dikompresi dengan cara yang tidak bisa dibaca ASIST.',
+      'it-IT': '{path} è compresso in un modo che ASIST non sa leggere.',
+      'ko-KR': '{path} 항목은 ASIST가 읽을 수 없는 방식으로 압축되어 있습니다.',
+      'pt-BR': '{path} está compactado de um jeito que o ASIST não consegue ler.',
+      'es-419': '{path} está comprimido de una forma que ASIST no puede leer.',
+      'es-ES': '{path} está comprimido de una forma que ASIST no puede leer.'
+    },
+    changedWhileReading: {
+      'ja-JP': '読んでいる間にファイルが変わりました。',
+      'en-US': 'The file changed while it was being read.',
+      'fr-FR': 'Le fichier a changé pendant sa lecture.',
+      'de-DE': 'Die Datei hat sich während des Lesens geändert.',
+      'hi-IN': 'पढ़ते समय फ़ाइल बदल गई।',
+      'id-ID': 'Filenya berubah saat sedang dibaca.',
+      'it-IT': 'Il file è cambiato durante la lettura.',
+      'ko-KR': '읽는 동안 파일이 바뀌었습니다.',
+      'pt-BR': 'O arquivo mudou enquanto era lido.',
+      'es-419': 'El archivo cambió mientras se leía.',
+      'es-ES': 'El archivo ha cambiado mientras se leía.'
     }
   }
 })

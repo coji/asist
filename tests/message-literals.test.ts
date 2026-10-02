@@ -34,7 +34,7 @@ const NOT_MESSAGES: Array<{ file: RegExp; text: string; reason: string }> = [
   ...['今週', '終日', '期間'].map((text) => ({ file: /^tests\/calendar-service\.test\.ts$/, text, reason: 'the words src/shared/calendar.ts writes for the model' })),
   { file: /^tests\/llm-(openai|cerebras)\.test\.ts$/, text: 'エラー: HTTP 503', reason: 'a failed tool result, which conversation-markers.ts prefixes with its own `エラー:` for the model' },
   { file: /^tests\/brain-turn\.test\.ts$/, text: '相槌', reason: 'a word the request to the model must not contain' },
-  ...['サポートの応答時間', '料金', 'メモ'].map((text) => ({ file: /^tests\/viewer-office\.test\.tsx$/, text, reason: 'text inside the demo docx and xlsx files the viewer renders' })),
+  ...['サポートの応答時間', '料金', 'メモ'].map((text) => ({ file: /^tests\/viewer-(docx|xlsx)\.test\.tsx$/, text, reason: 'text inside the demo docx and xlsx files the viewer renders' })),
   { file: /^tests\/listening-aizuchi\.test\.ts$/, text: 'テストを書いてから', reason: 'an utterance that ends in the conjunctive から under test, which any text ending in から shares with `{box}から`' }
 ]
 

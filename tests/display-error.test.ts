@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator } from '@shared/i18n'
+import { errorKey } from '@shared/i18n/error-key'
 import { errorText, readErrorText } from '@shared/i18n/error-text'
 import { MAX_TASK_NOTES_LENGTH, MAX_TASK_TITLE_LENGTH, parseOrThrow, taskInputSchema } from '@shared/tasks'
 import { useSettingsStore } from '../src/renderer/src/state/stores'
@@ -51,6 +52,16 @@ describe('displayError', () => {
     const file = 'odd }] "name".json'
     const read = errorText('settings.errors.readFailed', { file, message: String(new Error(inner)) })
     expect(displayError(new Error(read))).toBe(t('settings.errors.readFailed', { file, message: t('tasks.errors.titleTooLong', { limit: MAX_TASK_TITLE_LENGTH }) }))
+  })
+
+  it('writes an error thrown with its key alone, as the preview iframe throws one without the dictionary, and an error that wraps it', () => {
+    const inner = errorKey('files.errors.zipEntryMissing', { path: 'word/document.xml' })
+    expect(displayError(new Error(inner))).toBe(t('files.errors.zipEntryMissing', { path: 'word/document.xml' }))
+    const outer = errorText('files.viewer.docxFailed', { message: inner })
+    expect(displayError(new Error(outer))).toBe(t('files.viewer.docxFailed', { message: t('files.errors.zipEntryMissing', { path: 'word/document.xml' }) }))
+    // The English sentence of the log leaves the inner marker out, as it does for an inner errorText.
+    const en = createTranslator('en-US')
+    expect(outer.startsWith(`${en('files.viewer.docxFailed', { message: '' })} [asist:files.viewer.docxFailed `)).toBe(true)
   })
 
   it('writes the first of several errors that one message joins, each with values of its own', () => {
