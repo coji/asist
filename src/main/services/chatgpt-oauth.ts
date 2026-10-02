@@ -54,11 +54,13 @@ const TERMINAL_REFRESH_ERRORS = new Set([
 /**
  * `hostId` names this installation to OpenAI and stays the same across sign-ins (`ext_agent_host_id`).
  * `clientId` is the registration issued on the first sign-in; it outlives a sign-out so that signing in
- * again does not register a second app. `session` is the signed-in account and its tokens, as JSON.
+ * again does not register a second app. `session` is the signed-in account and its tokens, as JSON that
+ * carries the version of its form.
  */
 export type ChatGptSecretId = 'hostId' | 'clientId' | 'session'
 
 const sessionSchema = z.object({
+  version: z.literal(1),
   subject: z.string().min(1),
   email: z.string().optional(),
   idToken: z.string().min(1),
@@ -223,11 +225,18 @@ export class ChatGptAuth {
     return (this.deps.now ?? Date.now)()
   }
 
+  /** A session that cannot be read counts as unreadable, like one another build encrypted, so only a new sign-in or a sign-out replaces it. */
   private session(): Session | null {
     const raw = this.deps.secrets.get('session')
     if (raw === null) return null
-    const parsed = sessionSchema.safeParse(JSON.parse(raw))
-    if (!parsed.success) throw new Error(errorText('settingsIntegrations.chatgpt.errors.badResponse'), { cause: parsed.error })
+    let content: unknown
+    try {
+      content = JSON.parse(raw)
+    } catch (error) {
+      throw new SecretUnreadableError(errorText('settingsIntegrations.chatgpt.errors.unreadable'), { cause: error })
+    }
+    const parsed = sessionSchema.safeParse(content)
+    if (!parsed.success) throw new SecretUnreadableError(errorText('settingsIntegrations.chatgpt.errors.unreadable'), { cause: parsed.error })
     return parsed.data
   }
 
@@ -241,7 +250,7 @@ export class ChatGptAuth {
    */
   signInState(): 'signedIn' | 'signedOut' | 'unreadable' {
     try {
-      return this.deps.secrets.get('session') === null ? 'signedOut' : 'signedIn'
+      return this.session() === null ? 'signedOut' : 'signedIn'
     } catch (error) {
       if (error instanceof SecretUnreadableError) return 'unreadable'
       throw error
@@ -402,6 +411,7 @@ export class ChatGptAuth {
     if (!token.id_token) throw new Error(errorText('settingsIntegrations.chatgpt.errors.badResponse'))
     const identity = await this.verifyIdToken(token.id_token, clientId, nonce)
     this.saveSession({
+      version: 1,
       subject: identity.subject,
       ...(identity.email ? { email: identity.email } : {}),
       idToken: token.id_token,

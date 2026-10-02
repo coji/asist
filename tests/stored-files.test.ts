@@ -29,6 +29,7 @@ const FORMATS: StoredFormat<unknown>[] = [
   TIMERS_FORMAT,
   secretFileFormat('api-keys.json', () => 'broken'),
   secretFileFormat('google-calendar.json', () => 'broken'),
+  secretFileFormat('chatgpt.json', () => 'broken'),
   DRAFTS_FORMAT,
   JOBS_FORMAT,
   USAGE_FORMAT,

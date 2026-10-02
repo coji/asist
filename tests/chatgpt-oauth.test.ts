@@ -100,7 +100,7 @@ function authWith(openai: ReturnType<typeof fakeOpenAI>, secrets = memorySecrets
 }
 
 const session = (over: Record<string, unknown> = {}): string =>
-  JSON.stringify({ subject: 'user-1', email: 'someone@example.com', idToken: 'id', accessToken: 'access-old', refreshToken: 'refresh-old', expiresAt: Date.now() + 30_000, ...over })
+  JSON.stringify({ version: 1, subject: 'user-1', email: 'someone@example.com', idToken: 'id', accessToken: 'access-old', refreshToken: 'refresh-old', expiresAt: Date.now() + 30_000, ...over })
 
 describe('signing in with ChatGPT', () => {
   it('registers ASIST on the first sign-in with PKCE, a state and a nonce, and keeps the verified session', async () => {
@@ -256,6 +256,13 @@ describe('the ChatGPT access token', () => {
     await expect(auth.accessToken()).rejects.toThrow(errorText('settingsIntegrations.chatgpt.errors.requestFailed', { status: 503 }))
     expect(auth.signInState()).toBe('signedIn')
     await expect(auth.accessToken()).resolves.toBe('access-2')
+  })
+
+  it('reads a session it cannot parse as unreadable, which a sign-out clears, rather than as a sign-in that fails on every request', async () => {
+    const auth = authWith(fakeOpenAI([]), memorySecrets({ clientId: CLIENT_ID, session: '{"subject":"user-1"}' }))
+    expect(auth.signInState()).toBe('unreadable')
+    await auth.signOut()
+    expect(auth.signInState()).toBe('signedOut')
   })
 
   it('is no longer handed out after a sign-out, which revokes the refresh token and keeps the registration for the next sign-in', async () => {
