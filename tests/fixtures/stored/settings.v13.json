@@ -1,0 +1,107 @@
+{
+  "version": 13,
+  "onboardingVersion": 1,
+  "safetyNoticeVersion": 1,
+  "conversationModel": {
+    "provider": "anthropic",
+    "id": "claude-sonnet-5"
+  },
+  "bridgeModel": {
+    "provider": "anthropic",
+    "id": "claude-haiku-4-5"
+  },
+  "voiceEngine": "cascade",
+  "geminiLive": {
+    "model": "gemini-3.8-live",
+    "voice": "Kore"
+  },
+  "liveIdleSeconds": 90,
+  "uiLocale": "ja-JP",
+  "theme": "pop",
+  "showHud": true,
+  "conversationLocale": "ja-JP",
+  "region": "JP",
+  "persona": null,
+  "conversationLogRetentionDays": 90,
+  "ttsEngine": "irodori",
+  "voicevoxSpeaker": 1,
+  "aivisSpeaker": null,
+  "irodoriTtsVoice": "soft-young-woman",
+  "qwenTtsVoice": "ono_anna",
+  "qwenTtsSize": "1.7b",
+  "bargeIn": true,
+  "aizuchi": true,
+  "aizuchiRate": 0.85,
+  "bridgePhrase": false,
+  "openaiAuth": "chatgpt",
+  "listeningAizuchi": true,
+  "hangoverMs": 600,
+  "partialIntervalMs": 600,
+  "calendar": {
+    "enabled": true,
+    "readCalendarIds": [
+      "someone@example.com",
+      "ja.japanese#holiday@group.v.calendar.google.com"
+    ],
+    "writeCalendarId": "someone@example.com"
+  },
+  "mail": {
+    "enabled": true,
+    "accounts": [
+      {
+        "id": "3f6c1d2e-8b4a-4c71-9a0e-5d2f7b8c9e10",
+        "label": "仕事",
+        "email": "someone@example.com",
+        "otherAddresses": [
+          "someone@company.example",
+          "sales@company.example"
+        ],
+        "name": "Someone",
+        "provider": "gmail",
+        "imap": {
+          "host": "imap.gmail.com",
+          "port": 993,
+          "secure": true
+        },
+        "smtp": {
+          "host": "smtp.gmail.com",
+          "port": 465,
+          "secure": true
+        },
+        "folders": {
+          "sent": "[Gmail]/送信済みメール",
+          "archive": "[Gmail]/すべてのメール",
+          "trash": "[Gmail]/ゴミ箱"
+        }
+      }
+    ],
+    "defaultAccountId": "3f6c1d2e-8b4a-4c71-9a0e-5d2f7b8c9e10",
+    "syncDays": 30,
+    "notifyNewMail": true
+  },
+  "agentCwd": "/Users/someone",
+  "agentEngine": "codex",
+  "agentMode": "readonly",
+  "fileRoots": [
+    "/Users/someone/Desktop",
+    "/Users/someone/Downloads",
+    "/Users/someone/Documents"
+  ],
+  "micAutoStart": false,
+  "localAsrEnabled": false,
+  "nativeMic": true,
+  "noiseSuppression": true,
+  "vapEnabled": false,
+  "memoryEmbeddingEnabled": false,
+  "asrModel": "qwen3-asr-1.7b",
+  "globalHotkey": true,
+  "dockOrder": [
+    "jobs",
+    "tasks",
+    "notes",
+    "mail",
+    "memory",
+    "calendar",
+    "settings"
+  ]
+}

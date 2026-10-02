@@ -13,8 +13,10 @@ import { modelsInUse, type ModelSetting } from '@shared/settings'
 import { t } from '../i18n'
 import { SecretUnreadableError } from '../encrypted-secrets'
 import { getSettings } from '../settings'
-import { providerKey, type ProviderKeys } from './keys'
+
+import { apiKeyCredential, type ProviderCredential } from './adapter'
 import { ADAPTERS, completeJson } from './call'
+import { credentialIdentity, providerCredential } from './credentials'
 
 /**
  * Validation of the models in use, plus the lightweight one-shot JSON call on the bridge model. A
@@ -26,24 +28,26 @@ export { providerKey, saveProviderKey } from './keys'
 
 let validatedConfiguration: string | null = null
 const validationFlights = new Map<string, Promise<void>>()
-/** The key value that authenticated against the real API in this process, per provider. */
+type ProviderCredentials = Partial<Record<LlmProvider, ProviderCredential>>
+
+/** The identity of the credential that authenticated against the real API in this process, per provider. */
 const verifiedKeys = new Map<LlmProvider, string>()
 
-function forgetIfUnauthenticated(error: unknown, provider: LlmProvider, key: string): void {
-  if (error instanceof ApiKeyValidationError && error.code === 'authentication' && verifiedKeys.get(provider) === key) {
+function forgetIfUnauthenticated(error: unknown, provider: LlmProvider, identity: string): void {
+  if (error instanceof ApiKeyValidationError && error.code === 'authentication' && verifiedKeys.get(provider) === identity) {
     verifiedKeys.delete(provider)
   }
 }
 
 function keyState(provider: LlmProvider): ApiKeyState {
-  let key: string | undefined
+  let credential: ProviderCredential | undefined
   try {
-    key = providerKey(provider)
+    credential = providerCredential(provider)
   } catch (error) {
     if (error instanceof SecretUnreadableError) return 'unreadable'
     throw error
   }
-  return key === undefined ? 'missing' : verifiedKeys.get(provider) === key ? 'verified' : 'saved'
+  return credential === undefined ? 'missing' : verifiedKeys.get(provider) === credentialIdentity(credential) ? 'verified' : 'saved'
 }
 
 /**
@@ -62,34 +66,34 @@ export function configuredModels(
   return modelsInUse(settings).map(({ setting, model }) => ({ label: t(`llmModels.targets.${setting}`), provider: model.provider, id: model.id }))
 }
 
-/** The keys of the providers the models use. No other provider's key is read. */
-function keysOf(models: readonly ConfiguredApiModel[]): ProviderKeys {
-  const keys: ProviderKeys = {}
+/** The credentials of the providers the models use, with OpenAI's chosen by `openaiAuth`. No other provider's is read. */
+export function credentialsOf(models: readonly ConfiguredApiModel[], openaiAuth = getSettings().openaiAuth): ProviderCredentials {
+  const credentials: ProviderCredentials = {}
   for (const { provider } of models) {
-    const key = providerKey(provider)
-    if (key) keys[provider] = key
+    const credential = providerCredential(provider, openaiAuth)
+    if (credential) credentials[provider] = credential
   }
-  return keys
+  return credentials
 }
 
-function validationFingerprint(keys: ProviderKeys, models: readonly ConfiguredApiModel[]): string {
-  return JSON.stringify(models.map(({ provider, id }) => [provider, id.trim(), keys[provider] ?? '']))
+function validationFingerprint(credentials: ProviderCredentials, models: readonly ConfiguredApiModel[]): string {
+  return JSON.stringify(models.map(({ provider, id }) => [provider, id.trim(), credentials[provider] ? credentialIdentity(credentials[provider]) : '']))
 }
 
 /** Whether the current combination of keys and models was verified against the real API in this process. */
 export function configuredApiKeyVerified(): boolean {
   const models = configuredModels()
-  return validatedConfiguration === validationFingerprint(keysOf(models), models)
+  return validatedConfiguration === validationFingerprint(credentialsOf(models), models)
 }
 
 const RETRIEVE_TIMEOUT_MS = 15_000
 
-function retrieveModel(model: ConfiguredApiModel, key: string): Promise<void> {
-  return ADAPTERS[model.provider].retrieveModel(model.id, key, withTimeoutSignal(undefined, RETRIEVE_TIMEOUT_MS))
+function retrieveModel(model: ConfiguredApiModel, credential: ProviderCredential): Promise<void> {
+  return ADAPTERS[model.provider].retrieveModel(model.id, credential, withTimeoutSignal(undefined, RETRIEVE_TIMEOUT_MS))
 }
 
-function listModels(provider: LlmProvider, key: string): Promise<void> {
-  return ADAPTERS[provider].listModels(key, withTimeoutSignal(undefined, RETRIEVE_TIMEOUT_MS))
+function listModels(provider: LlmProvider, credential: ProviderCredential): Promise<void> {
+  return ADAPTERS[provider].listModels(credential, withTimeoutSignal(undefined, RETRIEVE_TIMEOUT_MS))
 }
 
 /**
@@ -99,17 +103,17 @@ function listModels(provider: LlmProvider, key: string): Promise<void> {
  */
 export async function validateConfiguration(
   models: readonly ConfiguredApiModel[] = configuredModels(),
-  keys: ProviderKeys = keysOf(models)
+  credentials: ProviderCredentials = credentialsOf(models)
 ): Promise<void> {
-  const fingerprint = validationFingerprint(keys, models)
+  const fingerprint = validationFingerprint(credentials, models)
   const existing = validationFlights.get(fingerprint)
   if (existing) return existing
 
   const operation = (async () => {
     try {
       await validateConfiguredApiModels(models, (model) => {
-        const key = keys[model.provider]
-        if (!key) {
+        const credential = credentials[model.provider]
+        if (!credential) {
           const info = LLM_PROVIDER_INFO[model.provider]
           throw new ApiKeyValidationError(
             'authentication',
@@ -117,14 +121,15 @@ export async function validateConfiguration(
             model
           )
         }
-        return retrieveModel(model, key).then(() => verifiedKeys.set(model.provider, key))
+        return retrieveModel(model, credential).then(() => verifiedKeys.set(model.provider, credentialIdentity(credential)))
       })
       validatedConfiguration = fingerprint
     } catch (error) {
       // An explicit revalidation that failed must not leave the same configuration usable through the earlier success.
       if (validatedConfiguration === fingerprint) validatedConfiguration = null
       if (error instanceof ApiKeyValidationError && error.model) {
-        forgetIfUnauthenticated(error, error.model.provider, keys[error.model.provider] ?? '')
+        const credential = credentials[error.model.provider]
+        forgetIfUnauthenticated(error, error.model.provider, credential ? credentialIdentity(credential) : '')
       }
       throw error
     }
@@ -148,9 +153,9 @@ export async function validateProviderKey(
   const key = rawKey.trim()
   if (!key || /[\r\n]/.test(key)) throw new Error(errorText('llmModels.errors.keyEmpty'))
   const own = models.filter((model) => model.provider === provider)
-  if (own.length > 0) return validateConfiguration(own, { [provider]: key })
+  if (own.length > 0) return validateConfiguration(own, { [provider]: apiKeyCredential(key) })
   try {
-    await listModels(provider, key)
+    await listModels(provider, apiKeyCredential(key))
     verifiedKeys.set(provider, key)
   } catch (error) {
     const classified = classifyApiKeyValidationError(error, { label: t('llmModels.targets.apiKey'), provider, id: '' })

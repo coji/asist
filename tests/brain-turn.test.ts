@@ -161,12 +161,15 @@ vi.mock('openai', async () => ({
 vi.mock('../src/main/services/llm', async () => {
   const { openaiAdapter } = await import('../src/main/services/llm/openai')
   return {
-    providerKey: () => mocks.key,
+    requireCredential: () => {
+      if (mocks.key === undefined) throw new Error(errorText('llmModels.errors.keyMissing', { provider: 'OpenAI', envKey: 'OPENAI_API_KEY' }))
+      return { type: 'api-key', key: mocks.key }
+    },
     completeText: vi.fn(async (): Promise<{ text: string; stop: StopReason }> => ({ text: '', stop: 'end' })),
     streamConversation: (request: ConversationRequest) => {
       mocks.requests.push({ messages: structuredClone(request.messages) as ConversationMessage[], system: [...request.system], tools: request.tools })
       // An OpenAI round runs the adapter itself over the scripted events, so what it keeps is what the next request sends.
-      if (request.model.provider === 'openai') return openaiAdapter.stream(request, 'test-key')
+      if (request.model.provider === 'openai') return openaiAdapter.stream(request, { type: 'api-key', key: 'test-key' })
       const script = mocks.rounds.shift()
       if (!script) throw new Error('no scripted round left')
       return new FakeStream(script, request.signal)

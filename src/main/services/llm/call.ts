@@ -5,9 +5,10 @@ import type { ConversationLocale } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
 import { LLM_PROVIDER_INFO, type ConversationModel, type LlmProvider } from '@shared/llm-catalog'
 import type { RoundUsage } from '@shared/ipc'
+import { getSettings } from '../settings'
 import { recordUsage } from '../usage-ledger'
-import { providerKey } from './keys'
-import type { ProviderAdapter } from './adapter'
+import type { ProviderAdapter, ProviderCredential } from './adapter'
+import { providerCredential } from './credentials'
 import { anthropicAdapter } from './anthropic'
 import { cerebrasAdapter } from './cerebras'
 import { googleAdapter } from './google'
@@ -26,17 +27,22 @@ export const ADAPTERS: Record<LlmProvider, ProviderAdapter> = {
   cerebras: cerebrasAdapter
 }
 
-function requireKey(provider: LlmProvider): string {
-  const key = providerKey(provider)
-  if (!key) {
-    const info = LLM_PROVIDER_INFO[provider]
-    throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
-  }
-  return key
+/** The credential a call is made with, which has to be there: a missing one is never replaced by another. */
+export function requireCredential(provider: LlmProvider): ProviderCredential {
+  const credential = providerCredential(provider)
+  if (credential) return credential
+  if (provider === 'openai' && getSettings().openaiAuth === 'chatgpt') throw new Error(errorText('settingsIntegrations.chatgpt.errors.signedOut'))
+  const info = LLM_PROVIDER_INFO[provider]
+  throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
 }
 
-function recordCall(purpose: LlmPurpose, model: ConversationModel, usage: RoundUsage): void {
-  recordUsage({ kind: 'llm', purpose, provider: model.provider, model: model.id, calls: 1, ...usage, costUsd: llmCost(model, usage) })
+/**
+ * A call paid from the ChatGPT plan is recorded without a price: the plan's usage is not billed per token,
+ * and the API's prices would show a cost the user never pays.
+ */
+function recordCall(purpose: LlmPurpose, model: ConversationModel, usage: RoundUsage, credential: ProviderCredential): void {
+  const costUsd = credential.type === 'chatgpt' ? null : llmCost(model, usage)
+  recordUsage({ kind: 'llm', purpose, provider: model.provider, model: model.id, calls: 1, ...usage, costUsd })
 }
 
 /**
@@ -45,10 +51,11 @@ function recordCall(purpose: LlmPurpose, model: ConversationModel, usage: RoundU
  * its usage, which is only logged.
  */
 export function streamConversation(request: ConversationRequest, purpose: LlmPurpose): ConversationStream {
-  const stream = ADAPTERS[request.model.provider].stream(request, requireKey(request.model.provider))
+  const credential = requireCredential(request.model.provider)
+  const stream = ADAPTERS[request.model.provider].stream(request, credential)
   stream.final().then(
     (result) => {
-      if (result.usage) recordCall(purpose, request.model, result.usage)
+      if (result.usage) recordCall(purpose, request.model, result.usage, credential)
       else console.warn(`llm: a ${purpose} response of ${request.model.id} finished without its usage, so it is not recorded`)
     },
     () => {}
@@ -90,7 +97,8 @@ export async function completeJson(
   signal: AbortSignal,
   purpose: LlmPurpose
 ): Promise<unknown> {
-  const response = await ADAPTERS[model.provider].completeJson({ model, system, user, schema, maxTokens, signal }, requireKey(model.provider))
-  recordCall(purpose, model, response.usage)
+  const credential = requireCredential(model.provider)
+  const response = await ADAPTERS[model.provider].completeJson({ model, system, user, schema, maxTokens, signal }, credential)
+  recordCall(purpose, model, response.usage, credential)
   return response.value()
 }

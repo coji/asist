@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { KeyRound } from 'lucide-react'
-import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
+import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider, type OpenAiAuthMethod } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import type { MessageKey } from '@shared/i18n'
 import { keyReadable, type ApiKeyState } from '@shared/ipc'
@@ -67,10 +67,81 @@ function ApiKeys({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
                 : t('settingsIntegrations.apiKeys.hint', { provider: info.label })}
             </span>
             {opened === provider && <KeyForm provider={provider} onDone={() => setOpened(null)} />}
+            {provider === 'openai' && <OpenAiAuth ctx={ctx} />}
           </div>
         )
       })}
     </Group>
+  )
+}
+
+const CHATGPT_USAGE_URL = 'https://chatgpt.com/settings/usage'
+
+/**
+ * How OpenAI is paid: with the API key above, or from the ChatGPT plan of the account signed in here. The
+ * sign-in happens in the browser and main keeps the tokens; this page only sees whether it is signed in.
+ */
+function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
+  const { settings, status, set } = ctx
+  const refreshStatus = useStatusStore((s) => s.refresh)
+  const toast = useToastStore((s) => s.push)
+  const t = useT()
+  const [signingIn, setSigningIn] = useState(false)
+  const chatgpt = status?.chatgpt ?? { state: 'signedOut', email: null }
+  const signIn = (): void => {
+    setSigningIn(true)
+    void window.api
+      .chatgptSignIn()
+      .then(() => {
+        toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
+        return refreshStatus()
+      })
+      .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signInFailedTitle'), body: displayError(err) }))
+      .finally(() => setSigningIn(false))
+  }
+  const signOut = (): void => {
+    void window.api
+      .chatgptSignOut()
+      .then(() => refreshStatus())
+      .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signOutFailedTitle'), body: displayError(err) }))
+  }
+  return (
+    <div className="st-key-form st-key-auth">
+      <select
+        className="st-select"
+        aria-label={t('settingsIntegrations.chatgpt.authMethod')}
+        value={settings.openaiAuth}
+        onChange={(e) => void set({ openaiAuth: e.target.value as OpenAiAuthMethod })}
+      >
+        <option value="api-key">{t('settingsIntegrations.chatgpt.useApiKey')}</option>
+        <option value="chatgpt">{t('settingsIntegrations.chatgpt.useChatgpt')}</option>
+      </select>
+      {chatgpt.state === 'signedIn' ? (
+        <>
+          {settings.openaiAuth === 'chatgpt' && <Chip tone="ok">{t('settingsIntegrations.chatgpt.usingPlan')}</Chip>}
+          <Btn tone="quiet" onClick={() => void window.api.openExternal(CHATGPT_USAGE_URL)}>
+            {t('settingsIntegrations.chatgpt.manageUsage')}
+          </Btn>
+          <Btn tone="quiet" onClick={signOut}>
+            {t('settingsIntegrations.chatgpt.signOut')}
+          </Btn>
+        </>
+      ) : signingIn ? (
+        <>
+          <Chip tone="cyan">{t('settingsIntegrations.chatgpt.signingIn')}</Chip>
+          <Btn tone="quiet" onClick={() => void window.api.chatgptCancelSignIn()}>
+            {t('settingsIntegrations.chatgpt.cancelSignIn')}
+          </Btn>
+        </>
+      ) : (
+        <Btn tone="primary" onClick={signIn}>
+          {t('settingsIntegrations.chatgpt.signIn')}
+        </Btn>
+      )}
+      <span className="st-key-hint">
+        {chatgpt.state === 'signedIn' && chatgpt.email ? t('settingsIntegrations.chatgpt.connected', { account: chatgpt.email }) : t('settingsIntegrations.chatgpt.hint')}
+      </span>
+    </div>
   )
 }
 

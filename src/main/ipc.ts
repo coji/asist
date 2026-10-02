@@ -1,5 +1,6 @@
 import { shouldPushJobCard } from '@shared/job-cards'
 import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess, signOutCalendar } from './services/calendar'
+import { chatgptAuth, chatgptStatus } from './services/chatgpt'
 import { events as mailEvents, getMailService, openMailGuide } from './services/mail'
 import { confirmEvents, pendingConfirms, resolveConfirm } from './services/confirm'
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
@@ -44,6 +45,7 @@ import { fetchPanel } from './services/panel-fetchers'
 import {
   configuredModels,
   configuredApiKeyAvailable,
+  credentialsOf,
   providerKey,
   llmKeyStates,
   saveProviderKey,
@@ -172,6 +174,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       llm: apiUp,
       conversationModel: settings.conversationModel,
       llmKeys: llmKeyStates(),
+      chatgpt: chatgptStatus(),
       tts: ttsUp,
       ttsStarting: !ttsUp && tts.engineStarting(),
       ttsEngine: settings.ttsEngine,
@@ -498,10 +501,13 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       }
 
       const prospective = { ...before, ...patch }
-      if (bringsModelIntoUse(before, prospective)) {
+      const switchesOpenAiAuth =
+        prospective.openaiAuth !== before.openaiAuth && configuredModels(prospective).some((model) => model.provider === 'openai')
+      if (bringsModelIntoUse(before, prospective) || switchesOpenAiAuth) {
         // The prospective values are checked against the real API first, so that saving cannot leave a
-        // broken configuration behind. A missing key for that provider is rejected here.
-        await validateConfiguration(configuredModels(prospective))
+        // broken configuration behind. A missing key or ChatGPT sign-in for that provider is rejected here.
+        const models = configuredModels(prospective)
+        await validateConfiguration(models, credentialsOf(models, prospective.openaiAuth))
       }
       // A live engine is only checked for the provider's key, because the Live API has no way to query a
       // model. A failure to connect surfaces as a notification when the microphone is turned on.
@@ -558,6 +564,24 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       const key = String(rawKey).trim()
       await validateProviderKey(provider, key)
       saveProviderKey(provider, key)
+      return computeStatus()
+    })
+  )
+
+  // A sign-in waits for the browser for minutes, so it does not hold the configuration lock meanwhile; only
+  // what it changes afterwards, the status, is read under it.
+  handle(IpcChannel.ChatGptSignIn, async (): Promise<AppStatus> => {
+    await chatgptAuth().signIn()
+    return computeStatus()
+  })
+
+  handle(IpcChannel.ChatGptCancelSignIn, () => chatgptAuth().cancelSignIn())
+
+  // Signing out while ChatGPT is the chosen method leaves OpenAI without a credential, which the next call
+  // reports; the method is not switched to the API key behind the user's back.
+  handle(IpcChannel.ChatGptSignOut, (): Promise<AppStatus> =>
+    withConfigurationMutation(async () => {
+      await chatgptAuth().signOut()
       return computeStatus()
     })
   )

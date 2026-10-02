@@ -188,6 +188,25 @@ export function SetupWizard(): React.JSX.Element | null {
   }
 
   /**
+   * Signs in with ChatGPT and has OpenAI paid from its plan, with the provider's default pair, which main
+   * checks against the models the plan offers before it saves.
+   */
+  const signInWithChatgpt = async (): Promise<void> => {
+    if (apiBusy) return
+    setApiBusy(true)
+    setError('')
+    try {
+      await window.api.chatgptSignIn()
+      await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
+      await refresh()
+    } catch (err) {
+      setError(displayError(err))
+    } finally {
+      setApiBusy(false)
+    }
+  }
+
+  /**
    * Chooses a way of talking. Main marks a key verified only in its memory, so the live engine's key,
    * saved in an earlier session or set in the environment, reads as saved until it is checked, and it is
    * checked here at once rather than asked for again.
@@ -432,6 +451,7 @@ export function SetupWizard(): React.JSX.Element | null {
               busy={apiBusy}
               onVerify={() => void verifyKey(false)}
               onRecheck={() => void verifyKey(true)}
+              onChatgpt={() => void signInWithChatgpt()}
             />
           )}
           {step === 'speaking' && (

@@ -71,7 +71,8 @@ export function ModelStep({
   onApiKey,
   busy,
   onVerify,
-  onRecheck
+  onRecheck,
+  onChatgpt
 }: {
   provider: LlmProvider
   onProvider: (provider: LlmProvider) => void
@@ -84,6 +85,8 @@ export function ModelStep({
   busy: boolean
   onVerify: () => void
   onRecheck: () => void
+  /** Signs in with ChatGPT in place of an API key, offered for OpenAI alone. */
+  onChatgpt: () => void
 }): React.JSX.Element {
   const t = useT()
   const info = LLM_PROVIDER_INFO[provider]
@@ -117,15 +120,25 @@ export function ModelStep({
           <span>{t('setup.model.verifiedNote', { provider: info.label })}</span>
         </div>
       ) : (
-        <ApiKeyField
-          provider={provider}
-          keyConfigured={keyConfigured}
-          apiKey={apiKey}
-          onApiKey={onApiKey}
-          busy={busy}
-          onVerify={onVerify}
-          onRecheck={onRecheck}
-        />
+        <>
+          {provider === 'openai' && (
+            <div className="su-field">
+              <Btn tone="primary" disabled={busy} onClick={onChatgpt}>
+                {busy ? t('settingsIntegrations.chatgpt.signingIn') : t('settingsIntegrations.chatgpt.signIn')}
+              </Btn>
+              <p className="su-hint">{t('settingsIntegrations.chatgpt.hint')}</p>
+            </div>
+          )}
+          <ApiKeyField
+            provider={provider}
+            keyConfigured={keyConfigured}
+            apiKey={apiKey}
+            onApiKey={onApiKey}
+            busy={busy}
+            onVerify={onVerify}
+            onRecheck={onRecheck}
+          />
+        </>
       )}
     </div>
   )

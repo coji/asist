@@ -68,7 +68,7 @@ const last = (value: Record<string, unknown>, finish: string): unknown => ({ ...
 
 async function open(over: Partial<ConversationRequest> = {}) {
   const { cerebrasAdapter } = await import('../src/main/services/llm/cerebras')
-  const stream = cerebrasAdapter.stream(request(over), 'key')
+  const stream = cerebrasAdapter.stream(request(over), { type: 'api-key', key: 'key' })
   const seen = { text: [] as string[], calls: [] as ToolCallPart[] }
   stream.on('text', (chunk) => seen.text.push(chunk))
   stream.on('toolCall', (call) => seen.calls.push(call))
@@ -226,7 +226,7 @@ describe('the Cerebras JSON call', () => {
     const call = () =>
       cerebrasAdapter.completeJson(
         { model: request().model, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 100, signal: new AbortController().signal },
-        'key'
+        { type: 'api-key', key: 'key' }
       )
     mocks.response = { choices: [{ message: { content: '{"bridge":"x"}' } }], usage: USAGE }
     const response = await call()

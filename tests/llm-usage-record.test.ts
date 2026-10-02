@@ -7,11 +7,13 @@ const mocks = vi.hoisted(() => ({
   recordUsage: vi.fn(),
   final: vi.fn(),
   completeJson: vi.fn(),
-  generateContent: vi.fn()
+  generateContent: vi.fn(),
+  credential: { type: 'api-key', key: 'key' } as { type: 'api-key'; key: string } | { type: 'chatgpt'; account: string; accessToken: () => Promise<string> }
 }))
 
 vi.mock('../src/main/services/usage-ledger', () => ({ recordUsage: mocks.recordUsage }))
-vi.mock('../src/main/services/llm/keys', () => ({ providerKey: () => 'key' }))
+vi.mock('../src/main/services/llm/credentials', () => ({ providerCredential: () => mocks.credential }))
+vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ openaiAuth: 'api-key' }) }))
 const adapter = {
   stream: () => ({ final: mocks.final }),
   completeJson: mocks.completeJson,
@@ -36,6 +38,7 @@ const request = { model: { provider: 'anthropic', id: 'claude-haiku-4-5' } } as 
 
 beforeEach(() => {
   mocks.recordUsage.mockClear()
+  mocks.credential = { type: 'api-key', key: 'key' }
 })
 
 describe('recording the use of a conversation model', () => {
@@ -46,6 +49,14 @@ describe('recording the use of a conversation model', () => {
     expect(mocks.recordUsage).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'llm', purpose: 'conversation', provider: 'anthropic', model: 'claude-haiku-4-5', calls: 1, costUsd: 1 })
     )
+  })
+
+  it('records a response paid from the ChatGPT plan without a price, since the API prices would show a cost nobody pays', async () => {
+    mocks.credential = { type: 'chatgpt', account: 'oaiapp_1', accessToken: async () => 'token' }
+    mocks.final.mockReturnValue(Promise.resolve({ usage }))
+    await streamConversation({ model: { provider: 'openai', id: 'gpt-5.6-terra' } } as ConversationRequest, 'conversation').final()
+    await Promise.resolve()
+    expect(mocks.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ provider: 'openai', model: 'gpt-5.6-terra', input: 1_000_000, costUsd: null }))
   })
 
   it('records nothing for a response that fails, whose usage never arrives', async () => {

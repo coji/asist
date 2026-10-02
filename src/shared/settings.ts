@@ -3,7 +3,7 @@ import { calendarSettingsSchema } from './calendar'
 import { mailSettingsSchema } from './mail'
 import { ASR_MODELS, type AsrModel } from './asr-models'
 import { dockOrderSchema } from './dock'
-import { conversationModelSchema, sameModel, type ConversationModel } from './llm-catalog'
+import { OPENAI_AUTH_METHODS, conversationModelSchema, sameModel, type ConversationModel } from './llm-catalog'
 import { IRODORI_TTS_VOICE_IDS, QWEN_TTS_SIZES, QWEN_TTS_VOICE_IDS } from './tts-models'
 import { CONVERSATION_LOCALES } from './conversation-locale'
 import { UI_LOCALES } from './i18n'
@@ -61,6 +61,11 @@ const fields = {
    * conversation language. It also decides the filler that covers a search or a tool that takes a while.
    */
   bridgePhrase: z.boolean(),
+  /**
+   * How OpenAI requests are paid: with the API key, or from the ChatGPT plan of the account signed in with
+   * ChatGPT. Only the chosen one is used, and a failure of one never falls back to the other.
+   */
+  openaiAuth: z.enum(OPENAI_AUTH_METHODS),
   listeningAizuchi: z.boolean(),
   /** The VAD's silence duration, chosen in the settings screen. */
   hangoverMs: z.number().int().min(200).max(900),
@@ -216,7 +221,7 @@ You are curious, and genuinely interested in their life and their work. You reme
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 12,
+  version: 13,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -284,7 +289,9 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
       if (!Array.isArray(accounts)) return stored
       const upgraded = accounts.map((account: unknown) => (typeof account === 'object' && account !== null ? { ...account, otherAddresses: [] } : account))
       return { ...stored, mail: { ...stored.mail, accounts: upgraded } }
-    }
+    },
+    // Version 13 lets OpenAI be paid from the ChatGPT plan. Everyone until then used the API key.
+    12: (content) => ({ ...(content as Record<string, unknown>), openaiAuth: 'api-key' })
   },
   parse: parseAppSettings,
   serialize: (settings) => ({ ...settings })

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationMessage, ConversationRequest, SearchEvent, ToolCallPart } from '@shared/conversation'
 import { isTransientApiError } from '@shared/api-errors'
 import { summarizeTurnUsage } from '@shared/turn-usage'
+import type { ProviderCredential } from '../src/main/services/llm/adapter'
 
 /** The OpenAI adapter. These tests run fake Responses API events and check the conversion to the ASIST types. */
 
@@ -14,13 +15,18 @@ const mocks = vi.hoisted(() => ({
   sse: null as string | null,
   /** The response to a request that is not streamed. */
   response: null as unknown,
-  params: [] as Array<Record<string, unknown>>
+  params: [] as Array<Record<string, unknown>>,
+  /** The key each client was built with, which is the access token for a ChatGPT sign-in. */
+  apiKeys: [] as string[]
 }))
 
 vi.mock('openai', async () => ({
   // The class the openai package raises a failure inside a stream with, as its own parser does below.
   APIError: (await import('openai/core/error')).APIError,
   default: class FakeOpenAI {
+    constructor(options: { apiKey: string }) {
+      mocks.apiKeys.push(options.apiKey)
+    }
     responses = {
       create: async (params: Record<string, unknown>, options: { signal: AbortSignal }) => {
         mocks.params.push(params)
@@ -75,9 +81,11 @@ const completed = (usage = { input_tokens: 1000, input_tokens_details: { cached_
   response: { status: 'completed', usage }
 })
 
-async function open(over: Partial<ConversationRequest> = {}) {
+const PLAN = { type: 'chatgpt' as const, account: 'oaiapp_1', accessToken: async () => 'plan-token' }
+
+async function open(over: Partial<ConversationRequest> = {}, credential: ProviderCredential = { type: 'api-key', key: 'key' }) {
   const { openaiAdapter } = await import('../src/main/services/llm/openai')
-  const stream = openaiAdapter.stream(request(over), 'key')
+  const stream = openaiAdapter.stream(request(over), credential)
   const seen = { text: [] as string[], calls: [] as ToolCallPart[], search: [] as SearchEvent[] }
   stream.on('text', (delta) => seen.text.push(delta))
   stream.on('toolCall', (call) => seen.calls.push(call))
@@ -93,6 +101,7 @@ beforeEach(() => {
   mocks.sse = null
   mocks.response = null
   mocks.params.length = 0
+  mocks.apiKeys.length = 0
 })
 
 describe('toResponsesInput', () => {
@@ -375,8 +384,57 @@ describe('the OpenAI JSON call', () => {
       output: [REASONING],
       usage: { input_tokens: 300, input_tokens_details: { cached_tokens: 0 }, output_tokens: 1024 }
     }
-    const response = await openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, 'key')
+    const response = await openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, { type: 'api-key', key: 'key' })
     expect(response.usage).toEqual({ input: 300, cacheRead: 0, cacheCreation: 0, output: 1024, webSearches: 0 })
     expect(() => response.value()).toThrow('max_output_tokens')
+  })
+})
+
+describe('OpenAI paid from the ChatGPT plan', () => {
+  it('sends the access token as the bearer and leaves out the output limit, which the plan refuses', async () => {
+    mocks.events = [{ type: 'response.output_item.done', item: SPOKEN }, completed()]
+    const { stream } = await open({}, PLAN)
+    await stream.final()
+    expect(mocks.apiKeys).toEqual(['plan-token'])
+    expect(mocks.params[0]).toMatchObject({ stream: true, store: false })
+    expect(mocks.params[0]).not.toHaveProperty('max_output_tokens')
+  })
+
+  it('keeps the output limit for the API key', async () => {
+    mocks.events = [{ type: 'response.output_item.done', item: SPOKEN }, completed()]
+    const { stream } = await open()
+    await stream.final()
+    expect(mocks.params[0]).toMatchObject({ max_output_tokens: 1000 })
+  })
+
+  it('streams a JSON call with its input as a list, since the plan accepts nothing else, and reads the JSON from the message', async () => {
+    const message = { type: 'message', id: 'msg_1', role: 'assistant', content: [{ type: 'output_text', text: '{"bridge":"はい"}' }] }
+    mocks.events = [{ type: 'response.completed', response: { status: 'completed', output: [message], usage: { input_tokens: 10, input_tokens_details: { cached_tokens: 0 }, output_tokens: 5 } } }]
+    const { openaiAdapter } = await import('../src/main/services/llm/openai')
+    const response = await openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, PLAN)
+    expect(mocks.params[0]).toMatchObject({ stream: true, input: [{ role: 'user', content: 'u' }], text: { format: { type: 'json_schema', strict: true } } })
+    expect(mocks.params[0]).not.toHaveProperty('max_output_tokens')
+    expect(response.value()).toEqual({ bridge: 'はい' })
+    expect(response.usage).toMatchObject({ input: 10, output: 5 })
+  })
+
+  it('fails a JSON call on the usage limit of the plan sent inside the stream, as a 429', async () => {
+    mocks.events = [{ type: 'response.failed', response: { status: 'failed', error: { code: 'subscription_sharing_usage_limit_exceeded', message: 'limit' } } }]
+    const { openaiAdapter } = await import('../src/main/services/llm/openai')
+    const call = openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, PLAN)
+    await expect(call).rejects.toMatchObject({ status: 429 })
+  })
+
+  it('finds a model among those the plan lists, since fetching one model needs a scope the sign-in does not have', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ models: [{ slug: 'gpt-5.6-terra', visibility: 'list' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const { openaiAdapter } = await import('../src/main/services/llm/openai')
+      await openaiAdapter.retrieveModel('gpt-5.6-terra', PLAN, new AbortController().signal)
+      await expect(openaiAdapter.retrieveModel('gpt-5.5-mini', PLAN, new AbortController().signal)).rejects.toMatchObject({ status: 404 })
+      expect(fetchMock.mock.calls[0]).toEqual(['https://api.openai.com/v1/models', expect.objectContaining({ headers: { authorization: 'Bearer plan-token' } })])
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

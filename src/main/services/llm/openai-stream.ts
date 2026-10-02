@@ -4,12 +4,23 @@ import { statusError } from './adapter'
 /** The failures of a stream read through the openai package, which the OpenAI and the Cerebras adapters both use. */
 
 /**
+ * The ChatGPT plan's two failures that can arrive after a stream has begun take the status the same
+ * failure gets before it: the usage limit 429 and the plan being unavailable 503.
+ */
+const STREAM_FAILURE_STATUS: Record<string, number> = {
+  rate_limit_exceeded: 429,
+  server_error: 500,
+  subscription_sharing_usage_limit_exceeded: 429,
+  subscription_sharing_usage_unavailable: 503
+}
+
+/**
  * A failure the server reports inside a stream carries a code, or only a type, but no HTTP status, so it
  * is given the status a request failing the same way would get, which is what tells a transient failure
  * apart.
  */
 export function streamFailure(provider: string, reason: string | null | undefined, message: string | undefined): Error {
-  const status = reason === 'rate_limit_exceeded' ? 429 : reason === 'server_error' ? 500 : 400
+  const status = STREAM_FAILURE_STATUS[reason ?? ''] ?? 400
   return statusError(status, `${provider}: ${reason ?? 'failed'}: ${message ?? 'the response failed'}`)
 }
 

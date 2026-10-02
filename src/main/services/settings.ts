@@ -52,6 +52,7 @@ function defaultSettings(): AppSettings {
     aizuchi: true,
     aizuchiRate: 0.85,
     bridgePhrase: true,
+    openaiAuth: 'api-key',
     listeningAizuchi: true,
     // At 350 ms a pause inside a Japanese sentence split the utterance and cost a lot of transcription
     // accuracy. At 600 ms an aizuchi still covers the wait before the reply.

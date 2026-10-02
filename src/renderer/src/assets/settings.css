@@ -753,6 +753,13 @@ textarea.st-input.st-roots {
 .st-key-form .st-input {
   flex: 1;
 }
+.st-key-auth {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.st-key-auth .st-key-hint {
+  flex-basis: 100%;
+}
 
 /*
  * The bar goes on a line of its own, a block or a grid row across every column, where it fills the width
