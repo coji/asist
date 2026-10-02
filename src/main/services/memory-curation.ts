@@ -8,6 +8,7 @@ import { errorText } from '@shared/i18n/error-text'
 import type { AgentJob, ReviewedMerge } from '@shared/ipc'
 import { localDateKey } from '@shared/local-date'
 import { pageNameError } from '@shared/memory-page'
+import { personaText } from '@shared/persona'
 import {
   buildCurationPrompt,
   curationDue,
@@ -122,7 +123,7 @@ export function curateNow(now = Date.now()): AgentJob | null {
     days: spoken,
     today: localDateKey(new Date(now)),
     locale,
-    persona: getSettings().persona
+    persona: personaText(getSettings())
   })
   const label = dayRangeLabel(spoken[0].date, spoken[spoken.length - 1].date)
   const job = agentRunner.startIsolated(prompt, {

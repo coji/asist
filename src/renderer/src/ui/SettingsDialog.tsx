@@ -18,7 +18,6 @@ import {
 import { keyReadable, type AizuchiClassifierStatus, type EmbeddingStatus, type SetupStatus, type VapStatus } from '@shared/ipc'
 import { LLM_PROVIDERS, modelLabel } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
-import { isDefaultPersona } from '@shared/persona'
 import { UI_LOCALE_NAMES } from '@shared/i18n'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { voiceController } from '@/voice/VoiceController'
@@ -224,7 +223,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
               tone: has('speech', 'aizuchi', 'turnTaking') ? 'warn' : undefined
             },
     persona: {
-      text: isDefaultPersona(settings.persona)
+      text: settings.persona === null
         ? t('settings.summary.personaDefault')
         : settings.persona.trim()
           ? t('settings.summary.personaEdited')

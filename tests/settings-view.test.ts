@@ -47,7 +47,7 @@ const settings = {
   voiceEngine: 'cascade',
   geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' },
   liveIdleSeconds: 90,
-  persona: defaultPersona('ja-JP'),
+  persona: null,
   conversationLocale: 'ja-JP',
   region: 'JP',
   conversationLogRetentionDays: 90,
@@ -658,10 +658,50 @@ describe('settings fields that are saved once the user leaves them', () => {
     await act(async () => leave(persona))
     const reset = [...view.querySelectorAll<HTMLButtonElement>('.st-btn')].find((button) => button.textContent === t('settingsPersona.text.reset'))!
     await act(async () => reset.click())
-    expect(persona.value).toBe(settings.persona)
+    expect(persona.value).toBe(defaultPersona('ja-JP'))
     expect(persona.getAttribute('aria-invalid')).toBe('false')
     await act(async () => root.render(React.createElement('div')))
-    expect(api.saveSettings.mock.calls).toEqual([[{ persona: '名前は ミナ。' }], [{ persona: settings.persona }]])
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: '名前は ミナ。' }], [{ persona: null }]])
+  })
+
+  it('shows the default persona in the conversation language, and in the new one once the Language page changes it', async () => {
+    const view = await render()
+    const personaField = (): HTMLTextAreaElement => view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    await act(async () => nav(view, 'persona').click())
+    expect(personaField().value).toBe(defaultPersona('ja-JP'))
+    await act(async () => nav(view, 'language').click())
+    const language = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsLanguage.conversation')}"]`)!
+    await act(async () => {
+      language.value = 'en-US'
+      language.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => nav(view, 'persona').click())
+    expect(personaField().value).toBe(defaultPersona('en-US'))
+    expect(view.querySelector('.st-row-label')?.textContent).toBe(t('settingsPersona.state.default'))
+    expect(api.saveSettings.mock.calls).toEqual([[{ conversationLocale: 'en-US' }]])
+  })
+
+  it('makes the persona the default again when its text is typed back to the default of the conversation language', async () => {
+    useSettingsStore.setState({ settings: { ...settings, persona: '名前は ミナ。' } })
+    const view = await render()
+    await act(async () => nav(view, 'persona').click())
+    const persona = view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    expect(view.querySelector('.st-row-label')?.textContent).toBe(t('settingsPersona.state.edited'))
+    await act(async () => type(persona, defaultPersona('ja-JP')))
+    expect(view.querySelector('.st-row-label')?.textContent).toBe(t('settingsPersona.state.default'))
+    await act(async () => leave(persona))
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: null }]])
+  })
+
+  it('keeps the default of another language as a persona the user wrote, which stays as it is in the field', async () => {
+    const view = await render()
+    await act(async () => nav(view, 'persona').click())
+    const persona = view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    await act(async () => type(persona, defaultPersona('en-US')))
+    await act(async () => leave(persona))
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: defaultPersona('en-US') }]])
+    expect(persona.value).toBe(defaultPersona('en-US'))
+    expect(view.querySelector('.st-row-label')?.textContent).toBe(t('settingsPersona.state.edited'))
   })
 
   it('does not leave the working folder on the Enter that confirms an IME conversion', async () => {

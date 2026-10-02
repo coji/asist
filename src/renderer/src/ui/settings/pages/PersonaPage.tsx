@@ -1,4 +1,4 @@
-import { defaultPersona } from '@shared/persona'
+import { defaultPersona, personaText } from '@shared/persona'
 import { useViewStore } from '@/state/view'
 import type { SettingsContext } from '../context'
 import { useFieldDraft } from '@/ui/field-draft'
@@ -10,9 +10,15 @@ import { personaStateKey } from '../persona-state'
 export function PersonaPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, set } = ctx
   const t = useT()
-  const persona = useFieldDraft(settings.persona, { format: (text) => text, parse: (text) => text, save: (text) => set({ persona: text }) })
-  // Resetting gives the persona of the language the conversation is held in now, not the one the app was installed in.
-  const fresh = defaultPersona(settings.conversationLocale)
+  const shown = personaText(settings)
+  // A text equal to the default the field shows, the one of the conversation language, is saved as the default,
+  // which goes on following the language. The default of the other language is saved as the user's text, since
+  // saving it as the default would replace it in the field with the default of the conversation language.
+  const fromField = (text: string): string | null => (text === defaultPersona(settings.conversationLocale) ? null : text)
+  const persona = useFieldDraft(shown, { format: (text) => text, parse: (text) => text, save: (text) => set({ persona: fromField(text) }) })
+  // A field that still shows the saved persona saves nothing when it is left, so a text of the user's stays theirs
+  // even where it reads as the default.
+  const stored = persona.value === shown ? settings.persona : fromField(persona.value)
 
   return (
     <Page title={t('settingsPersona.title')} lead={t('settingsPersona.lead')}>
@@ -22,19 +28,19 @@ export function PersonaPage({ ctx }: { ctx: SettingsContext }): React.JSX.Elemen
         action={
           <Btn
             tone="quiet"
-            disabled={persona.value === fresh}
+            disabled={stored === null}
             onClick={() => {
               // A text whose save failed stays in the field over the saved value, and the default may be that
               // very value, so saving it would not move the text aside.
               persona.discard()
-              void set({ persona: fresh })
+              void set({ persona: null })
             }}
           >
             {t('settingsPersona.text.reset')}
           </Btn>
         }
       >
-        <Row label={t(personaStateKey(persona.value))} hint={persona.failed ? <NotSavedHint /> : t('settingsPersona.text.hint')} wide>
+        <Row label={t(personaStateKey(stored))} hint={persona.failed ? <NotSavedHint /> : t('settingsPersona.text.hint')} wide>
           <textarea className="st-input" aria-label={t('settingsPersona.text.label')} placeholder={t('settingsPersona.text.placeholder')} {...persona.props} />
         </Row>
       </Group>

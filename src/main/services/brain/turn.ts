@@ -14,6 +14,7 @@ import { buildMemoryInjection, memoryIdsInToolResult, type MemoryInjection } fro
 import { diagnoseCacheMiss, fingerprintRequest, type CacheMissReason } from '@shared/cache-diagnosis'
 import { conversationFeatures, fillPrompt, promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
 import { marker } from '@shared/conversation-markers'
+import { personaText } from '@shared/persona'
 import { providerKey, streamConversation } from '../llm'
 import { LLM_PROVIDER_INFO, type ConversationModel } from '@shared/llm-catalog'
 import { translatorIn } from '../i18n'
@@ -289,7 +290,7 @@ async function runTurn(
     // within the turn would ever hit.
     system = buildSystemLayers({
       locale,
-      persona: getSettings().persona,
+      persona: personaText(getSettings()),
       toolGuide: toolGuide(locale, toolOptions),
       memoryBlock,
       historySummary: history.summary

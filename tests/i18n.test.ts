@@ -32,7 +32,8 @@ const KEPT: Array<{ file: RegExp; text?: string; reason: string }> = [
   { file: /^src\/shared\/aizuchi-bank\.ts$/, reason: 'what the assistant says, which is data of the conversation language' },
   { file: /^src\/shared\/conversation-locale\.ts$/, text: '^[日月火水木金土]$', reason: 'the weekday names a date written for the model carries' },
   { file: /^src\/main\/services\/(selftest|panel-fetchers|weather\/parsers)\.ts$/, reason: 'test utterances, Japanese place names and the weather words of the JMA data' },
-  { file: /^src\/shared\/credits\.ts$/, text: '気象庁|国土地理院', reason: 'the source of the weather and the municipality data, named as their terms of use ask' }
+  { file: /^src\/shared\/credits\.ts$/, text: '気象庁|国土地理院', reason: 'the source of the weather and the municipality data, named as their terms of use ask' },
+  { file: /^src\/shared\/settings\.ts$/, text: '^名前は ASIST。', reason: 'the default persona as settings.json of version 10 held it, which its upgrade recognises' }
 ]
 
 /**

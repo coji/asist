@@ -1,8 +1,8 @@
 import type { MessageKey } from '@shared/i18n'
-import { isDefaultPersona } from '@shared/persona'
+import type { AppSettings } from '@shared/ipc'
 
-/** How the persona reads on the conversation page and on the persona page, which say the same thing. */
-export function personaStateKey(persona: string): Extract<MessageKey, `settingsPersona.state.${string}`> {
-  if (isDefaultPersona(persona)) return 'settingsPersona.state.default'
+/** How the persona page names a persona as it is saved, or as leaving the field would save it. */
+export function personaStateKey(persona: AppSettings['persona']): Extract<MessageKey, `settingsPersona.state.${string}`> {
+  if (persona === null) return 'settingsPersona.state.default'
   return persona.trim() ? 'settingsPersona.state.edited' : 'settingsPersona.state.empty'
 }

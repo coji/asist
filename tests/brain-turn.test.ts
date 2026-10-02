@@ -10,6 +10,7 @@ import type { ConversationMessage, ConversationPart, ConversationRequest, Conver
 import { marker } from '@shared/conversation-markers'
 import { createTranslator } from '@shared/i18n'
 import { errorText, readErrorText } from '@shared/i18n/error-text'
+import { defaultPersona } from '@shared/persona'
 import { lastRoundNote } from '@shared/tool-round'
 import { interruptedBeforeReply, interruptedWhileSpeaking, resumeAfterDisconnectNote } from '@shared/turn-recovery'
 import { InterjectPlaybackAcks } from '@/interject-playback'
@@ -129,7 +130,9 @@ const mocks = vi.hoisted(() => ({
    */
   openaiResponses: [] as unknown[][],
   /** The input of each OpenAI request, as the API receives it. */
-  openaiInputs: [] as unknown[][]
+  openaiInputs: [] as unknown[][],
+  /** The settings service itself, over a settings file in userData, in place of the fixed settings below. */
+  settingsService: null as { getSettings: () => unknown } | null
 }))
 
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -169,7 +172,7 @@ vi.mock('../src/main/services/llm', async () => {
   }
 })
 vi.mock('../src/main/services/settings', () => ({
-  getSettings: () => ({
+  getSettings: () => mocks.settingsService?.getSettings() ?? ({
     uiLocale: 'ja-JP',
     conversationLocale: mocks.conversationLocale,
     region: 'JP',
@@ -182,9 +185,11 @@ vi.mock('../src/main/services/settings', () => ({
     agentEngine: 'claude'
   })
 }))
-// The approval gate shows its sheet in the window that is there.
+// The approval gate shows its sheet in the window that is there. The settings service, where a test uses it,
+// starts a fresh install in English.
 vi.mock('electron', () => ({
-  BrowserWindow: { getFocusedWindow: () => ({ isDestroyed: () => false, isVisible: () => true }), getAllWindows: () => [] }
+  BrowserWindow: { getFocusedWindow: () => ({ isDestroyed: () => false, isVisible: () => true }), getAllWindows: () => [] },
+  app: { getPath: () => mocks.userData, getPreferredSystemLanguages: () => ['en-US'] }
 }))
 vi.mock('../src/main/services/tts', () => ({
   nextRequest: (waiting: readonly string[]) => ({ text: waiting[0], count: 1 }),
@@ -333,6 +338,7 @@ describe('brain turn', () => {
     mocks.conversationModel = { provider: 'anthropic', id: 'claude-sonnet-5' }
     mocks.openaiResponses = []
     mocks.openaiInputs = []
+    mocks.settingsService = null
   })
 
   it('speaks the reply of a normal turn, keeps it in the history and the conversation log, and reports usage in metrics', async () => {
@@ -1844,5 +1850,31 @@ describe('brain turn', () => {
     expect(mocks.requests).toHaveLength(3)
     resolveConfirm((confirmations.at(-1) as Extract<ConfirmEvent, { type: 'open' }>).request.id, false)
     await expect(answer).resolves.toBe(false)
+  })
+
+  describe('the persona in the system prompt, after the conversation language changed on the Language page', () => {
+    /** Changes the language as the Language page does, on a fresh install whose system speaks English, and runs a turn. */
+    async function promptAfterChangingTo(locale: 'ja-JP', before: (settings: typeof import('../src/main/services/settings')) => void = () => {}): Promise<string> {
+      const settings = await vi.importActual<typeof import('../src/main/services/settings')>('../src/main/services/settings')
+      mocks.settingsService = settings
+      before(settings)
+      settings.saveSettings({ conversationLocale: locale })
+      mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+      const { brain } = await loadBrain()
+      await runToDone(brain, 'こんにちは')
+      return mocks.requests[0].system.map((layer) => layer.text).join('\n')
+    }
+
+    it('is the default persona in the new language', async () => {
+      const prompt = await promptAfterChangingTo('ja-JP')
+      expect(prompt).toContain(defaultPersona('ja-JP'))
+      expect(prompt).not.toContain(defaultPersona('en-US'))
+    })
+
+    it('is the persona the user wrote, as they wrote it', async () => {
+      const prompt = await promptAfterChangingTo('ja-JP', (settings) => settings.saveSettings({ persona: 'Your name is Mina. Keep answers short.' }))
+      expect(prompt).toContain('Your name is Mina. Keep answers short.')
+      expect(prompt).not.toContain(defaultPersona('ja-JP'))
+    })
   })
 })

@@ -15,6 +15,7 @@ import { buildLiveSystemInstruction } from '../brain/prompt'
 import { summarizeToolInput, summarizeToolResult } from '../brain/conversation-log'
 import { executeClientTool, toolGuide, toolRegistry, tools } from '../brain/tools'
 import { memoryIdsInToolResult } from '@shared/memory-injection'
+import { personaText } from '@shared/persona'
 import { GeminiLiveEngine } from './gemini-live'
 import { toGeminiFunctionDeclarations } from './gemini-tools'
 import { connectGemini } from './gemini-connect'
@@ -39,7 +40,7 @@ function geminiSystemInstruction(startedAt: Date): string {
   const locale = conversationLocale()
   return buildLiveSystemInstruction({
     locale,
-    persona: getSettings().persona,
+    persona: personaText(getSettings()),
     toolGuide: toolGuide(locale, { webSearch: false }),
     memoryBlock: memory.promptBlock(),
     historySummary: history.summary,

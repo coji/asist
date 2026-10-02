@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defaultPersona } from '@shared/persona'
+import { defaultPersona, personaText } from '@shared/persona'
 
 // The details of a zod failure vary by field, so the tests check which message the error carries.
 const SETTINGS_INVALID = '[asist:settings.errors.invalid'
@@ -45,7 +45,6 @@ describe('settings persistence', () => {
     const settings = await import('../src/main/services/settings')
 
     expect(settings.getSettings().asrModel).toBe('auto')
-    expect(settings.getSettings().persona).toBe(defaultPersona('ja-JP'))
   })
 
   it('starts a fresh install in the language of the system, for the interface, the conversation, the region and the persona', async () => {
@@ -54,7 +53,7 @@ describe('settings persistence', () => {
 
     expect(settings.getSettings()).toMatchObject({ uiLocale: 'de-DE', conversationLocale: 'de-DE', region: 'DE' })
     // A German conversation reads the English persona, the one every language but Japanese shares.
-    expect(settings.getSettings().persona).toBe(defaultPersona('en-US'))
+    expect(personaText(settings.getSettings())).toBe(defaultPersona('en-US'))
   })
 
   it('offers the folders where the system keeps the desktop, the downloads and the documents, wherever that is', async () => {
@@ -128,7 +127,7 @@ describe('settings persistence', () => {
 
   it.each([
     { ttsEngine: 'unknown' }, { bargeIn: 'yes' }, { hangoverMs: -1 },
-    { aizuchiRate: 1.1 }, { partialIntervalMs: 1501 }, { persona: null },
+    { aizuchiRate: 1.1 }, { partialIntervalMs: 1501 }, { persona: 42 },
     { asrModel: 'nope' }, { conversationLogRetentionDays: 0 }, { voicevoxSpeaker: 1.5 },
     { dockOrder: ['jobs', 'tasks', 'memory', 'calendar'] }, { dockOrder: ['jobs', 'jobs', 'memory', 'calendar', 'settings'] }
   ])('rejects an invalid value with the same schema whether it arrives from a save or from the file: %j', async (patch) => {

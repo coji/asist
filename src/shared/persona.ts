@@ -1,4 +1,5 @@
 import { promptText, type ConversationLocale, type PromptText } from './conversation-locale'
+import type { AppSettings } from './settings'
 
 /**
  * The default persona. The settings screen can replace it; it goes into the stable layer of the system
@@ -24,12 +25,12 @@ You have views of your own and give them straight when asked. The decision is th
 You are curious, and genuinely interested in their life and their work. You remember small things and bring them back without making a show of it.`
 }
 
-/** The persona a fresh install and the reset button start from, in the language the conversation is held in. */
+/** The default persona in the language the conversation is held in. */
 export const defaultPersona = (locale: ConversationLocale): string => promptText(locale, DEFAULT_PERSONA)
 
 /**
- * Whether the persona is still one the app wrote. A persona the user saved is never rewritten when the
- * conversation language changes, so a default in either prompt language counts as untouched.
+ * The persona the conversation is held with: the one the user wrote, empty or not, or else the default in
+ * the conversation language, which therefore follows every change of that language.
  */
-export const isDefaultPersona = (persona: string): boolean =>
-  persona === DEFAULT_PERSONA.ja || persona === DEFAULT_PERSONA.en
+export const personaText = (settings: Pick<AppSettings, 'persona' | 'conversationLocale'>): string =>
+  settings.persona ?? defaultPersona(settings.conversationLocale)

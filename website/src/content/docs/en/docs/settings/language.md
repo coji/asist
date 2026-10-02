@@ -27,4 +27,6 @@ The text in the nine languages other than Japanese and English has not been chec
 
 If you change the conversation language to one the current speech engine can't speak, reading aloud switches to the system's voice ("macOS voice" on a Mac, "Windows voice" on Windows).
 
+When you change the conversation language, the text on the "Character" page of the settings changes to that language too, as long as you have not edited it: Japanese for Japanese, and English for every other language. A text you edited is used as you wrote it, whatever the language. "Reset to default" makes it follow the conversation language again.
+
 ![The Language and region page in the settings](/screens/en/settings-language.webp)

@@ -24,7 +24,6 @@ import {
 } from '@shared/tasks'
 import type { CalendarChange, CalendarChangeResult, CalendarEvent } from '@shared/calendar'
 import { overlaps } from '@shared/calendar-layout'
-import { defaultPersona } from '@shared/persona'
 import { demoUsageDays } from './fixtures/usage'
 import { DEFAULT_DOCK_ORDER } from '@shared/dock'
 import {
@@ -125,7 +124,7 @@ const settings: AppSettings = {
   voiceEngine: 'cascade',
   geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' },
   liveIdleSeconds: 90,
-  persona: defaultPersona('ja-JP'),
+  persona: null,
   conversationLogRetentionDays: 90,
   ttsEngine: 'system',
   voicevoxSpeaker: 1,

@@ -6,7 +6,6 @@ import { defaultRegion, defaultTtsEngine, pickInitialLocale } from '@shared/conv
 import { errorText } from '@shared/i18n/error-text'
 import type { AppSettings } from '@shared/ipc'
 import { SETTINGS_FORMAT, mergeSettings, parseAppSettings, parseSettingsPatch, type SettingsPatch } from '@shared/settings'
-import { defaultPersona } from '@shared/persona'
 import { DEFAULT_MAIL_SETTINGS } from '@shared/mail'
 import { DEFAULT_DOCK_ORDER } from '@shared/dock'
 import { DEFAULT_THEME } from '@shared/themes'
@@ -42,7 +41,7 @@ function defaultSettings(): AppSettings {
     // An open session is sent the microphone's audio, which Gemini bills, so it is closed after 90 seconds
     // without conversation. Speaking again reopens it with a pre-roll.
     liveIdleSeconds: 90,
-    persona: defaultPersona(locale),
+    persona: null,
     conversationLogRetentionDays: 90,
     ttsEngine: defaultTtsEngine(locale, platformCapabilities().localSpeech),
     irodoriTtsVoice: 'calm-young-woman',
