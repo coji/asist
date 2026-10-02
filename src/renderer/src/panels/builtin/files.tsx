@@ -2,7 +2,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { PanelSpec } from '@shared/ipc'
 import { filesLayout, formatBytes, type FileItem, type FilesProps } from '@shared/files'
 import type { Translate } from '@shared/i18n'
-import { usePanelStore } from '@/state/stores'
+import { usePanelStore, useToastStore } from '@/state/stores'
+import { displayError } from '@/display-error'
 import type { CardContext, CardDefinition } from '../shell/card'
 import { Action, Actions, Box, More } from '../primitives/Card'
 import { relativeTime } from '../primitives/format'
@@ -42,14 +43,20 @@ function useSelect(spec: PanelSpec): (index: number, focus: boolean) => void {
 
 /**
  * Shows the item in Finder or File Explorer. An item that could not be read is not offered, since main reveals
- * only a path it can resolve under a root.
+ * only a path it can resolve under a root. One read earlier can still be refused, when its folder is no longer
+ * allowed or the file is gone, and the reason is shown.
  */
 function Reveal({ item }: { item: FileItem }): React.JSX.Element | null {
   const t = useT()
+  const toast = useToastStore((state) => state.push)
   if (item.error) return null
+  const os = platformCapabilities().os
+  const reveal = (): void => {
+    void window.api.revealPath(item.path).catch((error: unknown) => toast({ kind: 'error', title: t(osMessageKey('files.revealFailed', os)), body: displayError(error) }))
+  }
   return (
     <Actions>
-      <Action leadsTo="outside" onClick={() => void window.api.revealPath(item.path)}>{t(osMessageKey('files.reveal', platformCapabilities().os))}</Action>
+      <Action leadsTo="outside" onClick={reveal}>{t(osMessageKey('files.reveal', os))}</Action>
     </Actions>
   )
 }

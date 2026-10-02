@@ -61,12 +61,16 @@ const notify = (title: string, body: string): boolean => {
 // stays as it was: the window still hides when closed, and a later quit tries again.
 let quitApproved = false
 let stoppingAgents = false
+/** The install of a staged update that the quit under way ends with in place of app.quit(). */
+let pendingInstall: (() => void) | null = null
 
 /**
- * Stops every agent, then quits with `quit`: app.quit() for an ordinary quit, or the install of a staged
- * update, which closes the windows itself and so has to be approved before it starts.
+ * Stops every agent, then quits: with app.quit(), or with `install`, the install of a staged update, which
+ * closes the windows itself and so has to be approved before it starts. A quit asked for while the agents are
+ * stopping joins the one under way, and an install asked for then becomes how that one ends.
  */
-export function quitAfterAgentsStop(quit: () => void): void {
+export function quitAfterAgentsStop(install?: () => void): void {
+  if (install) pendingInstall = install
   if (stoppingAgents) return
   stoppingAgents = true
   void agent.shutdown().then(
@@ -75,10 +79,12 @@ export function quitAfterAgentsStop(quit: () => void): void {
       // app either way, so a failure to close it does not hold the quit.
       await live.stop().catch((error: unknown) => console.error('live stop failed:', error))
       quitApproved = true
-      quit()
+      if (pendingInstall) pendingInstall()
+      else app.quit()
     },
     (error: unknown) => {
       stoppingAgents = false
+      pendingInstall = null
       dialog.showErrorBox(t('app.startup.agentStopFailed'), errorMessage(error))
     }
   )
@@ -88,7 +94,7 @@ export function setupOsIntegration(window: BrowserWindow): void {
   app.on('before-quit', (event) => {
     if (quitApproved) return
     event.preventDefault()
-    quitAfterAgentsStop(() => app.quit())
+    quitAfterAgentsStop()
   })
   window.on('close', (e) => {
     if (quitApproved) return

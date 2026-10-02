@@ -42,6 +42,34 @@ export const files = defineMessages({
       'es-ES': 'Mostrar en el Explorador de archivos'
     }
   },
+  revealFailed: {
+    macos: {
+      'ja-JP': 'Finder で開けませんでした',
+      'en-US': "Couldn't show it in Finder",
+      'fr-FR': "Impossible de l'afficher dans le Finder",
+      'de-DE': 'Es ließ sich nicht im Finder zeigen',
+      'hi-IN': 'Finder में नहीं दिखाया जा सका',
+      'id-ID': 'Tidak bisa menampilkannya di Finder',
+      'it-IT': 'Impossibile mostrarlo nel Finder',
+      'ko-KR': 'Finder에서 표시하지 못했습니다',
+      'pt-BR': 'Não foi possível mostrar no Finder',
+      'es-419': 'No se pudo mostrar en el Finder',
+      'es-ES': 'No se ha podido mostrar en el Finder'
+    },
+    windows: {
+      'ja-JP': 'エクスプローラーで開けませんでした',
+      'en-US': "Couldn't show it in File Explorer",
+      'fr-FR': "Impossible de l'afficher dans l'Explorateur de fichiers",
+      'de-DE': 'Es ließ sich nicht im Explorer zeigen',
+      'hi-IN': 'फ़ाइल एक्सप्लोरर में नहीं दिखाया जा सका',
+      'id-ID': 'Tidak bisa menampilkannya di Penjelajah File',
+      'it-IT': 'Impossibile mostrarlo in Esplora file',
+      'ko-KR': '파일 탐색기에서 표시하지 못했습니다',
+      'pt-BR': 'Não foi possível mostrar no Explorador de Arquivos',
+      'es-419': 'No se pudo mostrar en el Explorador de archivos',
+      'es-ES': 'No se ha podido mostrar en el Explorador de archivos'
+    }
+  },
   entries: {
     'ja-JP': { other: '{count}件' },
     'en-US': { one: '{count} item', other: '{count} items' },

@@ -67,7 +67,7 @@ import { hotkeyStatus, notifyFromRenderer, quitAfterAgentsStop, refreshHotkey, r
 import { microphonePermission } from './services/microphone-permission'
 import { platformCapabilities } from './services/platform'
 import { completeSetup } from './services/setup-completion'
-import { allowedPath } from './services/file-preview'
+import { revealablePath } from './services/file-preview'
 import { errorText } from '@shared/i18n/error-text'
 import { isAppPage } from '@shared/app-page'
 import { isExternalLink } from '@shared/external-link'
@@ -586,8 +586,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     return shell.openExternal(target)
   })
 
-  handle(IpcChannel.RevealPath, (_e, target: string) => {
-    const allowed = allowedPath(String(target), agent.allowedFileRoots())
-    if (allowed !== null) shell.showItemInFolder(allowed)
+  handle(IpcChannel.RevealPath, (_e, target: unknown) => {
+    shell.showItemInFolder(revealablePath(String(target), agent.allowedFileRoots()))
   })
 }

@@ -1170,7 +1170,11 @@ export interface RendererApi {
   ttsTest(): Promise<SpeechSegment>
   /** Opens a web page in the browser or a mail address in the mail app, and refuses any other link. */
   openExternal(url: string): Promise<void>
-  /** Reveals a file in Finder. Only paths belonging to a job are allowed. */
+  /**
+   * Shows a file or folder in Finder or File Explorer. Only a path the files card may read is shown: one under a
+   * job's folder, the agent's workspace, the memory folder or a folder allowed in the settings. Any other path, a
+   * path that is gone and one the OS refuses reject with the reason the files card gives for it.
+   */
   revealPath(path: string): Promise<void>
   /** The version of the packaged application, which only the main process knows. */
   appVersion(): Promise<string>

@@ -1,7 +1,8 @@
 import path from 'node:path'
 import fs from 'node:fs'
 import { carriesUrl, classifyFile, MAX_TEXT_BYTES, TEXT_KINDS, type FileEntry, type FileItem } from '@shared/files'
-import { t } from './i18n'
+import { errorText } from '@shared/i18n/error-text'
+import { errorMessage, t } from './i18n'
 
 /**
  * The main-process side of the files card (show_files). It validates paths and reads files, and leaves
@@ -141,8 +142,25 @@ export function fileItem(target: string, allowedRoots: readonly string[], toUrl:
     const allowed = allowedPath(target, allowedRoots)
     return allowed === null ? failedItem(target, t('files.errors.outsideRoots')) : readFileItem(allowed, toUrl)
   } catch (error) {
-    return failedItem(target, failure(error))
+    return failedItem(target, errorMessage(failure(error)))
   }
+}
+
+/**
+ * The path to show in Finder or File Explorer for target, checked as fileItem checks a path it reads. A path that
+ * is refused, gone or closed to the app throws the reason the card gives it.
+ */
+export function revealablePath(target: string, allowedRoots: readonly string[]): string {
+  let allowed: string | null
+  try {
+    allowed = allowedPath(target, allowedRoots)
+    // showItemInFolder says nothing when the file is gone, as when it was removed after the card showed it.
+    if (allowed !== null) fs.statSync(allowed)
+  } catch (error) {
+    throw new Error(failure(error))
+  }
+  if (allowed === null) throw new Error(errorText('files.errors.outsideRoots'))
+  return allowed
 }
 
 /**
@@ -184,17 +202,17 @@ export function readFileItem(filePath: string, toUrl: (filePath: string) => stri
 
 const failedItem = (filePath: string, error: string): FileItem => ({ path: filePath, name: path.basename(filePath), kind: 'binary', sizeBytes: 0, error })
 
-/** Why the OS could not resolve, open or list a path, in the language of the interface. */
+/** Why the OS could not resolve, open or list a path, as the text of an error written for the user. */
 function failure(error: unknown): string {
   switch ((error as NodeJS.ErrnoException).code) {
     // A path that runs through a file, such as report.md/notes, names nothing either.
     case 'ENOENT':
     case 'ENOTDIR':
-      return t('files.errors.missing')
+      return errorText('files.errors.missing')
     case 'EACCES':
     case 'EPERM':
-      return t('files.errors.denied')
+      return errorText('files.errors.denied')
     default:
-      return t('files.errors.readFailed', { message: String(error) })
+      return errorText('files.errors.readFailed', { message: String(error) })
   }
 }

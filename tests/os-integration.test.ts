@@ -185,6 +185,32 @@ describe('installing an update now', () => {
     await vi.waitFor(() => expect(install).toHaveBeenCalledOnce())
     expect(mocks.quit).not.toHaveBeenCalled()
   })
+
+  it('ends a quit that is already stopping the agents, rather than leaving the app to quit without starting again', async () => {
+    os.setupOsIntegration(hiddenWindow() as never)
+    let stopped!: () => void
+    mocks.shutdown.mockReturnValue(new Promise((resolve) => (stopped = resolve)))
+    expect(quit()).toBe(false)
+    const install = vi.fn()
+    os.quitAfterAgentsStop(install)
+    stopped()
+    await vi.waitFor(() => expect(install).toHaveBeenCalledOnce())
+    expect(mocks.quit).not.toHaveBeenCalled()
+    expect(mocks.shutdown).toHaveBeenCalledOnce()
+  })
+
+  it('is dropped when an agent cannot be stopped, so that a later quit only quits', async () => {
+    os.setupOsIntegration(hiddenWindow() as never)
+    mocks.shutdown.mockRejectedValueOnce(new Error('an agent did not stop'))
+    const install = vi.fn()
+    os.quitAfterAgentsStop(install)
+    await vi.waitFor(() => expect(mocks.showErrorBox).toHaveBeenCalledOnce())
+
+    mocks.shutdown.mockResolvedValueOnce(undefined)
+    expect(quit()).toBe(false)
+    await vi.waitFor(() => expect(mocks.quit).toHaveBeenCalledOnce())
+    expect(install).not.toHaveBeenCalled()
+  })
 })
 
 describe('the global hotkey', () => {

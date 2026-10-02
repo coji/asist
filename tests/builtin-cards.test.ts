@@ -98,6 +98,7 @@ const api = {
   jobDiscard: vi.fn(async () => {}),
   jobDiscardPreview: vi.fn(async () => ({ repo: '/r', dir: '/w', branch: 'asist/x', stat: '', submodules: [] as string[] })),
   panelFetch: vi.fn(async (_type: string, props: Record<string, unknown>) => ({ props: { ...props, items: demoFileItems(props.paths as string[]) }, source: 'files' })),
+  revealPath: vi.fn(async (_path: string) => {}),
   mailDraftList: vi.fn(async () => DEMO_MAIL_DRAFTS),
   mailDraftUpdate: vi.fn(async (id: string, patch: Record<string, unknown>) => ({ ...DEMO_MAIL_DRAFTS.find((d) => d.id === id)!, ...patch })),
   mailDraftRemove: vi.fn(async () => {}),
@@ -697,6 +698,17 @@ describe('files card', () => {
     const small = await renderAt(filesSpec([`${DEMO_FILES_DIR}/report.md`]), S)
     expect(small.querySelector('.fl')?.getAttribute('data-size')).toBe('s')
     expect(small.querySelector('.card-hero h3')?.textContent).toBe('report.md')
+  })
+
+  it('tells why a file cannot be shown in Finder or File Explorer, rather than doing nothing', async () => {
+    useToastStore.setState({ toasts: [] })
+    api.revealPath.mockRejectedValueOnce(new Error(errorText('files.errors.outsideRoots')))
+    const file = `${DEMO_FILES_DIR}/report.md`
+    const card = await renderAt(filesSpec([file]), L)
+    const reveal = t(osMessageKey('files.reveal', platformCapabilities().os))
+    await act(async () => [...card.querySelectorAll<HTMLButtonElement>('.card-action')].find((el) => el.textContent === reveal)!.click())
+    expect(api.revealPath).toHaveBeenCalledWith(file)
+    expect(useToastStore.getState().toasts).toEqual([expect.objectContaining({ kind: 'error', body: t('files.errors.outsideRoots') })])
   })
 
   it('renders a csv as a table and right-aligns the numeric columns', async () => {
