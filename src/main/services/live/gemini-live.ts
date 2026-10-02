@@ -501,6 +501,13 @@ export class GeminiLiveEngine implements ConversationOwner {
    * context silently, without asking for a reply, and is recorded on the utterance's turn only once a
    * session has it. The note is written when it is sent rather than when the search starts, so that two
    * searches that end together do not both show the same memory.
+   *
+   * A note that arrives before the reply begins delays the reply: measured against the real API on
+   * 2026-10-02, the first audio came 2.2 to 3.3 seconds after the end of speech with a note, against 0.95
+   * to 1.8 seconds without one, and the replies used the memories. The note is still sent at once rather
+   * than held until the reply begins, since a reply that starts without the memory answers as if it did
+   * not know it, and a memory the session holds is never sent again, so only the first mention of a
+   * subject waits.
    */
   private injectMemories(turnId: number, text: string): void {
     void this.deps
