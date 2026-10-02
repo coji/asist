@@ -130,7 +130,8 @@ h1, h2, h3 { margin: 0; }
 .dock-sep { width: 1.5px; height: 44px; background: var(--line); }
 
 .agent-art { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); align-items: center; gap: 10px; }
-.agent-art .ask { left: 0; top: -6%; transform: rotate(-4deg); z-index: 2; }
+/* A fixed lift rather than a share of the picture's height: on a phone the picture stacks under the text and grows to 580 px, and 6% of it reached into the text above. */
+.agent-art .ask { left: 0; top: -15px; transform: rotate(-4deg); z-index: 2; }
 .agent-art .ask::after { left: 44%; bottom: -6px; }
 .flow { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .confirm { width: 100%; max-width: 360px; background: var(--white); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); text-align: center; display: grid; gap: 4px; justify-items: center; }
@@ -185,6 +186,8 @@ h1, h2, h3 { margin: 0; }
   .row-text p { max-width: none; }
   .steps { grid-template-columns: 1fr; }
   .footer p { margin-left: 0; }
+  /* The band narrows around its centred text, and between 640 and 760 px wide the bubble covered the end of the line under the heading (2026-10-02). */
+  .robot { display: none; }
 }
 @media (max-width: 600px) {
   .collage { height: 330px; }
@@ -205,7 +208,6 @@ h1, h2, h3 { margin: 0; }
   .start-inner .meta { align-items: center; }
   .start-band { min-height: 380px; }
   .start-bg { object-position: 30% center; opacity: 0.55; }
-  .robot { display: none; }
   .n2 { position: static; transform: none; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {
