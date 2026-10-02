@@ -5,11 +5,11 @@
  * case looks at the slides instead: every slide in view holds its text, and every canvas in view, a picture, is
  * drawn. Every slide of the generated deck has a title.
  *
- * In four runs on an M5 under load averages of 6 to 24 on 2026-10-02, the card showed the 146 MB deck in 105 to
- * 136 ms, held the page for at most 10 ms and grew the renderers by 174 to 178 MB, most of it the preview frame's
+ * In five runs on an M5 under load averages of 6 to 25 on 2026-10-02, the card showed the 146 MB deck in 105 to
+ * 259 ms, held the page for at most 20 ms and grew the renderers by 174 to 178 MB, most of it the preview frame's
  * process, which the demo serves with Vite's development modules. The focus view showed its first screen in 115 to
- * 207 ms and each of 120 screens in at most 135 ms, held the page for 75 to 77 ms (472 ms once, under a load of 22),
- * and grew the renderers by 365 to 386 MB at the peak and 285 to 288 MB at the end, the GPU process by 85 to 98 MB.
+ * 241 ms and each of 120 screens in at most 229 ms, held the page for 74 to 106 ms (472 ms once, under a load of 22),
+ * and grew the renderers by 365 to 386 MB at the peak and 155 to 289 MB at the end, the GPU process by 82 to 98 MB.
  */
 export const cases = [
   {
