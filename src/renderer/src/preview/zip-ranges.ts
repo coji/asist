@@ -42,9 +42,10 @@ export interface RangedZip {
   /**
    * The same container with each entry `stub` chooses replaced by a stored entry whose content is its own path,
    * so that a library reading the container meets the entry without its bytes being read, and the path tells
-   * the caller which entry to read later.
+   * the caller which entry to read later. An entry `contents` holds is written stored with that content instead,
+   * and only the entries neither names are read from the file.
    */
-  slimmed(stub: (name: string) => boolean): Promise<Bytes>
+  slimmed(stub: (name: string) => boolean, contents?: ReadonlyMap<string, Bytes>): Promise<Bytes>
 }
 
 const LOCAL_SIGNATURE = 0x04034b50
@@ -374,13 +375,13 @@ export async function openZip(url: string): Promise<RangedZip> {
       return data.slice()
     },
 
-    async slimmed(stub) {
+    async slimmed(stub, contents = new Map()) {
       const ordered = [...records].sort((a, b) => a.offset - b.offset)
       // The kept entries that lie next to each other in the file are read in one range.
       const runs: CentralRecord[][] = []
       let previousKept = false
       for (const record of ordered) {
-        const keep = !stub(record.name)
+        const keep = !contents.has(record.name) && !stub(record.name)
         if (keep && previousKept) runs.at(-1)!.push(record)
         else if (keep) runs.push([record])
         previousKept = keep
@@ -396,6 +397,8 @@ export async function openZip(url: string): Promise<RangedZip> {
       const encoder = new TextEncoder()
       return writeZip(
         ordered.map((record): Written => {
+          const given = contents.get(record.name)
+          if (given) return { record, flags: record.flags & FLAG_UTF8, method: STORED, crc32: crc32(given), size: given.length, data: given }
           const data = kept.get(record)
           if (data) return { record, flags: record.flags & ~FLAG_DATA_DESCRIPTOR, method: record.method, crc32: record.crc32, size: record.size, data }
           const path = encoder.encode(record.name)

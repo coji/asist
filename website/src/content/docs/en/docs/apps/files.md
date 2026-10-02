@@ -9,11 +9,12 @@ You see files on file cards. Markdown appears as a document, CSV as a table, ima
 
 A folder with many entries lists its first 200 and gives the total in its heading. To see the rest, use "Show in Finder" on a Mac, or "Show in File Explorer" on Windows.
 
-Word, Excel, PowerPoint and PDF files and Jupyter notebooks are read whole before they are drawn. Reading a large one would stop the app, so a file over the limit below isn't read, and the card says "This file is too large to show here". To see its contents, use "Show in Finder" ("Show in File Explorer" on Windows) and open it in its usual app.
+A Word document shows its beginning on the card, ending with "The rest is in the focus view". The enlarged view shows the beginning at once and then the whole document. Photos and figures are read when you scroll near them. A Word document opens at any size, except one whose text and other XML exceed 128 MB together, far more than any document people write: it isn't read, and the card says "This file is too large to show here".
+
+Excel, PowerPoint and PDF files and Jupyter notebooks are read whole before they are drawn. Reading a large one would stop the app, so a file over the limit below isn't read, and the card says "This file is too large to show here". To see its contents, use "Show in Finder" ("Show in File Explorer" on Windows) and open it in its usual app.
 
 | Type | Limit |
 | --- | ---: |
-| Word | 16 MB |
 | Excel | 8 MB |
 | PowerPoint | 32 MB |
 | PDF | 256 MB |

@@ -397,6 +397,21 @@ describe('the slimmed zip', () => {
     }
   })
 
+  it('writes an entry it is given with that content, stored, and reads neither the entries it is given nor those it stubs', async () => {
+    const { file, original } = await docxWithPictures()
+    serve(file)
+    const zip = await openZip(URL)
+    const document = new TextEncoder().encode('<w:document>先頭だけ</w:document>')
+    sent = 0
+    const slim = await JSZip.loadAsync(await zip.slimmed(isPicture, new Map([['word/document.xml', document]])), { checkCRC32: true })
+    // Only the entries neither given nor stubbed are read, and they are small.
+    expect(sent).toBeLessThan(4096)
+    expect(Object.keys(slim.files)).toEqual(Object.keys(original.files))
+    expect(await slim.file('word/document.xml')!.async('string')).toBe('<w:document>先頭だけ</w:document>')
+    expect(await slim.file('word/media/photo.jpeg')!.async('string')).toBe('word/media/photo.jpeg')
+    expect(await slim.file('docProps/core.xml')!.async('string')).toBe(await original.file('docProps/core.xml')!.async('string'))
+  })
+
   it('is read by mammoth, which writes each picture as a reference to its path', async () => {
     const { file } = await docxWithPictures()
     serve(file)

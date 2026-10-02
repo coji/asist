@@ -1,0 +1,36 @@
+/* The Word viewer: the document mounted in pieces, and its pictures drawn into canvases near the view. */
+
+.fv-docx:empty {
+  display: none;
+}
+
+.fv-docx > .fv-doc-piece:first-child > :first-child {
+  margin-top: 0;
+}
+.fv-docx > .fv-doc-piece:last-child > :last-child {
+  margin-bottom: 0;
+}
+
+/* In the focus view, a piece away from the view is neither laid out nor painted. Its height until then is set on
+   the element, from the height the head took for its HTML. */
+.fv-frame[data-mode='focus'] .fv-doc-piece {
+  content-visibility: auto;
+}
+
+.fv-docx canvas.fv-doc-picture {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  vertical-align: bottom;
+}
+.fv-docx canvas.fv-doc-picture:not([data-state='drawn']) {
+  background: var(--viewer-raised);
+}
+.fv-docx span.fv-doc-picture {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px dashed var(--ui-line);
+  border-radius: 8px;
+  font-size: 0.9em;
+  color: var(--ui-text-muted);
+}

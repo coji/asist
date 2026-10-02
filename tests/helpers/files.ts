@@ -4,7 +4,6 @@ import { WHOLE_READ_LIMIT, type FileKind } from '@shared/files'
 const LIMITED_FILE_NAMES: Partial<Record<FileKind, string>> = {
   notebook: 'analysis.ipynb',
   xlsx: 'sales.xlsx',
-  docx: 'report.docx',
   pptx: 'deck.pptx',
   pdf: 'scan.pdf'
 }
