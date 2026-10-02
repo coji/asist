@@ -12,7 +12,8 @@ import { Dock } from '@/ui/Dock'
 import { FocusOverlay } from '@/ui/FocusOverlay'
 import { CARD_SIZE_MIN_HEIGHT, cardSizeFor } from '@/panels/shell/card'
 import { OVERFLOW_SETTLE_MS } from '@/panels/shell/PanelContent'
-import { DEMO_WEATHER_NAGANO, DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
+import type { WeatherData } from '@shared/weather'
+import { DEMO_WEATHER_MUNICH, DEMO_WEATHER_NAGANO, DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 
 const t = createTranslator('ja-JP')
 
@@ -244,6 +245,22 @@ describe('the day a weather card names', () => {
     expect(hero(tomorrow, 'tokyo')).toContain(t('cardsWeather.tomorrow'))
     await act(async () => vi.advanceTimersByTime(60_000))
     expect(hero(tomorrow, 'tokyo')).toContain(t('cardsWeather.today'))
+  })
+})
+
+describe('the hours a weather card shows', () => {
+  it('ends the last period at 24 on the day before a midnight the clocks skip, where the day ends at 1:00', async () => {
+    // Santiago's clocks went from 2025-09-07 00:00 to 01:00, so its 2025-09-06 ended at 04:00 UTC.
+    const end = { from: '2025-09-07T01:00:00.000Z', to: '2025-09-07T04:00:00.000Z' }
+    const santiago: WeatherData = {
+      ...DEMO_WEATHER_MUNICH,
+      location: { ...DEMO_WEATHER_MUNICH.location, timeZone: 'America/Santiago' },
+      targetDate: '2025-09-06',
+      hourly: [{ at: end.from, until: end.to, temperature: 9, condition: null }],
+      precipitationPeriods: [{ ...end, percent: 2 }]
+    }
+    const dock = await render([weather({ key: 'weather:place:santiago:2025-09-06', props: { location: 'Santiago', date: 'today', weather: santiago } })])
+    expect(dock.querySelector('.wx-pop span')?.textContent).toBe(t('cardsWeather.hourly.range', { from: 21, to: 24 }))
   })
 })
 

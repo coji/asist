@@ -304,12 +304,32 @@ export function japanDate(at: number): string {
   return new Date(at + 9 * 3600_000).toISOString().slice(0, 10)
 }
 
-/** The calendar date a moment falls on in a zone, as `YYYY-MM-DD`. */
-export function zonedDate(at: number, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(at)
+const ZONED_FORMS = {
+  date: ['en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }],
+  hour: ['en-US', { hourCycle: 'h23', hour: 'numeric' }]
+} as const satisfies Record<string, readonly [string, Intl.DateTimeFormatOptions]>
+const zonedFormats = new Map<string, Intl.DateTimeFormat>()
+/**
+ * The formatter of a form in a zone, made once: a forecast reads the date and the hour of each of its 168
+ * hours, and reading 168 dates with a new formatter each took 7 to 12 ms against 0.1 ms with one (Node 22
+ * on an Apple M5, Sydney and Helsinki, 2026-10-02).
+ */
+function zonedFormat(form: keyof typeof ZONED_FORMS, timeZone: string): Intl.DateTimeFormat {
+  const key = `${form} ${timeZone}`
+  let format = zonedFormats.get(key)
+  if (!format) {
+    const [locale, options] = ZONED_FORMS[form]
+    format = new Intl.DateTimeFormat(locale, { ...options, timeZone })
+    zonedFormats.set(key, format)
+  }
+  return format
 }
+
+/** The calendar date a moment falls on in a zone, as `YYYY-MM-DD`. */
+export const zonedDate = (at: number, timeZone: string): string => zonedFormat('date', timeZone).format(at)
+
+/**
+ * The hour, from 0 to 23, that the clock of a zone reads at a moment, with the offset in force there at
+ * that moment, wherever the Mac stands.
+ */
+export const zonedHour = (at: number, timeZone: string): number => Number(zonedFormat('hour', timeZone).format(at))
