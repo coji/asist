@@ -8,13 +8,13 @@ import { createTranslator } from '@shared/i18n'
 const ja = createTranslator('ja-JP')
 
 const mocks = vi.hoisted(() => ({
-  root: '', launch: vi.fn(), readAll: vi.fn(), reindex: vi.fn(),
+  root: '', launch: vi.fn(), recover: vi.fn(), readAll: vi.fn(), reindex: vi.fn(),
   conversationLocale: 'ja-JP', day: [{ t: 1000, kind: 'user', text: '猫が好きです' }] as Array<Record<string, unknown>>
 }))
 vi.mock('electron', () => ({ app: {
   getPath: () => path.join(mocks.root, 'data'), getAppPath: () => process.cwd(), isPackaged: false
 } }))
-vi.mock('../src/main/services/agent-process', () => ({ launchAgentProcess: mocks.launch }))
+vi.mock('../src/main/services/agent-process', () => ({ launchAgentProcess: mocks.launch, recoverAgentProcess: mocks.recover }))
 vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: () => '/test/agent' }))
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({
@@ -59,6 +59,7 @@ beforeEach(() => {
   mocks.readAll.mockReset().mockReturnValue({ errors: [] })
   mocks.reindex.mockReset().mockReturnValue({ units: 1, errors: [] })
   mocks.launch.mockReset().mockImplementation(() => ({ stop: vi.fn(), completion: Promise.resolve() }))
+  mocks.recover.mockReset()
 })
 afterEach(() => {
   vi.clearAllTimers()
@@ -99,17 +100,63 @@ it('starts the curation of yesterday at startup, and keeps the job out of what t
   expect(agent.contextBlock() ?? '').not.toContain(job.id)
 })
 
-it.each(['error', 'cancelled'] as const)('discards the changes of a run that ends in %s, records why, and leaves curatedThrough alone', async (status) => {
+it('discards the changes of a run that ends in error, records why, and leaves curatedThrough alone', async () => {
   const { curation, agent } = await setup()
   const job = curation.pendingJob()!
   fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'unfinished\n')
-  if (status === 'cancelled') agent.cancel(job.id)
-  lastLaunch().onExit(status === 'error' ? 1 : 0)
+  lastLaunch().onExit(1)
   expect(agent.get(job.id)?.mergeState).toBe('discarded')
   expect(curation.curatedThrough()).toBeNull()
   expect(curation.lastFailure()).toMatchObject({ at: now })
   expect(curation.pendingJob()).toBeNull()
   expect(fs.existsSync(path.join(mocks.root, 'repo', 'memory.md'))).toBe(false)
+})
+
+it('discards the changes of a run the app stopped as it quit, records no failure, and curates the same days at the next start', async () => {
+  const { curation, agent } = await setup()
+  const job = curation.pendingJob()!
+  fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'unfinished\n')
+  const quitting = agent.shutdown()
+  lastLaunch().onExit(0)
+  await quitting
+  expect(agent.get(job.id)?.status).toBe('cancelled')
+  expect(agent.get(job.id)?.mergeState).toBe('discarded')
+  expect(fs.existsSync(path.join(mocks.root, 'repo', 'memory.md'))).toBe(false)
+  expect(curation.curatedThrough()).toBeNull()
+  expect(curation.lastFailure()).toBeNull()
+  const restored = await restart(now + 10 * MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  expect(restored.curation.pendingJob()?.memoryCuration).toEqual({ through: '2026-09-11', applied: false })
+})
+
+it('records a failure when the next curation is stopped by a quit as well, and leaves the retry to the next day', async () => {
+  const first = await setup()
+  const quitting = first.agent.shutdown()
+  lastLaunch().onExit(0)
+  await quitting
+  const second = await restart(now + 10 * MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  const quittingAgain = second.agent.shutdown()
+  lastLaunch().onExit(0)
+  await quittingAgain
+  expect(second.curation.lastFailure()).toMatchObject({ at: now + 10 * MINUTE, message: ja('memory.curation.quitTwice') })
+  await restart(now + 20 * MINUTE)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  await restart(now + DAY)
+  expect(mocks.launch).toHaveBeenCalledTimes(3)
+})
+
+it('records no failure when the daily check comes while the app is quitting, and curates at the next start', async () => {
+  const { curation, agent } = await setup()
+  lastLaunch().onExit(0)
+  vi.setSystemTime(new Date(2026, 8, 13, 0, 0, 30))
+  await agent.shutdown()
+  vi.advanceTimersByTime(MINUTE)
+  expect(curation.lastFailure()).toBeNull()
+  expect(mocks.launch).toHaveBeenCalledOnce()
+  const restored = await restart(new Date(2026, 8, 13, 0, 5).getTime())
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  expect(restored.curation.pendingJob()?.memoryCuration).toEqual({ through: '2026-09-12', applied: false })
 })
 
 it('discards a job whose result fails validation, records why, and leaves the day for the next curation', async () => {
@@ -158,6 +205,99 @@ it('discards a job whose merge conflicts with an edit made on the memory screen 
   expect(curation.pendingJob()).toBeNull()
   expect(curation.curatedThrough()).toBeNull()
   expect(fs.readFileSync(path.join(repo, 'memory.md'), 'utf8')).toBe('edited\n')
+})
+
+// Windows ignores the read-only mode of a folder, so a worktree that cannot be removed is made with it elsewhere only.
+it.runIf(process.platform !== 'win32')('lets the next curation start while the worktree of a failed one cannot be removed, and removes it on a later check', async () => {
+  const { curation, agent } = await setup()
+  const job = curation.pendingJob()!
+  const repo = path.join(mocks.root, 'repo')
+  fs.writeFileSync(path.join(job.cwd, 'memory.md'), 'curated\n')
+  fs.writeFileSync(path.join(repo, 'memory.md'), 'edited\n')
+  git(repo, 'add', '.')
+  git(repo, 'commit', '-qm', 'asist: edit memory.md')
+  // What a scanner holding a file in the worktree does to its removal on Windows.
+  const worktrees = path.dirname(job.cwd)
+  fs.chmodSync(worktrees, 0o500)
+  try {
+    lastLaunch().onExit(0)
+  } finally {
+    fs.chmodSync(worktrees, 0o700)
+  }
+  expect(agent.get(job.id)?.mergeState).toBe('conflict')
+  expect(curation.lastFailure()).not.toBeNull()
+  expect(curation.pendingJob()).toBeNull()
+  vi.setSystemTime(now + DAY)
+  vi.advanceTimersByTime(MINUTE)
+  expect(agent.get(job.id)?.mergeState).toBe('discarded')
+  expect(fs.existsSync(job.cwd)).toBe(false)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+})
+
+const PAGE = '---\nupdated: 2026-09-11\n---\n# 名前\n\n## 要約\n本文。\n'
+
+// Git for Windows cannot add a page named CON.md, and Windows ignores the read-only mode of a folder.
+describe.runIf(process.platform !== 'win32')('a curation refused by the check before its merge, whose worktree cannot be removed', () => {
+  it.each([
+    ['its result breaks the rules', (cwd: string) => {
+      mocks.readAll.mockReturnValue({ errors: ['invalid memory'] })
+      fs.writeFileSync(path.join(cwd, 'memory.md'), 'invalid\n')
+    }],
+    ['it reaches outside the memory through a symbolic link', (cwd: string) => {
+      fs.writeFileSync(path.join(mocks.root, 'secret.txt'), 'private key\n')
+      fs.mkdirSync(path.join(cwd, 'pages'))
+      fs.symlinkSync(path.join(mocks.root, 'secret.txt'), path.join(cwd, 'pages', 'leak.md'))
+    }],
+    ['it adds a page that macOS or Windows cannot name', (cwd: string) => {
+      fs.mkdirSync(path.join(cwd, 'pages'))
+      fs.writeFileSync(path.join(cwd, 'pages', 'CON.md'), PAGE)
+    }]
+  ])('holds no later curation back when %s, and is not checked again', async (_, write) => {
+    const { curation, agent } = await setup()
+    const job = curation.pendingJob()!
+    write(job.cwd)
+    // What a scanner holding a file in the worktree does to its removal on Windows.
+    const worktrees = path.dirname(job.cwd)
+    fs.chmodSync(worktrees, 0o500)
+    try {
+      lastLaunch().onExit(0)
+    } finally {
+      fs.chmodSync(worktrees, 0o700)
+    }
+    expect(agent.get(job.id)).toMatchObject({ status: 'done', mergeState: 'pending' })
+    const failure = curation.lastFailure()
+    expect(failure).not.toBeNull()
+    expect(curation.pendingJob()).toBeNull()
+    mocks.readAll.mockReturnValue({ errors: [] })
+    vi.setSystemTime(now + DAY)
+    vi.advanceTimersByTime(MINUTE)
+    expect(curation.lastFailure()).toEqual(failure)
+    expect(agent.get(job.id)?.mergeState).toBe('discarded')
+    expect(mocks.launch).toHaveBeenCalledTimes(2)
+    expect(fs.existsSync(path.join(mocks.root, 'repo', 'pages'))).toBe(false)
+  })
+})
+
+it('starts the next curation while the stop of the Agent of one cut off by a restart cannot be confirmed, and leaves asking again to the next start', async () => {
+  const { curation } = await setup()
+  const job = curation.pendingJob()!
+  lastLaunch().onSpawn({ pid: 4242, startedAt: 'Sat Sep 12 12:00:00 2026', token: '6f9619ff-8b86-4d01-b42d-00cf4fc964ff' })
+  let checks = 0
+  mocks.recover.mockImplementation(() => {
+    checks++
+    const completion = Promise.reject(new Error('the stop could not be confirmed'))
+    completion.catch(() => {})
+    return { completion, stop: () => completion }
+  })
+  const settled = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
+  const restored = await restart(now + DAY)
+  await settled()
+  for (let i = 0; i < 10; i++) vi.advanceTimersByTime(MINUTE)
+  await settled()
+  expect(restored.agent.get(job.id)?.status).toBe('stopping')
+  expect(checks).toBe(1)
+  expect(mocks.launch).toHaveBeenCalledTimes(2)
+  expect(restored.curation.pendingJob()?.memoryCuration).toEqual({ through: '2026-09-12', applied: false })
 })
 
 /**
@@ -272,11 +412,10 @@ it('completes the day only when the run succeeds and leaves no changes behind', 
   expect(curation.lastFailure()).toBeNull()
 })
 
-it.each(['error', 'cancelled'] as const)('leaves the day uncurated and records the failure on %s even when nothing changed', async (status) => {
+it('leaves the day uncurated and records the failure on error even when nothing changed', async () => {
   const { curation, agent } = await setup()
   const job = curation.pendingJob()!
-  if (status === 'cancelled') agent.cancel(job.id)
-  lastLaunch().onExit(status === 'error' ? 1 : 0)
+  lastLaunch().onExit(1)
   expect(agent.get(job.id)?.mergeState).toBe('unchanged')
   expect(curation.curatedThrough()).toBeNull()
   expect(curation.lastFailure()).not.toBeNull()
@@ -498,8 +637,6 @@ it('keeps a merged job whose reindex is still pending beyond the 50 entries of t
 // Git for Windows cannot open a file named CON.md, a name Windows keeps for the console, so it can neither add nor
 // check out such a page, and on Windows git refuses the page before ASIST's own check of page names does.
 describe.runIf(process.platform !== 'win32')('a page name that macOS or Windows cannot give a file', () => {
-  const PAGE = '---\nupdated: 2026-09-11\n---\n# 名前\n\n## 要約\n本文。\n'
-
   it('refuses to merge a curation that adds such a page, and records why', async () => {
     const { curation, agent } = await setup()
     const job = curation.pendingJob()!

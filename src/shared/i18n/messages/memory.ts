@@ -910,6 +910,19 @@ export const memory = defineMessages({
       'pt-BR': 'Não dá para confirmar que a organização da memória terminou e foi mesclada.',
       'es-419': 'No se puede confirmar que la organización de la memoria terminó y se fusionó.',
       'es-ES': 'No se puede confirmar que la organización de la memoria haya terminado y se haya fusionado.'
+    },
+    quitTwice: {
+      'ja-JP': 'アプリを終了するまでに 2 回続けて終わりませんでした',
+      'en-US': 'it did not finish before the app quit, twice in a row',
+      'fr-FR': "elle ne s'est pas terminée avant la fermeture de l'app, deux fois de suite",
+      'de-DE': 'sie wurde zweimal hintereinander nicht fertig, bevor die App beendet wurde',
+      'hi-IN': 'यह लगातार दो बार ऐप बंद होने से पहले पूरी नहीं हुई',
+      'id-ID': 'penataan tidak selesai sebelum aplikasi ditutup, dua kali berturut-turut',
+      'it-IT': "non è finito prima della chiusura dell'app, per due volte di seguito",
+      'ko-KR': '앱을 종료하기 전까지 두 번 연속으로 끝나지 않았습니다',
+      'pt-BR': 'ela não terminou antes de o app ser encerrado, duas vezes seguidas',
+      'es-419': 'no terminó antes de que se cerrara la app, dos veces seguidas',
+      'es-ES': 'no ha terminado antes de que se cerrara la aplicación, dos veces seguidas'
     }
   },
   errors: {
@@ -1185,6 +1198,19 @@ export const memory = defineMessages({
       'pt-BR': 'Alguns nomes de página não podem ser usados como nomes de arquivo, por isso as alterações não foram mescladas:\n{files}',
       'es-419': 'Algunos nombres de página no se pueden usar como nombres de archivo, así que los cambios no se fusionaron:\n{files}',
       'es-ES': 'Algunos nombres de página no se pueden usar como nombres de archivo, así que los cambios no se han fusionado:\n{files}'
+    },
+    indexNotReplaced: {
+      'ja-JP': '索引 {file} が壊れていて、作り直すために消すこともできませんでした({message})。ほかのアプリがこのファイルを開いていないか確かめて、ASIST を起動し直してください',
+      'en-US': 'the index {file} is damaged and could not be deleted to build it again ({message}). Check that no other app has the file open, then start ASIST again',
+      'fr-FR': "l'index {file} est endommagé et n'a pas pu être supprimé pour être reconstruit ({message}). Vérifiez qu'aucune autre app n'a ouvert ce fichier, puis relancez ASIST",
+      'de-DE': 'der Index {file} ist beschädigt und ließ sich für den Neuaufbau nicht löschen ({message}). Prüfen Sie, dass keine andere App die Datei geöffnet hat, und starten Sie ASIST neu',
+      'hi-IN': 'इंडेक्स {file} खराब है और उसे फिर से बनाने के लिए मिटाया नहीं जा सका ({message})। देखें कि कोई दूसरा ऐप यह फ़ाइल खोले हुए तो नहीं है, फिर ASIST को दोबारा शुरू करें',
+      'id-ID': 'indeks {file} rusak dan tidak bisa dihapus untuk dibuat ulang ({message}). Pastikan tidak ada aplikasi lain yang membuka file ini, lalu jalankan ASIST lagi',
+      'it-IT': "l'indice {file} è danneggiato e non è stato possibile eliminarlo per ricostruirlo ({message}). Controlla che nessun'altra app abbia aperto il file, poi riavvia ASIST",
+      'ko-KR': '색인이 손상되었는데, 다시 만들기 위해 지울 수도 없었습니다({file}: {message}). 다른 앱이 이 파일을 열고 있지 않은지 확인한 뒤 ASIST를 다시 시작하십시오',
+      'pt-BR': 'o índice {file} está danificado e não pôde ser apagado para ser refeito ({message}). Verifique se nenhum outro app está com o arquivo aberto e abra o ASIST de novo',
+      'es-419': 'el índice {file} está dañado y no se pudo borrar para volver a crearlo ({message}). Revisa que ninguna otra app tenga abierto el archivo y vuelve a abrir ASIST',
+      'es-ES': 'el índice {file} está dañado y no se ha podido borrar para volver a crearlo ({message}). Comprueba que ninguna otra aplicación tenga abierto el archivo y vuelve a abrir ASIST'
     }
   }
 })

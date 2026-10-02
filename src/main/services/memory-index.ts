@@ -1,8 +1,11 @@
+import fs from 'node:fs'
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { createHash } from 'node:crypto'
+import { errMessage } from '@shared/api-errors'
+import { errorText } from '@shared/i18n/error-text'
 import type { MemoryUnit, MemoryUnitKind } from '@shared/ipc'
 import { EMBEDDING_MODEL, cosine, vectorFromBytes, vectorToBytes } from '@shared/memory-embedding'
-import { embeddingTextOf } from '@shared/memory-page'
+import { classifyFile, embeddingTextOf } from '@shared/memory-page'
 import {
   FTS5_TOKENIZE,
   dominantTokenKind,
@@ -45,6 +48,51 @@ const LEXICAL_LIMIT = 30
 export const INJECTION_MAX_BM25: Record<TokenKind, number> = { bigram: -2.5, word: -5 }
 
 type Row = Record<string, SQLOutputValue>
+
+const SQLITE_CORRUPT = 11
+const SQLITE_NOTADB = 26
+
+/**
+ * Whether SQLite found the file damaged or no database at all. node:sqlite reports the extended result code,
+ * whose low byte is the primary one.
+ */
+function isDamaged(error: unknown): boolean {
+  const code = (error as { errcode?: unknown } | null)?.errcode
+  return typeof code === 'number' && [SQLITE_CORRUPT, SQLITE_NOTADB].includes(code & 0xff)
+}
+
+/** The files SQLite keeps beside the database. A hot journal left beside a deleted file would be played into its successor. */
+const SIDE_FILES = ['', '-journal', '-wal', '-shm']
+
+/** The tables every rebuild makes anew from the files. */
+const UNIT_TABLES = `
+  CREATE TABLE IF NOT EXISTS units (
+    id TEXT PRIMARY KEY,
+    file TEXT NOT NULL,
+    line INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    page TEXT NOT NULL,
+    heading TEXT NOT NULL,
+    aliases TEXT NOT NULL,
+    text TEXT NOT NULL,
+    date TEXT NOT NULL,
+    ord INTEGER NOT NULL
+  );
+  CREATE VIRTUAL TABLE IF NOT EXISTS units_fts USING fts5(id UNINDEXED, tokens, tokenize="${FTS5_TOKENIZE}");
+`
+
+/**
+ * The names a unit is found by, which its search tokens start with and an utterance can name exactly: a page's
+ * name and its aliases, or the date of a journal entry. user.md and me.md open with their role rather than a
+ * name, "The user" or 「私について」, which an utterance says in other senses, as in "the user manual" or
+ * 「ユーザー登録」: in the tokens, 「ユーザー数が増えた」 injected both sections of user.md at bm25 -3.2 and -3.6
+ * against the bar of -2.5, and "what about me, can I come too" injected me.md at -6.2 against -5
+ * (2026-10-02).
+ */
+function namesOf(unit: MemoryUnit): string[] {
+  const kind = classifyFile(unit.file).kind
+  return kind === 'user' || kind === 'me' ? [] : [unit.page, ...unit.aliases]
+}
 
 export interface IndexSearchOptions {
   /**
@@ -93,11 +141,40 @@ function rowToUnit(row: Row): MemoryUnit {
 }
 
 export class MemoryIndex {
-  private readonly db: DatabaseSync
+  private db: DatabaseSync
 
-  constructor(file: string) {
+  constructor(private readonly file: string) {
     this.db = new DatabaseSync(file)
+    try {
+      this.initialize()
+    } catch (error) {
+      this.startAfresh(error)
+    }
+  }
+
+  /**
+   * Replaces a file SQLite finds damaged with an empty one, and rethrows any other error. The units are
+   * rebuilt from the markdown on the index's first use in each run, so only the vectors are lost, and they
+   * are computed again; keeping the file would leave memory unavailable at every start until the user
+   * deleted it. A damaged file can open cleanly and fail only when the rebuild reads its tables. A file that
+   * cannot be deleted, as on Windows while another program holds it, leaves the index closed (isOpen) and
+   * the reason thrown.
+   */
+  private startAfresh(error: unknown): void {
+    if (!isDamaged(error)) throw error
+    console.warn('memory index: the file is damaged and is built again from the memory:', this.file, errMessage(error))
+    this.db.close()
+    try {
+      for (const suffix of SIDE_FILES) fs.rmSync(`${this.file}${suffix}`, { force: true })
+    } catch (removal) {
+      throw new Error(errorText('memory.errors.indexNotReplaced', { file: this.file, message: errMessage(removal) }))
+    }
+    this.db = new DatabaseSync(this.file)
     this.initialize()
+  }
+
+  get isOpen(): boolean {
+    return this.db.isOpen
   }
 
   private initialize(): void {
@@ -107,22 +184,8 @@ export class MemoryIndex {
       // The index can be rebuilt from the files, so a schema change drops everything, vectors included.
       this.db.exec('DROP TABLE IF EXISTS units; DROP TABLE IF EXISTS units_fts; DROP TABLE IF EXISTS vectors; DELETE FROM meta')
     }
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS units (
-        id TEXT PRIMARY KEY,
-        file TEXT NOT NULL,
-        line INTEGER NOT NULL,
-        kind TEXT NOT NULL,
-        page TEXT NOT NULL,
-        heading TEXT NOT NULL,
-        aliases TEXT NOT NULL,
-        text TEXT NOT NULL,
-        date TEXT NOT NULL,
-        ord INTEGER NOT NULL
-      );
-      CREATE VIRTUAL TABLE IF NOT EXISTS units_fts USING fts5(id UNINDEXED, tokens, tokenize="${FTS5_TOKENIZE}");
-      CREATE TABLE IF NOT EXISTS vectors (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, embedding BLOB NOT NULL);
-    `)
+    this.db.exec(UNIT_TABLES)
+    this.db.exec('CREATE TABLE IF NOT EXISTS vectors (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, embedding BLOB NOT NULL)')
     this.setMeta('schema_version', String(SCHEMA_VERSION))
   }
 
@@ -150,9 +213,23 @@ export class MemoryIndex {
 
   /** Rebuilds the index from the files, keeping only the vectors computed from the same text and model. */
   rebuild(units: readonly MemoryUnit[]): void {
+    try {
+      this.write(units)
+    } catch (error) {
+      this.startAfresh(error)
+      this.write(units)
+    }
+  }
+
+  private write(units: readonly MemoryUnit[]): void {
     this.transaction(() => {
       const model = this.getMeta(META_EMBEDDING_MODEL)
-      this.db.exec('DELETE FROM units; DELETE FROM units_fts')
+      // Dropped rather than emptied, so that nothing of the old tables is read. FTS5 reads its own data only
+      // where a search or the merge of its segments meets it: with that data damaged and its b-tree intact,
+      // seven starts in a row each rebuilt the index by emptying it and then failed every search (300
+      // units, 2026-10-02).
+      this.db.exec('DROP TABLE units; DROP TABLE units_fts')
+      this.db.exec(UNIT_TABLES)
       const insertUnit = this.db.prepare(
         `INSERT INTO units (id, file, line, kind, page, heading, aliases, text, date, ord)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -178,7 +255,7 @@ export class MemoryIndex {
           unit.date,
           unit.order
         )
-        insertFts.run(unit.id, ftsTokens(`${unit.page} ${unit.aliases.join(' ')} ${unit.heading} ${unit.text}`))
+        insertFts.run(unit.id, ftsTokens([...namesOf(unit), unit.heading, unit.text].join(' ')))
         if (model !== null) removeChangedVector.run(unit.id, embeddingFingerprint(embeddingTextOf(unit), model))
       }
       this.db.exec('DELETE FROM vectors WHERE id NOT IN (SELECT id FROM units)')
@@ -211,7 +288,7 @@ export class MemoryIndex {
     const { where, params } = this.kindFilter(options.kinds)
     // Only the first section of a page, which is its summary, may win on an exact name match.
     const isExact = (unit: MemoryUnit): boolean =>
-      unit.kind === 'section' && unit.order === 0 && exactNameHit(query, [unit.page, ...unit.aliases])
+      unit.kind === 'section' && unit.order === 0 && exactNameHit(query, namesOf(unit))
     const lexical = new Map<string, LexicalHit<MemoryUnit>>()
     const match = mode === 'keyword' ? ftsKeywordQuery(query) : ftsQuery(query)
     if (match) {

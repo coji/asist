@@ -34,6 +34,17 @@ const CJK = '\\u3005\\u3006\\u303b\\u30fc\\p{Script=Han}\\p{Script=Hiragana}\\p{
 const CJK_RUN = new RegExp(`[${CJK}](?:[\\s\\p{P}\\p{S}]*[${CJK}])*`, 'gu')
 
 /**
+ * A run of characters written without spaces that also ends at a space or a mark. The model separates the
+ * keywords it recalls by with spaces, as in "猫 犬", where the run of an utterance goes on across them.
+ */
+const CJK_KEYWORD = new RegExp(`[${CJK}]+`, 'gu')
+
+const SEPARATOR = '[\\s\\p{P}\\p{S}]'
+
+/** A keyword of one character, written without spaces or in Hangul, that stands alone between spaces or marks. */
+const LONE_KEYWORD = new RegExp(`(?<=^|${SEPARATOR})([${CJK}]|\\p{Script=Hangul})(?=$|${SEPARATOR})`, 'u')
+
+/**
  * Korean is agglutinative and writes a particle onto the word, so "서울" has to find "서울에서". Words in
  * Hangul therefore carry their character bigrams into the index beside the word itself. Measured on
  * 2026-09-22 against a unit that says "서울에서 회의를": indexed by word alone the query "서울 회의 언제예요"
@@ -67,8 +78,8 @@ interface Piece {
   text: string
 }
 
-/** Cuts the text into runs written without spaces and into the words of every other script. */
-function pieces(text: string): Piece[] {
+/** Cuts the text into runs written without spaces, as `runs` finds them, and into the words of every other script. */
+function pieces(text: string, runs: RegExp = CJK_RUN): Piece[] {
   const folded = text.normalize('NFKC').toLowerCase()
   const out: Piece[] = []
   const pushWords = (slice: string): void => {
@@ -79,7 +90,7 @@ function pieces(text: string): Piece[] {
     }
   }
   let last = 0
-  for (const match of folded.matchAll(CJK_RUN)) {
+  for (const match of folded.matchAll(runs)) {
     pushWords(folded.slice(last, match.index))
     const run = normalizeForSearch(match[0])
     if (run) out.push({ kind: 'cjk', text: run })
@@ -122,19 +133,31 @@ export function ftsTokens(text: string): string {
     .join(' ')
 }
 
+const quoted = (token: string): string => `"${token.replace(/"/g, '""')}"`
+
 /** The FTS5 MATCH expression, joining the tokens with OR, or null when there is no token. */
 export function ftsQuery(text: string): string | null {
   const tokens = [...new Set(searchTokens(text))]
   if (tokens.length === 0) return null
-  return tokens.map((token) => `"${token.replace(/"/g, '""')}"`).join(' OR ')
+  return tokens.map(quoted).join(' OR ')
 }
 
 /**
- * The FTS5 MATCH expression for a keyword the model recalls. A keyword of one character written without
- * spaces, such as "猫" or "姉", is matched as a prefix: FTS5 matches whole tokens, and the index holds such a
- * character only as the start of a bigram or of the marked end of its run. Only a keyword that is one
- * character as a whole is: a lone character inside an utterance, such as the "分" of "あと5分" or a filler
+ * The FTS5 MATCH expression for the keywords the model recalls by, cut where it put a space or a mark between
+ * them. A keyword of one character that stands alone, such as "猫" or each of "猫 犬", or a Korean word of one
+ * syllable, such as "개", is matched as a prefix: FTS5 matches whole tokens, the index holds a character
+ * written without spaces only as the start of a bigram or of the marked end of its run, and a Korean word
+ * with the particle written onto it ("개를"). A character beside a number or a Latin word, as in "9月1日",
+ * "3人" or "iPhone用", belongs to that keyword and is matched whole, as the query of an utterance (ftsQuery)
+ * matches every character: a lone character inside an utterance, such as the "分" of "あと5分" or a filler
  * such as "お", names nothing, and as a prefix it injected a diary about "分量" or "お茶".
+ *
+ * A Korean syllable that stands alone is often a determiner or a pronoun, as in "내 생일" or "그 식당", and as
+ * a prefix it also reaches "내일", "내용" or "그는". It is matched as one all the same, because those hits rank
+ * below the ones both keywords find, while a whole match loses the noun. Measured on 2026-10-02 over 29
+ * units: "내 생일" ranked the unit with "생일" at -5.3 and one with only "내년" and "내용" at -3.9, and "개 이름"
+ * found the page of the dog, which says "개를", at -3.7 only as a prefix. Over 20,000 units a prefix keyword
+ * added about 20 ms to a search of 22 to 25 ms.
  *
  * Indexing every character alone instead would double the length of each unit in such a script, and bm25
  * divides by the length. Measured on 2026-10-02 over 13 units in English, German, Hindi, Korean and
@@ -145,9 +168,12 @@ export function ftsQuery(text: string): string | null {
  * injected the same units as before.
  */
 export function ftsKeywordQuery(text: string): string | null {
-  const [only, ...rest] = pieces(text)
-  if (only?.kind === 'cjk' && rest.length === 0 && Array.from(only.text).length === 1) return `"${only.text}"*`
-  return ftsQuery(text)
+  // split() with a capturing pattern puts each lone keyword at an odd place, between the rest of the text.
+  const parts = text.normalize('NFKC').toLowerCase().split(LONE_KEYWORD)
+  const terms = new Set(
+    parts.flatMap((part, at) => (at % 2 === 1 ? [`${quoted(part)}*`] : pieces(part, CJK_KEYWORD).flatMap(pieceTokens).map(quoted)))
+  )
+  return terms.size > 0 ? [...terms].join(' OR ') : null
 }
 
 const DEVANAGARI_MARKS = [

@@ -104,12 +104,13 @@ describe('memory service', () => {
     expect(service.list()[0]).toMatchObject({ text: '本人の行きつけの店。' })
   })
 
-  it('indexes me.md like the other pages, so that the assistant recalls its own page through search', async () => {
+  it('indexes me.md like the other pages, so that the assistant recalls its own page through search by its headings and text', async () => {
     service.ensureLoaded()
     fs.writeFileSync(memoryFile('me.md'), '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 話し方と癖\n語尾は柔らかく、冗談は控えめ。\n')
     service.reindex()
     expect(service.list()).toMatchObject([{ file: 'me.md', page: '私について', heading: '話し方と癖' }])
-    expect((await service.search('私について'))[0]).toMatchObject({ record: { file: 'me.md' } })
+    expect((await service.search('話し方と癖'))[0]).toMatchObject({ record: { file: 'me.md' } })
+    expect((await service.search('冗談'))[0]).toMatchObject({ record: { file: 'me.md' } })
   })
 
   it('builds the memory block from instruction.md alone, returns null without it, and freezes the block for five minutes', () => {
@@ -287,6 +288,39 @@ describe('memory service', () => {
     second.resolve([new Float32Array([0, 1])])
     expect(await recomputed).toBe(1)
     expect(service.embeddingStatus()).toMatchObject({ embedded: 1, total: 1, model: 'model-b' })
+  })
+
+  it('builds the index anew when its file is not a database, rather than leaving memory unavailable', async () => {
+    fs.writeFileSync(path.join(mocks.userData, 'memory-index.db'), 'not a database '.repeat(100))
+    expect(service.unavailableReason()).toBeNull()
+    fs.writeFileSync(memoryFile('pages', '松葉軒.md'), MATSUBAKEN)
+    service.reindex()
+    expect((await service.search('ラーメン屋'))[0]).toMatchObject({ record: { page: '松葉軒', heading: '要約' } })
+  })
+
+  it('reports why memory is unavailable when the index is damaged and its file cannot be deleted to build it again', async () => {
+    const { MemoryIndex } = await import('../src/main/services/memory-index')
+    const file = path.join(mocks.userData, 'memory-index.db')
+    const built = new MemoryIndex(file)
+    built.rebuild(Array.from({ length: 2000 }, (_, n) => ({
+      id: `p${n}`, file: `pages/p${n}.md`, line: 1, kind: 'section' as const, page: `p${n}`, heading: 'Summary',
+      aliases: [], text: `Page ${n} talks about the river, the bread and the week.`, date: '2026-09-01', order: 0
+    })))
+    built.close()
+    // The header and the schema stay readable, so the file opens and the rebuild meets the damage.
+    const bytes = fs.readFileSync(file)
+    bytes.fill(0x5a, 4096 * 3)
+    fs.writeFileSync(file, bytes)
+    // What Windows does while a scanner or the search indexer holds the file.
+    const rm = fs.rmSync
+    vi.spyOn(fs, 'rmSync').mockImplementation((target, options) => {
+      if (String(target) === file) throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' })
+      rm(target, options)
+    })
+    expect(() => service.list()).toThrow('[asist:memory.errors.openFailed')
+    vi.mocked(fs.rmSync).mockRestore()
+    expect(service.unavailableReason()).toContain('EBUSY')
+    await expect(service.search('river')).rejects.toThrow('[asist:memory.errors.openFailed')
   })
 
   it('reports why memory alone is unavailable when its directory cannot be created, and leaves the conversation running', () => {

@@ -1,4 +1,4 @@
-import { isJobExecuting } from '@shared/job-status'
+import { isJobTerminal } from '@shared/job-status'
 import fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -45,19 +45,26 @@ export function lastFailure(): CurationState['lastFailure'] {
   return readState().lastFailure
 }
 
-/** A curation job that is still running or waiting to be merged. */
+/** A curation job that can still bring its changes into the memory, which holds every later curation back. */
 export function pendingJob(): AgentJob | null {
-  return (
-    agentRunner
-      .list()
-      .find(
-        (job) =>
-          job.memoryCuration && !job.memoryCuration.applied &&
-          (isJobExecuting(job.status) || ['pending', 'conflict', 'error'].includes(job.mergeState ?? '') ||
-            (job.status === 'done' && ['merged', 'unchanged'].includes(job.mergeState ?? '')))
-      ) ?? null
-  )
+  return agentRunner.list().find((job) => job.memoryCuration && !job.memoryCuration.applied && reachesMemory(job)) ?? null
 }
+
+/**
+ * Whether the job can still bring its changes into the memory: while its Agent runs, and once it ended well
+ * until its merge and its day are done. A job that stops ends cancelled or in error, and neither is merged. A
+ * job refused by the check before its merge is discarded, and when that removal fails halfway git counts what
+ * is left of its worktree as none, so that the job is neither checked again nor waited for.
+ */
+function reachesMemory(job: AgentJob): boolean {
+  if (job.status === 'running') return true
+  if (job.status !== 'done') return false
+  if (job.mergeState === 'merged' || job.mergeState === 'unchanged') return true
+  return job.mergeState === 'pending' && worktreeIntact(job.worktree!.dir)
+}
+
+const worktreeIntact = (dir: string): boolean =>
+  fs.existsSync(dir) && git.toplevel(dir) === git.resolvedAsFarAsExists(dir)
 
 const worktreeRoot = (): string => path.join(app.getPath('userData'), 'memory-worktrees')
 
@@ -213,6 +220,7 @@ function processJob(job: AgentJob): void {
   processing.add(job.id)
   try {
     if (job.mergeState === 'pending') {
+      if (!reachesMemory(job)) return
       const checked = assertInsideMemory(job)
       const merged = readMerged(job, checked.commit)
       if (merged !== null && merged.errors.length > 0) {
@@ -242,9 +250,9 @@ function processJob(job: AgentJob): void {
 }
 
 /**
- * Records a failed curation for the settings screen. A job whose changes were never merged is
- * discarded, because nobody sees it to decide on it; the same days are curated again on the next day.
- * A job that was already merged stays, and the next start resumes it from the reindex.
+ * Records a failed curation for the settings screen, which holds the curation back until the next day, and
+ * discards the job's changes. A job that was already merged stays, and the next start resumes it from the
+ * reindex.
  */
 function fail(job: AgentJob, message: string): void {
   console.error('memory curation failed:', job.id, message)
@@ -254,24 +262,47 @@ function fail(job: AgentJob, message: string): void {
   } catch (error) {
     console.error('memory curation: the failure could not be recorded:', errorMessage(error))
   }
+  discardUnmerged(job)
+}
+
+/**
+ * Throws away the changes of a job that were never merged, because nobody sees the job to decide on it; the
+ * same days are curated again. A removal that fails, as on Windows while a scanner holds a file in the
+ * worktree, is tried again on every check.
+ */
+function discardUnmerged(job: AgentJob): void {
   const current = agentRunner.get(job.id)
-  if (current?.worktree && ['pending', 'conflict', 'error'].includes(current.mergeState ?? '')) {
-    try {
-      agentRunner.discard(job.id)
-    } catch (error) {
-      console.error('memory curation: the failed job could not be discarded:', job.id, errorMessage(error))
-    }
+  if (!current?.worktree || !['pending', 'conflict', 'error'].includes(current.mergeState ?? '')) return
+  try {
+    agentRunner.discard(job.id)
+  } catch (error) {
+    console.error('memory curation: the failed job could not be discarded:', job.id, errorMessage(error))
   }
 }
 
-/** A curation job the Agent ended without success, or whose merge could not be made. */
+/**
+ * A curation job the Agent ended without success, or whose merge could not be made. Only the app cancels a
+ * curation, as it quits, which alone says nothing about the curation: its changes are discarded without a
+ * failure, so that the next start curates the same days rather than waiting for the next midnight.
+ */
 function observeFailure(job: AgentJob): void {
-  if (!job.memoryCuration || job.memoryCuration.applied || processing.has(job.id)) return
-  if (job.status === 'error' || job.status === 'cancelled') {
-    if (job.mergeState !== 'discarded') fail(job, job.summary ?? job.status)
-    return
-  }
-  if (job.mergeState === 'conflict' || job.mergeState === 'error') fail(job, job.summary ?? job.mergeState)
+  if (!job.memoryCuration || job.memoryCuration.applied || processing.has(job.id) || job.mergeState === 'discarded') return
+  if (job.status === 'cancelled') {
+    if (quitAfterQuit(job)) fail(job, t('memory.curation.quitTwice'))
+    else discardUnmerged(job)
+  } else if (job.status === 'error') fail(job, job.summary ?? job.status)
+  else if (job.mergeState === 'conflict' || job.mergeState === 'error') fail(job, job.summary ?? job.mergeState)
+}
+
+/**
+ * Whether the curation before this one was stopped by a quit as well, which the job history tells. A
+ * curation that cannot end by itself, such as a CLI waiting for an answer, runs until the app quits; tried
+ * again at every start, it would spend the Agent's usage each time and give no reason. The second quit in a
+ * row is therefore a failure, and the next curation waits for the next day.
+ */
+function quitAfterQuit(job: AgentJob): boolean {
+  const before = agentRunner.list().find((other) => other.memoryCuration && other.startedAt < job.startedAt)
+  return before?.status === 'cancelled'
 }
 
 /**
@@ -283,7 +314,9 @@ function observeFailure(job: AgentJob): void {
  */
 function startIfDue(): void {
   try {
-    if (memory.unavailableReason()) return
+    // A start that the app refuses as it quits is no failure of the curation, and recorded as one it would
+    // hold the curation back past the next start.
+    if (!agentRunner.acceptsJobs() || memory.unavailableReason()) return
     const state = readState()
     if (!curationDue({ curatedThrough: state.curatedThrough, lastFailureAt: state.lastFailure?.at ?? null }, Date.now())) return
     reconcileMemoryCuration()
@@ -300,9 +333,16 @@ function startIfDue(): void {
   }
 }
 
-/** Resumes from the saved jobs. A job that was already merged is not merged again and continues from the reindex. */
+/**
+ * Resumes from the saved jobs. A job that was already merged is not merged again and continues from the
+ * reindex. A job that ended and will never reach the memory has its worktree discarded where an earlier
+ * removal failed.
+ */
 export function reconcileMemoryCuration(): void {
-  for (const job of agentRunner.list()) processJob(job)
+  for (const job of agentRunner.list()) {
+    processJob(job)
+    if (job.memoryCuration && !job.memoryCuration.applied && isJobTerminal(job.status) && !reachesMemory(job)) discardUnmerged(job)
+  }
 }
 
 export function initMemoryCuration(): void {

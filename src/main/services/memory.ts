@@ -63,10 +63,16 @@ function open(): MemoryIndex {
     index = new MemoryIndex(path.join(app.getPath('userData'), INDEX_FILE))
     return index
   } catch (err) {
-    openFailure = errorText('memory.errors.openFailed', { message: errMessage(err) })
-    console.error('memory:', openFailure)
-    throw new Error(openFailure)
+    throw unavailable(err)
   }
+}
+
+/** Makes memory unavailable for the rest of the run with the reason, and returns the error to throw. */
+function unavailable(err: unknown): Error {
+  index = null
+  openFailure = errorText('memory.errors.openFailed', { message: errMessage(err) })
+  console.error('memory:', openFailure)
+  return new Error(openFailure)
 }
 
 /**
@@ -86,7 +92,12 @@ export function unavailableReason(): string | null {
 export function reindex(): { units: number; errors: string[] } {
   const idx = open()
   const result = store.readAll()
-  idx.rebuild(result.units)
+  try {
+    idx.rebuild(result.units)
+  } catch (error) {
+    // A damaged index whose file could not be deleted closes itself, and memory stays unavailable for that reason.
+    throw idx.isOpen ? error : unavailable(error)
+  }
   for (const error of result.errors) console.warn('memory page:', error)
   loaded = true
   embedInBackground()
