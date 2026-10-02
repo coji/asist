@@ -171,20 +171,17 @@ describe('units', () => {
     const embedded = (file: string, page: string, heading: string): string =>
       embeddingTextOf({ file, kind: file.startsWith('journal/') ? 'journal' : 'section', page, heading, text: 'x', date: '2026-09-20' })
     expect([
-      embedded('user.md', 'The user', 'Preferences'),
-      embedded('user.md', 'ユーザー', '習慣'),
-      embedded('me.md', 'About me', 'Who I am'),
-      embedded('me.md', '私について', '好きなもの、気になっていること'),
       embedded('pages/Mugi.md', 'Mugi', 'Summary'),
+      embedded('pages/Mugi.md', 'Mugi', 'My impression'),
       embedded('pages/ムギ.md', 'ムギ', '私の印象'),
-      embedded('journal/2026-09-20.md', '2026-09-20', 'Myself today')
-    ]).toEqual(['The user: x', 'ユーザー: x', 'About me: x', '私について: x', 'Mugi: x', 'ムギ: x', 'Journal of 2026-09-20: x'])
+      embedded('journal/2026-09-20.md', '2026-09-20', 'Myself today'),
+      embedded('journal/2026-09-20.md', '2026-09-20', 'A subject')
+    ]).toEqual(['Mugi: x', 'Mugi: x', 'ムギ: x', 'Journal of 2026-09-20: x', 'Journal of 2026-09-20: x'])
     expect([
-      embedded('user.md', 'The user', 'Walnut allergy'),
-      embedded('me.md', 'About me', 'Bonsai'),
+      embedded('pages/Mugi.md', 'Mugi', 'Walnut allergy'),
       embedded('pages/松葉軒.md', '松葉軒', '好み'),
       embedded('journal/2026-09-20.md', '2026-09-20', 'Bonsai')
-    ]).toEqual(['The user Walnut allergy: x', 'About me Bonsai: x', '松葉軒 好み: x', 'Journal of 2026-09-20 Bonsai: x'])
+    ]).toEqual(['Mugi Walnut allergy: x', '松葉軒 好み: x', 'Journal of 2026-09-20 Bonsai: x'])
   })
 
   it('names the journal in English in an entry written in another language, and leaves a Japanese entry as it was', () => {

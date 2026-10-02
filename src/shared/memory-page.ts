@@ -18,13 +18,9 @@ import {
   type PromptDocumentKind
 } from '../../resources/skills/memory-format.mjs'
 import journalTemplateJa from '../../resources/skills/memory-curation/assets/templates/journal.md?raw'
-import meTemplateJa from '../../resources/skills/memory-curation/assets/templates/me.md?raw'
 import pageTemplateJa from '../../resources/skills/memory-curation/assets/templates/page.md?raw'
-import userTemplateJa from '../../resources/skills/memory-curation/assets/templates/user.md?raw'
 import journalTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/journal.md?raw'
-import meTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/me.md?raw'
 import pageTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/page.md?raw'
-import userTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/user.md?raw'
 
 export { PROMPT_DOCUMENTS, parsePage, promptBody, type PromptDocumentKind }
 
@@ -111,35 +107,30 @@ const templateHeadings = (fixed: readonly PromptText[], ...templates: string[]):
   ])
 
 /**
- * The headings the templates of the curation skills write into each kind of document that is searched, in the
- * two forms the templates exist in, with the fixed headings ASIST reads: the summary, which the text above a
+ * The headings the templates of the curation skills write into the two kinds of document that are searched, in
+ * the two forms the templates exist in, with the fixed headings ASIST reads: the summary, which the text above a
  * document's first heading is read under, the impression of a page and the close of a journal day.
  */
-const TEMPLATE_HEADINGS: Record<'user' | 'me' | 'page' | 'journal', ReadonlySet<string>> = {
-  user: templateHeadings([], userTemplateJa, userTemplateEn),
-  me: templateHeadings([], meTemplateJa, meTemplateEn),
+const TEMPLATE_HEADINGS: Record<'page' | 'journal', ReadonlySet<string>> = {
   page: templateHeadings([FIXED.impression], pageTemplateJa, pageTemplateEn),
   journal: templateHeadings([FIXED.journalSelf], journalTemplateJa, journalTemplateEn)
 }
 
 /**
- * Whether the heading of a section of the file is one its template writes, rather than one the curation or the
- * user chose for what the section says. Such a heading is the same in every memory and in ordinary words, so it
- * is no reason to put the section beside an utterance. Measured on 2026-10-02 over memories of 26 units written
- * from the templates in each language: as a search word, "who am I kidding" injected me.md's "Who I am" at bm25
- * -5.2 against the bar of -5 and 「気になっていることがあるんだけど」 me.md's 「好きなもの、気になっていること」 at
- * -11.4 against -2.5; in the embedded text, "I did not like myself today" brought the close of a journal day to a
+ * Whether the heading of a section of a page or a journal entry is one its template writes, rather than one the
+ * curation or the user chose for what the section says. Such a heading is the same in every memory and in
+ * ordinary words, so it is no reason to put the section beside an utterance. Measured on 2026-10-02 over
+ * memories written from the templates in each language: 「私の印象では悪くない」 injected the impression section of
+ * every page, and in the embedded text "I did not like myself today" brought the close of a journal day to a
  * cosine of 0.868 against the bar of 0.84, and 0.835 without the heading. A heading anyone else writes says what
- * the section holds: over 53 units, "Ken bought a bonsai yesterday" injects a "Bonsai" the curation added to
- * me.md at -8.3, and nothing once that heading is no search word. A curation held in a language other than
- * Japanese or English writes me.md's example headings in that language, and those are not in this set.
+ * the section holds, and stays a search word.
  */
 export function headingFromTemplate(file: string, heading: string): boolean {
   const { kind } = classifyFile(file)
-  return kind !== null && kind !== 'instruction' && TEMPLATE_HEADINGS[kind].has(heading)
+  return (kind === 'page' || kind === 'journal') && TEMPLATE_HEADINGS[kind].has(heading)
 }
 
-/** Turns the headings of a page, meaning user, me or pages, into units. */
+/** Turns the headings of a page into units. */
 export function unitsOfPage(file: string, page: ParsedPage, pageName: string): MemoryUnit[] {
   const date = page.frontmatter.updated ?? ''
   return page.sections.map((section, order) => ({

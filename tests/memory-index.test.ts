@@ -269,21 +269,20 @@ describe('MemoryIndex over memories in several languages', () => {
       unit(id, text, { file: 'journal/2026-09-20.md', kind: 'journal', page: '2026-09-20', heading, aliases: [], date: '2026-09-20' })
     index.rebuild([
       ...MULTI,
-      page('en-me', 'me.md', 'About me', 'Who I am', 'A calm companion who collects old railway maps.'),
-      page('ja-me', 'me.md', '私について', '好きなもの、気になっていること', '古い地図と電車の名前。最近は盆栽。'),
-      page('en-user', 'user.md', 'The user', 'Preferences', 'Likes noodles and picks the milder spice level.'),
-      page('ja-user', 'user.md', 'ユーザー', '習慣', '平日は夜更かしで、日曜は川沿いを走る。'),
+      page('en-maps', 'pages/Collecting.md', 'Collecting', 'Summary', 'They collect old railway maps.'),
+      page('ja-maps', 'pages/集めているもの.md', '集めているもの', '要約', '古い地図と電車の名前。最近は盆栽。'),
       unit('en-impression', 'The evenings are calmer when the cat comes up.', { file: 'pages/Mugi.md', page: 'Mugi', heading: 'My impression', aliases: [], order: 1 }),
       unit('ja-impression', '疲れた日に名前が出る。', { heading: '私の印象', order: 3 }),
+      journal('en-subject', 'A subject', 'We went through the train timetable for Saturday.'),
+      journal('ja-subject', '話題', '土曜日の電車の時刻を一緒に調べた。'),
       journal('en-self', 'Myself today', 'A quiet Sunday, and I liked hearing about the bonsai.'),
       journal('ja-self', '今日の私', '静かな日曜日。盆栽の話を聞けてうれしかった。')
     ])
     const ordinary = [
-      'who am I kidding, I will never finish this',
-      '気になっていることがあるんだけど',
-      '朝の習慣を変えたい',
       'my impression of the movie was mixed',
       '私の印象では悪くない',
+      'what a dull subject that was',
+      '話題を変えよう',
       'I did not like myself today',
       '今日の私はだめだった'
     ]
@@ -291,47 +290,49 @@ describe('MemoryIndex over memories in several languages', () => {
       Object.fromEntries(utterances.map((utterance) => [utterance, ids(utterance, { mode: 'utterance' })]))
     expect(injected(ordinary)).toEqual(Object.fromEntries(ordinary.map((utterance) => [utterance, []])))
     expect(injected(['do you still collect old railway maps', '古い地図を見に行こう'])).toEqual({
-      'do you still collect old railway maps': ['en-me'],
-      古い地図を見に行こう: ['ja-me']
+      'do you still collect old railway maps': ['en-maps'],
+      古い地図を見に行こう: ['ja-maps']
     })
     // Recall still reads a section by such a heading.
-    expect(ids('preferences')).toEqual(['en-user'])
+    expect(ids('impression')).toEqual(['en-impression'])
     expect(ids('私の印象')).toEqual(['ja-impression'])
   })
 
-  it('injects a section of user.md or me.md by a heading the curation or the user added to it', () => {
+  it('injects a section of a page by a heading the curation or the user added to it', () => {
     index.rebuild([
       ...MULTI,
-      page('en-me-maps', 'me.md', 'About me', 'Old railway maps', 'I like how the lines change from decade to decade. The 1964 one is my favourite.'),
-      page('en-user-shifts', 'user.md', 'The user', 'Night shifts', 'Tuesday and Wednesday, from 16:30.'),
-      page('ja-user-walnut', 'user.md', 'ユーザー', 'クルミアレルギー', 'パンを買うときは必ず表示を確かめ、注射薬を持ち歩いている。')
+      page('en-maps', 'pages/Collecting.md', 'Collecting', 'Old railway maps', 'I like how the lines change from decade to decade. The 1964 one is my favourite.'),
+      page('en-shifts', 'pages/The hospital.md', 'The hospital', 'Night shifts', 'Tuesday and Wednesday, from 16:30.'),
+      page('ja-walnut', 'pages/かかりつけの病院.md', 'かかりつけの病院', 'クルミアレルギー', 'パンを買うときは必ず表示を確かめ、注射薬を持ち歩いている。')
     ])
-    expect(ids('I bought an old railway map', { mode: 'utterance' })).toEqual(['en-me-maps'])
-    expect(ids('I am so done with night shifts', { mode: 'utterance' })).toEqual(['en-user-shifts'])
-    expect(ids('このケーキにクルミ入ってる?', { mode: 'utterance' })).toEqual(['ja-user-walnut'])
+    expect(ids('I bought an old railway map', { mode: 'utterance' })).toEqual(['en-maps'])
+    expect(ids('I am so done with night shifts', { mode: 'utterance' })).toEqual(['en-shifts'])
+    expect(ids('このケーキにクルミ入ってる?', { mode: 'utterance' })).toEqual(['ja-walnut'])
   })
 
   it('ranks a section for recall by a word of a heading its template wrote as it ranks one by a word of its text', () => {
     index.rebuild([
       ...MULTI,
-      page('en-user', 'user.md', 'The user', 'Preferences', 'Likes noodles and picks the milder spice level.'),
-      page('en-hotel', 'pages/Hotel.md', 'Hotel', 'Summary', 'The hotel near the station asks about room preferences at check-in and keeps a long list of pillows, views and floors for every guest.')
+      page('en-mugi', 'pages/Mugi.md', 'Mugi', 'My impression', 'The evenings are calmer when the cat comes up.'),
+      page('en-hotel', 'pages/Hotel.md', 'Hotel', 'Summary', 'The hotel near the station left a good impression at check-in and keeps a long list of pillows, views and floors for every guest.')
     ])
     // The two hold the word once each, and the shorter section comes first.
-    expect(ids('preferences')).toEqual(['en-user', 'en-hotel'])
+    expect(ids('impression')).toEqual(['en-mugi', 'en-hotel'])
   })
 
   it('scores a section for an utterance as recall does when no template wrote its heading, so a word the templates write on many headings stays as common as it is', () => {
+    const journal = (id: string, heading: string, text: string): MemoryUnit =>
+      unit(id, text, { file: 'journal/2026-09-20.md', kind: 'journal', page: '2026-09-20', heading, aliases: [], date: '2026-09-20' })
     index.rebuild([
       ...MULTI,
-      page('me-like', 'me.md', 'About me', 'What I like and what I am curious about', 'Old maps and the names of trains.'),
-      page('me-mind', 'me.md', 'About me', 'What is on my mind', 'Whether Ken takes up bonsai.'),
-      page('me-past', 'me.md', 'About me', 'What we have been through', 'The talk about electricity prices on 2026-09-14.'),
-      unit('j-quiz', 'They asked me what year a song came out, and I found it.', {
+      page('p-kyoto', 'pages/Kyoto.md', 'Kyoto', 'Headings that fit the subject', 'Temples and the river.'),
+      page('p-ken', 'pages/Ken.md', 'Ken', 'Headings that fit the subject', 'Takes up bonsai.'),
+      journal('j-prices', 'A subject', 'The talk about electricity prices on 2026-09-14.'),
+      unit('j-quiz', 'They asked me the subject of a song that came out that year, and I found it.', {
         file: 'journal/2026-09-26.md', kind: 'journal', page: '2026-09-26', heading: 'Pub quiz', aliases: [], date: '2026-09-26'
       })
     ])
-    const utterance = 'what year did that song come out'
+    const utterance = 'what was the subject of that song'
     const scoreOf = (mode: 'keyword' | 'utterance'): number | undefined =>
       index.search(utterance, { mode }).find((hit) => hit.record.id === 'j-quiz')?.bm25
     expect(scoreOf('utterance')).toBeLessThan(INJECTION_MAX_BM25.word)
