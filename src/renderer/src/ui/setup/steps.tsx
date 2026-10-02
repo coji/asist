@@ -71,7 +71,11 @@ export function ModelStep({
   onApiKey,
   busy,
   onVerify,
-  onRecheck
+  onRecheck,
+  onChatgpt,
+  chatgptSigningIn,
+  onCancelChatgpt,
+  paidByPlan
 }: {
   provider: LlmProvider
   onProvider: (provider: LlmProvider) => void
@@ -84,6 +88,13 @@ export function ModelStep({
   busy: boolean
   onVerify: () => void
   onRecheck: () => void
+  /** Signs in with ChatGPT in place of an API key, offered for OpenAI alone. */
+  onChatgpt: () => void
+  /** A ChatGPT sign-in waits for the browser, which the user may have closed, so it can be stopped. */
+  chatgptSigningIn: boolean
+  onCancelChatgpt: () => void
+  /** OpenAI is paid from the ChatGPT plan, so what was verified is the sign-in rather than a key. */
+  paidByPlan: boolean
 }): React.JSX.Element {
   const t = useT()
   const info = LLM_PROVIDER_INFO[provider]
@@ -114,18 +125,37 @@ export function ModelStep({
       {verified ? (
         <div className="su-result" data-tone="ok">
           <Chip tone="ok">{t('setup.model.verified')}</Chip>
-          <span>{t('setup.model.verifiedNote', { provider: info.label })}</span>
+          <span>{paidByPlan ? t('settingsIntegrations.chatgpt.usingPlan') : t('setup.model.verifiedNote', { provider: info.label })}</span>
         </div>
       ) : (
-        <ApiKeyField
-          provider={provider}
-          keyConfigured={keyConfigured}
-          apiKey={apiKey}
-          onApiKey={onApiKey}
-          busy={busy}
-          onVerify={onVerify}
-          onRecheck={onRecheck}
-        />
+        <>
+          {provider === 'openai' && (
+            <div className="su-field">
+              {chatgptSigningIn ? (
+                <div className="su-inline">
+                  <Chip tone="cyan">{t('settingsIntegrations.chatgpt.signingIn')}</Chip>
+                  <Btn tone="quiet" onClick={onCancelChatgpt}>
+                    {t('settingsIntegrations.chatgpt.cancelSignIn')}
+                  </Btn>
+                </div>
+              ) : (
+                <Btn tone="primary" disabled={busy} onClick={onChatgpt}>
+                  {t('settingsIntegrations.chatgpt.signIn')}
+                </Btn>
+              )}
+              <p className="su-hint">{t('settingsIntegrations.chatgpt.hint')}</p>
+            </div>
+          )}
+          <ApiKeyField
+            provider={provider}
+            keyConfigured={keyConfigured}
+            apiKey={apiKey}
+            onApiKey={onApiKey}
+            busy={busy}
+            onVerify={onVerify}
+            onRecheck={onRecheck}
+          />
+        </>
       )}
     </div>
   )

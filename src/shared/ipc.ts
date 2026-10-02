@@ -31,7 +31,7 @@ import type { AsrModel, ResolvedAsrModel } from './asr-models'
 import type { CacheMissReason } from './cache-diagnosis'
 import type { AppSettings, SettingsPatch } from './settings'
 export type { AppSettings } from './settings'
-import type { ConversationModel, LlmProvider } from './llm-catalog'
+import type { ConversationModel, LlmProvider, OpenAiAuthMethod } from './llm-catalog'
 export type { ConversationModel, LlmProvider } from './llm-catalog'
 import type { LiveEngine, VoiceEngine } from './voice-engine'
 export type { VoiceEngine } from './voice-engine'
@@ -739,8 +739,26 @@ export interface MemoryOverview {
  */
 export type ApiKeyState = 'missing' | 'saved' | 'verified' | 'unreadable'
 
+/**
+ * The state of what a provider's requests would be made with: the API key, or for OpenAI with ChatGPT
+ * chosen, the ChatGPT sign-in, which counts as saved while it is there.
+ */
+export function credentialState(status: Pick<AppStatus, 'llmKeys' | 'chatgpt'>, openaiAuth: OpenAiAuthMethod, provider: LlmProvider): ApiKeyState {
+  if (provider !== 'openai' || openaiAuth !== 'chatgpt') return status.llmKeys[provider]
+  return status.chatgpt.state === 'signedIn' ? 'saved' : status.chatgpt.state === 'unreadable' ? 'unreadable' : 'missing'
+}
+
 /** Whether the state is of a key the app can read and send. A missing key and one this build cannot decrypt are not. */
 export const keyReadable = (state: ApiKeyState): boolean => state === 'saved' || state === 'verified'
+
+/**
+ * The ChatGPT sign-in. `unreadable` is one another build encrypted, which only a new sign-in or a sign-out
+ * replaces. The email is the account's, for the user to tell which account is connected.
+ */
+export interface ChatGptStatus {
+  state: 'signedIn' | 'signedOut' | 'unreadable'
+  email: string | null
+}
 
 export interface AppStatus {
   /**
@@ -752,7 +770,9 @@ export interface AppStatus {
   /** Whether both the conversation model and the bridge phrase model could be fetched from the real API with their providers' keys. */
   llm: boolean
   conversationModel: ConversationModel
+  /** The state of each provider's API key. Whether OpenAI can be called also depends on `openaiAuth`: see `credentialState`. */
   llmKeys: Record<LlmProvider, ApiKeyState>
+  chatgpt: ChatGptStatus
   tts: boolean
   /** The chosen engine is loading in a process this app started, so `tts` turns true once it answers. */
   ttsStarting: boolean
@@ -969,6 +989,9 @@ export const IpcChannel = {
   SaveSettings: 'save-settings',
   SaveApiKey: 'save-api-key',
   VerifySavedApiKey: 'verify-saved-api-key',
+  ChatGptSignIn: 'chatgpt-sign-in',
+  ChatGptCancelSignIn: 'chatgpt-cancel-sign-in',
+  ChatGptSignOut: 'chatgpt-sign-out',
   ListSpeakers: 'list-speakers',
   TtsTest: 'tts-test',
   OpenExternal: 'open-external',
@@ -1231,6 +1254,15 @@ export interface RendererApi {
    * reads as saved until this runs.
    */
   verifySavedApiKey(provider: LlmProvider): Promise<AppStatus>
+  /**
+   * Signs in with ChatGPT in the browser and returns the status afterwards. `completed` is false for a
+   * sign-in that was cancelled or replaced, which leaves any earlier sign-in as it was. No token ever leaves main.
+   */
+  chatgptSignIn(): Promise<{ completed: boolean; status: AppStatus }>
+  /** Stops a ChatGPT sign-in that waits for the browser; the pending chatgptSignIn then fails. */
+  chatgptCancelSignIn(): Promise<void>
+  /** Revokes the ChatGPT sign-in at OpenAI, forgets it here, and returns the status afterwards. */
+  chatgptSignOut(): Promise<AppStatus>
   listSpeakers(engine?: TtsEngine): Promise<SpeakerOption[]>
   ttsTest(): Promise<SpeechSegment>
   /** Opens a web page in the browser or a mail address in the mail app, and refuses any other link. */

@@ -4,7 +4,7 @@ import type { ConversationMessage, ConversationRequest, ConversationResult, Sear
 import type { RoundUsage } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
 import { effortFor, modelLabel, type ConversationModel, type Effort } from '@shared/llm-catalog'
-import { AdapterStream, statusError, streamCutOff, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import { AdapterStream, statusError, streamCutOff, withoutSchemaKeys, apiKeyOf, type JsonRequest, type ProviderAdapter, type ProviderCredential } from './adapter'
 
 /**
  * Google, calling the Gemini API's generateContent through @google/genai.
@@ -237,9 +237,10 @@ function roundUsage(usage: GenerateContentResponseUsageMetadata | undefined, gro
 }
 
 export const googleAdapter: ProviderAdapter = {
-  stream: (request, key) => new GoogleStream(clientFor(key), request),
+  stream: (request, credential) => new GoogleStream(clientFor(apiKeyOf(credential)), request),
 
-  async completeJson(request: JsonRequest, key: string) {
+  async completeJson(request: JsonRequest, credential: ProviderCredential) {
+    const key = apiKeyOf(credential)
     try {
       const response = await clientFor(key).models.generateContent({
         model: request.model.id,
@@ -260,7 +261,8 @@ export const googleAdapter: ProviderAdapter = {
     }
   },
 
-  async retrieveModel(id, key, signal) {
+  async retrieveModel(id, credential, signal) {
+    const key = apiKeyOf(credential)
     try {
       await new GoogleGenAI({ apiKey: key }).models.get({ model: id, config: { abortSignal: signal } })
     } catch (error) {
@@ -268,7 +270,8 @@ export const googleAdapter: ProviderAdapter = {
     }
   },
 
-  async listModels(key, signal) {
+  async listModels(credential, signal) {
+    const key = apiKeyOf(credential)
     try {
       await new GoogleGenAI({ apiKey: key }).models.list({ config: { pageSize: 1, abortSignal: signal } })
     } catch (error) {

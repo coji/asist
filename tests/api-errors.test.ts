@@ -71,3 +71,27 @@ describe('apiErrorKey', () => {
     expect(createTranslator('ja-JP')(apiErrorKey(new Error('boom')))).not.toContain('boom')
   })
 })
+
+describe('a ChatGPT sign-in that cannot be used', () => {
+  it('is said as a sign-in to make again, not as an API key to check', async () => {
+    const { errorText } = await import('../src/shared/i18n/error-text')
+    const rejected = Object.assign(new Error(errorText('settingsIntegrations.chatgpt.errors.rejected')), { status: 401 })
+    expect(apiErrorKey(rejected)).toBe('conversation.reply.chatgptSignIn')
+    expect(apiErrorKey(new Error(errorText('settingsIntegrations.chatgpt.errors.signedOut')))).toBe('conversation.reply.chatgptSignIn')
+  })
+})
+
+describe('the usage limit of a ChatGPT plan', () => {
+  const beforeStream = Object.assign(new Error('429 You have reached your usage limit'), { status: 429, code: 'subscription_sharing_usage_limit_exceeded' })
+  const insideStream = Object.assign(new Error('OpenAI: subscription_sharing_usage_limit_exceeded: limit'), { status: 429 })
+
+  it('is not retried, since it lasts hours rather than seconds', () => {
+    expect(isTransientApiError(beforeStream)).toBe(false)
+    expect(isTransientApiError(insideStream)).toBe(false)
+  })
+
+  it('is said as the plan limit rather than as a rate limit of the API', () => {
+    expect(apiErrorKey(beforeStream)).toBe('conversation.reply.planLimit')
+    expect(apiErrorKey(insideStream)).toBe('conversation.reply.planLimit')
+  })
+})

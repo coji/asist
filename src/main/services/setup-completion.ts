@@ -40,7 +40,7 @@ export async function completeSetup(request: unknown): Promise<AppSettings> {
   // The snapshot the screen is showing is not trusted here: the current keys and the models in use are
   // checked again against the real API. Any provider is acceptable, and this fails when the key for the provider
   // of a selected model is missing.
-  await validateConfiguration(configuredModels(settings))
+  await validateConfiguration(configuredModels(settings), settings.openaiAuth)
 
   if (isLiveEngine(voiceEngine)) {
     const { provider, label } = LIVE_ENGINE_INFO[voiceEngine]

@@ -51,7 +51,7 @@ const chunk = (parts: unknown[], extra: Record<string, unknown> = {}): unknown =
 
 async function open(over: Partial<ConversationRequest> = {}) {
   const { googleAdapter } = await import('../src/main/services/llm/google')
-  const stream = googleAdapter.stream(request(over), 'key')
+  const stream = googleAdapter.stream(request(over), { type: 'api-key', key: 'key' })
   const seen = { text: [] as string[], calls: [] as ToolCallPart[], search: [] as SearchEvent[] }
   stream.on('text', (delta) => seen.text.push(delta))
   stream.on('toolCall', (call) => seen.calls.push(call))
@@ -266,7 +266,7 @@ describe('the Google JSON call', () => {
     mocks.params.length = 0
     mocks.chunks = [chunk([{ text: 'はい。' }], { finishReason: 'STOP' })]
     await (await open({ model })).stream.final()
-    await googleAdapter.completeJson({ model, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 100, signal: new AbortController().signal }, 'key')
+    await googleAdapter.completeJson({ model, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 100, signal: new AbortController().signal }, { type: 'api-key', key: 'key' })
     const [streamed, json] = mocks.params.map((params) => params.config.thinkingConfig)
     return { streamed, json }
   }

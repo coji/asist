@@ -15,9 +15,32 @@ import type { RoundUsage } from '@shared/ipc'
 
 /**
  * The contract every provider adapter implements. An adapter only converts between the types in
- * shared/conversation and its own API's shape, and never lets an SDK type escape. The key arrives with
- * each call instead of being held, because a key is also verified before it is saved.
+ * shared/conversation and its own API's shape, and never lets an SDK type escape. The credential arrives
+ * with each call instead of being held, because a key is also verified before it is saved.
  */
+
+/**
+ * What a request is authorized with. Every provider takes an API key; OpenAI also takes the ChatGPT plan
+ * of the account signed in with ChatGPT, whose access token expires within the hour and is fetched for
+ * each request. `account` names the registration, which stays the same while the token changes.
+ */
+export type ProviderCredential =
+  | { type: 'api-key'; key: string }
+  | {
+      type: 'chatgpt'
+      account: string
+      accessToken: (signal?: AbortSignal) => Promise<string>
+      /** Makes the next request renew a token OpenAI refused before its expiry. */
+      forgetToken: (token: string) => void
+    }
+
+export const apiKeyCredential = (key: string): ProviderCredential => ({ type: 'api-key', key })
+
+/** The key of an adapter that takes nothing but an API key. */
+export function apiKeyOf(credential: ProviderCredential): string {
+  if (credential.type !== 'api-key') throw new Error(`a ${credential.type} credential reached an adapter that takes only an API key`)
+  return credential.key
+}
 
 export interface JsonRequest {
   model: ConversationModel
@@ -43,12 +66,12 @@ export interface JsonResponse {
 }
 
 export interface ProviderAdapter {
-  stream(request: ConversationRequest, key: string): ConversationStream
-  completeJson(request: JsonRequest, key: string): Promise<JsonResponse>
-  /** Checks that the model exists and the key may use it. A failure carries the HTTP status, where 401 means the key is rejected. */
-  retrieveModel(id: string, key: string, signal: AbortSignal): Promise<void>
-  /** Checks only that the key authenticates. */
-  listModels(key: string, signal: AbortSignal): Promise<void>
+  stream(request: ConversationRequest, credential: ProviderCredential): ConversationStream
+  completeJson(request: JsonRequest, credential: ProviderCredential): Promise<JsonResponse>
+  /** Checks that the model exists and the credential may use it. A failure carries the HTTP status, where 401 means the credential is rejected. */
+  retrieveModel(id: string, credential: ProviderCredential, signal: AbortSignal): Promise<void>
+  /** Checks only that the credential authenticates. */
+  listModels(credential: ProviderCredential, signal: AbortSignal): Promise<void>
 }
 
 /** An error carrying an HTTP status, which is what the checks in shared read to tell a transient failure from a rejected key. */

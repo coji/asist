@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { ConversationMessage, ConversationRequest, ConversationResult, SearchSource, StopReason } from '@shared/conversation'
 import type { RoundUsage } from '@shared/ipc'
 import { effortFor } from '@shared/llm-catalog'
-import { AdapterStream, type JsonRequest, type ProviderAdapter } from './adapter'
+import { AdapterStream, apiKeyOf, type JsonRequest, type ProviderAdapter, type ProviderCredential } from './adapter'
 
 /**
  * Anthropic, through the Messages API.
@@ -213,9 +213,10 @@ function roundUsage(usage: Anthropic.Usage): RoundUsage {
 }
 
 export const anthropicAdapter: ProviderAdapter = {
-  stream: (request, key) => new AnthropicStream(clientFor(key), request),
+  stream: (request, credential) => new AnthropicStream(clientFor(apiKeyOf(credential)), request),
 
-  async completeJson(request: JsonRequest, key: string) {
+  async completeJson(request: JsonRequest, credential: ProviderCredential) {
+    const key = apiKeyOf(credential)
     const effort = effortFor(request.model)
     const message = await clientFor(key).messages.create(
       {
@@ -231,11 +232,13 @@ export const anthropicAdapter: ProviderAdapter = {
     return { usage: roundUsage(message.usage), value: () => JSON.parse(text) }
   },
 
-  async retrieveModel(id, key, signal) {
+  async retrieveModel(id, credential, signal) {
+    const key = apiKeyOf(credential)
     await new Anthropic({ apiKey: key, maxRetries: 0 }).models.retrieve(id, {}, { signal, maxRetries: 0 })
   },
 
-  async listModels(key, signal) {
+  async listModels(credential, signal) {
+    const key = apiKeyOf(credential)
     await new Anthropic({ apiKey: key, maxRetries: 0 }).models.list({ limit: 1 }, { signal, maxRetries: 0 })
   }
 }

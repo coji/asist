@@ -13,6 +13,10 @@ import { errorText } from './i18n/error-text'
 export const LLM_PROVIDERS = ['anthropic', 'openai', 'google', 'cerebras'] as const
 export type LlmProvider = (typeof LLM_PROVIDERS)[number]
 
+/** How OpenAI requests are paid: the API key, or the ChatGPT plan of the account signed in with ChatGPT. */
+export const OPENAI_AUTH_METHODS = ['api-key', 'chatgpt'] as const
+export type OpenAiAuthMethod = (typeof OPENAI_AUTH_METHODS)[number]
+
 export interface LlmProviderInfo {
   label: string
   /** The environment variable that holds the key. It wins over the key saved in settings, and no child process receives it. */

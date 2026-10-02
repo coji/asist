@@ -41,7 +41,7 @@ const models = vi.hoisted(() => ({
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => models.settings }))
 vi.mock('../src/main/services/llm/call', () => {
   const adapter = {
-    retrieveModel: async (id: string, key: string) => { models.retrieved.push({ id, key }) },
+    retrieveModel: async (id: string, credential: { key: string }) => { models.retrieved.push({ id, key: credential.key }) },
     listModels: async () => {}
   }
   return { ADAPTERS: { anthropic: adapter, openai: adapter, google: adapter, cerebras: adapter }, completeJson: vi.fn(), completeText: vi.fn() }

@@ -5,7 +5,7 @@ import type { ConversationMessage, ConversationRequest, ConversationResult, Stop
 import type { RoundUsage } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { effortFor } from '@shared/llm-catalog'
-import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withoutSchemaKeys, apiKeyOf, type JsonRequest, type ProviderAdapter, type ProviderCredential } from './adapter'
 import { streamEvents } from './openai-stream'
 
 /**
@@ -152,9 +152,10 @@ function roundUsage(usage: CompletionUsage): RoundUsage {
 }
 
 export const cerebrasAdapter: ProviderAdapter = {
-  stream: (request, key) => new CerebrasStream(clientFor(key), request),
+  stream: (request, credential) => new CerebrasStream(clientFor(apiKeyOf(credential)), request),
 
-  async completeJson(request: JsonRequest, key: string) {
+  async completeJson(request: JsonRequest, credential: ProviderCredential) {
+    const key = apiKeyOf(credential)
     const effort = effortFor(request.model)
     const response = await clientFor(key).chat.completions.create(
       {
@@ -174,11 +175,13 @@ export const cerebrasAdapter: ProviderAdapter = {
     return { usage: roundUsage(response.usage), value: () => JSON.parse(text) }
   },
 
-  async retrieveModel(id, key, signal) {
+  async retrieveModel(id, credential, signal) {
+    const key = apiKeyOf(credential)
     await newClient(key).models.retrieve(id, { signal })
   },
 
-  async listModels(key, signal) {
+  async listModels(credential, signal) {
+    const key = apiKeyOf(credential)
     await newClient(key).models.list({ signal })
   }
 }

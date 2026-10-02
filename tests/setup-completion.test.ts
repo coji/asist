@@ -7,6 +7,7 @@ const t = createTranslator('ja-JP')
 const mocks = vi.hoisted(() => ({
   settings: {
     safetyNoticeVersion: 1,
+    openaiAuth: 'api-key',
     ttsEngine: 'system',
     conversationModel: { provider: 'anthropic', id: 'claude-main' },
     bridgeModel: { provider: 'anthropic', id: 'claude-fast' }
@@ -153,7 +154,7 @@ describe('completeSetup', () => {
       })
     ).resolves.toMatchObject({ onboardingVersion: 1 })
 
-    expect(mocks.validateConfiguration).toHaveBeenCalledWith(mocks.configuredModels.mock.results[0].value)
+    expect(mocks.validateConfiguration).toHaveBeenCalledWith(mocks.configuredModels.mock.results[0].value, 'api-key')
     expect(mocks.ttsAvailable).toHaveBeenCalledTimes(1)
     expect(mocks.saveSettings).toHaveBeenCalledTimes(1)
     expect(mocks.saveSettings).toHaveBeenCalledWith({

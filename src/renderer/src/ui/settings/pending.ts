@@ -1,6 +1,7 @@
-import { keyReadable, type AizuchiClassifierStatus, type AppSettings, type AppStatus, type EmbeddingStatus, type VapStatus } from '@shared/ipc'
-import type { LlmProvider } from '@shared/llm-catalog'
-import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
+import { credentialState, keyReadable, type AizuchiClassifierStatus, type AppSettings, type AppStatus, type EmbeddingStatus, type VapStatus } from '@shared/ipc'
+import type { Translate } from '@shared/i18n'
+import { LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
+import { LIVE_ENGINE_INFO, isLiveEngine, type LiveEngine } from '@shared/voice-engine'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { modelsInUse } from '@shared/settings'
 import type { PlatformCapabilities } from '@shared/platform'
@@ -64,9 +65,29 @@ export function pendingItems(input: {
   if (status !== null && status.agent !== 'found') pending.push({ kind: 'agent' })
   if (status !== null) {
     for (const provider of keyProviders(settings)) {
-      const state = status.llmKeys[provider]
+      const state = credentialState(status, settings.openaiAuth, provider)
       if (!keyReadable(state)) pending.push({ kind: 'key', provider, state: state === 'unreadable' ? 'unreadable' : 'missing' })
     }
   }
   return pending
+}
+
+/**
+ * Why a provider the conversation needs cannot be called: its API key is missing or unreadable, or, for
+ * OpenAI with ChatGPT chosen, the ChatGPT sign-in is.
+ */
+export function missingCredentialText(
+  t: Translate,
+  item: { provider: LlmProvider; state: 'missing' | 'unreadable' },
+  settings: Pick<AppSettings, 'openaiAuth'>,
+  live: LiveEngine | null
+): string {
+  const info = LLM_PROVIDER_INFO[item.provider]
+  if (item.provider === 'openai' && settings.openaiAuth === 'chatgpt') {
+    return t(item.state === 'unreadable' ? 'settingsIntegrations.chatgpt.errors.unreadable' : 'settingsIntegrations.chatgpt.errors.signedOut')
+  }
+  if (item.state === 'unreadable') return t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: info.label })
+  return live && LIVE_ENGINE_INFO[live].provider === item.provider
+    ? t('settingsConversation.live.keyMissing', { envKey: info.envKey })
+    : t('settingsConversation.models.keyMissing', { envKey: info.envKey })
 }

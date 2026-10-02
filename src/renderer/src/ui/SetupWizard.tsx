@@ -52,6 +52,7 @@ export function SetupWizard(): React.JSX.Element | null {
   const [provider, setProvider] = useState<LlmProvider>('anthropic')
   const [apiKey, setApiKey] = useState('')
   const [apiBusy, setApiBusy] = useState(false)
+  const [chatgptSigningIn, setChatgptSigningIn] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<SpeakingMode | null>(null)
   const [liveKey, setLiveKey] = useState('')
@@ -176,14 +177,38 @@ export function SetupWizard(): React.JSX.Element | null {
     setError('')
     try {
       if (!useSavedKey) applyStatus(await window.api.saveApiKey(provider, apiKey))
-      // Before it saves, main checks that this pair can really be fetched with the provider's key.
-      if (!modelsMatch) await saveSettings(defaults)
+      // Before it saves, main checks that this pair can really be fetched with the provider's key. A key
+      // verified for OpenAI is also what OpenAI is then called with, even after a ChatGPT sign-in here.
+      const toApiKey = provider === 'openai' && settings.openaiAuth !== 'api-key'
+      if (!modelsMatch || toApiKey) await saveSettings({ ...defaults, ...(toApiKey ? { openaiAuth: 'api-key' as const } : {}) })
       setApiKey('')
       await refresh()
     } catch (err) {
       setError(displayError(err))
     } finally {
       setApiBusy(false)
+    }
+  }
+
+  /**
+   * Signs in with ChatGPT and has OpenAI paid from its plan, with the provider's default pair, which main
+   * checks against the models the plan offers before it saves.
+   */
+  const signInWithChatgpt = async (): Promise<void> => {
+    if (apiBusy) return
+    setApiBusy(true)
+    setChatgptSigningIn(true)
+    setError('')
+    try {
+      const { completed } = await window.api.chatgptSignIn()
+      if (completed) await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
+    } catch (err) {
+      setError(displayError(err))
+    } finally {
+      setChatgptSigningIn(false)
+      setApiBusy(false)
+      // A sign-in that failed may still have dropped a sign-in that could not be read.
+      await refresh()
     }
   }
 
@@ -432,6 +457,10 @@ export function SetupWizard(): React.JSX.Element | null {
               busy={apiBusy}
               onVerify={() => void verifyKey(false)}
               onRecheck={() => void verifyKey(true)}
+              onChatgpt={() => void signInWithChatgpt()}
+              chatgptSigningIn={chatgptSigningIn}
+              paidByPlan={provider === 'openai' && settings.openaiAuth === 'chatgpt'}
+              onCancelChatgpt={() => void window.api.chatgptCancelSignIn()}
             />
           )}
           {step === 'speaking' && (

@@ -31,12 +31,23 @@ export type UsageItem =
       cacheCreation: number
       output: number
       webSearches: number
-      /** Null for a model the price list does not have; such calls are summed apart from the priced ones. */
+      /**
+       * Who paid for the calls: the API key's account, or the ChatGPT plan of the account signed in with
+       * ChatGPT, which bills no tokens.
+       */
+      billing: UsageBilling
+      /**
+       * Null for calls paid from the ChatGPT plan, and for a model the price list does not have; such calls are
+       * summed apart from the priced ones.
+       */
       costUsd: number | null
     }
   | { kind: 'live'; engine: UsageLiveEngine; model: string; seconds: number; costUsd: number }
   /** The cost the agent CLI reports for a job. Only Claude Code reports one. */
   | { kind: 'agent'; engine: 'claude'; jobs: number; costUsd: number }
+
+export const USAGE_BILLINGS = ['api', 'chatgpt-plan'] as const
+export type UsageBilling = (typeof USAGE_BILLINGS)[number]
 
 export type UsageKind = UsageItem['kind']
 
@@ -59,6 +70,7 @@ const usageItemSchema = z.discriminatedUnion('kind', [
     cacheCreation: count,
     output: count,
     webSearches: count,
+    billing: z.enum(USAGE_BILLINGS),
     costUsd: count.nullable()
   }),
   z.strictObject({ kind: z.literal('live'), engine: z.enum(USAGE_LIVE_ENGINES), model: z.string().min(1), seconds: count, costUsd: count }),
@@ -71,7 +83,7 @@ export const usageDaysSchema = z.array(z.strictObject({ date: z.iso.date(), item
 export function usageItemKey(item: UsageItem): string {
   switch (item.kind) {
     case 'llm':
-      return ['llm', item.purpose, item.provider, item.model, item.costUsd === null ? 'unpriced' : 'priced'].join('|')
+      return ['llm', item.purpose, item.provider, item.model, item.billing === 'chatgpt-plan' ? 'plan' : item.costUsd === null ? 'unpriced' : 'priced'].join('|')
     case 'live':
       return ['live', item.engine, item.model].join('|')
     case 'agent':

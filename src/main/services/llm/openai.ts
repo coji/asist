@@ -10,8 +10,19 @@ import type {
 import type { ConversationMessage, ConversationRequest, ConversationResult, SearchSource, StopReason } from '@shared/conversation'
 import type { RoundUsage } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
+import { errorText } from '@shared/i18n/error-text'
 import { effortFor } from '@shared/llm-catalog'
-import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import {
+  AdapterStream,
+  parseToolArguments,
+  statusError,
+  streamCutOff,
+  toolResultText,
+  withoutSchemaKeys,
+  type JsonRequest,
+  type ProviderAdapter,
+  type ProviderCredential
+} from './adapter'
 import { streamEvents, streamFailure } from './openai-stream'
 
 /**
@@ -29,6 +40,9 @@ import { streamEvents, streamFailure } from './openai-stream'
  * - Text produced with web search carries citations inline in the form `([title](URL))`. They are
  *   stripped because the text is spoken aloud; the sources reach the UI through the search event
  *   instead, and `native` keeps the text as it arrived.
+ * - Paid from the ChatGPT plan, the same endpoint takes the OAuth access token as its bearer, but only
+ *   streamed and with `input` as a list, and it refuses `max_output_tokens` (400, "Unsupported parameter",
+ *   measured on 2026-10-02), so such a response has no output limit and never stops on max_tokens.
  */
 
 const PROVIDER = 'openai'
@@ -38,6 +52,48 @@ function clientFor(key: string): OpenAI {
   if (cached?.key !== key) cached = { key, client: new OpenAI({ apiKey: key, maxRetries: 0 }) }
   return cached.client
 }
+
+const PLAN_BASE_URL = 'https://api.openai.com/v1'
+
+let cachedPlan: { token: string; client: OpenAI } | null = null
+/**
+ * The access token of a ChatGPT sign-in is sent where the SDK would send an API key, to OpenAI itself: the
+ * SDK would otherwise take a base URL, an organization and a project from the environment, which belong to
+ * an API key and would send the token elsewhere or with headers it is not valid for.
+ */
+function planClientFor(token: string): OpenAI {
+  if (cachedPlan?.token !== token) {
+    cachedPlan = { token, client: new OpenAI({ apiKey: token, baseURL: PLAN_BASE_URL, organization: null, project: null, maxRetries: 0 }) }
+  }
+  return cachedPlan.client
+}
+
+type PlanCredential = Extract<ProviderCredential, { type: 'chatgpt' }>
+
+/**
+ * Runs a call with the client of the credential. OpenAI refusing a ChatGPT token before its expiry, as
+ * when the user disconnected ASIST in ChatGPT's settings, makes the next call renew it, and the failure
+ * says to sign in again rather than to check an API key.
+ */
+async function withClient<T>(credential: ProviderCredential, signal: AbortSignal, call: (client: OpenAI) => Promise<T>): Promise<T> {
+  if (credential.type === 'api-key') return call(clientFor(credential.key))
+  const token = await credential.accessToken(signal)
+  try {
+    return await call(planClientFor(token))
+  } catch (error) {
+    throw planFailure(credential, token, error)
+  }
+}
+
+function planFailure(credential: PlanCredential, token: string, error: unknown): unknown {
+  if ((error as { status?: unknown } | null)?.status !== 401) return error
+  credential.forgetToken(token)
+  return statusError(401, errorText('settingsIntegrations.chatgpt.errors.rejected'), error)
+}
+
+/** The output limit, which a request paid from the ChatGPT plan has to leave out. */
+const outputLimit = (credential: ProviderCredential, maxTokens: number): { max_output_tokens?: number } =>
+  credential.type === 'api-key' ? { max_output_tokens: maxTokens } : {}
 
 /**
  * The output items of a response that can go back to the model. The API refuses a reasoning item unless
@@ -138,11 +194,11 @@ class OpenAIStream extends AdapterStream {
   private readonly items: ResponseOutputItem[] = []
 
   constructor(
-    client: OpenAI,
+    private readonly credential: ProviderCredential,
     private readonly request: ConversationRequest
   ) {
     super()
-    this.start(() => this.run(client))
+    this.start(() => withClient(credential, request.signal, (client) => this.run(client)))
   }
 
   protected nativeSnapshot(openText: string): ConversationMessage['native'] {
@@ -163,7 +219,7 @@ class OpenAIStream extends AdapterStream {
       ...(tools.length > 0 ? { tools } : {}),
       ...(effort ? { reasoning: { effort } } : {}),
       include: ['reasoning.encrypted_content', 'web_search_call.action.sources'],
-      max_output_tokens: request.maxTokens,
+      ...outputLimit(this.credential, request.maxTokens),
       store: false,
       stream: true
     }
@@ -262,22 +318,58 @@ function roundUsage(usage: OpenAI.Responses.ResponseUsage | undefined, output: r
   }
 }
 
-export const openaiAdapter: ProviderAdapter = {
-  stream: (request, key) => new OpenAIStream(clientFor(key), request),
+/**
+ * A response read to its end from a stream, for a caller that needs only the whole of it. Paid from the
+ * ChatGPT plan, the completion event carries an empty `output` (measured on 2026-10-03), so the output is
+ * the items as each one completed.
+ */
+async function streamedResponse(client: OpenAI, params: Omit<ResponseCreateParamsStreaming, 'stream'>, signal: AbortSignal): Promise<Response> {
+  const stream = await client.responses.create({ ...params, stream: true }, { signal })
+  const output: ResponseOutputItem[] = []
+  for await (const event of streamEvents('OpenAI', stream)) {
+    if (event.type === 'response.output_item.done') output.push(event.item)
+    if (event.type === 'response.completed' || event.type === 'response.incomplete') return { ...event.response, output }
+    if (event.type === 'response.failed') throw streamFailure('OpenAI', event.response.error?.code, event.response.error?.message)
+    if (event.type === 'error') throw streamFailure('OpenAI', event.code, event.message)
+  }
+  streamCutOff(signal, 'OpenAI')
+}
 
-  async completeJson(request: JsonRequest, key: string) {
+/** The text of a response's messages. Only a response that was not streamed carries it as `output_text`. */
+const outputText = (response: Response): string =>
+  response.output.flatMap((item) => (item.type === 'message' ? item.content : [])).map((part) => (part.type === 'output_text' ? part.text : '')).join('')
+
+/**
+ * The models a ChatGPT sign-in may use, whose slugs are the model ids the API takes: on 2026-10-02 a Plus
+ * account listed gpt-5.6-luna, gpt-5.6-terra and gpt-5.6-sol among them. This endpoint answers with `{ models: [{ slug }] }` instead of the
+ * list the SDK parses, and fetching one model refuses the token for lack of the api.model.read scope.
+ */
+async function planModels(credential: PlanCredential, signal: AbortSignal): Promise<string[]> {
+  const token = await credential.accessToken(signal)
+  const response = await fetch(`${PLAN_BASE_URL}/models`, { headers: { authorization: `Bearer ${token}` }, signal })
+  if (!response.ok) throw planFailure(credential, token, statusError(response.status, `OpenAI: listing the models of the ChatGPT plan failed (HTTP ${response.status})`))
+  const body = (await response.json()) as { models?: Array<{ slug?: unknown }> }
+  if (!Array.isArray(body.models)) throw new Error('OpenAI: the models of the ChatGPT plan came back in an unknown form')
+  return body.models.flatMap((model) => (typeof model.slug === 'string' ? [model.slug] : []))
+}
+
+export const openaiAdapter: ProviderAdapter = {
+  stream: (request, credential) => new OpenAIStream(credential, request),
+
+  async completeJson(request: JsonRequest, credential: ProviderCredential) {
     const effort = effortFor(request.model)
-    const response = await clientFor(key).responses.create(
-      {
-        model: request.model.id,
-        instructions: request.system,
-        input: request.user,
-        ...(effort ? { reasoning: { effort } } : {}),
-        text: { format: { type: 'json_schema', name: 'result', schema: request.schema, strict: true } },
-        max_output_tokens: request.maxTokens,
-        store: false
-      },
-      { signal: request.signal }
+    const params = {
+      model: request.model.id,
+      instructions: request.system,
+      ...(effort ? { reasoning: { effort } } : {}),
+      text: { format: { type: 'json_schema' as const, name: 'result', schema: request.schema, strict: true } },
+      ...outputLimit(credential, request.maxTokens),
+      store: false
+    }
+    const response = await withClient(credential, request.signal, (client) =>
+      credential.type === 'api-key'
+        ? client.responses.create({ ...params, input: request.user }, { signal: request.signal })
+        : streamedResponse(client, { ...params, input: [{ role: 'user', content: request.user }] }, request.signal)
     )
     return {
       usage: roundUsage(response.usage, response.output),
@@ -285,16 +377,21 @@ export const openaiAdapter: ProviderAdapter = {
         if (response.status !== 'completed') {
           throw new Error(`OpenAI: the JSON response did not complete (${response.incomplete_details?.reason ?? response.error?.message ?? response.status})`)
         }
-        return JSON.parse(response.output_text)
+        return JSON.parse(credential.type === 'api-key' ? response.output_text : outputText(response))
       }
     }
   },
 
-  async retrieveModel(id, key, signal) {
-    await new OpenAI({ apiKey: key, maxRetries: 0 }).models.retrieve(id, { signal })
+  async retrieveModel(id, credential, signal) {
+    if (credential.type === 'api-key') {
+      await new OpenAI({ apiKey: credential.key, maxRetries: 0 }).models.retrieve(id, { signal })
+      return
+    }
+    if (!(await planModels(credential, signal)).includes(id)) throw statusError(404, `OpenAI: the ChatGPT plan does not offer ${id}`)
   },
 
-  async listModels(key, signal) {
-    await new OpenAI({ apiKey: key, maxRetries: 0 }).models.list({ signal })
+  async listModels(credential, signal) {
+    if (credential.type === 'api-key') await new OpenAI({ apiKey: credential.key, maxRetries: 0 }).models.list({ signal })
+    else await planModels(credential, signal)
   }
 }
