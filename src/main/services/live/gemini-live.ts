@@ -12,6 +12,7 @@ import type { ToolExecution, ToolExecutionTask } from '@shared/tool-registry'
 import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import { record, turnScheduler, type ConversationOwner } from '../brain/session'
 import type { HistoryMessage } from '../brain/history'
+import type { SystemNotice } from '../brain/conversation-log'
 import { jobStatusNote, stampUserMessage } from '../brain/prompt'
 import { decodeOutput } from './audio'
 import { GeminiCalls } from './gemini-calls'
@@ -451,20 +452,31 @@ export class GeminiLiveEngine implements ConversationOwner {
   }
 
   /**
+   * The notice is written to the conversation log only once the session is open, as typed text is: a
+   * session that opens blank is seeded with the recent history, which would then already end with the
+   * notice, and the model would be given it twice.
+   */
+  async notify(notice: SystemNotice): Promise<void> {
+    await this.lifecycle.ensureOpen()
+    record({ kind: 'notice', turnId: this.exchange(), notice: notice.notice, text: notice.text })
+    this.sendNotice(notice.text)
+  }
+
+  async say(text: string): Promise<void> {
+    const locale = conversationLocale()
+    await this.lifecycle.ensureOpen()
+    this.sendNotice(fillPrompt(promptText(locale, READ_ALOUD), { systemNotice: marker(locale, 'systemNotice'), text }))
+  }
+
+  /**
    * A notice is stamped with the time it is sent, as the conversation engine stamps its notices, since
    * the model takes the newest stamp for the time it is now. Measured with gemini-3.8-live on 2026-10-02
    * in Asia/Tokyo, asked for the time two hours after a job report in a session whose instruction gave a
    * start three hours earlier, it answered rightly in 2 of 14 runs without the stamp and in 19 of 21 with
    * it.
    */
-  async notify(text: string): Promise<void> {
-    await this.lifecycle.ensureOpen()
+  private sendNotice(text: string): void {
     this.sendUserText(stampUserMessage(conversationLocale(), text, new Date(this.now())))
-  }
-
-  async say(text: string): Promise<void> {
-    const locale = conversationLocale()
-    await this.notify(fillPrompt(promptText(locale, READ_ALOUD), { systemNotice: marker(locale, 'systemNotice'), text }))
   }
 
   /** The turn id of the current exchange, taken on first use. */

@@ -18,7 +18,9 @@ const mocks = vi.hoisted(() => ({
   /** The status of the agent jobs as the engine reads it when a session opens. */
   jobContext: null as string | null,
   /** What connecting waits for before the session arrives, as the socket opening does. */
-  connected: Promise.resolve()
+  connected: Promise.resolve(),
+  /** The recent history a session that opens blank is seeded with. */
+  history: (): Array<{ role: 'user' | 'assistant'; content: string }> => [{ role: 'user', content: '前の話' }]
 }))
 
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ conversationLocale: mocks.conversationLocale, uiLocale: 'ja-JP' }) }))
@@ -107,7 +109,7 @@ async function setup(execute?: ExecuteTool): Promise<{
     memoryBlock: () => '',
     recordNote: (turnId, text, memoryIds) => mocks.record({ kind: 'note', turnId, text, memoryIds }),
     recordUser: (turnId, text) => mocks.record({ kind: 'user', turnId, text }),
-    history: () => [{ role: 'user', content: '前の話' }],
+    history: () => mocks.history(),
     emitTurn: (event) => turnEvents.push(event)
   })
   engine.events.on('event', (event) => events.push(event))
@@ -159,6 +161,7 @@ describe('GeminiLiveEngine', () => {
     mocks.conversationLocale = 'ja-JP'
     mocks.jobContext = null
     mocks.connected = Promise.resolve()
+    mocks.history = () => [{ role: 'user', content: '前の話' }]
   })
   afterEach(() => vi.useRealTimers())
 
@@ -335,7 +338,7 @@ describe('GeminiLiveEngine', () => {
     // The renderer already shows what was typed, so no transcript event repeats it.
     expect(events.slice(before).some((e) => e.type === 'userTranscript')).toBe(false)
     expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: '[文字入力] こんにちは' }] }], turnComplete: true })
-    await engine.notify('[システム通知] ジョブが完了した')
+    await engine.notify({ notice: 'job-done', text: '[システム通知] ジョブが完了した' })
     expect(session.contents.at(-1)).toEqual({
       turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', '[システム通知] ジョブが完了した', new Date()) }] }],
       turnComplete: true
@@ -353,7 +356,7 @@ describe('GeminiLiveEngine', () => {
     const reportedAt = new Date(2026, 9, 2, 11, 30)
     vi.setSystemTime(reportedAt)
     const report = '[システム通知] ジョブ「調査」(jobId: j1)が完了した。'
-    const notified = engine.notify(report)
+    const notified = engine.notify({ notice: 'job-done', text: report })
     await vi.advanceTimersByTimeAsync(0)
     const resumed = sessions.at(-1)!
     expect(resumed.params.resumptionHandle).toBe('h1')
@@ -364,6 +367,32 @@ describe('GeminiLiveEngine', () => {
       { turns: [{ role: 'user', parts: [{ text: expect.stringContaining(noticeAt(reportedAt)) }] }], turnComplete: false },
       { turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, reportedAt) }] }], turnComplete: true }
     ])
+    await engine.stop()
+  })
+
+  it('gives a session that opens blank for a job report the report once, after a history that does not hold it, and records the reply on its turn', async () => {
+    // The history is read from what was recorded, as the app derives it from the conversation log.
+    mocks.history = () => [
+      { role: 'user', content: '前の話' },
+      ...mocks.record.mock.calls.map(([recorded]: [{ kind: string; text: string }]) => ({
+        role: recorded.kind === 'assistant' ? ('assistant' as const) : ('user' as const),
+        content: recorded.text
+      }))
+    ]
+    const { engine, sessions } = await setup()
+    const report = '[システム通知] ジョブ「調査」(jobId: j1)が完了した。'
+    const notified = engine.notify({ notice: 'job-done', text: report })
+    await vi.advanceTimersByTimeAsync(0)
+    const [session] = sessions
+    expect(session.params.resumptionHandle).toBeNull()
+    session.message({ setupComplete: {} })
+    await notified
+    const texts = session.contents.flatMap((content) => (content as { turns: Array<{ parts: Array<{ text: string }> }> }).turns.map((turn) => turn.parts[0].text))
+    expect(texts.filter((text) => text.includes(report))).toEqual([stampUserMessage('ja-JP', report, new Date())])
+    expect(mocks.record).toHaveBeenCalledWith({ kind: 'notice', turnId: 200, notice: 'job-done', text: report })
+    session.message({ serverContent: { outputTranscription: { text: '調査が終わりました。' } } })
+    session.message({ serverContent: { turnComplete: true } })
+    expect(mocks.record).toHaveBeenLastCalledWith({ kind: 'assistant', turnId: 200, text: '調査が終わりました。' })
     await engine.stop()
   })
 
@@ -379,7 +408,7 @@ describe('GeminiLiveEngine', () => {
     expect(sessions).toEqual([session])
     expect(session.closed).toBe(false)
     const report = '[システム通知] ジョブ「調査」(jobId: j1)が完了した。'
-    await engine.notify(report)
+    await engine.notify({ notice: 'job-done', text: report })
     const sentAt = new Date(openedAt.getTime() + 7 * 60_000)
     expect(session.contents.at(-1)).toEqual({ turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, sentAt) }] }], turnComplete: true })
     call.finish()

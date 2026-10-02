@@ -6,7 +6,7 @@ import { LatestTurnScheduler } from '@shared/turn-scheduler'
 import { dataPath } from '../store'
 import { conversationLocale } from '../conversation-locale'
 import { getSettings } from '../settings'
-import { ConversationLog, type ConversationRecord, type ConversationRecordInput } from './conversation-log'
+import { ConversationLog, type ConversationRecord, type ConversationRecordInput, type SystemNotice } from './conversation-log'
 import { ConversationHistory } from './history'
 import { summarizeHandoff } from './summarizer'
 import { silentRoute, ttsRoute, type SpeechRoute } from './speech-route'
@@ -40,8 +40,11 @@ export const currentSpeechRoute = (): SpeechRoute => (getSettings().ttsEngine ==
  * its own voice within the conversation.
  */
 export interface ConversationOwner {
-  /** A notification from the app, such as a finished job, which the model reports in the flow of the conversation. */
-  notify(text: string): Promise<void>
+  /**
+   * A notification from the app, such as a finished job, which the model reports in the flow of the
+   * conversation. The owner writes it to the conversation log when it sends it to the model.
+   */
+  notify(notice: SystemNotice): Promise<void>
   /** Reads the given sentence verbatim, for example when a timer runs out. */
   say(text: string): Promise<void>
 }

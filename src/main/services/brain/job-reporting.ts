@@ -9,8 +9,8 @@ import { sliceCodePoints } from '@shared/text-slice'
 import { conversationLocale } from '../conversation-locale'
 import * as agentRunner from '../agent'
 import { beginTurn } from './index'
-import { conversationOwner, currentSpeechRoute, history, record, turnScheduler } from './session'
-import type { NoticeKind } from './conversation-log'
+import { conversationOwner, currentSpeechRoute, history, turnScheduler } from './session'
+import type { SystemNotice } from './conversation-log'
 import type { SpeechRoute } from './speech-route'
 
 /**
@@ -168,7 +168,7 @@ function mergeNote(job: AgentJob): string {
 }
 
 /** The notice a turn is given for a finished job, written from the job as it is and in the language the conversation is held in now. */
-export function reportNotice(job: AgentJob): { notice: NoticeKind; text: string } {
+export function reportNotice(job: AgentJob): SystemNotice {
   const locale = conversationLocale()
   const artifacts = (job.artifacts ?? []).slice(-5)
   const artifactNote = artifacts.length > 0 ? fillPrompt(promptText(locale, REPORT.artifacts), { artifacts: artifacts.join(', ') }) : ''
@@ -209,12 +209,10 @@ async function deliverReport(jobId: string): Promise<void> {
     }
     const notice = reportNotice(job)
     // An engine that owns the conversation, such as Gemini Live, is handed the notice and reports it in
-    // context. The notice is written to the conversation log here, while the wording of the report is
-    // recorded on that side from the output transcript.
+    // context.
     const owner = conversationOwner()
     if (owner) {
-      record({ kind: 'notice', turnId: turnScheduler.allocateTurnId(), notice: notice.notice, text: notice.text })
-      await owner.notify(notice.text)
+      await owner.notify(notice)
       reportedJobs.add(jobId)
       return
     }

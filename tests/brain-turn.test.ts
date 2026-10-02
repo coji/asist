@@ -888,6 +888,125 @@ describe('brain turn', () => {
     }
   })
 
+  /** A session of the Gemini Live engine below, with the text of every turn of client content it was sent, in order. */
+  interface LiveSession {
+    params: import('../src/main/services/live/gemini-live').GeminiConnectParams
+    texts: string[]
+  }
+
+  /**
+   * The Gemini Live engine as the app wires it to the conversation log, taking the conversation over, with
+   * job reporting started. Its sessions are fakes that keep what they are sent.
+   */
+  async function liveOverTheLog(): Promise<{ engine: import('../src/main/services/live/gemini-live').GeminiLiveEngine; sessions: LiveSession[] }> {
+    const { history, record, setConversationOwner } = await import('../src/main/services/brain/session')
+    const { GeminiLiveEngine } = await import('../src/main/services/live/gemini-live')
+    const { LIVE_ENGINE_INFO } = await import('@shared/voice-engine')
+    const sessions: LiveSession[] = []
+    const engine = new GeminiLiveEngine(LIVE_ENGINE_INFO['gemini-live'], {
+      settings: () => ({ liveIdleSeconds: 30, geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' } }) as never,
+      apiKey: () => 'key',
+      connect: async (params) => {
+        const session: LiveSession = { params, texts: [] }
+        sessions.push(session)
+        return {
+          sendRealtimeInput: () => {},
+          sendClientContent: ({ turns }) => session.texts.push(...turns.map((turn) => turn.parts[0].text)),
+          sendToolResponse: () => {},
+          close: () => {}
+        }
+      },
+      systemInstruction: () => 'SYSTEM',
+      jobContext: () => null,
+      functionDeclarations: () => [],
+      executeTool: vi.fn() as never,
+      isParallel: () => false,
+      recordTool: vi.fn(),
+      findMemories: async () => [],
+      memoryBlock: () => null,
+      recordNote: vi.fn(),
+      recordUser: (turnId, text) => record({ kind: 'user', turnId, text }),
+      history: () => {
+        history.ensureLoaded()
+        return history.toTranscript()
+      },
+      emitTurn: vi.fn()
+    })
+    await engine.start()
+    setConversationOwner(engine)
+    const { initJobReporting } = await import('../src/main/services/brain/job-reporting')
+    initJobReporting()
+    return { engine, sessions }
+  }
+
+  /** Delivers what the provider sends a session once its setup is done, and lets the engine send what it waited for. */
+  async function setUp(session: LiveSession): Promise<void> {
+    session.params.callbacks.onmessage({ setupComplete: {} })
+    await vi.advanceTimersByTimeAsync(0)
+  }
+
+  it('sends each job report to Gemini Live once, whether a blank session opens for it, a session is open, or one resumes for it', async () => {
+    // The engine closes a quiet session by the clock.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
+    try {
+      await loadBrain()
+      const { record } = await import('../src/main/services/brain/session')
+      const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+      record({ kind: 'user', turnId: 1, text: '調べておいて' })
+      record({ kind: 'assistant', turnId: 1, text: '調べます。' })
+      const { engine, sessions } = await liveOverTheLog()
+      const timesSent = (session: LiveSession, job: AgentJob): number => session.texts.filter((text) => text.includes(reportNotice(job).text)).length
+
+      await finishJob()
+      await vi.advanceTimersByTimeAsync(0)
+      const [blank] = sessions
+      expect(blank.params.resumptionHandle).toBeNull()
+      await setUp(blank)
+      // The history the blank session is seeded with is the earlier conversation, and the report follows it.
+      expect(blank.texts[0]).toBe('調べておいて')
+      expect(timesSent(blank, FINISHED_JOB)).toBe(1)
+
+      const second = { ...FINISHED_JOB, id: 'j2', title: '翻訳' } as AgentJob
+      await finishJob(second)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(sessions).toEqual([blank])
+      expect(timesSent(blank, second)).toBe(1)
+
+      blank.params.callbacks.onmessage({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+      await vi.advanceTimersByTimeAsync(31_000)
+      const third = { ...FINISHED_JOB, id: 'j3', title: '集計' } as AgentJob
+      await finishJob(third)
+      await vi.advanceTimersByTimeAsync(0)
+      const resumed = sessions[1]
+      expect(resumed.params.resumptionHandle).toBe('h1')
+      await setUp(resumed)
+      expect(timesSent(resumed, third)).toBe(1)
+      expect(readLog().filter((r) => r.kind === 'notice').map((r) => r.text)).toEqual([FINISHED_JOB, second, third].map((job) => reportNotice(job).text))
+      await engine.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('sends a job report once to a blank Gemini Live session that the user started speaking to open', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    try {
+      await loadBrain()
+      const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+      const { engine, sessions } = await liveOverTheLog()
+      engine.activity(true)
+      await vi.advanceTimersByTimeAsync(0)
+      await finishJob()
+      await vi.advanceTimersByTimeAsync(0)
+      const [opening] = sessions
+      await setUp(opening)
+      expect(opening.texts.filter((text) => text.includes(reportNotice(FINISHED_JOB).text))).toHaveLength(1)
+      await engine.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('holds a job report while the conversation log cannot be read, and delivers it once the log reads again', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     try {
