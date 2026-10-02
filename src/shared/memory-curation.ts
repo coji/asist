@@ -119,7 +119,13 @@ export const curationSkillSource = (locale: ConversationLocale): string =>
 /** Where the skill goes inside the worktree: claude reads .claude/skills and codex reads .agents/skills. */
 export const SKILL_DIRS = ['.claude/skills', '.agents/skills'] as const
 /**
- * The rules of the memory's markdown, which both skills' validate.mjs import from two folders above their
+ * The scripts under the skill's scripts/ that the Agent runs to check its own work: what each document of
+ * the prompt costs against its limit, and the rules of the markdown. They are the only commands a claude
+ * curation may run.
+ */
+export const CURATION_SCRIPTS = ['count.mjs', 'validate.mjs'] as const
+/**
+ * The rules of the memory's markdown, which both skills' scripts import from two folders above their
  * scripts/: resources/skills in the app, and each of SKILL_DIRS in the worktree.
  */
 export const FORMAT_MODULE = 'memory-format.mjs'

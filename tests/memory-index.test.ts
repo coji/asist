@@ -263,23 +263,6 @@ describe('MemoryIndex over memories in several languages', () => {
     expect(ids('that was a really long week and I want to sleep', { mode: 'utterance' })).toEqual([])
   })
 
-  it('reads the role user.md and me.md open with as no name of a page, so that an utterance saying those words does not inject them', () => {
-    index.rebuild([
-      ...MULTI,
-      page('en-user', 'user.md', 'The user', 'Attributes', 'Lives in Lisbon and works as a nurse.'),
-      page('en-me', 'me.md', 'About me', 'Who I am', 'A calm assistant who keeps replies short.'),
-      page('ja-me', 'me.md', '私について', '口調', '語尾は柔らかく、冗談は控えめ。')
-    ])
-    expect(ids('where did I put the user manual', { mode: 'utterance' })).toEqual([])
-    expect(ids('what about me, can I come too', { mode: 'utterance' })).toEqual([])
-    expect(ids('ユーザー数が増えた', { mode: 'utterance' })).toEqual([])
-    expect(ids('私について話すね', { mode: 'utterance' })).toEqual([])
-    expect(index.search('I should take Mugi to the vet', { mode: 'utterance' })[0]).toMatchObject({ record: { id: 'en-cat' }, exact: true })
-    // Their headings and text still find them.
-    expect(ids('住まい')).toEqual(['u5'])
-    expect(ids('口調')).toEqual(['ja-me'])
-  })
-
   it('rebuilds every token when the schema version on disk is not the current one', () => {
     index.close()
     const db = new DatabaseSync(path.join(dir, 'index.db'))

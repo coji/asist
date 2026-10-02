@@ -41,14 +41,31 @@ export type DocumentIssue =
   | { kind: 'headingWithoutText'; line: number; heading: string }
   | { kind: 'sectionTooLong'; line: number; heading: string; length: number }
   | { kind: 'firstHeading'; heading: string }
-  | { kind: 'instructionTooLong'; length: number }
+  | { kind: 'tooManyTokens'; tokens: number; limit: number; cut: TextAmount }
+
+/** An amount of a document's own text. */
+export interface TextAmount {
+  /** Characters without whitespace. */
+  characters: number
+  words: number
+}
+
+export interface PromptSize extends TextAmount {
+  tokens: number
+}
+
+export type PromptDocumentKind = 'instruction' | 'me' | 'user'
 
 export declare const SUMMARY_HEADING: { readonly ja: '要約'; readonly en: 'Summary' }
+export declare const PROMPT_DOCUMENTS: ReadonlyArray<{ readonly kind: PromptDocumentKind; readonly file: string }>
+export declare const PROMPT_DOCUMENT_MAX_TOKENS: number
 export declare const SECTION_MAX_CHARS: 800
-export declare const INSTRUCTION_MAX_CHARS: 2000
+export declare function tokenEstimate(text: string): number
 export declare function writtenInJapanese(text: string): boolean
 export declare function parsePage(markdown: string, fallbackTitle: string): ParsedPage
-export declare function instructionBody(markdown: string): string
+export declare function promptBody(markdown: string): string
+export declare function promptSize(markdown: string): PromptSize
+export declare function textForTokens(size: PromptSize, tokens: number): TextAmount
 export declare function documentIssues(kind: DocumentKind, markdown: string): DocumentIssue[]
 export type PageNameIssue = 'characters' | 'reserved'
 export declare function pageNameIssue(name: string): PageNameIssue | null

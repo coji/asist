@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
+import { SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
 
 // Checks a memory directory. Usage: node validate.mjs <memoryDir>
 // Every problem is printed on its own line and the exit code is 1; with none it prints OK. The rules for a
@@ -28,8 +28,8 @@ const MESSAGES = {
   headingWithoutText: ({ heading }) => `there is nothing under the heading "${heading}" (delete a heading you have nothing to write under)`,
   sectionTooLong: ({ heading, length }) => `the heading "${heading}" holds ${length} characters (keep it to ${SECTION_MAX_CHARS})`,
   firstHeading: ({ heading }) => `make the first heading "${heading}" (it is what gets read when the name comes up in the conversation)`,
-  instructionTooLong: ({ length }) =>
-    `the body holds ${length} characters (keep it to ${INSTRUCTION_MAX_CHARS}; the details stay in user.md, me.md and the pages)`
+  tooManyTokens: ({ tokens, limit, cut }) =>
+    `it comes to ${tokens} tokens (keep it to ${limit}: cut about ${cut.words} words, and check with count.mjs)`
 }
 
 const NAME_MESSAGES = {

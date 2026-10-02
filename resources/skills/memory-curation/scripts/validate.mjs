@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
+import { SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-format.mjs'
 
 // Checks a memory directory. Usage: node validate.mjs <memoryDir>
 // Every problem is printed on its own line and the exit code is 1; with none it prints OK. The rules for a
@@ -28,8 +28,8 @@ const MESSAGES = {
   headingWithoutText: ({ heading }) => `見出し「${heading}」の下に本文がありません(書くことが無い見出しは消してください)`,
   sectionTooLong: ({ heading, length }) => `見出し「${heading}」の本文が ${length} 字あります(${SECTION_MAX_CHARS} 字までにしてください)`,
   firstHeading: ({ heading }) => `最初の見出しは「${heading}」にしてください(名前が会話に出たとき、ここが読まれます)`,
-  instructionTooLong: ({ length }) =>
-    `本文が ${length} 字あります(${INSTRUCTION_MAX_CHARS} 字までにしてください。詳しいことは user.md、me.md、ページに残します)`
+  tooManyTokens: ({ tokens, limit, cut }) =>
+    `${tokens} トークンあります(${limit} までにしてください。約 ${cut.characters} 字を削り、count.mjs で確かめます)`
 }
 
 const NAME_MESSAGES = {

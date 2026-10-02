@@ -5,7 +5,7 @@ import { errMessage } from '@shared/api-errors'
 import { errorText } from '@shared/i18n/error-text'
 import type { MemoryUnit, MemoryUnitKind } from '@shared/ipc'
 import { EMBEDDING_MODEL, cosine, vectorFromBytes, vectorToBytes } from '@shared/memory-embedding'
-import { classifyFile, embeddingTextOf } from '@shared/memory-page'
+import { embeddingTextOf } from '@shared/memory-page'
 import {
   FTS5_TOKENIZE,
   dominantTokenKind,
@@ -83,15 +83,10 @@ const UNIT_TABLES = `
 
 /**
  * The names a unit is found by, which its search tokens start with and an utterance can name exactly: a page's
- * name and its aliases, or the date of a journal entry. user.md and me.md open with their role rather than a
- * name, "The user" or 「私について」, which an utterance says in other senses, as in "the user manual" or
- * 「ユーザー登録」: in the tokens, 「ユーザー数が増えた」 injected both sections of user.md at bm25 -3.2 and -3.6
- * against the bar of -2.5, and "what about me, can I come too" injected me.md at -6.2 against -5
- * (2026-10-02).
+ * name and its aliases, or the date of a journal entry.
  */
 function namesOf(unit: MemoryUnit): string[] {
-  const kind = classifyFile(unit.file).kind
-  return kind === 'user' || kind === 'me' ? [] : [unit.page, ...unit.aliases]
+  return [unit.page, ...unit.aliases]
 }
 
 export interface IndexSearchOptions {

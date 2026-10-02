@@ -104,23 +104,45 @@ describe('memory service', () => {
     expect(service.list()[0]).toMatchObject({ text: '本人の行きつけの店。' })
   })
 
-  it('indexes me.md like the other pages, so that the assistant recalls its own page through search by its headings and text', async () => {
+  it('keeps me.md and user.md out of search, which every turn holds whole, so that neither an utterance nor recall brings them again', async () => {
     service.ensureLoaded()
     fs.writeFileSync(memoryFile('me.md'), '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 話し方と癖\n語尾は柔らかく、冗談は控えめ。\n')
+    fs.writeFileSync(memoryFile('user.md'), '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 属性\nくるみアレルギーがある。\n')
+    fs.writeFileSync(memoryFile('pages', 'ムギ.md'), MUGI)
     service.reindex()
-    expect(service.list()).toMatchObject([{ file: 'me.md', page: '私について', heading: '話し方と癖' }])
-    expect((await service.search('話し方と癖'))[0]).toMatchObject({ record: { file: 'me.md' } })
-    expect((await service.search('冗談'))[0]).toMatchObject({ record: { file: 'me.md' } })
+    expect(service.list().map((unit) => unit.file)).toEqual(['pages/ムギ.md'])
+    for (const query of ['冗談', '話し方と癖', 'くるみ', 'くるみのケーキを買ってきた']) {
+      for (const mode of ['keyword', 'utterance'] as const) expect([query, mode, await service.search(query, { mode })]).toEqual([query, mode, []])
+    }
+    expect(service.promptBlock()).toContain('くるみアレルギーがある。')
   })
 
-  it('builds the memory block from instruction.md alone, returns null without it, and freezes the block for five minutes', () => {
+  it('builds the memory block from instruction.md, me.md and user.md under their headings, returns null without them, and freezes the block for five minutes', () => {
     service.ensureLoaded()
     expect(service.promptBlock(1_000_000)).toBeNull()
+    fs.writeFileSync(memoryFile('user.md'), '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 属性\nくるみアレルギーがある。\n')
     fs.writeFileSync(memoryFile('instruction.md'), '# いつも覚えておくこと\n\n## この人について\n- 猫のムギと暮らす\n')
     fs.writeFileSync(memoryFile('me.md'), '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 私は誰か\n落ち着いて話す。\n')
     expect(service.promptBlock(1_000_000 + 60_000)).toBeNull()
-    expect(service.promptBlock(1_000_000 + 6 * 60_000)).toBe(`${service.MEMORY_HEADER.ja}\n## この人について\n- 猫のムギと暮らす`)
-    expect(service.overview()).toMatchObject({ units: 1, pages: 1, lastFailure: null, unavailableReason: null })
+    const headers = service.PROMPT_DOCUMENT_HEADERS
+    expect(service.promptBlock(1_000_000 + 6 * 60_000)).toBe(
+      [
+        `${headers.instruction.ja}\n## この人について\n- 猫のムギと暮らす`,
+        `${headers.me.ja}\n## 私は誰か\n落ち着いて話す。`,
+        `${headers.user.ja}\n## 属性\nくるみアレルギーがある。`
+      ].join('\n\n')
+    )
+    expect(service.overview()).toMatchObject({ units: 0, pages: 0, lastFailure: null, unavailableReason: null })
+  })
+
+  it('puts the change a save on the memory screen made to user.md into the next turn without waiting for the freeze', () => {
+    service.ensureLoaded()
+    const user = '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 属性\nくるみアレルギーがある。\n'
+    fs.writeFileSync(memoryFile('user.md'), user)
+    service.reindex()
+    expect(service.promptBlock(1_000_000)).toContain('くるみアレルギーがある。')
+    service.documentWrite('user.md', user.replace('くるみ', 'そば'), user)
+    expect(service.promptBlock(1_000_000 + 1_000)).toContain('そばアレルギーがある。')
   })
 
   it('embeds the documents while the embedder runs, and finds a paraphrase through the query vector', async () => {

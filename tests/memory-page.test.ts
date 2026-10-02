@@ -10,9 +10,17 @@ import {
   unitsOfJournal,
   unitsOfPage
 } from '@shared/memory-page'
-import { INSTRUCTION_MAX_CHARS, SECTION_MAX_CHARS } from '../resources/skills/memory-format.mjs'
+import {
+  PROMPT_DOCUMENT_MAX_TOKENS,
+  SECTION_MAX_CHARS,
+  promptBody,
+  promptSize,
+  textForTokens,
+  tokenEstimate
+} from '../resources/skills/memory-format.mjs'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
+import TOKEN_SAMPLES from './fixtures/token-estimate-samples.json'
 
 const ja = createTranslator('ja-JP')
 
@@ -268,23 +276,56 @@ describe('documents', () => {
     expect(validateDocument(file, above, ja)).toEqual([ja('memory.check.duplicateHeading', { file, line: 7, heading: '要約', first: 5 })])
   })
 
-  it('caps the text above the first heading like any other section, in me.md written as prose as well', () => {
-    const prose = '私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(30)
-    expect(validateDocument('me.md', `---\nupdated: 2026-09-20\n---\n# 私について\n\n${prose}\n`, ja)).toEqual([
-      ja('memory.check.sectionTooLong', { file: 'me.md', line: 6, heading: '要約', limit: SECTION_MAX_CHARS })
+  it('caps the text above the first heading of a page like any other section', () => {
+    const prose = '本人の行きつけのラーメン屋で、麺類の気分のときにまず名前が出る。'.repeat(30)
+    expect(validateDocument('pages/松葉軒.md', `---\nupdated: 2026-09-20\n---\n# 松葉軒\n\n${prose}\n\n## 好み\n辛さは控えめ。\n`, ja)).toEqual([
+      ja('memory.check.sectionTooLong', { file: 'pages/松葉軒.md', line: 6, heading: '要約', limit: SECTION_MAX_CHARS })
     ])
   })
 
-  it('caps instruction.md as a whole, counting the heading lines as the system prompt carries them and leaving out whitespace', () => {
-    const sections = (bodyLength: number): string =>
-      Array.from({ length: 4 }, (_, i) => `## 見出し${i}\n${'あ'.repeat(bodyLength)}\n\n`).join('')
-    // Each heading line "## 見出しN" is 6 characters without its space, so four sections of 494 characters
-    // come to exactly the cap.
-    const atCap = sections(INSTRUCTION_MAX_CHARS / 4 - 6)
-    expect(validateDocument('instruction.md', `# いつも覚えておくこと\n\n${atCap}`, ja)).toEqual([])
-    expect(validateDocument('instruction.md', `# いつも覚えておくこと\n\n${atCap}## 追加\nあ\n`, ja)).toEqual([
-      ja('memory.check.instructionTooLong', { file: 'instruction.md', limit: INSTRUCTION_MAX_CHARS })
-    ])
+  it('caps each document of the prompt by the tokens its body costs there, and not by the length of a section', () => {
+    const shapes = {
+      'instruction.md': (body: string) => `# いつも覚えておくこと\n\n## この人について\n${body}\n`,
+      'me.md': (body: string) => `---\nupdated: 2026-09-20\n---\n# 私について\n\n${body}\n`,
+      'user.md': (body: string) => `---\nupdated: 2026-09-20\n---\n# ユーザー\n\n## 好み\n${body}\n`
+    }
+    for (const [file, shape] of Object.entries(shapes)) {
+      // The body grows a sentence at a time, then a character at a time, up to the last length the limit takes.
+      let body = ''
+      const sentence = '麺類が好きで、辛さは控えめを選ぶ。'
+      while (promptSize(shape(body + sentence)).tokens <= PROMPT_DOCUMENT_MAX_TOKENS) body += sentence
+      while (promptSize(shape(body + 'あ')).tokens <= PROMPT_DOCUMENT_MAX_TOKENS) body += 'あ'
+      // A section far past the cap of a page's section is no problem in a document that goes whole into the prompt.
+      expect([file, validateDocument(file, shape(body), ja)]).toEqual([file, []])
+      const over = shape(`${body}あ`)
+      const size = promptSize(over)
+      expect(size.tokens).toBeGreaterThan(PROMPT_DOCUMENT_MAX_TOKENS)
+      const cut = textForTokens(size, size.tokens - PROMPT_DOCUMENT_MAX_TOKENS).characters
+      expect([file, validateDocument(file, over, ja)]).toEqual([
+        file,
+        [ja('memory.check.tooManyTokens', { file, tokens: size.tokens, limit: PROMPT_DOCUMENT_MAX_TOKENS, characters: cut })]
+      ])
+    }
+  })
+
+  it('estimates the tokens of a text in each conversation language near what OpenAI and Gemini count, and not under them', () => {
+    // The counts were measured on 2026-10-02: o200k_base, which OpenAI's models and gpt-oss use, and the
+    // countTokens of Gemini 3.8 Flash, without the token its message wrapper adds.
+    for (const [language, sample] of Object.entries(TOKEN_SAMPLES)) {
+      const estimate = tokenEstimate(sample.text)
+      expect([language, estimate >= 0.9 * sample.o200k && estimate <= 1.35 * sample.o200k]).toEqual([language, true])
+      expect([language, estimate >= 0.9 * sample.gemini]).toEqual([language, true])
+    }
+  })
+
+  it('counts a document of the prompt as the prompt carries it, without its frontmatter and its name line', () => {
+    const body = '## 好み\n麺類が好きで、辛さは控えめを選ぶ。'
+    const page = `---\nupdated: 2026-09-20\n---\n# ユーザー\n\n${body}\n`
+    expect(promptBody(page)).toBe(body)
+    expect(promptSize(page).tokens).toBe(tokenEstimate(body))
+    // Over by some tokens, the text to cut is that share of the document's own characters and words.
+    const size = { tokens: 200, characters: 300, words: 60 }
+    expect(textForTokens(size, 20)).toEqual({ characters: 30, words: 6 })
   })
 
   it('accepts a page under either fixed heading, and names the English one to a page written in English', () => {

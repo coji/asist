@@ -8,15 +8,17 @@ import { localDateKey } from '@shared/local-date'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
 import {
   DOCUMENT_FILE,
+  PROMPT_DOCUMENTS,
   classifyFile,
   documentKindOf,
   documentOf,
-  instructionBody,
   parseMemoryPageInput,
   parsePage,
+  promptBody,
   unitsOfJournal,
   unitsOfPage,
-  validateDocument
+  validateDocument,
+  type PromptDocumentKind
 } from '@shared/memory-page'
 import { writeFileAtomicSync } from './atomic-json'
 import { conversationLocale } from './conversation-locale'
@@ -158,9 +160,10 @@ function listMarkdown(dir: string, sub: string): string[] {
 }
 
 /**
- * Turns user.md, me.md, the pages and the journal into units. instruction.md goes whole into the system
- * prompt, so it is only validated and never indexed. The files an earlier form of the memory used are
- * reported, so that a curation removes them.
+ * Turns the pages and the journal into units. instruction.md, me.md and user.md go whole into the system
+ * prompt, so they are only validated and never indexed: a search hit on them would repeat what every turn
+ * already holds. The files an earlier form of the memory used are reported, so that a curation removes
+ * them.
  */
 export function readAll(dir = memoryDir()): ReadResult {
   const units: MemoryUnit[] = []
@@ -168,15 +171,6 @@ export function readAll(dir = memoryDir()): ReadResult {
   let pages = 0
   const read = (file: string): string | null => readFileOf(dir, file)
 
-  const user = read(USER_FILE)
-  if (user !== null) {
-    const page = parsePage(user, classifyFile(USER_FILE).title)
-    errors.push(...validateDocument(USER_FILE, user, t))
-    // The user page carries its name in its own `# ` line, which is Japanese or English by the language
-    // the curation wrote it in, and that name stands before every unit of the page in the search index.
-    units.push(...unitsOfPage(USER_FILE, page, page.title))
-    pages++
-  }
   for (const file of listMarkdown(dir, PAGES_DIR)) {
     const markdown = read(file) ?? ''
     const page = parsePage(markdown, classifyFile(file).title)
@@ -193,16 +187,11 @@ export function readAll(dir = memoryDir()): ReadResult {
     units.push(...unitsOfJournal(file, page, date))
     pages++
   }
-  const me = read(ME_FILE)
-  if (me !== null) {
-    const page = parsePage(me, classifyFile(ME_FILE).title)
-    errors.push(...validateDocument(ME_FILE, me, t))
-    units.push(...unitsOfPage(ME_FILE, page, page.title))
-    pages++
+  for (const { file } of PROMPT_DOCUMENTS) {
+    const markdown = read(file)
+    if (markdown !== null) errors.push(...validateDocument(file, markdown, t))
+    else if (file === INSTRUCTION_FILE) errors.push(t('memory.check.instructionMissing', { file }))
   }
-  const instruction = read(INSTRUCTION_FILE)
-  if (instruction === null) errors.push(t('memory.check.instructionMissing', { file: INSTRUCTION_FILE }))
-  else errors.push(...validateDocument(INSTRUCTION_FILE, instruction, t))
   for (const file of OBSOLETE_FILES) if (fs.existsSync(path.join(dir, file))) errors.push(t('memory.check.obsoleteFile', { file }))
   return { units, pages, errors }
 }
@@ -299,10 +288,16 @@ function commitFile(dir: string, file: string, text: string | null, message: str
   }
 }
 
-/** The body of instruction.md, which goes whole into the system prompt, or null when it is missing or empty. */
-export function readInstruction(dir = memoryDir()): string | null {
-  const text = readFileOf(dir, INSTRUCTION_FILE)
-  return text === null ? null : instructionBody(text).trim() || null
+/**
+ * The documents that go whole into the system prompt, in the order they go there, each as its body without
+ * the frontmatter and the `# ` line. A document that is missing or has no body is left out.
+ */
+export function readPromptDocuments(dir = memoryDir()): Array<{ kind: PromptDocumentKind; body: string }> {
+  return PROMPT_DOCUMENTS.flatMap(({ kind, file }) => {
+    const text = readFileOf(dir, file)
+    const body = text === null ? '' : promptBody(text)
+    return body ? [{ kind, body }] : []
+  })
 }
 
 /** Whether the working tree has no uncommitted change, which the curation job checks before it starts. */

@@ -51,13 +51,15 @@ describe('buildResumeArgs', () => {
 })
 
 describe('a memory curation job, which starts with nobody to confirm it', () => {
-  it('never runs claude in auto mode: restricted, refusing what is not allowed, with the validator as the only command', () => {
+  it('never runs claude in auto mode: restricted, refusing what is not allowed, with the skill\'s two checks as the only commands', () => {
     for (const args of [buildStartArgs({ ...claude, ...curation }), buildResumeArgs({ ...claude, ...curation })]) {
       expect(args).not.toContain('auto')
       expect(args).toContain('--restricted')
       expect(args[args.indexOf('--permission-mode') + 1]).toBe('dontAsk')
       const allowed = args.slice(args.indexOf('--allowedTools') + 1, args.indexOf('--disallowedTools'))
       expect(allowed.filter((rule) => rule.startsWith('Bash'))).toEqual([
+        'Bash(node .claude/skills/memory-curation/scripts/count.mjs *)',
+        'Bash(node /memory/wt/.claude/skills/memory-curation/scripts/count.mjs *)',
         'Bash(node .claude/skills/memory-curation/scripts/validate.mjs *)',
         'Bash(node /memory/wt/.claude/skills/memory-curation/scripts/validate.mjs *)'
       ])

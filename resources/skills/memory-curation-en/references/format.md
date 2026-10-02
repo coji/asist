@@ -1,23 +1,35 @@
 # How to write the memory
 
-ASIST reads this directory and builds its search index from it. Only a few things are fixed: the
-frontmatter, the `# name` line, the `## heading` lines, the fixed headings named below, the file names
-under `journal/`, and the length limits. Everything else is your own prose, in the language of the
-conversation.
+ASIST reads this directory, puts three documents into every conversation, and builds its search index from
+the pages and the journal. Only a few things are fixed: the frontmatter, the `# name` line, the `## heading`
+lines, the fixed headings named below, the file names under `journal/`, and the length limits. Everything
+else is your own prose, in the language of the conversation.
+
+## Contents
+
+- The directory
+- The fixed headings
+- Headings
+- Length
+- The frontmatter
+- instruction.md, always keep in mind
+- user.md, about this person
+- The body of a page
+- journal/YYYY-MM-DD.md, my diary
+- What the user asked me to forget
 
 ## The directory
 
 | Where | What | How ASIST uses it |
 |---|---|---|
-| `instruction.md` | The summary of what to keep in mind in every conversation: this person, me, what I have been asked | Put into the system prompt of every turn as it is |
-| `user.md` | The user: their attributes, preferences, habits, and what they expect of ASIST | Searched heading by heading and put beside the conversation |
-| `me.md` | Me (ASIST): character, tastes, the relationship, what is on my mind | Searched heading by heading and put beside the conversation |
+| `instruction.md` | The summary of what to keep in mind in every conversation: this person, me, what I have been asked | Put whole into the system prompt of every turn |
+| `me.md` | Me (ASIST): character, tastes, the relationship, what is on my mind | Put whole into the system prompt of every turn |
+| `user.md` | The user: their attributes, preferences, habits, and what they expect of ASIST | Put whole into the system prompt of every turn |
 | `pages/<name>.md` | A person, a company, a shop or place, a piece of work, a product. One each | Searched heading by heading. The page is pulled in when its name or an alias comes up |
 | `journal/YYYY-MM-DD.md` | My diary for the day, in the first person | Searched heading by heading. Readable and editable on the memory screen |
 
-Only `instruction.md` goes into every system prompt. From the other files, only the headings that bear on
-the conversation are found by search. `profile.md` and `forget.jsonl` are no longer used. When they are
-still there, move what is worth keeping from profile.md into instruction.md and user.md, then delete both.
+`profile.md` and `forget.jsonl` are no longer used. When they are still there, move what is worth keeping
+from profile.md into instruction.md and user.md, then delete both.
 
 Things to do, promises and deadlines do not go here. The task app (`tasks.json`) holds them, and ASIST
 files them during the conversation.
@@ -38,17 +50,23 @@ Every other heading you write yourself, in the language of the conversation.
 
 ## Headings
 
-ASIST searches a `## heading` and the text under it as one section. Do not put the same heading twice in
-one file. Text above the first `## heading` is read as the "Summary" section, which is how a me.md without
-headings is read. In the other files, write the text under a heading: text above `## Summary` makes a
-second "Summary".
+Do not put the same heading twice in one file. In the pages and the journal, ASIST searches a `## heading`
+and the text under it as one section. Text above the first `## heading` is read as the "Summary" section,
+which is how a me.md without headings is read. In the other files, write the text under a heading: text
+above `## Summary` makes a second "Summary".
 
 ## Length
 
-In every file, what stands under one `## heading` is at most 800 characters. instruction.md as a whole,
-everything under `# Always keep in mind`, is at most 2000 characters. Characters are counted without spaces
-and line breaks. `validate.mjs` reports anything over the limit. A section grows too long when it holds
-events that ended with the day, or things that belong on a page. Move those there and shorten it.
+- **instruction.md, me.md and user.md hold 1500 tokens each at most.** All three are read whole in every
+  turn, so whatever they grow by makes every conversation heavier. `scripts/count.mjs` counts them the way
+  ASIST does and also says how much that is in words. In English that is roughly 900 words; the frontmatter
+  and the `# ` line are not counted.
+- **In the pages and the journal, what stands under one `## heading` is at most 800 characters**, because a
+  heading that search finds is put beside the conversation whole. Characters are counted without spaces and
+  line breaks, and `validate.mjs` reports anything over.
+
+A file grows too long when it holds events that ended with the day, or things that belong on a page. Move
+those there and shorten it.
 
 ## The frontmatter
 
@@ -153,8 +171,8 @@ date and a tag in it is not what this is for.
   talk about it, and what I keep wondering about, with the date I came to think so. This is my view and
   not a fact, so it stays out of the headings of facts. Do not make up your mind from one occasion; write
   what you have felt more than once.
-- When the history on a page nears 800 characters, leave the details of how it went to the journal and
-  keep on the page what will be of use later.
+- When what stands under one heading nears 800 characters, leave the details of how it went to the journal
+  and keep on the page what will be of use later.
 
 An example (`pages/Matsubaken.md`, a conversation held in English):
 

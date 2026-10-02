@@ -15,6 +15,7 @@ import * as store from '../src/main/services/memory-store'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
+import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '../resources/skills/memory-format.mjs'
 import { longTempFolder } from './helpers/temp'
 
 const ja = createTranslator('ja-JP')
@@ -71,7 +72,7 @@ describe('the memory store', () => {
     expect(fs.realpathSync(git(dir, ['rev-parse', '--show-toplevel']).trim())).toBe(fs.realpathSync(dir))
   })
 
-  it('reads user.md, me.md, the pages and the journal into units, leaves instruction.md out of them, and reports what to fix', () => {
+  it('reads the pages and the journal into units, leaves the three documents of the prompt out of them, and reports what to fix in all', () => {
     const dir = store.memoryDir()
     fs.writeFileSync(path.join(dir, 'instruction.md'), INSTRUCTION)
     fs.writeFileSync(path.join(dir, 'user.md'), '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 好み\nコーヒーは砂糖なし。\n')
@@ -80,21 +81,19 @@ describe('the memory store', () => {
     fs.writeFileSync(path.join(dir, 'me.md'), '---\nkind: me\n---\n# 私について\n\n## 私は誰か\n落ち着いた声で話す。\n')
     fs.writeFileSync(path.join(dir, 'journal', '2026-09-07.md'), '# 2026-09-07\n## 四季の話\n春は桜を勧めた。\n')
     const result = store.readAll()
-    expect(result.pages).toBe(5)
+    expect(result.pages).toBe(3)
     expect(result.errors).toEqual([
       ja('memory.check.frontmatterMissing', { file: 'pages/壊れ.md' }),
       ja('memory.check.firstHeading', { file: 'pages/壊れ.md', heading: '要約' }),
       ja('memory.check.obsoleteKey', { file: 'me.md', key: 'kind' })
     ])
     expect(result.units.map((u) => [u.file, u.kind, u.page, u.heading, u.text])).toEqual([
-      ['user.md', 'section', 'ユーザー', '好み', 'コーヒーは砂糖なし。'],
       ['pages/壊れ.md', 'section', '壊れ', '経緯', '書きかけのまま残った。'],
       ['pages/松葉軒.md', 'section', '松葉軒', '要約', '本人の行きつけのラーメン屋。'],
       ['pages/松葉軒.md', 'section', '松葉軒', '好み', '辛さは控えめが好みらしい。替え玉はしないようだ。'],
-      ['journal/2026-09-07.md', 'journal', '2026-09-07', '四季の話', '春は桜を勧めた。'],
-      ['me.md', 'section', '私について', '私は誰か', '落ち着いた声で話す。']
+      ['journal/2026-09-07.md', 'journal', '2026-09-07', '四季の話', '春は桜を勧めた。']
     ])
-    expect(result.units[2].aliases).toEqual(['松葉軒', 'ラーメン屋'])
+    expect(result.units[1].aliases).toEqual(['松葉軒', 'ラーメン屋'])
     expect(store.listDocuments().map((d) => [d.kind, d.title])).toEqual([
       ['instruction', 'いつも覚えておくこと'],
       ['me', '私について'],
@@ -374,13 +373,36 @@ describe('the memory store', () => {
     }
   })
 
-  it('returns instruction.md without its title heading, and null when it is missing or empty', () => {
+  it('reads instruction.md, me.md and user.md for the prompt in that order, without their frontmatter and name lines, leaving out one with no body', () => {
     const dir = store.memoryDir()
-    expect(store.readInstruction()).toBeNull()
+    expect(store.readPromptDocuments()).toEqual([])
+    fs.writeFileSync(path.join(dir, 'user.md'), '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 好み\nコーヒーは砂糖なし。\n')
     fs.writeFileSync(path.join(dir, 'instruction.md'), '# いつも覚えておくこと\n')
-    expect(store.readInstruction()).toBeNull()
+    fs.writeFileSync(path.join(dir, 'me.md'), '---\nupdated: 2026-09-09\n---\n# 私について\n\n落ち着いた声で話す。\n')
+    expect(store.readPromptDocuments()).toEqual([
+      { kind: 'me', body: '落ち着いた声で話す。' },
+      { kind: 'user', body: '## 好み\nコーヒーは砂糖なし。' }
+    ])
     fs.writeFileSync(path.join(dir, 'instruction.md'), INSTRUCTION)
-    expect(store.readInstruction()).toBe('## この人について\n- 予約サービスの企画担当\n- 猫のムギと暮らす')
+    expect(store.readPromptDocuments()[0]).toEqual({ kind: 'instruction', body: '## この人について\n- 予約サービスの企画担当\n- 猫のムギと暮らす' })
+  })
+
+  it('refuses a save from the memory screen that takes a document of the prompt over its limit, and leaves the file as it was', () => {
+    const dir = store.memoryDir()
+    const user = '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 好み\nコーヒーは砂糖なし。\n'
+    fs.writeFileSync(path.join(dir, 'user.md'), user)
+    git(dir, ['add', '-A'])
+    git(dir, ['commit', '-qm', 'user'])
+    const long = user.replace('コーヒーは砂糖なし。', '麺類が好きで、辛さは控えめを選ぶ。'.repeat(200))
+    const refusal = ja('memory.check.tooManyTokens', {
+      file: 'user.md',
+      tokens: promptSize(long).tokens,
+      limit: PROMPT_DOCUMENT_MAX_TOKENS,
+      characters: textForTokens(promptSize(long), promptSize(long).tokens - PROMPT_DOCUMENT_MAX_TOKENS).characters
+    })
+    expect(() => store.writeDocument('user.md', long, user)).toThrow(refusal)
+    expect(fs.readFileSync(path.join(dir, 'user.md'), 'utf8')).toBe(user)
+    expect(store.writeDocument('user.md', user.replace('砂糖なし', 'ミルク入り'), user).file).toBe('user.md')
   })
 
   it('writes its own commits in the language the memory is written in', () => {

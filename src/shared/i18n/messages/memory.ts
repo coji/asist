@@ -278,17 +278,17 @@ export const memory = defineMessages({
       'es-ES': ', '
     },
     me: {
-      'ja-JP': 'me.md · 私自身のこと。関係する話のときに検索で引かれます',
-      'en-US': 'me.md · About myself. Found by search when a conversation touches it',
-      'fr-FR': 'me.md · Sur moi-même. Retrouvé par la recherche quand la conversation y touche',
-      'de-DE': 'me.md · Über mich selbst. Wird von der Suche gefunden, wenn das Gespräch es berührt',
-      'hi-IN': 'me.md · मेरे बारे में। बातचीत से जुड़ने पर खोज से मिलता है',
-      'id-ID': 'me.md · Tentang diri saya. Ditemukan lewat pencarian saat percakapan menyinggungnya',
-      'it-IT': 'me.md · Su di me. La ricerca lo trova quando la conversazione lo tocca',
-      'ko-KR': 'me.md · 나 자신에 관한 것. 관련된 이야기일 때 검색으로 찾습니다',
-      'pt-BR': 'me.md · Sobre mim. A busca encontra quando a conversa toca no assunto',
-      'es-419': 'me.md · Sobre mí. La búsqueda lo encuentra cuando la conversación lo toca',
-      'es-ES': 'me.md · Sobre mí. La búsqueda lo encuentra cuando la conversación lo toca'
+      'ja-JP': 'me.md · 私自身のこと。毎回の system prompt に載ります。整理が書き、ここでも直せます',
+      'en-US': 'me.md · About myself. Goes into every system prompt. The curation writes it, and you can edit it here',
+      'fr-FR': "me.md · Sur moi-même. Va dans chaque prompt système. L'organisation l'écrit, et vous pouvez le modifier ici",
+      'de-DE': 'me.md · Über mich selbst. Kommt in jeden system prompt. Die Gedächtnispflege schreibt sie, und Sie können sie hier bearbeiten',
+      'hi-IN': 'me.md · मेरे बारे में। हर system prompt में जाती है। सफ़ाई इसे लिखती है, और आप इसे यहाँ बदल सकते हैं',
+      'id-ID': 'me.md · Tentang diri saya. Masuk ke setiap system prompt. Penataan menulisnya, dan Anda bisa mengubahnya di sini',
+      'it-IT': 'me.md · Su di me. Va in ogni system prompt. Il riordino lo scrive, e puoi modificarlo qui',
+      'ko-KR': 'me.md · 나 자신에 관한 것. 매번 system prompt에 들어갑니다. 정리가 쓰고, 여기서도 고칠 수 있습니다',
+      'pt-BR': 'me.md · Sobre mim. Vai em todo system prompt. A organização escreve, e você pode editar aqui',
+      'es-419': 'me.md · Sobre mí. Se incluye en cada system prompt. La organización lo escribe y puedes editarlo aquí',
+      'es-ES': 'me.md · Sobre mí. Se incluye en todos los system prompts. La organización lo escribe y puedes editarlo aquí'
     },
     instruction: {
       'ja-JP': 'instruction.md · 毎回の system prompt に載ります。整理が書き、ここでも直せます',
@@ -304,17 +304,17 @@ export const memory = defineMessages({
       'es-ES': 'instruction.md · Se incluye en todos los system prompts. La organización lo escribe y puedes editarlo aquí'
     },
     user: {
-      'ja-JP': 'user.md · ユーザー本人の属性、好み、習慣、ASIST への期待',
-      'en-US': "user.md · The user's own details, preferences, habits and what they expect of ASIST",
-      'fr-FR': "user.md · Les informations, les goûts, les habitudes de l'utilisateur et ce qu'il attend d'ASIST",
-      'de-DE': 'user.md · Angaben, Vorlieben und Gewohnheiten des Nutzers und was er von ASIST erwartet',
-      'hi-IN': 'user.md · यूज़र की अपनी जानकारी, पसंद, आदतें और ASIST से उम्मीदें',
-      'id-ID': 'user.md · Data diri, kesukaan, kebiasaan pengguna, dan harapannya pada ASIST',
-      'it-IT': "user.md · Dati, preferenze e abitudini dell'utente e cosa si aspetta da ASIST",
-      'ko-KR': 'user.md · 사용자 본인의 정보, 취향, 습관, ASIST에 대한 기대',
-      'pt-BR': 'user.md · Dados, preferências e hábitos do próprio usuário e o que ele espera do ASIST',
-      'es-419': 'user.md · Los datos, las preferencias, los hábitos del usuario y lo que espera de ASIST',
-      'es-ES': 'user.md · Datos, preferencias, costumbres del propio usuario y lo que espera de ASIST'
+      'ja-JP': 'user.md · ユーザー本人の属性、好み、習慣、ASIST への期待。毎回の system prompt に載ります。整理が書き、ここでも直せます',
+      'en-US': "user.md · The user's own details, preferences, habits and what they expect of ASIST. Goes into every system prompt. The curation writes it, and you can edit it here",
+      'fr-FR': "user.md · Les informations, les goûts, les habitudes de l'utilisateur et ce qu'il attend d'ASIST. Va dans chaque prompt système. L'organisation l'écrit, et vous pouvez le modifier ici",
+      'de-DE': 'user.md · Angaben, Vorlieben und Gewohnheiten des Nutzers und was er von ASIST erwartet. Kommt in jeden system prompt. Die Gedächtnispflege schreibt sie, und Sie können sie hier bearbeiten',
+      'hi-IN': 'user.md · यूज़र की अपनी जानकारी, पसंद, आदतें और ASIST से उम्मीदें। हर system prompt में जाती है। सफ़ाई इसे लिखती है, और आप इसे यहाँ बदल सकते हैं',
+      'id-ID': 'user.md · Data diri, kesukaan, kebiasaan pengguna, dan harapannya pada ASIST. Masuk ke setiap system prompt. Penataan menulisnya, dan Anda bisa mengubahnya di sini',
+      'it-IT': "user.md · Dati, preferenze e abitudini dell'utente e cosa si aspetta da ASIST. Va in ogni system prompt. Il riordino lo scrive, e puoi modificarlo qui",
+      'ko-KR': 'user.md · 사용자 본인의 정보, 취향, 습관, ASIST에 대한 기대. 매번 system prompt에 들어갑니다. 정리가 쓰고, 여기서도 고칠 수 있습니다',
+      'pt-BR': 'user.md · Dados, preferências e hábitos do próprio usuário e o que ele espera do ASIST. Vai em todo system prompt. A organização escreve, e você pode editar aqui',
+      'es-419': 'user.md · Los datos, las preferencias, los hábitos del usuario y lo que espera de ASIST. Se incluye en cada system prompt. La organización lo escribe y puedes editarlo aquí',
+      'es-ES': 'user.md · Datos, preferencias, costumbres del propio usuario y lo que espera de ASIST. Se incluye en todos los system prompts. La organización lo escribe y puedes editarlo aquí'
     }
   },
   doc: {
@@ -779,19 +779,6 @@ export const memory = defineMessages({
       'es-419': '{file}: este archivo no lleva frontmatter',
       'es-ES': '{file}: este archivo no lleva frontmatter'
     },
-    instructionTooLong: {
-      'ja-JP': '{file}: 全体が {limit} 字を超えています。毎回の会話に載るので、短くまとめます',
-      'en-US': '{file}: it is longer than {limit} characters. It goes into every conversation, so keep it short',
-      'fr-FR': '{file} : il dépasse {limit} caractères. Il accompagne chaque conversation, il doit rester court',
-      'de-DE': '{file}: sie ist länger als {limit} Zeichen. Sie steht in jedem Gespräch und muss kurz bleiben',
-      'hi-IN': '{file}: यह {limit} अक्षरों से लंबा है। यह हर बातचीत में जाता है, इसलिए इसे छोटा रखें',
-      'id-ID': '{file}: panjangnya lebih dari {limit} karakter. File ini ikut di setiap percakapan, jadi buat ringkas',
-      'it-IT': '{file}: supera {limit} caratteri. Va in ogni conversazione, quindi deve restare breve',
-      'ko-KR': '{file}: 전체가 {limit}자를 넘습니다. 매번 대화에 들어가므로 짧게 줄입니다',
-      'pt-BR': '{file}: passa de {limit} caracteres. Ele vai em toda conversa, então precisa ser curto',
-      'es-419': '{file}: supera los {limit} caracteres. Va en cada conversación, así que debe ser breve',
-      'es-ES': '{file}: supera los {limit} caracteres. Va en cada conversación, así que debe ser breve'
-    },
     instructionMissing: {
       'ja-JP': '{file} がありません',
       'en-US': '{file} is missing',
@@ -856,6 +843,19 @@ export const memory = defineMessages({
       'pt-BR': '{file}: linha {line}, o título “{heading}” também está na linha {first}; junte os dois em um só',
       'es-419': '{file}: línea {line}, el encabezado «{heading}» también está en la línea {first}; júntalos en uno solo',
       'es-ES': '{file}: línea {line}, el encabezado “{heading}” también está en la línea {first}; júntalos en uno solo'
+    },
+    tooManyTokens: {
+      'ja-JP': '{file}: 約 {tokens} トークンあり、上限の {limit} を超えています。毎回の会話に載るので、あと約 {characters} 字短くまとめます',
+      'en-US': '{file}: it comes to about {tokens} tokens, over the limit of {limit}. It goes into every conversation, so cut about {characters} characters',
+      'fr-FR': "{file} : environ {tokens} tokens, au-delà de la limite de {limit}. Il accompagne chaque conversation, raccourcissez-le d'environ {characters} caractères",
+      'de-DE': '{file}: etwa {tokens} Tokens, mehr als die Grenze von {limit}. Sie steht in jedem Gespräch, kürzen Sie sie um etwa {characters} Zeichen',
+      'hi-IN': '{file}: लगभग {tokens} टोकन हैं, जो सीमा {limit} से ज़्यादा है। यह हर बातचीत में जाता है, इसलिए इसे लगभग {characters} अक्षर छोटा करें',
+      'id-ID': '{file}: sekitar {tokens} token, melebihi batas {limit}. File ini ikut di setiap percakapan, jadi pendekkan sekitar {characters} karakter',
+      'it-IT': '{file}: circa {tokens} token, oltre il limite di {limit}. Va in ogni conversazione, quindi accorcialo di circa {characters} caratteri',
+      'ko-KR': '{file}: 약 {tokens} 토큰으로 한도 {limit}을 넘습니다. 매번 대화에 들어가므로 약 {characters}자 줄입니다',
+      'pt-BR': '{file}: cerca de {tokens} tokens, acima do limite de {limit}. Ele vai em toda conversa, então encurte cerca de {characters} caracteres',
+      'es-419': '{file}: unos {tokens} tokens, más que el límite de {limit}. Va en cada conversación, así que acórtalo unos {characters} caracteres',
+      'es-ES': '{file}: unos {tokens} tokens, más que el límite de {limit}. Va en cada conversación, así que acórtalo unos {characters} caracteres'
     }
   },
   curation: {

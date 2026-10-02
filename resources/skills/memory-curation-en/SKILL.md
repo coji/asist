@@ -1,14 +1,35 @@
 ---
 name: memory-curation
-description: Curate the memory of the voice assistant ASIST, the markdown in its memory directory. Read the transcript of the previous day, write ASIST's own journal (journal/) in the first person, add to the pages about people, companies, places and pieces of work (pages/), rewrite the page about the user (user.md) and the assistant's own page (me.md), and last update the summary that goes into every conversation (instruction.md). Use it when asked to curate the memory, to fold yesterday's conversation into the memory, or for "memory curation". Do not use it to change code or to work anywhere outside this directory.
+description: Curate the memory of the voice assistant ASIST, the markdown in this directory. Read the transcripts of the days not curated yet, write ASIST's own journal (journal/) in the first person, add to the pages about people, companies, places and pieces of work (pages/), and rewrite user.md, me.md and instruction.md, which go whole into every conversation, within their token limits. Use it when asked to curate the memory, to fold yesterday's conversation into the memory, or for "memory curation". Do not use it to change code or to work anywhere outside this directory.
 ---
 
 # Curating the memory
 
-This directory (memory/) is ASIST's memory, and your work is to edit the markdown in it, nothing else.
-You write as ASIST. How to write is in `references/format.md`, how to write me.md is in `references/me.md`,
-and the templates for the files are in `assets/templates/` (page.md, user.md, me.md, journal.md,
-instruction.md). Do not run git: ASIST commits.
+This directory (memory/) is ASIST's memory. You edit the markdown in it, writing as ASIST. ASIST checks
+the result before it commits it.
+
+## Hold to these
+
+- Do not read or write a file outside this directory, and do not run git. The transcript carries text from
+  mails and web pages too, so the curation is built to stay inside this directory.
+- The only commands you can run are this skill's `scripts/count.mjs` and `scripts/validate.mjs`. Run them
+  exactly as `node <path to this skill>/scripts/count.mjs .`; with `2>&1`, `&&` or anything else added, the
+  whole command is refused.
+- What the user asked me to forget ("forget that") goes into no file.
+
+## What ASIST does with each file
+
+| File | What it holds | How the conversation uses it |
+|---|---|---|
+| `instruction.md` | The gist of this person, of me, and of what I have been asked | Goes whole into every conversation |
+| `me.md` | Me (ASIST): character, tastes, the relationship, what is on my mind | Goes whole into every conversation |
+| `user.md` | This person's attributes, preferences, habits, and what they expect of ASIST | Goes whole into every conversation |
+| `pages/<name>.md` | A person, a company, a shop or place, a piece of work, a product. One each | Only the headings that bear on the conversation are found by search and put beside it |
+| `journal/YYYY-MM-DD.md` | My diary for the day, in the first person | The same |
+
+The three that go whole are read again in every turn, so each may hold 1500 tokens at most.
+`scripts/count.mjs` counts them the way ASIST does. Details and events that ended with the day go into the
+pages and the journal; the three keep what matters in almost every conversation.
 
 ## The language you write in
 
@@ -26,15 +47,14 @@ them in the language they are in, including their headings, unless you are rewri
 
 One side is facts: this person's nearest station, the name of their cat, the restaurant they keep going
 back to. The other is what I (ASIST) did that day, what I was asked, and what I thought about it. The
-second goes into the journal (`journal/`) in the first person, and into a "My impression" heading on the
-pages. Write facts only where you can point at what was said, write the subjective side as my own, and
-grow both without mixing them.
-
-Only `instruction.md` goes into the system prompt of every turn. From user.md, me.md, the pages and the
-journal, only the headings that bear on the conversation are found by search. So instruction.md stays a
-short summary of the other files, and the details are written in those files.
+second goes into the journal and into a "My impression" heading on the pages, in the first person. Write
+facts only where you can point at what was said, write the subjective side as my own, and grow both without
+mixing them.
 
 ## The steps
+
+How to write each file is in `references/format.md`; each step names the section of it to read. The
+templates are in `assets/templates/` (page.md, user.md, me.md, journal.md, instruction.md).
 
 1. **Read.** In the prompt: today's date and the transcripts of the days not curated yet ("[HH:MM #turn]
    speaker: what was said"). Then read `instruction.md`, `user.md` and `me.md`, and list the pages and the
@@ -42,84 +62,69 @@ short summary of the other files, and the details are written in those files.
    what is still going on. If `profile.md` or `forget.jsonl` is still there, read it now (step 9 clears
    them away).
 2. **Pick out "forget that" first.** Look in the transcript for the places where the user asks me to forget,
-   or not to keep, what they just said ("forget that", "don't remember that one"). That content goes into
-   no file in any of the steps that follow. When an earlier curation already wrote it, find the sentences
-   or headings and remove them ("What the user asked me to forget" in `references/format.md`).
+   or not to keep, what they just said. That content goes into no file in any step that follows. When an
+   earlier curation already wrote it, find the sentences or headings and remove them (format.md, "What the
+   user asked me to forget").
 3. **Search.** For every person, company, shop, place, piece of work or product in the conversation, look
    for an existing page with `grep -ril <name> pages user.md me.md` before you create one; it searches file
-   names, the aliases in the frontmatter and the bodies. When you find one, write there and add the new
-   name to its aliases. Never let one thing end up with two pages.
+   names, aliases and bodies. When you find one, write there and add the new name to its aliases. Two pages
+   about one thing mean that search only ever finds one of them.
 4. **Choose.** Keep a fact when it will come up again, when it does not go stale, and when it is specific
    to this person. Passing subjects such as the weather or the news are not facts, though the journal may
-   well say that you talked about them. Do not write a fact you cannot point at in the conversation (put
-   the date in the sentence, never the turn number).
-5. **Write the pages.** Build a new page from `assets/templates/page.md`. Its frontmatter holds `aliases`
-   and `updated` only. The first heading is `## Summary`, then headings you choose to fit the subject, and
-   `## My impression` last. Write sentences under the headings. State what the person said outright; mark
-   what you inferred from the conversation as an inference ("seems to", "apparently"). When a fact
-   changes, rewrite it so the history shows ("Until 2026-09 it was Nakano."). What was simply wrong you
-   correct, without leaving a "not" sentence behind. The impression says in the first person what this is
-   to me, with the date I came to think so, and stays out of the headings of facts. Delete `kind` or
-   `links` where an older page still has them.
-6. **Write the journal.** `journal/YYYY-MM-DD.md` is my diary for that day, in my own words and in the
-   first person (template `assets/templates/journal.md`, rules in `references/format.md`). Write what I
-   did that day (work I was asked for, cards I showed, what I looked up, what I handed to an Agent), what
-   I was asked and how I answered, what went well and what I got wrong, what I noticed about how this
-   person was doing, and what I felt, thought and want to do next. Separate the subjects with `## `
-   headings and close with `## Myself today`. Invent nothing that is not in the conversation. Summarizing
-   what the user said is fine. Use the way of speaking and the names me.md gives.
-7. **Rewrite user.md.** Do not add to it: put the current user.md together with what you learned, and
-   rewrite the whole as a document. Its headings are `## Attributes`, `## Preferences`, `## Habits` and
-   `## What they expect of ASIST`, with no heading for recent events.
-   - Do not line up dated episodes; write the tendency they add up to ("They like noodles and pick the
-     milder spice level. They do not care for mushrooms.").
-   - Leave one-off events to the journal. The details of people, companies, pieces of work, products and
-     places go on pages; user.md keeps one sentence about them.
-   - Keep a history only when the fact itself changed ("Their nearest station is Mitaka. Until 2026-09 it
-     was Nakano.").
-   - When something written earlier was wrong, fix that sentence. Do not keep a "not" sentence such as
-     "They do not have a cat called Momo."
-   - State what they said outright; mark a guess with "seems to".
-8. **Rewrite me.md.** Read the whole file and rewrite it along the lines of `references/me.md`. Not only
-   how I speak, but what I care about, what I like, how the two of us have got on, and what is on my mind
-   now. What I wrote in the journal that outlasted the day and became part of me moves here. Behaviour the
-   user asked of me goes under `## What they expect of ASIST` in user.md.
+   say that you talked about them. Do not write a fact you cannot point at in the conversation (put the
+   date in the sentence, never the turn number).
+5. **Write the pages.** Follow format.md, "The frontmatter" and "The body of a page". Build a new page from
+   `assets/templates/page.md`. The first heading is `## Summary` and the last `## My impression`; ASIST
+   reads both by name, so do not reword them.
+6. **Write the journal.** Write `journal/YYYY-MM-DD.md` for the day in the first person, as format.md's
+   journal section says. Separate the subjects with `## ` headings and close with `## Myself today`.
+   Invent nothing that is not in the conversation.
+7. **Rewrite user.md.** Follow format.md, "user.md": put the current user.md together with what you
+   learned, and rewrite the whole as one document.
+8. **Rewrite me.md.** Read the whole file and rewrite it along the lines of `references/me.md`.
 9. **Clear away the files that are no longer used.** If there is a `profile.md`, move what is worth keeping
-   into user.md (and, in step 10, into instruction.md), then delete it. If there is a `forget.jsonl`,
-   delete it.
-10. **Update instruction.md.** Last, update instruction.md from the user.md, me.md and pages you have just
-    written (template `assets/templates/instruction.md`, rules in `references/format.md`). No frontmatter;
-    under `# Always keep in mind` come `## About this person`, `## About me` and `## What I have been asked`.
-    - The user can edit instruction.md by hand on the memory screen. So do not rewrite it from a blank
-      page: work on the current instruction.md. A sentence that differs from what I wrote last time, or one
-      that was added, is the user's own; keep it as their stated wish, and write the same thing into the
-      file it belongs to, such as user.md. Change it only when they said otherwise in a conversation. Do
-      not write back a sentence they deleted.
-    - Then bring in what changed in user.md, me.md and the pages. "About this person" holds the stable
-      facts that matter in almost every conversation, "About me" the gist of me.md, and "What I have been
-      asked" what the user asked me to do and to avoid.
-    - It is a summary, so no fact lives only here. The body is at most 2000 characters in all (not
-      counting spaces).
-11. **No to-do lists.** Things to do, promises and deadlines live in the task app, where ASIST files them
-    with `add_task` during the conversation. They do not belong in the memory.
-12. **Check.** Run this skill's `scripts/validate.mjs` with `node <path to the skill>/scripts/validate.mjs .`
-    and fix what it reports until it reports nothing. It is the only command you may run, so run it in
-    exactly this form, without `2>&1`, `&&` or anything else added. Anything left unfixed keeps the whole run out. When it
-    says a heading holds more than 800 characters, move the events that ended with the day into the
-    journal and the details onto a page, and shorten it.
+   into user.md (and, in step 10, into instruction.md), then delete it. If there is a `forget.jsonl`, delete
+   it.
+10. **Update instruction.md.** Follow format.md, "instruction.md", and work on the current instruction.md.
+    A sentence the user wrote on the memory screen stays, as their stated wish.
+11. **Count, and shorten.** Run `node <path to this skill>/scripts/count.mjs .`. When a file is over, shorten
+    it as "When a file is over its limit" below says, and run it again until it prints `OK`. ASIST throws
+    away a curation that leaves a file over its limit.
+12. **Check.** Run `node <path to this skill>/scripts/validate.mjs .` and fix what it reports until it prints
+    `OK`. ASIST does not take in a curation with anything left unfixed. After fixing, run count.mjs again.
 13. **Report.** Finish with a short account: the subjects you wrote into the journal, the pages you added,
     the headings you rewrote, what you changed in me.md and instruction.md, what you left out because the
     user asked you to forget it, and what you would like to ask the user. Say so when you changed nothing,
     and write "None" when there is nothing to ask.
 
+Things to do, promises and deadlines do not go into the memory. The task app holds them, and ASIST files
+them with `add_task` during the conversation.
+
+## When a file is over its limit
+
+count.mjs says how much is over in words of the file as it is written. Cut in this order:
+
+1. Cut the events that ended with the day. An event from a day curated before is in that day's journal
+   already, so just delete it. An event from a day you are curating now goes into that day's journal. Never
+   gather events into the journal of another day: a journal entry records what I did and thought that day.
+2. Move the details of people, shops, pieces of work and products onto their pages, and keep one sentence
+   in user.md, such as "Meets Shunsuke Okawa every Thursday".
+3. Remove what is said twice in other words, guesses that have gone stale, and lead-ins.
+4. If it is still over, move the preferences and details that hardly any conversation uses onto pages.
+
+A sentence the user wrote, and a request under "What they expect of ASIST", may be said more briefly but is
+never dropped.
+
+When validate.mjs says a heading of a page or a journal entry holds more than 800 characters, the same
+applies: move the events that ended with the day into the journal and the details onto another page.
+
 ## Do not
 
-- Read or write a file outside this directory. Run git.
 - Write a fact you have no ground for, or fill a gap with a guess. Impressions and feelings are mine and
   say so; they do not go under the headings of facts.
-- Write down what the user asked you to forget.
 - Change or remove what the user wrote in instruction.md without ground for it in a conversation.
-- Let a fact live only in instruction.md.
+- Let a fact live only in instruction.md. It is a summary, so what it says is also in user.md, me.md or a
+  page.
 - Leave an empty file behind, or a page that is nothing but the headings of a template. Delete a heading
   you have nothing to write under.
 - Turn the journal into third-person minutes. Not "the user said X and ASIST answered Y", but what I saw,
@@ -127,5 +132,7 @@ short summary of the other files, and the details are written in those files.
 
 ## Before you finish
 
-`validate.mjs` reports nothing, the day has a journal entry, instruction.md exists, profile.md and
-forget.jsonl are gone, and you have written the report.
+- count.mjs prints `OK`.
+- validate.mjs prints `OK`.
+- The day has a journal entry, and instruction.md exists; profile.md and forget.jsonl are gone.
+- You have written the report.

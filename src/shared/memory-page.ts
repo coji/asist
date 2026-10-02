@@ -4,28 +4,29 @@ import type { Translate } from './i18n'
 import { errorText } from './i18n/error-text'
 import type { MemoryDocument, MemoryDocumentKind, MemoryPageInput, MemoryUnit, MemoryUnitKind } from './ipc'
 import {
-  INSTRUCTION_MAX_CHARS,
+  PROMPT_DOCUMENTS,
   SECTION_MAX_CHARS,
   SUMMARY_HEADING,
   documentIssues,
-  instructionBody,
   pageNameIssue,
   parsePage,
+  promptBody,
   writtenInJapanese,
   type DocumentIssue,
   type PageNameIssue,
-  type ParsedPage
+  type ParsedPage,
+  type PromptDocumentKind
 } from '../../resources/skills/memory-format.mjs'
 
-export { instructionBody, parsePage }
+export { PROMPT_DOCUMENTS, parsePage, promptBody, type PromptDocumentKind }
 
 /**
  * Reading and writing the memory pages, which are markdown. They live in `userData/memory/`, and the
  * files are the memory itself. How a document is read and what breaks its rules live in
- * resources/skills/memory-format.mjs, which the curation skills' validate.mjs reads too; this file turns
- * what it reads into units and list entries, and its findings into sentences. A heading and the body under
- * it, called a section, is the unit of search and injection, and its id is derived from the file path and
- * the heading, so rewriting the body leaves the unit identical.
+ * resources/skills/memory-format.mjs, which the curation skills' scripts read too; this file turns what it
+ * reads into units and list entries, and its findings into sentences. A heading and the body under it,
+ * called a section, is the unit of search and injection for the pages and the journal, and its id is
+ * derived from the file path and the heading, so rewriting the body leaves the unit identical.
  */
 
 /**
@@ -216,8 +217,8 @@ function issueText(file: string, issue: DocumentIssue, t: Translate): string {
       return t('memory.check.headingWithoutText', { file, line: issue.line, heading: issue.heading })
     case 'sectionTooLong':
       return t('memory.check.sectionTooLong', { file, line: issue.line, heading: issue.heading, limit: SECTION_MAX_CHARS })
-    case 'instructionTooLong':
-      return t('memory.check.instructionTooLong', { file, limit: INSTRUCTION_MAX_CHARS })
+    case 'tooManyTokens':
+      return t('memory.check.tooManyTokens', { file, tokens: issue.tokens, limit: issue.limit, characters: issue.cut.characters })
     case 'firstHeading':
       return t('memory.check.firstHeading', { file, heading: issue.heading })
     case 'obsoleteKey':

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { CURATION_SKILL, SKILL_DIRS, curationSkillSource } from '@shared/memory-curation'
 import { FIXED, validateDocument } from '@shared/memory-page'
 import { createTranslator } from '@shared/i18n'
+import { PROMPT_DOCUMENTS, PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '../resources/skills/memory-format.mjs'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd(), getPath: () => tmpdir() } }))
 vi.mock('../src/main/services/settings', () => ({
@@ -27,6 +28,19 @@ const validate = (skill: string, dir: string): { ok: boolean; output: string } =
     return { ok: false, output: String((err as { stdout?: string }).stdout ?? '') }
   }
 }
+const count = (skill: string, dir: string): { ok: boolean; output: string } => {
+  try {
+    return { ok: true, output: execFileSync('node', [path.join(skill, 'scripts', 'count.mjs'), dir], { encoding: 'utf8' }) }
+  } catch (err) {
+    return { ok: false, output: String((err as { stdout?: string }).stdout ?? '') }
+  }
+}
+/** The numbers count.mjs prints on the line of a file, in their order, without its wording. */
+const numbersOn = (output: string, file: string): number[] =>
+  (output.split('\n').find((line) => line.startsWith(`${file}:`)) ?? '')
+    .slice(file.length)
+    .match(/\d+/g)!
+    .map(Number)
 /** The file, and the line where there is one, that each problem is about, without its wording. */
 const places = (output: string): string[] =>
   output
@@ -69,7 +83,7 @@ describe('the memory-curation skill', () => {
     expect(skill).toContain(`## ${FIXED.journalSelf.ja}`)
     expect(skill).toContain(FIXED.impression.ja)
     expect(skill.startsWith(`---\nname: ${CURATION_SKILL}\ndescription: `)).toBe(true)
-    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs']) {
+    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs', 'scripts/count.mjs']) {
       expect(fs.existsSync(path.join(skillDir('ja-JP'), file))).toBe(true)
       expect(skill).toContain(file.split('/').pop()!)
     }
@@ -87,7 +101,7 @@ describe('the memory-curation skill', () => {
     expect(skill).toContain(`## ${FIXED.journalSelf.en}`)
     expect(skill).toContain('first person')
     expect(skill.split('\n').length).toBeLessThan(500)
-    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs']) {
+    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs', 'scripts/count.mjs']) {
       expect(fs.existsSync(path.join(skillDir('en-US'), file))).toBe(true)
       expect(skill).toContain(file.split('/').pop()!)
     }
@@ -144,20 +158,36 @@ describe('the memory-curation skill', () => {
     expect(problemsIn(dir)).toEqual(['instruction.md', 'instruction.md', 'instruction.md'])
   })
 
-  it('counts instruction.md up to 2000 characters without whitespace, and flags it beyond', () => {
+  it('counts what each document of the prompt costs against its limit with count.mjs, in both skills, as ASIST counts it', () => {
     const dir = wellFormed()
-    // Five sections of 300 characters each, padded with whitespace that is not counted. The heading lines
-    // are part of the body, so they count too.
-    const body = Array.from({ length: 5 }, (_, i) => `## 見出し${i}\n${'あ '.repeat(300)}\n`).join('\n')
-    const at = (extra: number): string => `# いつも覚えておくこと\n\n${body}${'い'.repeat(extra)}\n`
-    const counted = 5 * ([...'##見出し0'].length + 300)
-    fs.writeFileSync(path.join(dir, 'instruction.md'), at(2000 - counted))
-    for (const locale of LOCALES) expect(validate(skillDir(locale), dir)).toEqual({ ok: true, output: 'OK\n' })
-    fs.writeFileSync(path.join(dir, 'instruction.md'), at(2000 - counted + 1))
-    expect(problemsIn(dir)).toEqual(['instruction.md'])
+    for (const locale of LOCALES) {
+      const { ok, output } = count(skillDir(locale), dir)
+      expect([locale, ok]).toEqual([locale, true])
+      for (const { file } of PROMPT_DOCUMENTS) {
+        const size = promptSize(fs.readFileSync(path.join(dir, file), 'utf8'))
+        expect([locale, file, numbersOn(output, file).slice(0, 3)]).toEqual([
+          locale,
+          file,
+          [size.tokens, PROMPT_DOCUMENT_MAX_TOKENS, PROMPT_DOCUMENT_MAX_TOKENS - size.tokens]
+        ])
+      }
+    }
+    const me = `---\nupdated: 2026-09-22\n---\n# 私について\n\n${'私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(60)}\n`
+    fs.writeFileSync(path.join(dir, 'me.md'), me)
+    const size = promptSize(me)
+    const over = size.tokens - PROMPT_DOCUMENT_MAX_TOKENS
+    expect(over).toBeGreaterThan(0)
+    const cut = textForTokens(size, over)
+    // The Japanese skill says how much to cut in characters, the English one, which every other language uses, in words.
+    const japanese = count(skillDir('ja-JP'), dir)
+    expect([japanese.ok, numbersOn(japanese.output, 'me.md')]).toEqual([false, [size.tokens, PROMPT_DOCUMENT_MAX_TOKENS, over, cut.characters]])
+    const english = count(skillDir('en-US'), dir)
+    expect([english.ok, numbersOn(english.output, 'me.md')]).toEqual([false, [size.tokens, PROMPT_DOCUMENT_MAX_TOKENS, over, cut.words, cut.characters]])
+    // validate.mjs reports it too, since ASIST refuses to merge it.
+    expect(problemsIn(dir)).toEqual(['me.md'])
   })
 
-  it('flags a section longer than 800 characters in every kind of file, at the line of its heading', () => {
+  it('flags a section longer than 800 characters in a page or a journal entry, at the line of its heading, and not in a document of the prompt', () => {
     const dir = wellFormed()
     const long = 'あ'.repeat(801)
     const fits = 'い '.repeat(800)
@@ -166,7 +196,7 @@ describe('the memory-curation skill', () => {
     fs.writeFileSync(path.join(dir, 'pages', '松葉軒.md'), `---\n---\n# 松葉軒\n\n## 要約\n${long}\n`)
     fs.writeFileSync(path.join(dir, 'journal', '2026-09-08.md'), `# 2026-09-08\n\n## 食事\n${long.slice(0, 400)}\n${long.slice(400)}\n`)
     fs.writeFileSync(path.join(dir, 'instruction.md'), `# いつも覚えておくこと\n\n## この人について\n${long}\n`)
-    expect(problemsIn(dir)).toEqual(['user.md:8','me.md:5', 'instruction.md:3', 'pages/松葉軒.md:5', 'journal/2026-09-08.md:3'])
+    expect(problemsIn(dir)).toEqual(['pages/松葉軒.md:5', 'journal/2026-09-08.md:3'])
   })
 
   it('flags profile.md and forget.jsonl while they remain', () => {
@@ -187,9 +217,9 @@ describe('the memory-curation skill', () => {
 
   it('reports every file exactly as the check ASIST runs before a merge does, so that nothing the Agent passes is refused', () => {
     const dir = wellFormed()
-    const prose = '私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(30)
+    const prose = '私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(60)
     const files: Record<string, string> = {
-      // me.md may go without a heading; its text is then one section, capped like any other.
+      // me.md may go without a heading; its text is then one section, and the whole is capped by its tokens.
       'me.md': `---\nupdated: 2026-09-22\n---\n# 私について\n\n${prose}\n`,
       'pages/大川俊介.md': '---\nupdated: 2026-09-20\n---\n# 大川俊介\n\n## 要約\n本人の上司。\n\n## 私の印象\n落ち着いた人。\n\n## 私の印象\nくるみアレルギーがある。\n',
       'pages/松葉軒.md': '---\naliases:\n- 松葉軒\nupdated: 2026-09-22\n---\n# 松葉軒\n行きつけの店。\n\n## 要約\nラーメン屋。\n',

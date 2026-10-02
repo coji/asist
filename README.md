@@ -70,7 +70,7 @@ ASIST's answers and cards come from language models and can be wrong, so check a
 | Where | What |
 |---|---|
 | Only on this computer | Listening, voice activity detection, backchannel classification, memory search. Settings, memory, notes, tasks, conversation history and fetched mail |
-| The model provider you chose | The text of the conversation and the memory that relates to it. With a Live API voice engine, the microphone audio |
+| The model provider you chose | The text of the conversation, the three memory documents that go into every conversation, and the rest of the memory that relates to it. With a Live API voice engine, the microphone audio |
 | The sources of card data | Only the words a card needs, such as a place for the weather, a news topic or a currency |
 | The service behind the codex or claude CLI | The prompt of a job you approved, and the files the CLI reads |
 
