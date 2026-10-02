@@ -319,6 +319,19 @@ export const speechRecognition = defineMessages({
       'pt-BR': 'O reconhecimento de fala não está preparado. Prepare-o na página Voz dos ajustes.',
       'es-419': 'El reconocimiento de voz no está preparado. Prepáralo en la página Voz de Configuración.',
       'es-ES': 'El reconocimiento de voz no está preparado. Prepáralo en la página “Voz” de Ajustes.'
+    },
+    modelLoadFailed: {
+      'ja-JP': 'ブラウザ内 Whisper のモデルを読み込めませんでした({detail})。',
+      'en-US': "Couldn't load the in-browser Whisper model ({detail}).",
+      'fr-FR': 'Impossible de charger le modèle de Whisper dans le navigateur ({detail}).',
+      'de-DE': 'Das Modell von Whisper im Browser konnte nicht geladen werden ({detail}).',
+      'hi-IN': 'ब्राउज़र वाले Whisper का मॉडल लोड नहीं हो सका ({detail})।',
+      'id-ID': 'Tidak bisa memuat model Whisper dalam browser ({detail}).',
+      'it-IT': 'Impossibile caricare il modello di Whisper nel browser ({detail}).',
+      'ko-KR': '브라우저 내 Whisper 모델을 불러오지 못했습니다({detail}).',
+      'pt-BR': 'Não foi possível carregar o modelo do Whisper no navegador ({detail}).',
+      'es-419': 'No se pudo cargar el modelo de Whisper en el navegador ({detail}).',
+      'es-ES': 'No se ha podido cargar el modelo de Whisper en el navegador ({detail}).'
     }
   },
   unavailable: {

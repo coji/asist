@@ -60,6 +60,8 @@ If the first-time setup or "API keys" in the settings says the key couldn't be c
 
 When "Turn-taking (MaAI)" is on in the "Voice" settings but MaAI can't start, ASIST judges the end of speech by the silence length in the settings and the conversation goes on. The message appears once after MaAI is turned on. Prepare MaAI again under "Turn-taking (MaAI)" on the "Voice" page of the settings; the preparation ends by starting MaAI to check it. If MaAI still can't start there, the log holds the cause; attach it when [reporting a bug](#reporting-a-bug).
 
+While MaAI's processing falls behind the audio of the conversation, ASIST also judges the end of speech by the silence length in the settings, until MaAI catches up. This can happen when other work keeps the computer busy, and no message appears. When MaAI's processing is slower than the audio of the conversation on average over 8 to 10 seconds, the log records `HIGH LOAD`; a short stall that leaves it behind records nothing.
+
 ## Windows offers no speech recognition model
 
 On Windows, speech recognition, and Irodori-TTS and Qwen3-TTS for reading aloud, need a discrete GPU on your computer, whether from NVIDIA, AMD or Intel Arc. When there is none they can use, "Listening" in the first-time setup and "Voice" in the settings show the reason in place of the model, and Irodori-TTS and Qwen3-TTS cannot be chosen for reading aloud either. ASIST checks the GPU when it starts.

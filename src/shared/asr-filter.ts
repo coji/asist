@@ -27,11 +27,14 @@ const CONTENT_CHAR = /[\p{L}\p{N}]/u
  */
 export function isMeaningfulTranscript(text: string, locale: ConversationLocale): boolean {
   const trimmed = text.trim()
-  if (trimmed.length < 2) return false
+  // Counted in code points: a string's length counts a kanji outside the Basic Multilingual Plane, such as
+  // `𠮷`, twice.
+  const chars = [...trimmed]
+  if (chars.length < 2) return false
   if (!CONTENT_CHAR.test(trimmed)) return false
   const counts = new Map<string, number>()
-  for (const char of trimmed) counts.set(char, (counts.get(char) ?? 0) + 1)
-  if (Math.max(...counts.values()) / trimmed.length > 0.6) return false
+  for (const char of chars) counts.set(char, (counts.get(char) ?? 0) + 1)
+  if (Math.max(...counts.values()) / chars.length > 0.6) return false
   if (!conversationFeatures(locale).hallucinationList) return true
   return !HALLUCINATION_PATTERNS.some((pattern) => pattern.test(trimmed))
 }

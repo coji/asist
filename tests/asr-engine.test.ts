@@ -79,6 +79,20 @@ describe('AsrEngine', () => {
     await expect(retried).resolves.toBe('webgpu')
   })
 
+  it('reports a model that fails to load as its own error, with the library\'s message as the detail', async () => {
+    const worker = new FakeWorker()
+    const engine = new AsrEngine({ workerFactory: () => asWorker(worker) })
+
+    const failed = engine.init()
+    worker.message({ type: 'error', message: 'no available backend found. ERR: [webgpu] Error: Failed to compile shader' })
+
+    await expect(failed).rejects.toThrow(
+      errorText('speechRecognition.errors.modelLoadFailed', {
+        detail: 'no available backend found. ERR: [webgpu] Error: Failed to compile shader'
+      })
+    )
+  })
+
   it('times out a hung initialization and can initialize a fresh worker', async () => {
     vi.useFakeTimers()
     const firstWorker = new FakeWorker()

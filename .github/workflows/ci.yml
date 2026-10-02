@@ -52,9 +52,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-app
+      # tests/vap-worker.test.ts runs the MaAI worker, which imports numpy, with the Python and numpy versions of
+      # the app's own environment (resources/vap-requirements.txt).
+      - id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy==2.5.2
       - run: npm run typecheck
       - run: npm run i18n -- check
       - run: npm test
+        env:
+          ASIST_VAP_PYTHON: ${{ steps.python.outputs.python-path }}
 
   # Whether the text of every card and screen still fits in each of the eleven languages and every theme,
   # in Chrome. The layout depends on the fonts of macOS, so it runs there, with the themes shared out.
@@ -121,8 +130,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-app
+      - id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy==2.5.2
       - run: npm run typecheck
       - run: npm test
+        env:
+          ASIST_VAP_PYTHON: ${{ steps.python.outputs.python-path }}
 
   # Builds the agent launcher and the microphone helper with the MSVC of the runner's Visual Studio, the bundle and the unpacked app.
   build-windows:

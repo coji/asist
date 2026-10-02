@@ -39,6 +39,7 @@ interface VoiceInternals {
   captureStartedAt: number
   lastPartial: string
   lastBackchannelAt: number
+  lastNodAt: number
   microphone: { mic: { start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> } }
   vad: unknown
   recognition: { transcribe: (audio: Float32Array) => Promise<string> }
@@ -122,13 +123,14 @@ describe('MaAI by conversation language', () => {
   })
 })
 
-describe('MaAI that starts taking part while the microphone is on', () => {
-  /** A pause inside a sentence: the EoT is low, so MaAI extends the wait past the fixed hangover. */
-  const midSentence: VapState = {
-    t: 0, pNowUser: 0.9, pNowAssistant: 0.1, pFutureUser: 0.9, pFutureAssistant: 0.1,
-    eotUser: 0.1, bcDetUser: 0, bcReact: 0, bcEmo: 0, nodShort: 0, nodLong: 0, inferMs: 1
-  }
+/** A pause inside a sentence: the EoT is low, so MaAI extends the wait past the fixed hangover. */
+const midSentence: VapState = {
+  t: 0, pNowUser: 0.9, pNowAssistant: 0.1, pFutureUser: 0.9, pFutureAssistant: 0.1,
+  eotUser: 0.1, bcDetUser: 0, bcReact: 0, bcEmo: 0, nodShort: 0, nodLong: 0, inferMs: 1,
+  turnLagMs: 0, backchannelLagMs: 0
+}
 
+describe('MaAI that starts taking part while the microphone is on', () => {
   async function listeningWithout(change: 'setting' | 'language'): Promise<InstanceType<typeof VoiceController>> {
     const controller = new VoiceController()
     controller.nativeMicPreferred = false
@@ -193,6 +195,109 @@ describe('MaAI that starts taking part while the microphone is on', () => {
 
     expect(window.api.vapStart).toHaveBeenCalledTimes(3)
     expect(said).toHaveBeenCalledOnce()
+    controller.disable()
+  })
+})
+
+describe('MaAI estimates from a worker that has fallen behind the audio', () => {
+  /**
+   * Turns the microphone on with MaAI and returns a way to speak while the worker sends the given estimate, and a
+   * way to have the worker send it once.
+   */
+  async function listeningWithMaai(estimate: VapState): Promise<{
+    controller: InstanceType<typeof VoiceController>
+    speak: (frames: number, level: number) => void
+    send: () => void
+  }> {
+    const listeners: Array<(state: VapState) => void> = []
+    vi.mocked(window.api.onVapState).mockImplementation((listener: (state: VapState) => void) => {
+      listeners.push(listener)
+      return vi.fn()
+    })
+    const controller = new VoiceController()
+    controller.nativeMicPreferred = false
+    controller.partialIntervalMs = 0
+    controller.vapEnabled = true
+    controller.conversationLocale = 'ja-JP'
+    internals(controller).microphone.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    await controller.enable()
+    const vad = internals(controller).vad as { push(frame: Float32Array): void }
+    const send = (): void => {
+      for (const listener of listeners) listener(estimate)
+    }
+    const speak = (frames: number, level: number): void => {
+      for (let i = 0; i < frames; i++) {
+        send()
+        vad.push(new Float32Array(320).fill(level))
+      }
+    }
+    return { controller, speak, send }
+  }
+
+  /** The aizuchi the controller plays in a pause inside a long utterance whose text shows no clause boundary. */
+  async function aizuchiFrom(estimate: VapState): Promise<BackchannelDecision[]> {
+    const { controller, send } = await listeningWithMaai(estimate)
+    const vad = internals(controller).vad
+    send()
+    pausedMidSentence(controller)
+    internals(controller).lastPartial = '昨日の夜に資料を'
+    const fired: BackchannelDecision[] = []
+    controller.events.on('backchannel', (decision) => fired.push(decision))
+    internals(controller).maybeBackchannel()
+    internals(controller).vad = vad
+    controller.disable()
+    return fired
+  }
+
+  it('plays the aizuchi model\'s aizuchi only while that model keeps up with the audio', async () => {
+    const wantsAizuchi: VapState = { ...midSentence, bcEmo: 1, bcReact: 1 }
+
+    expect(await aizuchiFrom({ ...wantsAizuchi, backchannelLagMs: 0 })).toHaveLength(1)
+    expect(await aizuchiFrom({ ...wantsAizuchi, backchannelLagMs: 3_000 })).toEqual([])
+  })
+
+  it('nods on the nod model\'s values only while that model keeps up with the audio', async () => {
+    const nods = async (backchannelLagMs: number): Promise<string[]> => {
+      const { controller, send } = await listeningWithMaai({ ...midSentence, nodLong: 1, nodShort: 1, backchannelLagMs })
+      const vad = internals(controller).vad
+      // The user is speaking, and the last nod was long enough ago.
+      internals(controller).vad = { speechConfirmed: true, isSpeaking: true }
+      internals(controller).lastNodAt = -60_000
+      const nodded: string[] = []
+      controller.events.on('nod', (kind) => nodded.push(kind))
+      send()
+      internals(controller).vad = vad
+      controller.disable()
+      return nodded
+    }
+
+    expect(await nods(0)).toHaveLength(1)
+    expect(await nods(3_000)).toEqual([])
+  })
+
+  it('leaves the end of speech to the fixed hangover while the estimates describe audio seconds old', async () => {
+    // The worker answers every frame on time, but about audio that reached it three seconds earlier.
+    const { controller, speak } = await listeningWithMaai({ ...midSentence, turnLagMs: 3_000, backchannelLagMs: 3_000 })
+    const ends: number[] = []
+    controller.events.on('speechend', ({ vadMs }) => ends.push(vadMs))
+
+    // A second of speech and a 500 ms pause, which the fixed hangover ends.
+    speak(50, 0.1)
+    speak(25, 0)
+
+    expect(ends).toHaveLength(1)
+    controller.disable()
+  })
+
+  it('lets the turn-taking values move the end of speech while only the aizuchi and nod model is behind', async () => {
+    const { controller, speak } = await listeningWithMaai({ ...midSentence, turnLagMs: 0, backchannelLagMs: 3_000 })
+    const ends: number[] = []
+    controller.events.on('speechend', ({ vadMs }) => ends.push(vadMs))
+
+    speak(50, 0.1)
+    speak(25, 0)
+
+    expect(ends).toEqual([])
     controller.disable()
   })
 })

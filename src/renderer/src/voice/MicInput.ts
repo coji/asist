@@ -20,6 +20,12 @@ export interface MicInputOptions {
   noiseSuppression: boolean
 }
 
+/**
+ * Receives each 16 kHz frame and whether it closes what the source handed over at once. DeepFilterNet hands one
+ * delivery of the native helper on in several frames.
+ */
+export type MicFrameHandler = (frame: Float32Array, deliveryEnds: boolean) => void
+
 export class MicInput {
   private mic = new MicCapture()
   private nativeMic = new NativeMicSource()
@@ -44,7 +50,7 @@ export class MicInput {
    * because main gave up on the native helper or the device went away; the caller starts the input again.
    * A stop while this runs leaves nothing started. It throws only when getUserMedia fails.
    */
-  async start(options: MicInputOptions, onFrame: (frame: Float32Array) => void, onLost: () => void): Promise<void> {
+  async start(options: MicInputOptions, onFrame: MicFrameHandler, onLost: () => void): Promise<void> {
     this.close()
     const generation = this.generation
     const helperGivenUp = (): void => {
@@ -60,7 +66,7 @@ export class MicInput {
       return
     }
     if (generation !== this.generation) return
-    await this.mic.start(onFrame, onLost)
+    await this.mic.start((frame) => onFrame(frame, true), onLost)
   }
 
   /** Closes the input as the microphone turns off. The next start tries the native helper again. */
@@ -78,17 +84,13 @@ export class MicInput {
     this.mic.stop()
   }
 
-  private startNative(
-    noiseSuppression: boolean,
-    onFrame: (frame: Float32Array) => void,
-    onLost: () => void
-  ): Promise<boolean> {
+  private startNative(noiseSuppression: boolean, onFrame: MicFrameHandler, onLost: () => void): Promise<boolean> {
     const resampler = new StreamResampler(NATIVE_SAMPLE_RATE, TARGET_SAMPLE_RATE)
-    const deliver = (chunk: Float32Array): void => {
+    const deliver = (chunk: Float32Array, deliveryEnds: boolean): void => {
       const frame = resampler.process(chunk)
-      if (frame.length > 0) onFrame(frame)
+      if (frame.length > 0) onFrame(frame, deliveryEnds)
     }
-    let pipeline: (frame: Float32Array) => void = deliver
+    let pipeline = (frame: Float32Array): void => deliver(frame, true)
     if (noiseSuppression) {
       void this.dfn.init()
       this.dfn.reset()

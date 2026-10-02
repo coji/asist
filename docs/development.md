@@ -10,6 +10,8 @@ npm run build
 
 `npm test` は、最初に同梱用の git を用意し(macOS ではコンパイルし、Windows では MinGit を取得します)、テストが使う Electron を取得します。
 
+`tests/vap-worker.test.ts` は MaAI のワーカー(`resources/vap_worker.py`)を実際に動かすので、numpy の入った Python を使います。環境変数 `ASIST_VAP_PYTHON` があればその Python を、なければ PATH の `python3` か `python` を使います。手元で見つからないときはこのテストを飛ばし、CI で見つからないときは失敗にします。CI の `test` と `test-windows` は、アプリの環境と同じ Python 3.12 と numpy 2.5.2 を入れてから `npm test` を実行します。
+
 ## Windows で clone する
 
 Windows 11(x64)で作業するときは、clone の前に、次のことを済ませます。

@@ -58,6 +58,21 @@ describe('the VAP worker', () => {
     expect(mocks.spawn.mock.calls[0][2].env).toMatchObject({ PYTHONUTF8: '1' })
   })
 
+  it('hands each estimate to the conversation with how far behind the audio each of its models was', async () => {
+    const lags: Array<[number, number]> = []
+    const starting = vap.ensureStarted((state) => lags.push([state.turnLagMs, state.backchannelLagMs]))
+    children[0].stdout.write(READY)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await starting).toBe(true)
+    children[0].stdout.write(
+      'ASIST_JSON:{"type":"state","t":31.2,"pNowUser":0.9,"pNowAssistant":0.1,"pFutureUser":0.9,"pFutureAssistant":0.1,' +
+        '"eotUser":0.1,"bcDetUser":0.02,"bcReact":0.3,"bcEmo":0.05,"nodShort":0.2,"nodLong":0.6,"inferMs":95.1,' +
+        '"turnLagMs":160,"backchannelLagMs":2400}\n'
+    )
+    await vi.advanceTimersByTimeAsync(10)
+    expect(lags).toEqual([[160, 2400]])
+  })
+
   it('lets a preparation wait for the worker the conversation is already loading, and the other way round', async () => {
     const starting = vap.ensureStarted(() => {})
     const preparing = vap.prepare(() => {})

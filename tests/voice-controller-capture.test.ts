@@ -229,7 +229,8 @@ describe('VoiceController with a voice over the reply that MaAI reads as an aizu
   /** bc_det reads the voice as an aizuchi; the EoT sits between its thresholds, so the fixed hangover applies. */
   const aizuchi: VapState = {
     t: 0, pNowUser: 0.5, pNowAssistant: 0.5, pFutureUser: 0.5, pFutureAssistant: 0.5,
-    eotUser: 0.5, bcDetUser: 0.9, bcReact: 0, bcEmo: 0, nodShort: 0, nodLong: 0, inferMs: 1
+    eotUser: 0.5, bcDetUser: 0.9, bcReact: 0, bcEmo: 0, nodShort: 0, nodLong: 0, inferMs: 1,
+    turnLagMs: 0, backchannelLagMs: 0
   }
 
   function withMaai(): { controller: Controller; ends: SpeechEnd[]; utterances: string[]; letPass: () => number } {

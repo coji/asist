@@ -129,11 +129,14 @@ export class AsrEngine {
           this.settlePending(message.id, undefined, message.text)
           break
         case 'error': {
-          const error = new Error(message.message)
           if (message.id !== undefined) {
-            this.settlePending(message.id, error)
+            this.settlePending(message.id, new Error(message.message))
           } else {
-            this.invalidateWorker(error, worker)
+            // Only loading the model fails without an id, with a message from transformers.js or ONNX Runtime.
+            this.invalidateWorker(
+              new Error(errorText('speechRecognition.errors.modelLoadFailed', { detail: message.message })),
+              worker
+            )
           }
           break
         }
