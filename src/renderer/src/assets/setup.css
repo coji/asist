@@ -161,7 +161,7 @@
 }
 /* A text followed by a link or a note sits beside it while the line has room, and the link or note
    otherwise starts the next line level with the text. The space between them is the row's gap, which a
-   wrapped line does not begin with; a margin on the link stayed at the start of the line it wrapped to. */
+   wrapped line does not begin with; a margin on the link would stay at the start of the line it wraps to. */
 .su-field label,
 .su-field .su-hint,
 .su-extra-name,
