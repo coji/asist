@@ -82,6 +82,14 @@ export function toResponsesTools(request: Pick<ConversationRequest, 'tools' | 'w
 }
 
 const CITATION = /[ \t]*\(?\[[^\]\n]*\]\(https?:\/\/[^)\s]*\)\)?/g
+/**
+ * The start of a citation that is still being written at the end of the text: an opening parenthesis, a
+ * title in brackets followed by as much of `(https://…` as has arrived, or a whole link inside an opening
+ * parenthesis whose closing one has not arrived yet. Brackets that closed without `(` after them, or `(`
+ * without the scheme, can no longer become a citation and do not match.
+ */
+const PARTIAL_CITATION =
+  /[ \t]*(?:\(|\(\[[^\]\n]*\]\(https?:\/\/[^)\s]*\)|\(?\[[^\]\n]*(?:\](?:\((?:h(?:t(?:t(?:p(?:s?(?::(?:\/(?:\/[^)\s]*)?)?)?)?)?)?)?)?)?)?)$/
 /** How many characters may be held back while it is still undecided whether they are a citation; beyond that they are emitted as text. */
 const CITATION_HOLD_MAX = 600
 
@@ -90,18 +98,18 @@ export class CitationFilter {
   private pending = ''
 
   push(delta: string): string {
-    this.pending = (this.pending + delta).replace(CITATION, '')
-    const open = this.pending.search(/[ \t]*\(?\[|[ \t]*\($/)
+    this.pending += delta
+    const open = this.pending.search(PARTIAL_CITATION)
     if (open === -1 || this.pending.length - open > CITATION_HOLD_MAX) return this.flush()
     const ready = this.pending.slice(0, open)
     this.pending = this.pending.slice(open)
-    return ready
+    return ready.replace(CITATION, '')
   }
 
   flush(): string {
     const rest = this.pending
     this.pending = ''
-    return rest
+    return rest.replace(CITATION, '')
   }
 }
 
@@ -166,6 +174,10 @@ class OpenAIStream extends AdapterStream {
           break
         case 'response.output_item.done': {
           const item = event.item
+          // A function call the output limit cut off ends incomplete with its arguments cut short. It is
+          // neither run nor sent back, since a call without its result is refused, and the response ends
+          // on max_tokens.
+          if (item.type === 'function_call' && item.status === 'incomplete') break
           this.items.push(item)
           if (item.type === 'message') {
             if (citations) this.emitText(citations.flush())
@@ -204,7 +216,7 @@ class OpenAIStream extends AdapterStream {
 
     const hasToolCall = this.parts.some((part) => part.type === 'tool_call')
     const incomplete = response.status === 'incomplete' ? response.incomplete_details?.reason : undefined
-    const stop: StopReason = hasToolCall ? 'tool_calls' : incomplete === 'max_output_tokens' ? 'max_tokens' : incomplete === 'content_filter' || refused ? 'refusal' : 'end'
+    const stop: StopReason = incomplete === 'max_output_tokens' ? 'max_tokens' : hasToolCall ? 'tool_calls' : incomplete === 'content_filter' || refused ? 'refusal' : 'end'
     if (incomplete && stop === 'end') throw new Error(`OpenAI: the response was cut short (${incomplete})`)
 
     return {
@@ -215,13 +227,14 @@ class OpenAIStream extends AdapterStream {
   }
 }
 
-/** Every web_search_call item of the output is one billed search. */
+/** The input tokens count the ones read from and written to the cache as well. Every web_search_call item of the output is one billed search. */
 function roundUsage(usage: OpenAI.Responses.ResponseUsage | undefined, output: readonly OpenAI.Responses.ResponseOutputItem[]): RoundUsage {
   const cachedTokens = usage?.input_tokens_details?.cached_tokens ?? 0
+  const writtenTokens = usage?.input_tokens_details?.cache_write_tokens ?? 0
   return {
-    input: Math.max((usage?.input_tokens ?? 0) - cachedTokens, 0),
+    input: Math.max((usage?.input_tokens ?? 0) - cachedTokens - writtenTokens, 0),
     cacheRead: cachedTokens,
-    cacheCreation: (usage?.input_tokens_details as { cache_write_tokens?: number } | undefined)?.cache_write_tokens ?? 0,
+    cacheCreation: writtenTokens,
     output: usage?.output_tokens ?? 0,
     webSearches: output.filter((item) => item.type === 'web_search_call').length
   }

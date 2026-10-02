@@ -289,7 +289,10 @@ export interface TurnTimings {
 
 export type BridgeOutcome = 'played' | 'late' | 'failed'
 
-/** The usage of one round, the four numbers taken from the provider's own usage report. */
+/**
+ * The usage of one round, the four numbers taken from the provider's own usage report. On every provider
+ * input, cacheRead and cacheCreation are separate parts of the prompt, so their sum is its length.
+ */
 export interface RoundUsage {
   input: number
   cacheRead: number

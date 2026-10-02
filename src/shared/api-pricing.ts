@@ -51,21 +51,16 @@ const WEB_SEARCH_PRICE: Record<ConversationModel['provider'], number> = {
   cerebras: 0
 }
 
-/**
- * The cost in USD of one response, or null for a model the price list does not have. The tokens of
- * `usage.input` exclude the cached ones on every provider; on OpenAI they still include the cache
- * writes, which are billed at their own price, so those are taken out of the input first.
- */
+/** The cost in USD of one response, or null for a model the price list does not have. */
 export function llmCost(model: Pick<ConversationModel, 'provider' | 'id'>, usage: RoundUsage): number | null {
   const price = MODEL_PRICES[`${model.provider}:${model.id}`]
   if (!price) return null
-  const uncached = model.provider === 'openai' ? Math.max(usage.input - usage.cacheCreation, 0) : usage.input
-  const promptSize = usage.input + usage.cacheRead + (model.provider === 'openai' ? 0 : usage.cacheCreation)
+  const promptSize = usage.input + usage.cacheRead + usage.cacheCreation
   const long = price.longContext && promptSize > price.longContext.above ? price.longContext : null
   const inputFactor = long?.inputFactor ?? 1
   const outputFactor = long?.outputFactor ?? 1
   const tokens =
-    (uncached * price.input + usage.cacheRead * price.cacheRead + usage.cacheCreation * price.cacheWrite) * inputFactor +
+    (usage.input * price.input + usage.cacheRead * price.cacheRead + usage.cacheCreation * price.cacheWrite) * inputFactor +
     usage.output * price.output * outputFactor
   return tokens / 1_000_000 + usage.webSearches * WEB_SEARCH_PRICE[model.provider]
 }

@@ -140,6 +140,32 @@ describe('the Cerebras stream', () => {
     expect(mocks.params).toHaveLength(1)
   })
 
+  it('drops a tool call the output limit cut off and reports max_tokens, so the brain asks for the rest instead of failing the turn', async () => {
+    mocks.chunks = [
+      delta({ tool_calls: [{ index: 0, id: 'c1', function: { name: 'add_note', arguments: '{"body":"一行目' } }] }),
+      last({}, 'length')
+    ]
+    const cut = await open()
+    const result = await cut.stream.final()
+    expect(result.stop).toBe('max_tokens')
+    expect(cut.seen.calls).toEqual([])
+    expect(result.message.parts).toEqual([])
+  })
+
+  it('keeps the whole call before the one the output limit cut off, whose result the brain sends with the request for the rest', async () => {
+    mocks.chunks = [
+      delta({ tool_calls: [{ index: 0, id: 'c1', function: { name: 'add_note', arguments: '{"body":"短い"}' } }] }),
+      delta({ tool_calls: [{ index: 1, id: 'c2', function: { name: 'add_note', arguments: '{"body":"長い' } }] }),
+      last({}, 'length')
+    ]
+    const { stream, seen } = await open()
+    const result = await stream.final()
+    const whole = { type: 'tool_call', id: 'c1', name: 'add_note', input: { body: '短い' } }
+    expect(seen.calls).toEqual([whole])
+    expect(result.stop).toBe('max_tokens')
+    expect(result.message.parts).toEqual([whole])
+  })
+
   it('fails as a transient error when the timeout of the round cuts the response off, instead of finishing it with what arrived', async () => {
     mocks.chunks = [delta({ content: '要約は' }), delta({ content: 'ここまで。' }, 'stop'), { choices: [], usage: { prompt_tokens: 100, completion_tokens: 5 } }]
     const controller = new AbortController()

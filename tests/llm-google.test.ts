@@ -21,6 +21,10 @@ vi.mock('@google/genai', async (importOriginal) => ({
         return (async function* () {
           for (const chunk of mocks.chunks) yield chunk
         })()
+      },
+      generateContent: async (params: { model: string; contents: unknown[]; config: Record<string, unknown> }) => {
+        mocks.params.push(params)
+        return { text: '{"bridge":"x"}', usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 10 } }
       }
     }
   }
@@ -240,5 +244,28 @@ describe('the Google stream', () => {
     await expect((await open()).stream.final()).rejects.toMatchObject({ status: 401 })
     mocks.failWith = new ApiError({ status: 400, message: 'Function call is missing a thought_signature' })
     await expect((await open()).stream.final()).rejects.toMatchObject({ status: 400 })
+  })
+})
+
+describe('the Google JSON call', () => {
+  const thinkingSent = async (model: ConversationRequest['model']): Promise<{ streamed: unknown; json: unknown }> => {
+    const { googleAdapter } = await import('../src/main/services/llm/google')
+    mocks.params.length = 0
+    mocks.chunks = [chunk([{ text: 'はい。' }], { finishReason: 'STOP' })]
+    await (await open({ model })).stream.final()
+    await googleAdapter.completeJson({ model, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 100, signal: new AbortController().signal }, 'key')
+    const [streamed, json] = mocks.params.map((params) => params.config.thinkingConfig)
+    return { streamed, json }
+  }
+
+  it('thinks as deeply as the settings say, as the stream does', async () => {
+    const { ThinkingLevel } = await import('@google/genai')
+    expect(await thinkingSent({ ...MODEL, effort: 'high' })).toEqual({ streamed: { thinkingLevel: ThinkingLevel.HIGH }, json: { thinkingLevel: ThinkingLevel.HIGH } })
+  })
+
+  it('thinks as deeply as the stream does for a model whose depth the settings leave out', async () => {
+    const { streamed, json } = await thinkingSent({ provider: 'google', id: 'gemini-3.5-flash-lite' })
+    expect(streamed).toBeDefined()
+    expect(json).toEqual(streamed)
   })
 })

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationMessage, ConversationRequest, SearchEvent, ToolCallPart } from '@shared/conversation'
 import { isTransientApiError } from '@shared/api-errors'
+import { summarizeTurnUsage } from '@shared/turn-usage'
 
 /** The OpenAI adapter. These tests run fake Responses API events and check the conversion to the ASIST types. */
 
@@ -124,6 +125,23 @@ describe('CitationFilter', () => {
     // A citation left in the text would be read aloud as the bare URL.
     expect(out + filter.flush()).toBe('警戒が続いています。明日は快晴(予報)で、[メモ]もあります。')
   })
+
+  it('lets the text after brackets that cannot become a citation through as it arrives, holding only what still can', async () => {
+    const { CitationFilter } = await import('../src/main/services/llm/openai')
+    const filter = new CitationFilter()
+    const out = ['結論から言うと[注]', 'は不要です。', '次に[メモ](', 'メモ帳)を開きます。', '詳しくは [出典', '](https://a.example)です。'].map((delta) => filter.push(delta))
+    // Text held until the end of the message reaches the speech synthesis only then.
+    expect(out).toEqual(['結論から言うと', '[注]は不要です。', '次に', '[メモ](メモ帳)を開きます。', '詳しくは', 'です。'])
+  })
+
+  it('removes the outer parentheses of a citation whose closing ones arrive in separate deltas', async () => {
+    const { CitationFilter } = await import('../src/main/services/llm/openai')
+    const filter = new CitationFilter()
+    const deltas = ['東京は晴れです', ' (', ...'[天気](https://tenki.example/a)', ')', '。']
+    const out = deltas.map((delta) => filter.push(delta)).join('')
+    // The outer parentheses belong to the citation, so neither may be left in the reply.
+    expect(out + filter.flush()).toBe('東京は晴れです。')
+  })
 })
 
 describe('the OpenAI stream', () => {
@@ -241,6 +259,29 @@ describe('the OpenAI stream', () => {
     const error = await stream.final().then(() => null, (reason: unknown) => reason)
     // A transient failure is retried, or resumed from what was already spoken.
     expect(isTransientApiError(error)).toBe(true)
+  })
+
+  it('drops a function call the output limit cut off and reports max_tokens, keeping the whole call before it', async () => {
+    const cut = { ...CALL, id: 'fc_2', call_id: 'call_2', arguments: '{"location":', status: 'incomplete' }
+    mocks.events = [
+      { type: 'response.output_item.done', item: CALL },
+      { type: 'response.output_item.done', item: cut },
+      { type: 'response.incomplete', response: { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } } }
+    ]
+    const { stream, seen } = await open()
+    const result = await stream.final()
+    expect(seen.calls.map((call) => call.id)).toEqual(['call_1'])
+    // The brain sends the result of the whole call with its request for the rest; a call sent back without a result is refused.
+    expect(result.stop).toBe('max_tokens')
+    expect(result.message.native).toEqual({ provider: 'openai', model: 'gpt-5.5', payload: [CALL] })
+  })
+
+  it('counts a prompt written to the cache once, apart from the input, so the context length is the prompt that was sent', async () => {
+    const usage = { input_tokens: 60_000, input_tokens_details: { cached_tokens: 20_000, cache_write_tokens: 30_000 }, output_tokens: 10 }
+    mocks.events = [completed(usage)]
+    const result = await (await open()).stream.final()
+    expect(result.usage).toEqual({ input: 10_000, cacheRead: 20_000, cacheCreation: 30_000, output: 10, webSearches: 0 })
+    expect(summarizeTurnUsage([result.usage!]).contextTokens).toBe(60_000)
   })
 
   it('fails instead of running a tool call whose arguments are broken', async () => {

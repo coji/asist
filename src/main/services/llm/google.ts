@@ -3,7 +3,7 @@ import { ApiError, FinishReason, GoogleGenAI, ThinkingLevel, type Content, type 
 import type { ConversationMessage, ConversationRequest, ConversationResult, SearchSource, StopReason } from '@shared/conversation'
 import type { RoundUsage } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
-import { effortFor, modelLabel, type Effort } from '@shared/llm-catalog'
+import { effortFor, modelLabel, type ConversationModel, type Effort } from '@shared/llm-catalog'
 import { AdapterStream, statusError, streamCutOff, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
 
 /**
@@ -40,6 +40,15 @@ function clientFor(key: string): GoogleGenAI {
 const apiId = (id: string): { id: string } | Record<string, never> => (id.startsWith(LOCAL_ID_PREFIX) ? {} : { id })
 
 const THINKING_LEVEL: Partial<Record<Effort, ThinkingLevel>> = { low: ThinkingLevel.LOW, medium: ThinkingLevel.MEDIUM, high: ThinkingLevel.HIGH }
+
+/** The depth of thinking for a model, which every request to it carries; an effort Gemini has no level for throws. */
+function thinkingConfig(model: ConversationModel): Pick<GenerateContentConfig, 'thinkingConfig'> {
+  const effort = effortFor(model)
+  if (!effort) return {}
+  const level = THINKING_LEVEL[effort]
+  if (!level) throw new Error(errorText('llmModels.errors.effortUnsupported', { model: modelLabel(model) }))
+  return { thinkingConfig: { thinkingLevel: level } }
+}
 
 /** Converts the history into contents, merging a run of the same role into one Content. */
 export function toContents(messages: readonly ConversationMessage[], model: string): Content[] {
@@ -82,15 +91,12 @@ export function toContents(messages: readonly ConversationMessage[], model: stri
 const toDeclarationSchema = (schema: Record<string, unknown>): Record<string, unknown> => withoutSchemaKeys(schema, ['$schema'])
 
 export function toConfig(request: ConversationRequest): GenerateContentConfig {
-  const effort = effortFor(request.model)
-  const level = effort ? THINKING_LEVEL[effort] : undefined
-  if (effort && !level) throw new Error(errorText('llmModels.errors.effortUnsupported', { model: modelLabel(request.model) }))
   const declarations = request.tools.map((tool) => ({ name: tool.name, description: tool.description, parametersJsonSchema: toDeclarationSchema(tool.inputSchema) }))
   const tool = { ...(declarations.length > 0 ? { functionDeclarations: declarations } : {}), ...(request.webSearch ? { googleSearch: {} } : {}) }
   return {
     systemInstruction: request.system.map((layer) => layer.text).join('\n\n'),
     maxOutputTokens: request.maxTokens,
-    ...(level ? { thinkingConfig: { thinkingLevel: level } } : {}),
+    ...thinkingConfig(request.model),
     ...(Object.keys(tool).length > 0 ? { tools: [tool] } : {}),
     ...(request.webSearch ? { toolConfig: { includeServerSideToolInvocations: true } } : {}),
     abortSignal: request.signal
@@ -244,6 +250,7 @@ export const googleAdapter: ProviderAdapter = {
         config: {
           systemInstruction: request.system,
           maxOutputTokens: request.maxTokens,
+          ...thinkingConfig(request.model),
           responseMimeType: 'application/json',
           responseJsonSchema: toDeclarationSchema(request.schema),
           abortSignal: request.signal

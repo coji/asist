@@ -17,7 +17,7 @@ import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withou
  * - Qwen leaves the newline that follows the end of thinking (`</think>`) at the start of the answer,
  *   so leading newlines of each response are dropped.
  * - Chat completions never signals that a tool call's arguments are complete, so a call is confirmed
- *   when the next index starts or when the response ends.
+ *   when the next index starts or when the response ends on anything but the output limit.
  * - There is no built-in web search.
  */
 
@@ -124,10 +124,14 @@ class CerebrasStream extends AdapterStream {
       if (choice.finish_reason) finish = choice.finish_reason
     }
     if (finish === null) streamCutOff(request.signal, 'Cerebras')
-    if (open !== null) confirm(open)
+    // The call still open when the output limit ends the response has its arguments cut off, so it is
+    // neither run nor sent back; the calls confirmed before it stand, and the brain asks for the rest.
+    const cut = finish === 'length'
+    if (open !== null && !cut) confirm(open)
     this.closeText()
 
-    const stop: StopReason = drafts.size > 0 ? 'tool_calls' : finish === 'length' ? 'max_tokens' : finish === 'content_filter' ? 'refusal' : 'end'
+    const hasToolCall = this.parts.some((part) => part.type === 'tool_call')
+    const stop: StopReason = cut ? 'max_tokens' : hasToolCall ? 'tool_calls' : finish === 'content_filter' ? 'refusal' : 'end'
     // The finish reason ends the response. The usage rides on the last chunk, which is either the one
     // with the finish reason or one more after it, so a stream cut between the two keeps its answer
     // but has no usage.

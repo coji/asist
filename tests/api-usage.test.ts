@@ -29,8 +29,8 @@ describe('the price of a response', () => {
     expect(cost).toBeCloseTo(2 + 0.2 + 2.5 + 10)
   })
 
-  it('takes the cache writes out of the OpenAI input, which already counts them', () => {
-    const cost = llmCost({ provider: 'openai', id: 'gpt-5.6-terra' }, usage({ input: 100_000, cacheCreation: 40_000 }))
+  it('prices the OpenAI cache writes apart from the input, as on every provider', () => {
+    const cost = llmCost({ provider: 'openai', id: 'gpt-5.6-terra' }, usage({ input: 60_000, cacheCreation: 40_000 }))
     expect(cost).toBeCloseTo(0.06 * 2 + 0.04 * 2.5)
   })
 
@@ -38,6 +38,8 @@ describe('the price of a response', () => {
     const model = { provider: 'openai', id: 'gpt-5.6-luna' } as const
     expect(llmCost(model, usage({ input: 272_000, output: 1_000_000 }))).toBeCloseTo(0.272 * 0.2 + 1.2)
     expect(llmCost(model, usage({ input: 272_001, output: 1_000_000 }))).toBeCloseTo(0.272001 * 0.2 * 2 + 1.2 * 1.5)
+    // The prompt is every token of it, wherever it was read from or written to.
+    expect(llmCost(model, usage({ input: 72_000, cacheRead: 100_000, cacheCreation: 100_001 }))).toBeCloseTo((0.072 * 0.2 + 0.1 * 0.02 + 0.100001 * 0.25) * 2)
   })
 
   it('adds the fee of each web search to the tokens', () => {
