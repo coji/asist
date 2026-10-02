@@ -91,6 +91,12 @@ function Update({ t }: { t: Translate }): React.JSX.Element | null {
           <Chip tone="cyan">{t('settingsAbout.update.downloading', { version: state.version, percent: state.percent })}</Chip>
         </Row>
       )
+    case 'staging':
+      return (
+        <Row label={t('settingsAbout.update.label')}>
+          <Chip tone="cyan">{t('settingsAbout.update.downloading', { version: state.version, percent: 100 })}</Chip>
+        </Row>
+      )
     case 'ready':
       return (
         <Row label={t('settingsAbout.update.label')} hint={installError ?? t('settingsAbout.update.ready', { version: state.version })}>

@@ -233,6 +233,45 @@ export const app = defineMessages({
       'pt-BR': 'O ASIST não funciona no {platform} em {arch}.',
       'es-419': 'ASIST no funciona en {platform} con {arch}.',
       'es-ES': 'ASIST no funciona en {platform} con {arch}.'
+    },
+    updating: {
+      'ja-JP': '{version} に更新しています。更新が終わると ASIST が起動します。',
+      'en-US': 'Updating to {version}. ASIST starts once the update is done.',
+      'fr-FR': 'Mise à jour vers {version} en cours. ASIST démarrera une fois la mise à jour terminée.',
+      'de-DE': 'Wird auf {version} aktualisiert. ASIST startet, sobald die Aktualisierung abgeschlossen ist.',
+      'hi-IN': '{version} पर अपडेट हो रहा है। अपडेट पूरा होने पर ASIST शुरू होगा।',
+      'id-ID': 'Memperbarui ke {version}. ASIST akan berjalan setelah pembaruan selesai.',
+      'it-IT': "Aggiornamento a {version} in corso. ASIST si avvierà al termine dell'aggiornamento.",
+      'ko-KR': '{version}(으)로 업데이트하는 중입니다. 업데이트가 끝나면 ASIST가 시작됩니다.',
+      'pt-BR': 'Atualizando para a {version}. O ASIST será iniciado quando a atualização terminar.',
+      'es-419': 'Actualizando a la {version}. ASIST se iniciará cuando termine la actualización.',
+      'es-ES': 'Actualizando a la {version}. ASIST se iniciará cuando termine la actualización.'
+    },
+    updateFailed: {
+      'ja-JP': 'ASIST を更新できませんでした',
+      'en-US': "Couldn't update ASIST",
+      'fr-FR': 'Impossible de mettre à jour ASIST',
+      'de-DE': 'ASIST konnte nicht aktualisiert werden',
+      'hi-IN': 'ASIST अपडेट नहीं हो सका',
+      'id-ID': 'Tidak bisa memperbarui ASIST',
+      'it-IT': 'Impossibile aggiornare ASIST',
+      'ko-KR': 'ASIST를 업데이트하지 못했습니다',
+      'pt-BR': 'Não foi possível atualizar o ASIST',
+      'es-419': 'No se pudo actualizar ASIST',
+      'es-ES': 'No se ha podido actualizar ASIST'
+    },
+    updateStalled: {
+      'ja-JP': '更新のサーバーからの応答が途絶えました。',
+      'en-US': 'The update server stopped responding.',
+      'fr-FR': 'Le serveur de mise à jour ne répond plus.',
+      'de-DE': 'Der Update-Server antwortet nicht mehr.',
+      'hi-IN': 'अपडेट सर्वर से जवाब आना बंद हो गया।',
+      'id-ID': 'Server pembaruan berhenti merespons.',
+      'it-IT': 'Il server degli aggiornamenti non risponde più.',
+      'ko-KR': '업데이트 서버의 응답이 끊겼습니다.',
+      'pt-BR': 'O servidor de atualização parou de responder.',
+      'es-419': 'El servidor de actualizaciones dejó de responder.',
+      'es-ES': 'El servidor de actualizaciones ha dejado de responder.'
     }
   },
   status: {

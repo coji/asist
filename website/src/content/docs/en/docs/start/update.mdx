@@ -17,6 +17,8 @@ On Windows, closing the window does not quit ASIST. When you right-click the ASI
 
 If a released version has a problem, a fixed version with a higher number is released. There is no way to go back to an earlier version.
 
+If "Couldn't start ASIST" appears while ASIST starts, ASIST checks for a new version after you close the message. If there is one, it downloads and installs it and opens ASIST. While it downloads, ASIST shows no window, and a notification tells you what it is doing; opening ASIST again meanwhile shows the notification again. If there is none, or the check fails, ASIST quits. If the download fails, ASIST shows why and quits. When ASIST fails to start with any other error, it does not update itself; install the new version from the [Releases page](https://github.com/nyosegawa/asist/releases).
+
 ## Uninstalling
 
 If you are signed in to Google Calendar, click "Sign out" under "Calendar and mail" in the settings before you uninstall. This withdraws the permission you gave ASIST in Google.

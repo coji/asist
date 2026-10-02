@@ -2,22 +2,28 @@
  * Where the automatic update of the app stands, as the about page shows it. `off` is a build that does not
  * come from a release (a development run, or a local `dist:mac` or `dist:win`), which has no feed to update
  * from. An update is downloaded in the background and installed when the app next quits: by Squirrel.Mac on
- * macOS, and by the NSIS installer, run without a window, on Windows.
+ * macOS, and by the NSIS installer, run without a window, on Windows. `staging` happens on macOS alone: the
+ * whole version is downloaded, and Squirrel.Mac unpacks and verifies it, reporting nothing until it is done.
  */
 export type AppUpdateState =
   | { phase: 'off' }
   | { phase: 'checking' }
   | { phase: 'current'; checkedAt: number }
   | { phase: 'downloading'; version: string; percent: number }
+  | { phase: 'staging'; version: string }
   | { phase: 'ready'; version: string }
   | { phase: 'failed'; message: string }
 
-/** The part of electron-updater's autoUpdater the controller uses, so that a test can stand in for it. */
+/**
+ * The part of electron-updater's autoUpdater the controller uses, so that a test can stand in for it, and the
+ * update-staging that afterStaging adds to it.
+ */
 export interface Updater {
   on(event: 'checking-for-update', listener: () => void): unknown
   on(event: 'update-not-available', listener: () => void): unknown
   on(event: 'update-available', listener: (info: { version: string }) => void): unknown
   on(event: 'download-progress', listener: (progress: { percent: number }) => void): unknown
+  on(event: 'update-staging', listener: (info: { version: string }) => void): unknown
   on(event: 'update-downloaded', listener: (info: { version: string }) => void): unknown
   on(event: 'error', listener: (error: Error) => void): unknown
   checkForUpdates(): Promise<unknown>
@@ -33,9 +39,11 @@ export interface NativeUpdater {
  * electron-updater reports update-downloaded once it has fetched the zip, before it hands the zip to
  * Squirrel.Mac, and macOS installs at quit only what Squirrel has fetched and verified: a quit one second
  * after the event installed nothing (electron-updater 6.8.9, 2026-09-25). This updater passes
- * update-downloaded on only once both have reported it, so "ready" means the next quit installs it.
+ * update-downloaded on only once both have reported it, so "ready" means the next quit installs it, and reports
+ * update-staging in between, while Squirrel.Mac has the zip and electron-updater is done with the network.
  */
 export function afterStaging(updater: Updater, native: NativeUpdater): Updater {
+  const staging: ((info: { version: string }) => void)[] = []
   const downloaded: ((info: { version: string }) => void)[] = []
   let version: string | null = null
   let staged = false
@@ -52,6 +60,7 @@ export function afterStaging(updater: Updater, native: NativeUpdater): Updater {
   })
   updater.on('update-downloaded', (info) => {
     version = info.version
+    if (!staged) for (const listener of staging) listener(info)
     settle()
   })
   native.on('update-downloaded', () => {
@@ -61,6 +70,7 @@ export function afterStaging(updater: Updater, native: NativeUpdater): Updater {
   return {
     on(event: string, listener: never): unknown {
       if (event === 'update-downloaded') return downloaded.push(listener)
+      if (event === 'update-staging') return staging.push(listener)
       return (updater.on as (event: string, listener: never) => unknown)(event, listener)
     },
     checkForUpdates: () => updater.checkForUpdates(),
@@ -70,8 +80,8 @@ export function afterStaging(updater: Updater, native: NativeUpdater): Updater {
 
 /**
  * Follows the updater's events and keeps one state. A check while one is running, while a version is
- * downloading or once one is waiting to be installed would only start the same download again, so it is
- * skipped.
+ * downloading or staging, or once one is waiting to be installed would only start the same download again, so
+ * it is skipped.
  */
 export class AppUpdateController {
   private current: AppUpdateState = { phase: 'checking' }
@@ -87,6 +97,7 @@ export class AppUpdateController {
       if (this.current.phase !== 'downloading') return
       this.set({ ...this.current, percent: Math.floor(progress.percent) })
     })
+    updater.on('update-staging', (info) => this.set({ phase: 'staging', version: info.version }))
     updater.on('update-downloaded', (info) => this.set({ phase: 'ready', version: info.version }))
     updater.on('error', (error) => this.set({ phase: 'failed', message: error.message }))
   }
@@ -97,7 +108,7 @@ export class AppUpdateController {
 
   check(): void {
     const { phase } = this.current
-    if (phase === 'downloading' || phase === 'ready') return
+    if (phase === 'downloading' || phase === 'staging' || phase === 'ready') return
     // A failed check also emits 'error', which is where the state and the log take it from, so the
     // rejection itself carries nothing more.
     this.updater.checkForUpdates().catch(() => undefined)

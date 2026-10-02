@@ -68,7 +68,7 @@ vi.mock('../src/main/services/memory', () => ({ ensureLoaded: vi.fn(), startEmbe
 vi.mock('../src/main/services/app-update', () => ({ initAppUpdates: vi.fn() }))
 vi.mock('../src/main/services/memory-curation', () => ({ initMemoryCuration: vi.fn() }))
 vi.mock('../src/main/services/agent', () => ({ allowedFileRoots: () => [] }))
-vi.mock('../src/main/services/i18n', () => ({ errorMessage: String, t: (key: string) => key }))
+vi.mock('../src/main/services/i18n', () => ({ errorMessageIn: (_locale: string, error: unknown) => String(error), translatorIn: () => (key: string) => key }))
 vi.mock('../src/main/services/platform', () => ({ platformCapabilities: () => ({ os: 'macos' }) }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({}) }))
 vi.mock('../src/main/services/mail', () => ({ initMail: vi.fn() }))

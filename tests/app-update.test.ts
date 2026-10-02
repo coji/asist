@@ -68,19 +68,22 @@ describe('AppUpdateController', () => {
 })
 
 describe('afterStaging', () => {
-  function staged(): { updater: FakeUpdater; native: EventEmitter; states: AppUpdateState[] } {
+  function staged(): { updater: FakeUpdater; native: EventEmitter; controller: AppUpdateController; states: AppUpdateState[] } {
     const updater = new FakeUpdater()
     const native = new EventEmitter()
     const states: AppUpdateState[] = []
-    new AppUpdateController(afterStaging(updater as unknown as Updater, native as unknown as NativeUpdater), { now: () => 0, onChange: (state) => states.push(state) })
-    return { updater, native, states }
+    const controller = new AppUpdateController(afterStaging(updater as unknown as Updater, native as unknown as NativeUpdater), {
+      now: () => 0,
+      onChange: (state) => states.push(state)
+    })
+    return { updater, native, controller, states }
   }
 
-  it('reports a version ready only once Squirrel.Mac has staged it, not when electron-updater has fetched it', () => {
+  it('reports a version ready only once Squirrel.Mac has staged it, and staging once electron-updater has fetched it', () => {
     const { updater, native, states } = staged()
     updater.emit('update-available', { version: '0.1.1' })
     updater.emit('update-downloaded', { version: '0.1.1' })
-    expect(states.at(-1)).toEqual({ phase: 'downloading', version: '0.1.1', percent: 0 })
+    expect(states.at(-1)).toEqual({ phase: 'staging', version: '0.1.1' })
     native.emit('update-downloaded')
     expect(states.at(-1)).toEqual({ phase: 'ready', version: '0.1.1' })
   })
@@ -93,11 +96,19 @@ describe('afterStaging', () => {
     expect(states.at(-1)).toEqual({ phase: 'ready', version: '0.1.1' })
   })
 
+  it('does not start another check while Squirrel.Mac stages a version', () => {
+    const { updater, controller } = staged()
+    updater.emit('update-available', { version: '0.1.1' })
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    controller.check()
+    expect(updater.checkForUpdates).not.toHaveBeenCalled()
+  })
+
   it('does not carry a staged update over to the next version found', () => {
     const { updater, native, states } = staged()
     native.emit('update-downloaded')
     updater.emit('update-available', { version: '0.1.2' })
     updater.emit('update-downloaded', { version: '0.1.2' })
-    expect(states.at(-1)).toEqual({ phase: 'downloading', version: '0.1.2', percent: 0 })
+    expect(states.at(-1)).toEqual({ phase: 'staging', version: '0.1.2' })
   })
 })

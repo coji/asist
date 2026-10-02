@@ -11,7 +11,7 @@ import dns from 'node:dns'
 net.setDefaultAutoSelectFamily?.(false)
 dns.setDefaultResultOrder('ipv4first')
 import { registerIpc } from './ipc'
-import { setupOsIntegration } from './os-integration'
+import { notify, quitAfterAgentsStop, setupOsIntegration } from './os-integration'
 import * as asr from './services/asr'
 import * as tts from './services/tts'
 import * as aizuchi from './services/aizuchi'
@@ -20,14 +20,14 @@ import * as watchdog from './services/watchdog'
 import { initJobReporting } from './services/brain/job-reporting'
 import { compactionJob, initMaintenance } from './services/maintenance'
 import * as memory from './services/memory'
-import { initAppUpdates } from './services/app-update'
+import { initAppUpdates, installAfterFailedStart, installFailure, updatesItself, versionAfterFailedStart } from './services/app-update'
 import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
 import { handleFileScheme, registerFileScheme } from './file-protocol'
-import { errorMessage, t } from './services/i18n'
+import { errorMessageIn, translatorIn } from './services/i18n'
 import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
-import { createTranslator } from '@shared/i18n'
+import type { UiLocale } from '@shared/i18n'
 import { initMail } from './services/mail'
 import { isAppPage } from '@shared/app-page'
 import { isExternalLink } from '@shared/external-link'
@@ -36,6 +36,8 @@ import { watchAppPage } from './page-lifetime'
 
 let mainWindow: BrowserWindow | null = null
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
+/** What a start that failed asks the launch after its quit to do instead of starting: update the app, and nothing else. */
+const UPDATE_AFTER_FAILED_START = '--update-after-failed-start'
 // asist-file://, which the files card fetches images, documents, audio and video over, has to be
 // registered before whenReady.
 registerFileScheme()
@@ -55,7 +57,6 @@ function appPageUrl(): string {
 
 function createWindow(): void {
   const chrome = windowChrome(platformCapabilities().os)
-  chrome.prepare()
   const appPage = appPageUrl()
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -113,23 +114,82 @@ function createWindow(): void {
 }
 
 /**
- * The interface language is read from the settings file, and a settings file that cannot be read is one
- * of the failures reported here, so a failing read leaves the dialog in the language the messages are
- * written in rather than leaving no window at all.
+ * The interface language of what a failed start shows. It is read from the settings file, and a settings file
+ * that cannot be read is one of the failures reported here, so a failing read leaves the text in the language
+ * the messages are written in rather than leaving no window at all.
  */
-function showStartupFailure(error: unknown): void {
+function startupLocale(): UiLocale {
   try {
-    dialog.showErrorBox(t('app.startup.launchFailed'), errorMessage(error))
+    return getSettings().uiLocale
   } catch {
-    const title = createTranslator('ja-JP')('app.startup.launchFailed')
-    dialog.showErrorBox(title, error instanceof Error ? error.message : String(error))
+    return 'ja-JP'
   }
+}
+
+/**
+ * Calls `listener` whenever ASIST is launched again while this process runs: on macOS a launch from Finder, the
+ * Dock or Spotlight reaches the running app as activate and starts no second process, and any other launch
+ * starts one that quits on the single-instance lock and reaches this one as second-instance.
+ */
+function onLaunchedAgain(listener: () => void): () => void {
+  app.on('activate', listener)
+  app.on('second-instance', listener)
+  return () => {
+    app.off('activate', listener)
+    app.off('second-instance', listener)
+  }
+}
+
+/**
+ * Shows why the start failed, then quits as any quit does, which stops everything the start had started. A
+ * release that cannot start is fixed only by a newer one, which an app that fails at every start would otherwise
+ * never receive, so a build that updates itself starts again after the quit, in a launch that only updates.
+ */
+function quitAfterFailedStart(error: unknown): void {
+  const locale = startupLocale()
+  dialog.showErrorBox(translatorIn(locale)('app.startup.launchFailed'), errorMessageIn(locale, error))
+  if (updatesItself()) app.relaunch({ args: [...process.argv.slice(1), UPDATE_AFTER_FAILED_START] })
+  // A service that started before the failure may have started an agent, the memory curation, so this quit goes
+  // through the gate that stops it. When an agent does not stop, the gate shows why and the app stays, with no
+  // window or tray to quit from, holding the single-instance lock, so launching ASIST again tries the quit again.
+  onLaunchedAgain(() => quitAfterAgentsStop())
+  quitAfterAgentsStop()
+}
+
+/**
+ * The launch that only updates, which a start that failed asks for: it checks for a newer version, and installs
+ * and starts it when there is one; otherwise it quits. It opens no window and starts no service, so nothing of the
+ * app runs, listens or speaks meanwhile, and a notification is all that tells the user a download is under way.
+ */
+async function updateAfterFailedStart(): Promise<void> {
+  const locale = startupLocale()
+  const text = translatorIn(locale)
+  let stopNotice = (): void => undefined
+  try {
+    // Windows shows a notification only from an app that has its identity.
+    windowChrome(platformCapabilities().os).prepare()
+    const version = await versionAfterFailedStart()
+    if (version !== null) {
+      const notice = (): void => void notify(text('app.startup.launchFailed'), text('app.startup.updating', { version }))
+      notice()
+      stopNotice = onLaunchedAgain(notice)
+      quitAfterAgentsStop(await installAfterFailedStart())
+      await installFailure()
+    }
+  } catch (error) {
+    stopNotice()
+    console.error('app update after a failed start:', error)
+    dialog.showErrorBox(text('app.startup.updateFailed'), errorMessageIn(locale, error))
+  }
+  app.quit()
 }
 
 if (!hasSingleInstanceLock) {
   // Two processes updating the same userData notify a timer twice and lose JSON updates, so the second
   // one quits.
   app.quit()
+} else if (process.argv.includes(UPDATE_AFTER_FAILED_START)) {
+  void app.whenReady().then(updateAfterFailedStart)
 } else {
   app.on('second-instance', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return
@@ -145,8 +205,9 @@ if (!hasSingleInstanceLock) {
       if (icon.isEmpty()) throw new Error('cannot load build/icon.png')
       app.dock?.setIcon(icon)
     }
-    // An OS or CPU the app is not built for stops the launch before any service starts.
-    platformCapabilities()
+    // An OS or CPU the app is not built for stops the launch before any service starts. The app's menu and its
+    // identity come next, before anything else that can fail.
+    windowChrome(platformCapabilities().os).prepare()
     // Reading the settings first keeps a broken file from starting any service; the original file is kept
     // and the place to fix is shown.
     getSettings()
@@ -164,14 +225,6 @@ if (!hasSingleInstanceLock) {
       return
     }
 
-    createWindow()
-
-    // The sidecars are warmed up here, and a failure does not stop the app from starting.
-    watchdog.checkAfter(asr.ensureServer().catch((error) => console.error('speech recognition failed to start:', error)))
-    watchdog.checkAfter(tts.ensureEngine().then(() => aizuchi.getBank()).catch((error) => console.error('TTS preparation failed:', error)))
-    // The aizuchi classifier stays resident when it is prepared and aizuchi are wanted; without it no
-    // aizuchi plays at the head of a turn.
-    if (aizuchiClassifier.wanted(getSettings())) void aizuchiClassifier.ensureStarted()
     initJobReporting()
     initMaintenance([compactionJob])
     // Mail connects to the accounts in the settings and starts fetching; a failure shows up on the
@@ -181,6 +234,16 @@ if (!hasSingleInstanceLock) {
     // starts only when semantic search is on.
     memory.ensureLoaded()
     initMemoryCuration()
+
+    // The window and the voice open only once the services have started, so that a service that fails to start
+    // leaves no page under its error, where the page would load, turn the microphone on and wait to show itself.
+    createWindow()
+    // The sidecars are warmed up here, and a failure does not stop the app from starting.
+    watchdog.checkAfter(asr.ensureServer().catch((error) => console.error('speech recognition failed to start:', error)))
+    watchdog.checkAfter(tts.ensureEngine().then(() => aizuchi.getBank()).catch((error) => console.error('TTS preparation failed:', error)))
+    // The aizuchi classifier stays resident when it is prepared and aizuchi are wanted; without it no
+    // aizuchi plays at the head of a turn.
+    if (aizuchiClassifier.wanted(getSettings())) void aizuchiClassifier.ensureStarted()
     void memory.startEmbeddingIfEnabled().catch((err) => console.error('memory embedding:', err))
     initAppUpdates()
 
@@ -189,10 +252,7 @@ if (!hasSingleInstanceLock) {
     app.on('activate', () => {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show()
     })
-  }).catch((error: unknown) => {
-    showStartupFailure(error)
-    app.quit()
-  })
+  }).catch((error: unknown) => quitAfterFailedStart(error))
 }
 
 app.on('window-all-closed', () => {

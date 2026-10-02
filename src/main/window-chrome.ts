@@ -9,7 +9,10 @@ import type { OsFamily } from '@shared/platform'
  */
 export interface WindowChrome {
   frame: Pick<BrowserWindowConstructorOptions, 'titleBarStyle' | 'trafficLightPosition' | 'titleBarOverlay'>
-  /** Runs before the window opens. */
+  /**
+   * Runs first in a launch, before anything that can fail, because it also gives the app the identity Windows
+   * shows its notifications under, and a start that failed notifies while it updates.
+   */
   prepare: () => void
   /** Colours the buttons the OS draws over the page in the current theme. */
   paintControls: (window: BrowserWindow, colors: WindowControlColors) => void

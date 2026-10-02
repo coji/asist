@@ -50,7 +50,8 @@ let tray: Tray | null = null
 let hotkey: HotkeyStatus = 'off'
 let buildTrayMenu: () => void = () => {}
 
-const notify = (title: string, body: string): boolean => {
+/** Shows a notification of the OS, and says whether this computer can show one. */
+export const notify = (title: string, body: string): boolean => {
   if (!Notification.isSupported()) return false
   new Notification({ title, body: body.slice(0, 180), silent: false }).show()
   return true
