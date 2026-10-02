@@ -215,6 +215,23 @@ describe('SpeechPlayer with a streamed segment', () => {
     expect(idle).toHaveBeenCalledOnce()
   })
 
+  it('reports a sentence as ended once its last audio has played, while the next one still waits out the pause', async () => {
+    const { player, context } = await harness()
+    const ended: string[] = []
+    player.events.on('segmentend', ({ segment }) => ended.push(segment.text))
+    player.enqueue(streamed(1, 0, '一文目。'))
+    player.pushSegmentAudio(1, 0, piece(0.5), true)
+    player.enqueue(streamed(1, 1, '二文目。'))
+    player.pushSegmentAudio(1, 1, piece(0.5), true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(ended).toEqual([])
+
+    playOut(context)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(ended).toEqual(['一文目。'])
+    player.interrupt()
+  })
+
   it('keeps playing pieces that arrive after playback started, and finishes only after the last one', async () => {
     const { player, context, idle } = await harness()
     player.enqueue(streamed(1, 0))

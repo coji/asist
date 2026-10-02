@@ -4,8 +4,7 @@ const mocks = vi.hoisted(() => {
   const turn = {
     activeTurnId: 7,
     timings: {},
-    resetTimings: vi.fn(),
-    setTimingsTurn: vi.fn(),
+    setTimings: vi.fn(),
     setPhase: vi.fn(),
     setActiveTurn: vi.fn((id: number) => {
       turn.activeTurnId = id
@@ -58,35 +57,27 @@ describe('conversation request generations', () => {
     mocks.turn.activeTurnId = 7
   })
 
-  it('does not send an older request after waiting for the previous abort', async () => {
+  it('never lets an older request take over from the newest, and stops its turn once the id arrives', async () => {
     const ids = ['request-a', 'request-b']
     vi.stubGlobal('crypto', { randomUUID: vi.fn(() => ids.shift()!) })
 
-    let releaseAbort!: () => void
-    const aborting = new Promise<void>((resolve) => (releaseAbort = resolve))
-    const turnAbort = vi.fn((turnId: number) =>
-      turnId === 7 ? aborting : Promise.resolve()
+    let answerOlder!: (turnId: number) => void
+    const turnStart = vi.fn((text: string) =>
+      text === 'older' ? new Promise<number>((resolve) => (answerOlder = resolve)) : Promise.resolve(9)
     )
-    const turnStart = vi.fn(async () => 8)
+    const turnAbort = vi.fn(async () => {})
     vi.stubGlobal('window', { api: { turnAbort, turnStart } })
 
     const { sendTypedMessage } = await import('../src/renderer/src/conversation')
     const older = sendTypedMessage('older')
-    await Promise.resolve()
-    const latest = sendTypedMessage('latest')
-    await latest
-
-    expect(turnStart).toHaveBeenCalledTimes(1)
-    expect(turnStart).toHaveBeenCalledWith('latest', {
-      typed: true,
-      clientRequestId: 'request-b'
-    })
-
-    releaseAbort()
+    await sendTypedMessage('latest')
+    answerOlder(8)
     await older
 
-    expect(turnStart).toHaveBeenCalledTimes(1)
-    expect(mocks.turn.activeTurnId).toBe(8)
+    // Main starts the turns in the order the requests reach it, so the newest one replaces the older.
+    expect(turnStart.mock.calls.map(([text]) => text)).toEqual(['older', 'latest'])
+    expect(turnAbort).toHaveBeenCalledWith(8)
+    expect(mocks.turn.activeTurnId).toBe(9)
   })
 
   it('immediately rejects an interject started while renderer still owns a user turn', async () => {

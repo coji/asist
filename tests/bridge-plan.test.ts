@@ -92,14 +92,28 @@ describe('BridgePlanner', () => {
     expect(request).toHaveBeenCalledTimes(1)
   })
 
-  it('returns null to an end of utterance that is still waiting when a reset happens', async () => {
-    const { planner, resolvers } = setup()
+  it('still answers an end of utterance that waits when a new capture begins, without making that plan the latest', async () => {
+    const { planner, resolvers, onPlan } = setup()
     planner.observe({ text: '昨日の会議で', lastAssistantText: '' })
     const settled = planner.finish({ text: '昨日の会議で', lastAssistantText: '' })
     planner.reset()
-    await expect(settled).resolves.toBeNull()
-    resolvers[0](plan('古い'))
+    resolvers[0](plan('会議の件ですね。'))
+    await expect(settled).resolves.toEqual(plan('会議の件ですね。'))
+    expect(planner.current()).toBeNull()
+    expect(onPlan).not.toHaveBeenCalled()
+  })
+
+  it('answers an end of utterance with the plan of its newest partial transcript, which still goes out after a new capture began', async () => {
+    const { planner, request, resolvers } = setup()
+    planner.observe({ text: '昨日の会', lastAssistantText: '' })
+    planner.observe({ text: '昨日の会議の件なんですけど', lastAssistantText: '' })
+    const settled = planner.finish({ text: '昨日の会議の件なんですけど', lastAssistantText: '' })
+    planner.reset()
+    resolvers[0](plan('会の件ですね。'))
     await flush()
+    expect(request).toHaveBeenLastCalledWith({ text: '昨日の会議の件なんですけど', lastAssistantText: '' })
+    resolvers[1](plan('会議の件ですね。'))
+    await expect(settled).resolves.toEqual(plan('会議の件ですね。'))
     expect(planner.current()).toBeNull()
   })
 

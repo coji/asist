@@ -79,22 +79,15 @@ interface TurnState {
   /** The partial recognition text while the user is still speaking. */
   partial: string
   activeTurnId: number
-  /** Measurements of the latest turn, as shown in the HUD. */
+  /** The measurements of the latest input and its turn, as TurnMetrics shows them in the HUD. */
   timings: TurnTimings
-  /**
-   * The user turn the timings belong to. Resetting them for the next input makes it -1 until that input
-   * becomes a turn, so the reply of an older turn that starts sounding meanwhile stays out of them.
-   */
-  timingsTurnId: number
   /** What the latest turn's routing did, null until the first turn. */
   routerNote: RouterNote | null
   setPhase: (phase: Phase) => void
   setMic: (micState: TurnState['micState'], progress?: number) => void
   setPartial: (partial: string) => void
   setActiveTurn: (id: number) => void
-  mergeTimings: (t: TurnTimings) => void
-  resetTimings: () => void
-  setTimingsTurn: (id: number) => void
+  setTimings: (timings: TurnTimings) => void
   setRouterNote: (note: RouterNote) => void
 }
 
@@ -105,15 +98,12 @@ export const useTurnStore = create<TurnState>((set) => ({
   partial: '',
   activeTurnId: -1,
   timings: {},
-  timingsTurnId: -1,
   routerNote: null,
   setPhase: (phase) => set({ phase }),
   setMic: (micState, progress = 0) => set({ micState, micProgress: progress }),
   setPartial: (partial) => set({ partial }),
   setActiveTurn: (id) => set({ activeTurnId: id }),
-  mergeTimings: (t) => set((s) => ({ timings: { ...s.timings, ...t } })),
-  resetTimings: () => set({ timings: {}, timingsTurnId: -1 }),
-  setTimingsTurn: (id) => set({ timingsTurnId: id }),
+  setTimings: (timings) => set({ timings }),
   setRouterNote: (routerNote) => set({ routerNote })
 }))
 

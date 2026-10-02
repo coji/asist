@@ -1,4 +1,4 @@
-import type { HangoverMode, LiveEvent, TurnEvent, TurnTimings } from '@shared/ipc'
+import type { LiveEvent, TurnEvent } from '@shared/ipc'
 import { isSelfEcho, PlaybackLog, stripClipEcho } from '@shared/self-echo'
 import { bridgeAllowed, type AizuchiClassification } from '@shared/aizuchi-classifier'
 import { conversationFeatures } from '@shared/conversation-locale'
@@ -10,7 +10,7 @@ import { voiceController } from '@/voice/VoiceController'
 import { liveVoice } from '@/voice/LiveVoice'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { InterjectPlaybackAcks } from '@/interject-playback'
-import { TurnMetrics, type RequestTimings } from '@/turn-metrics'
+import { TurnMetrics, type RequestInput } from '@/turn-metrics'
 import { loadAizuchiBank, pickAizuchi, pickListeningClip } from '@/voice/aizuchi-bank'
 import { TurnOpening, type OpeningBridge } from '@/voice/opening'
 import { BridgePlanner } from '@/voice/bridge-plan'
@@ -36,7 +36,10 @@ let initialization: Promise<void> | null = null
 let aiLineId: number | null = null
 let pendingRequestId: string | null = null
 let activeRequestId: string | null = null
-const turnMetrics = new TurnMetrics((payload) => window.api.metricsLog(payload))
+const turnMetrics = new TurnMetrics(
+  (payload) => window.api.metricsLog(payload),
+  (timings) => useTurnStore.getState().setTimings(timings)
+)
 interface OpeningPolicy {
   /** The aizuchi may play, and the classifier that picks it runs on the partial transcripts. */
   aizuchi: boolean
@@ -105,22 +108,6 @@ function openingBridge(policy: OpeningPolicy, classification: AizuchiClassificat
   return { plan: planner.finish({ text: partialText, lastAssistantText: lastAssistantText() }), screened: policy.aizuchi }
 }
 
-/**
- * Records a measurement of the latest utterance's opening, a clip that sounded or why the bridge did
- * not, in the HUD, which already shows that utterance, and once the utterance is a turn in its metrics.
- */
-function noteOpeningTimings(patch: TurnTimings): void {
-  const turn = useTurnStore.getState()
-  turn.mergeTimings(patch)
-  if (turn.timingsTurnId >= 0) turnMetrics.update(turn.timingsTurnId, patch)
-}
-
-/** Shows a measurement of a turn in the HUD when the HUD shows that turn, which leaves out an interjection's and an older turn's. */
-function showTurnTimings(turnId: number, timings: TurnTimings): void {
-  const turn = useTurnStore.getState()
-  if (turnId === turn.timingsTurnId) turn.mergeTimings(timings)
-}
-
 /** The opening of a turn, the aizuchi and the bridge. It sounds at speech end from VAD and is handed to the brain with the final transcript. */
 const opening = new TurnOpening({
   pickAizuchi: (classification) => {
@@ -130,7 +117,8 @@ const opening = new TurnOpening({
   play: (clip, role) => speechPlayer.playClip(clip.audio, clip.text, { role }),
   synthesizeBridge: (text) => window.api.bridgeSynthesize(text),
   bodyQueuedAfter: (time) => speechPlayer.bodyQueuedAfter(time),
-  onBridgeOutcome: noteOpeningTimings,
+  measure: (startedAt, timings) => turnMetrics.updateUtterance(startedAt, timings),
+  sounding: () => speechPlayer.isPlaying,
   withdrawBridge: (queued) => speechPlayer.dropWaiting(queued)
 })
 const interjectPlayback = new InterjectPlaybackAcks((turnId, status) =>
@@ -153,6 +141,12 @@ function phaseAfterCapture(): Phase {
 function heardTurn(): number {
   const active = useTurnStore.getState().activeTurnId
   return active >= 0 ? active : speechPlayer.readingTurn
+}
+
+/** A speech that yields no turn: its opening plays no bridge, and its measurements go. */
+function dropSpeech(startedAt: number): void {
+  opening.cancel(startedAt)
+  turnMetrics.dropUtterance(startedAt)
 }
 
 export function initConversation(): Promise<void> {
@@ -246,6 +240,9 @@ async function initializeConversation(): Promise<void> {
       planner.reset()
       classifier.reset()
       void classifier.check()
+      opening.captureStarted()
+    } else {
+      opening.captureEnded()
     }
     // The partial transcript and the listening phase last while a capture is under way or awaits its
     // transcript, however it ends: as a turn, as echo, as nothing, or with the microphone turned off.
@@ -305,9 +302,7 @@ async function initializeConversation(): Promise<void> {
   // and measurement of this utterance begins.
   voiceController.events.on('speechend', (end) => {
     const policy = openingPolicy()
-    const turn = useTurnStore.getState()
-    turn.resetTimings()
-    turn.mergeTimings({
+    turnMetrics.beginUtterance(end.startedAt, end.speechEndAt, {
       vadMs: end.vadMs,
       vadMode: end.vadMode,
       ...(end.listening.length > 0 ? { listening: end.listening } : {})
@@ -324,28 +319,28 @@ async function initializeConversation(): Promise<void> {
     })
   })
 
-  voiceController.events.on('utterance', ({ text, vadMs, vadMode, asrMs, partialText, startedAt, speechEndAt }) => {
+  voiceController.events.on('utterance', ({ text, vadMs, asrMs, startedAt, speechEndAt }) => {
+    turnMetrics.updateUtterance(startedAt, { asrMs })
     // Only what sounded while this speech was captured can have come back through the microphone;
     // the capture runs on through the hangover's silence, vadMs past speechEndAt. `isSelfEcho` does
     // not judge short utterances, so that a genuine "はい" answer survives, and the echo of a short
     // clip is stripped off the ends instead. The utterance is dropped when nothing but echo is left.
-    const heard = playback.heardDuring(startedAt, speechEndAt + vadMs)
-    const cleaned = stripClipEcho(text, heard.filter((sound) => sound.clip).map((sound) => sound.text))
+    const capture = { startedAt, speechEndAt, endedAt: speechEndAt + vadMs }
+    const cleaned = stripClipEcho(text, playback.clipsAtEdges(capture))
     if (!cleaned) {
       useTurnStore.getState().setRouterNote({ kind: 'droppedClipEcho' })
-      opening.cancel(startedAt)
+      dropSpeech(startedAt)
       return
     }
-    if (isSelfEcho(cleaned, heard.map((sound) => sound.text))) {
+    if (isSelfEcho(cleaned, playback.heardDuring(capture))) {
       useTurnStore.getState().setRouterNote({ kind: 'droppedSelfEcho' })
-      opening.cancel(startedAt)
+      dropSpeech(startedAt)
       return
     }
-    void startVoiceTurn(cleaned, { vadMs, vadMode, asrMs, partialText, speechEndAt }, opening.claim(startedAt))
+    void startVoiceTurn(cleaned, startedAt, opening.claim(startedAt))
   })
 
-  // A speech that never becomes an utterance plays no bridge.
-  voiceController.events.on('speechdropped', ({ startedAt }) => opening.cancel(startedAt))
+  voiceController.events.on('speechdropped', ({ startedAt }) => dropSpeech(startedAt))
 
   voiceController.events.on('error', (message) =>
     toasts.push({ kind: 'error', title: translate('voice.micFailed'), body: message })
@@ -384,19 +379,20 @@ async function initializeConversation(): Promise<void> {
   speechPlayer.events.on('segmentstart', ({ segment, durationMs }) => {
     interjectPlayback.markSegmentStarted(segment)
     playback.started(segment, performance.now())
-    const t = useTurnStore.getState()
     if (segment.clip) {
       // An aizuchi is measured at the moment it actually sounds.
-      const patch = opening.clipStarted(segment.clip, durationMs, performance.now())
-      if (patch) noteOpeningTimings(patch)
+      opening.clipStarted(segment, durationMs, performance.now())
       return
     }
     if (segment.index >= 0) {
-      t.setPhase('speak')
-      const e2eMs = turnMetrics.playbackStarted(segment.turnId, segment.index)
-      if (e2eMs !== undefined) showTurnTimings(segment.turnId, { e2eMs })
+      useTurnStore.getState().setPhase('speak')
+      turnMetrics.playbackStarted(segment.turnId, segment.index)
     }
   })
+
+  // A sentence stops reaching the microphone when its audio ends, not when the next one starts after
+  // the pause between them.
+  speechPlayer.events.on('segmentend', () => playback.stopped(performance.now()))
 
   speechPlayer.events.on('idle', ({ turnId }) => {
     playback.stopped(performance.now())
@@ -532,9 +528,13 @@ function resumeHeldTurn(): void {
   if (active >= 0 && pendingRequestId === null) speechPlayer.beginTurn(active, true)
 }
 
-function beginUserTurnRequest(
-  metrics: RequestTimings
-): { requestId: string; previousTurnId: number } {
+/**
+ * Takes new input from the user and returns the id of its request, which the caller sends at once.
+ * Main's turnStart stops the turn before it and keeps what the user said in every turn it stops, so
+ * nothing waits for that turn to stop first: a barge-in or newer input during such a wait would drop
+ * the words before the feed or main had them.
+ */
+function beginUserTurnRequest(input: RequestInput): string {
   const turn = useTurnStore.getState()
   const previousTurnId = turn.activeTurnId
   const requestId = crypto.randomUUID()
@@ -549,16 +549,12 @@ function beginUserTurnRequest(
   // The previous turn's speech stops, but the aizuchi that started at this utterance's speech end
   // keeps playing.
   speechPlayer.discardBody()
-  turnMetrics.beginRequest(requestId, metrics)
+  turnMetrics.beginRequest(requestId, input)
   if (previousTurnId >= 0) {
     usePanelStore.getState().dismissLoadingOwnedBy(previousTurnId)
     turnMetrics.discard(previousTurnId)
   }
-  return { requestId, previousTurnId }
-}
-
-function isCurrentUserTurnRequest(requestId: string): boolean {
-  return pendingRequestId === requestId || activeRequestId === requestId
+  return requestId
 }
 
 function activateTurn(
@@ -569,10 +565,7 @@ function activateTurn(
   const turn = useTurnStore.getState()
   const alreadyActive = turn.activeTurnId === turnId && activeRequestId === requestId
   turn.setActiveTurn(turnId)
-  if (!alreadyActive && requestId !== null) {
-    turnMetrics.activate(turnId, requestId, turn.timings)
-    turn.setTimingsTurn(turnId)
-  }
+  if (!alreadyActive && requestId !== null) turnMetrics.activate(turnId, requestId)
   activeRequestId = requestId
   pendingRequestId = null
   if (alreadyActive) return
@@ -605,32 +598,18 @@ function failUserTurnStart(requestId: string, error: unknown): void {
 }
 
 /**
- * A turn started from the final transcript. Measurement of the VAD and of this utterance's aizuchi
- * already began at speech end, so only the ASR interval is added here. The opening belongs to the
- * same utterance and is null when nothing sounded.
+ * A turn started from the final transcript of the utterance whose capture began at `startedAt`, which
+ * the turn takes its measurements from. The opening belongs to the same utterance and is null when
+ * nothing sounded.
  */
 async function startVoiceTurn(
   text: string,
-  measured: {
-    vadMs: number
-    vadMode: HangoverMode
-    asrMs: number
-    partialText: string
-    speechEndAt: number
-  },
+  startedAt: number,
   spokenOpening: { aizuchi: string | null; bridge: string | null; bridgePending: boolean } | null
 ): Promise<void> {
   const turn = useTurnStore.getState()
   const feed = useFeedStore.getState()
-  const { requestId, previousTurnId } = beginUserTurnRequest({
-    typed: false,
-    speechEndAt: measured.speechEndAt
-  })
-  if (previousTurnId >= 0) await window.api.turnAbort(previousTurnId).catch(() => {})
-  // When newer input starts while the abort IPC is still pending, the older request must not be
-  // sent to main and interrupt the newest turn.
-  if (!isCurrentUserTurnRequest(requestId)) return
-  turn.mergeTimings({ vadMs: measured.vadMs, vadMode: measured.vadMode, asrMs: measured.asrMs })
+  const requestId = beginUserTurnRequest({ typed: false, utterance: startedAt })
   turn.setPartial('')
   turn.setPhase('think')
   feed.append({ role: 'user', text })
@@ -684,10 +663,7 @@ export async function sendTypedMessage(text: string): Promise<void> {
   }
   // The bridge of the voice utterance before this message would lead into the reply to the message.
   opening.withdraw()
-  const { requestId, previousTurnId } = beginUserTurnRequest({ typed: true })
-  if (previousTurnId >= 0) await window.api.turnAbort(previousTurnId).catch(() => {})
-  if (!isCurrentUserTurnRequest(requestId)) return
-  turn.resetTimings()
+  const requestId = beginUserTurnRequest({ typed: true })
   turn.setPhase('think')
   useFeedStore.getState().append({ role: 'user', text: trimmed })
   try {
@@ -774,7 +750,6 @@ export function handleTurnEvent(event: TurnEvent): void {
     }
     case 'metrics': {
       turnMetrics.update(event.turnId, event.timings)
-      showTurnTimings(event.turnId, event.timings)
       break
     }
     case 'done': {

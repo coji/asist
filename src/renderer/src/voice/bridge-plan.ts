@@ -36,7 +36,7 @@ export class BridgePlanner {
     })
   }
 
-  /** Called when capture starts. It discards the previous utterance's plan and any request still in flight. */
+  /** Called when capture starts. The plan of the previous capture still reaches the end of speech that waits for it, and no longer counts as the latest. */
   reset(): void {
     this.lookahead.reset()
   }

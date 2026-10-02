@@ -58,7 +58,10 @@ function NewsBody({ spec, size }: CardContext): React.JSX.Element {
                   <button
                     type="button"
                     className="card-icon-button"
-                    onClick={() => void sendTypedMessage(tConversation('spoken.ask.news', { title: item.title }))}
+                    onClick={(event) => {
+                      // The second click of a double click asks nothing more.
+                      if (event.detail <= 1) void sendTypedMessage(tConversation('spoken.ask.news', { title: item.title }))
+                    }}
                     title={t('cardsInfo.news.ask')}
                     aria-label={t('cardsInfo.news.ask')}
                   >

@@ -3,8 +3,10 @@
  * the newest result for the moment speech ends. Within a capture one request is in flight at a time:
  * while it runs the newest input waits and goes out once it returns, and a text identical to the
  * last one sent is not sent again. Each capture has its own queue, so a request left over from the
- * previous capture neither holds back nor swallows the input of the next one, and its result is
- * dropped.
+ * previous capture neither holds back nor swallows the input of the next one. Its result no longer
+ * counts as the latest, but still answers the end of speech that waits for it: a capture that starts
+ * right after speech ends is often nothing but noise or the echo of the opening aizuchi, and whether a
+ * newer utterance has made the result stale is decided where it is used.
  */
 
 interface Capture<I, R> {
@@ -12,7 +14,7 @@ interface Capture<I, R> {
   lastText: string
   inflight: boolean
   pending: I | null
-  /** Called once the capture has nothing in flight or waiting, or once a newer capture begins. */
+  /** Called once the capture has nothing in flight or waiting. */
   waiters: Array<() => void>
 }
 
@@ -38,11 +40,12 @@ export class PartialLookahead<I extends { text: string }, R> {
 
   constructor(private readonly ports: LookaheadPorts<I, R>) {}
 
-  /** Called when capture starts. It leaves the previous capture's result and requests behind. */
+  /**
+   * Called when capture starts. The previous capture's requests go on only while an end of speech waits
+   * for its result, which is then for its newest text; otherwise the input it holds is dropped.
+   */
   reset(): void {
-    const previous = this.capture
     this.capture = newCapture()
-    this.settle(previous)
   }
 
   /** Sends the input, or holds it while a request of this capture is in flight. */
@@ -67,13 +70,11 @@ export class PartialLookahead<I extends { text: string }, R> {
     return this.capture.inflight
   }
 
-  /** Waits until the current capture has nothing in flight or waiting, and returns its latest result, or null once a newer capture has begun. */
+  /** Waits until the current capture has nothing in flight or waiting, and returns its latest result, whatever capture has begun since. */
   settled(): Promise<R | null> {
     const capture = this.capture
     if (!capture.inflight) return Promise.resolve(capture.latest)
-    return new Promise((resolve) =>
-      capture.waiters.push(() => resolve(capture === this.capture ? capture.latest : null))
-    )
+    return new Promise((resolve) => capture.waiters.push(() => resolve(capture.latest)))
   }
 
   private settle(capture: Capture<I, R>): void {
@@ -86,17 +87,15 @@ export class PartialLookahead<I extends { text: string }, R> {
     capture.inflight = true
     try {
       const result = await this.ports.request(input)
-      if (capture === this.capture) {
-        capture.latest = this.ports.fold(capture.latest, result)
-        this.ports.onResult(capture.latest, input)
-      }
+      capture.latest = this.ports.fold(capture.latest, result)
+      if (capture === this.capture) this.ports.onResult(capture.latest, input)
     } catch (error) {
       if (capture === this.capture) this.ports.onFailure(error)
     } finally {
       capture.inflight = false
       const next = capture.pending
       capture.pending = null
-      if (next && capture === this.capture) void this.run(capture, next)
+      if (next && (capture === this.capture || capture.waiters.length > 0)) void this.run(capture, next)
       else this.settle(capture)
     }
   }

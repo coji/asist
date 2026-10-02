@@ -22,12 +22,28 @@ interface Sound {
 }
 
 /**
+ * A capture as the VAD timed it: speech began at `startedAt`, the voice was last heard at `speechEndAt`,
+ * and the capture closed at `endedAt`, after the silence of the hangover.
+ */
+export interface CaptureSpan {
+  startedAt: number
+  speechEndAt: number
+  endedAt: number
+}
+
+/** The texts of the clips that can sit at the start and at the end of a capture's transcript. */
+export interface ClipEdges {
+  leading: string[]
+  trailing: string[]
+}
+
+/**
  * What the speaker played and when, which tells what the microphone can have picked up during a
  * capture: a sound reaches it only while it plays and for the echo tail after. An answer that
  * repeats a word of the question once the question has finished is therefore never taken for its
  * echo, and a clip that starts after the capture ended, such as the aizuchi played at speech end, is
- * never stripped from it. Playback is sequential, so a sound ends when the next one starts or when
- * playback stops.
+ * never stripped from it. Playback is sequential, so a sound ends when its audio ends, when the next
+ * one starts or when playback stops.
  */
 export class PlaybackLog {
   private sounds: Sound[] = []
@@ -39,17 +55,37 @@ export class PlaybackLog {
     this.sounds.push({ text: segment.text, clip: segment.clip !== undefined, from: at, to: Infinity })
   }
 
-  /** Playback stopped, or the queue ran empty, at `at`. */
+  /** The sound playing came to its end, or playback stopped, at `at`. */
   stopped(at: number): void {
     const last = this.sounds.at(-1)
     if (last && last.to === Infinity) last.to = at
   }
 
-  /** The sounds that played, or were still echoing, at some moment of a capture from `from` to `to`. `clip` marks a one-off clip such as an aizuchi. */
-  heardDuring(from: number, to: number): Array<{ text: string; clip: boolean }> {
+  /** The texts that played, or were still echoing, at some moment of the capture. */
+  heardDuring(capture: Pick<CaptureSpan, 'startedAt' | 'endedAt'>): string[] {
     return this.sounds
-      .filter((sound) => sound.text && sound.from < to && sound.to + ECHO_TAIL_MS > from)
-      .map(({ text, clip }) => ({ text, clip }))
+      .filter((sound) => this.reaches(sound, capture.startedAt, capture.endedAt))
+      .map((sound) => sound.text)
+  }
+
+  /**
+   * The clips, such as an aizuchi, that can have leaked into either end of the capture's transcript. A
+   * clip can lead it only if it was sounding when the speech began, and end it only if it was still
+   * sounding, or echoing, when the voice was last heard. One that played at a break inside the speech,
+   * as a listening aizuchi does, lands inside the transcript, so the same words at its start or end are
+   * the user's own.
+   */
+  clipsAtEdges(capture: CaptureSpan): ClipEdges {
+    const clips = this.sounds.filter((sound) => sound.clip && this.reaches(sound, capture.startedAt, capture.endedAt))
+    return {
+      leading: clips.filter((sound) => sound.from <= capture.startedAt).map((sound) => sound.text),
+      trailing: clips.filter((sound) => sound.to + ECHO_TAIL_MS > capture.speechEndAt).map((sound) => sound.text)
+    }
+  }
+
+  /** Whether the sound played, or was still echoing, at some moment from `from` to `to`. */
+  private reaches(sound: Sound, from: number, to: number): boolean {
+    return sound.text !== '' && sound.from < to && sound.to + ECHO_TAIL_MS > from
   }
 }
 
@@ -91,20 +127,26 @@ const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$
  * Removes an aizuchi clip such as "はい。" or "うん" that was played over the speaker while the
  * utterance was being captured and ended up at an edge of the transcription. isSelfEcho ignores short
  * texts to avoid false positives, so short aizuchi are handled here instead, and the caller passes
- * only the clips PlaybackLog reports as heard during the capture.
+ * the clips PlaybackLog reports as able to sit at each edge.
  *
  * - Only a clip matched at the start or the end is stripped. A match inside the sentence is left
- *   alone, so that an utterance such as "はいって返事して" survives intact.
+ *   alone, so that an utterance such as "じゃあはいって返事して" survives intact.
  * - An empty result means the whole utterance was an echo, and the caller discards it.
  */
-export function stripClipEcho(utterance: string, clipTexts: readonly string[]): string {
+export function stripClipEcho(utterance: string, clips: ClipEdges): string {
+  const lead = clipAlternatives(clips.leading)
+  const tail = clipAlternatives(clips.trailing)
+  let rest = utterance
+  // The candidates are lowercased while the utterance is not, and a transcript capitalizes its first word.
+  if (lead) rest = rest.replace(new RegExp(`^(?:${EDGE_PUNCT}(?:${lead})${EDGE_PUNCT})+`, 'iu'), '')
+  if (tail) rest = rest.replace(new RegExp(`(?:${EDGE_PUNCT}(?:${tail})${EDGE_PUNCT})+$`, 'iu'), '')
+  return rest.trim()
+}
+
+/** The clips as the alternatives of a pattern, the longest first so that a doubled aizuchi is not read as the short one twice. */
+function clipAlternatives(clipTexts: readonly string[]): string | null {
   const cands = [...new Set(clipTexts.map(normalizeForEcho).filter((t) => t.length > 0))].sort(
     (a, b) => b.length - a.length
   )
-  if (cands.length === 0) return utterance
-  const alt = cands.map(escapeRegex).join('|')
-  // The candidates are lowercased while the utterance is not, and a transcript capitalizes its first word.
-  const lead = new RegExp(`^(?:${EDGE_PUNCT}(?:${alt})${EDGE_PUNCT})+`, 'iu')
-  const tail = new RegExp(`(?:${EDGE_PUNCT}(?:${alt})${EDGE_PUNCT})+$`, 'iu')
-  return utterance.replace(lead, '').replace(tail, '').trim()
+  return cands.length > 0 ? cands.map(escapeRegex).join('|') : null
 }

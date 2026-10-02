@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ECHO_TAIL_MS, isSelfEcho, normalizeForEcho, PlaybackLog, stripClipEcho } from '@shared/self-echo'
+import { ECHO_TAIL_MS, isSelfEcho, normalizeForEcho, PlaybackLog, stripClipEcho, type ClipEdges } from '@shared/self-echo'
 
 describe('normalizeForEcho', () => {
   it('removes punctuation, spaces and symbols and lowercases the rest', () => {
@@ -72,43 +72,50 @@ describe('isSelfEcho in a language written with spaces', () => {
 
 describe('stripClipEcho removes an aizuchi clip that leaked into the transcript', () => {
   const CLIPS = ['はい。', 'うんうん。', 'ええ。']
+  const atBothEdges = (clips: string[]): ClipEdges => ({ leading: clips, trailing: clips })
 
   it('strips a leading clip, with or without the punctuation that follows it', () => {
-    expect(stripClipEcho('はい明日の天気教えて', CLIPS)).toBe('明日の天気教えて')
-    expect(stripClipEcho('はい、明日の天気教えて', CLIPS)).toBe('明日の天気教えて')
+    expect(stripClipEcho('はい明日の天気教えて', atBothEdges(CLIPS))).toBe('明日の天気教えて')
+    expect(stripClipEcho('はい、明日の天気教えて', atBothEdges(CLIPS))).toBe('明日の天気教えて')
   })
 
   it('strips a clip that leaked in at the end', () => {
-    expect(stripClipEcho('お願いします はい', CLIPS)).toBe('お願いします')
+    expect(stripClipEcho('お願いします はい', atBothEdges(CLIPS))).toBe('お願いします')
   })
 
   it('returns an empty string when the whole utterance is an echo, so the caller can drop it', () => {
-    expect(stripClipEcho('はい', CLIPS)).toBe('')
-    expect(stripClipEcho('うんうん', CLIPS)).toBe('')
-    expect(stripClipEcho('はい。うんうん。', CLIPS)).toBe('')
+    expect(stripClipEcho('はい', atBothEdges(CLIPS))).toBe('')
+    expect(stripClipEcho('うんうん', atBothEdges(CLIPS))).toBe('')
+    expect(stripClipEcho('はい。うんうん。', atBothEdges(CLIPS))).toBe('')
   })
 
   it('leaves a clip word in the middle of a sentence alone, so a real utterance is not broken', () => {
-    expect(stripClipEcho('じゃあはいって返事して', CLIPS)).toBe('じゃあはいって返事して')
+    expect(stripClipEcho('じゃあはいって返事して', atBothEdges(CLIPS))).toBe('じゃあはいって返事して')
   })
 
   it('passes the text through when there is no clip candidate', () => {
-    expect(stripClipEcho('はい', [])).toBe('はい')
+    expect(stripClipEcho('はい', atBothEdges([]))).toBe('はい')
   })
 
   it('strips the longest matching clip first, so a doubled aizuchi is not read as the short clip twice', () => {
-    expect(stripClipEcho('はいはいわかりました', ['はいはい。', 'はい。'])).toBe('わかりました')
+    expect(stripClipEcho('はいはいわかりました', atBothEdges(['はいはい。', 'はい。']))).toBe('わかりました')
+  })
+
+  it('strips each end only of the clips that can sit there', () => {
+    const clips = { leading: ['はい。'], trailing: ['なるほど。'] }
+    expect(stripClipEcho('なるほどね、それではい', clips)).toBe('なるほどね、それではい')
+    expect(stripClipEcho('はい、それでなるほど', clips)).toBe('それで')
   })
 
   it('strips the punctuation of any language around the clip, not only the marks Japanese writes', () => {
-    expect(stripClipEcho('Right, what is the weather tomorrow?', ['Right.'])).toBe('what is the weather tomorrow?')
-    expect(stripClipEcho('¿Sí? dime la hora', ['Sí'])).toBe('dime la hora')
+    expect(stripClipEcho('Right, what is the weather tomorrow?', atBothEdges(['Right.']))).toBe('what is the weather tomorrow?')
+    expect(stripClipEcho('¿Sí? dime la hora', atBothEdges(['Sí']))).toBe('dime la hora')
   })
 })
 
 describe('PlaybackLog tells what the microphone can have picked up during a capture', () => {
   const question = { text: 'クラシックとジャズ、どちらを再生しますか？' }
-  const texts = (log: PlaybackLog, from: number, to: number): string[] => log.heardDuring(from, to).map((sound) => sound.text)
+  const texts = (log: PlaybackLog, from: number, to: number): string[] => log.heardDuring({ startedAt: from, endedAt: to })
 
   it('leaves out a question that finished before the answer was captured, so the answer is judged on its own', () => {
     const log = new PlaybackLog()
@@ -134,8 +141,25 @@ describe('PlaybackLog tells what the microphone can have picked up during a capt
   it('leaves out a clip that starts only after the capture ended, such as the aizuchi played at speech end', () => {
     const log = new PlaybackLog()
     log.started({ text: 'はい。', clip: 'aizuchi' }, 4400)
-    expect(log.heardDuring(2000, 4400)).toEqual([])
-    expect(log.heardDuring(4000, 4500)).toEqual([{ text: 'はい。', clip: true }])
+    expect(texts(log, 2000, 4400)).toEqual([])
+    expect(texts(log, 4000, 4500)).toEqual(['はい。'])
+  })
+
+  it('offers a clip to the start of a transcript only if it sounded as the speech began, and to the end only if it sounded as the voice was last heard', () => {
+    const log = new PlaybackLog()
+    // The opening aizuchi of the utterance before still sounds as this speech begins.
+    log.started({ text: 'はい。', clip: 'aizuchi' }, 900)
+    log.stopped(1300)
+    // A listening aizuchi at a break inside the speech, which goes on after it.
+    log.started({ text: 'なるほど。', clip: 'listening' }, 3000)
+    log.stopped(3500)
+    // Another at the last break, after which the user says nothing more.
+    log.started({ text: 'うん。', clip: 'listening' }, 5000)
+    log.stopped(5300)
+
+    expect(log.clipsAtEdges({ startedAt: 1000, speechEndAt: 5200, endedAt: 5550 })).toEqual({ leading: ['はい。'], trailing: ['うん。'] })
+    // A capture of nothing but the clip's echo can have it at both ends.
+    expect(log.clipsAtEdges({ startedAt: 950, speechEndAt: 1250, endedAt: 1600 })).toEqual({ leading: ['はい。'], trailing: ['はい。'] })
   })
 
   it('ends a sound when the next one starts', () => {

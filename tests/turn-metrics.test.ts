@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { TurnMetricLog } from '@shared/ipc'
+import type { TurnMetricLog, TurnTimings } from '@shared/ipc'
 import { TurnMetrics } from '../src/renderer/src/turn-metrics'
 
 beforeEach(() => vi.useFakeTimers())
@@ -7,10 +7,17 @@ afterEach(() => vi.useRealTimers())
 
 function setup(typed = false) {
   const save = vi.fn<(payload: TurnMetricLog) => Promise<void>>(async () => {})
-  const metrics = new TurnMetrics(save, () => 1000, () => 5000)
-  metrics.beginRequest('request', { typed, speechEndAt: 400 })
-  metrics.activate(1, 'request', { ttftMs: 120 })
-  return { metrics, save }
+  const show = vi.fn<(timings: TurnTimings) => void>()
+  const metrics = new TurnMetrics(save, show, () => 1000, () => 5000)
+  if (typed) {
+    metrics.beginRequest('request', { typed: true })
+  } else {
+    metrics.beginUtterance(10, 400, { vadMs: 350 })
+    metrics.beginRequest('request', { typed: false, utterance: 10 })
+  }
+  metrics.activate(1, 'request')
+  metrics.update(1, { ttftMs: 120 })
+  return { metrics, save, show }
 }
 
 describe('TurnMetrics', () => {
@@ -18,9 +25,9 @@ describe('TurnMetrics', () => {
     const { metrics, save } = setup()
     metrics.finish(1)
     expect(save.mock.calls[0][0]).toMatchObject({ id: 'request', revision: 1, occurredAt: 5000, ttftMs: 120 })
-    expect(metrics.playbackStarted(1, 0)).toBe(600)
+    metrics.playbackStarted(1, 0)
     expect(save.mock.calls[1][0]).toMatchObject({ id: 'request', revision: 2, occurredAt: 5000, e2eMs: 600 })
-    expect(metrics.playbackStarted(1, 0)).toBeUndefined()
+    metrics.playbackStarted(1, 0)
     expect(save).toHaveBeenCalledTimes(2)
   })
 
@@ -55,16 +62,17 @@ describe('TurnMetrics', () => {
     const { metrics, save } = setup()
     metrics.finish(1)
     metrics.playbackIdle(1)
-    expect(metrics.playbackStarted(1, 0)).toBe(600)
+    metrics.playbackStarted(1, 0)
     expect(save).toHaveBeenCalledTimes(2)
+    expect(save.mock.calls[1][0]).toMatchObject({ e2eMs: 600 })
     metrics.playbackIdle(1)
     expect(save).toHaveBeenCalledTimes(2)
   })
 
   it('does not measure E2E from a filler played while working or from the second sentence', () => {
     const { metrics, save } = setup()
-    expect(metrics.playbackStarted(1, 998)).toBeUndefined()
-    expect(metrics.playbackStarted(1, 1)).toBeUndefined()
+    metrics.playbackStarted(1, 998)
+    metrics.playbackStarted(1, 1)
     metrics.finish(1)
     expect(save.mock.calls[0][0]).not.toHaveProperty('e2eMs')
   })
@@ -72,7 +80,7 @@ describe('TurnMetrics', () => {
   it('keeps typed input and system reports out of the voice E2E measurement', () => {
     const { metrics, save } = setup(true)
     expect(metrics.update(2, { ttsMs: 100 })).toBe(false)
-    expect(metrics.playbackStarted(1, 0)).toBeUndefined()
+    metrics.playbackStarted(1, 0)
     metrics.finish(1)
     metrics.finish(2)
     expect(save).toHaveBeenCalledOnce()
@@ -86,11 +94,13 @@ describe('TurnMetrics', () => {
   it('attaches no measurement to a discarded request or to one that was replaced', () => {
     const { metrics, save } = setup()
     metrics.discard(1)
-    metrics.beginRequest('a', { typed: false })
-    metrics.beginRequest('b', { typed: false })
-    metrics.activate(2, 'a', { ttftMs: 100 })
+    metrics.beginRequest('a', { typed: true })
+    metrics.beginRequest('b', { typed: true })
+    metrics.activate(2, 'a')
     metrics.discardRequest('b')
-    metrics.activate(3, 'b', { ttftMs: 100 })
+    metrics.activate(3, 'b')
+    metrics.update(2, { ttftMs: 100 })
+    metrics.update(3, { ttftMs: 100 })
     metrics.finish(1)
     metrics.finish(2)
     metrics.finish(3)
@@ -101,7 +111,7 @@ describe('TurnMetrics', () => {
     const { metrics, save } = setup()
     metrics.finish(1)
     vi.runAllTimers()
-    expect(metrics.playbackStarted(1, 0)).toBeUndefined()
+    metrics.playbackStarted(1, 0)
     expect(save).toHaveBeenCalledOnce()
   })
 
@@ -113,6 +123,34 @@ describe('TurnMetrics', () => {
     expect(save).toHaveBeenCalledTimes(2)
     expect(save.mock.calls[1][0]).toMatchObject({ id: 'request', revision: 2, bargeIns: 1 })
     expect(metrics.increment(1, 'bargeIns')).toBe(false)
+  })
+
+  it('measures a turn from its own utterance, whatever a newer speech end measured meanwhile', () => {
+    const save = vi.fn<(payload: TurnMetricLog) => Promise<void>>(async () => {})
+    const metrics = new TurnMetrics(save, () => {}, () => 1000, () => 5000)
+    metrics.beginUtterance(10, 400, { vadMs: 350 })
+    metrics.updateUtterance(10, { aizuchiClipMs: 400 })
+    metrics.beginUtterance(20, 900, { vadMs: 500 })
+    metrics.updateUtterance(20, { aizuchiClipMs: 900 })
+    metrics.updateUtterance(10, { asrMs: 420 })
+    metrics.beginRequest('request', { typed: false, utterance: 10 })
+    metrics.activate(1, 'request')
+    // The bridge of the utterance plays after its turn began.
+    metrics.updateUtterance(10, { bridge: 'played' })
+    metrics.finish(1)
+    expect(save.mock.calls[0][0]).toEqual({ id: 'request', revision: 1, occurredAt: 5000, vadMs: 350, aizuchiClipMs: 400, asrMs: 420, bridge: 'played' })
+  })
+
+  it('shows the latest input in the HUD, and the one before again once the latest yields no turn', () => {
+    const { metrics, show } = setup()
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120 })
+    metrics.beginUtterance(20, 900, { vadMs: 500 })
+    metrics.update(1, { ttsMs: 90 })
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 500 })
+    metrics.dropUtterance(20)
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120, ttsMs: 90 })
+    metrics.beginRequest('typed', { typed: true })
+    expect(show).toHaveBeenLastCalledWith({})
   })
 
   it('retries a failed save without mixing in values from later turns or updates', async () => {

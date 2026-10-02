@@ -82,7 +82,10 @@ function SearchResultsBody({ spec, size }: CardContext): React.JSX.Element {
                 <button
                   type="button"
                   className="card-icon-button"
-                  onClick={() => void sendTypedMessage(tConversation('spoken.ask.searchResult', { title: result.title }))}
+                  onClick={(event) => {
+                    // The second click of a double click asks nothing more.
+                    if (event.detail <= 1) void sendTypedMessage(tConversation('spoken.ask.searchResult', { title: result.title }))
+                  }}
                   title={t('cardsInfo.search.ask')}
                   aria-label={t('cardsInfo.search.ask')}
                 >
