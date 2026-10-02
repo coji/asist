@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { protocol, type CustomScheme } from 'electron'
+import { type CustomScheme, type Protocol } from 'electron'
 import { parseRange } from '@shared/byte-range'
 import { PREVIEW_ORIGIN } from '@shared/preview-page'
 import { allowedPath } from './services/file-preview'
@@ -92,16 +92,17 @@ const MIME: Record<string, string> = {
 
 /**
  * The policy a document served from an allowed folder is given, confined to the folder the document is in,
- * which holds even where the document is loaded without the files card's sandboxed iframe. `sandbox
- * allow-scripts` gives the document an opaque origin, so it cannot reach the app's page or the preload
- * bridge. Every source that loads is the document's own folder and the data the document itself carries
- * (`data:` and `blob:`, which are made from what it already holds), never another folder and never a remote
- * host, so the document cannot read a file the folder does not hold, and `connect-src 'none'` with no remote
- * source anywhere leaves it no way to send out what it does read: no fetch, no beacon, no WebSocket, no
- * request to a remote script, style, image or font, and no frame, form or navigation that could carry bytes.
- * `blob:` closes nothing (a blob is the document's own bytes, and a worker started from one inherits this
- * policy), so it is allowed where a page builds images, audio or a worker from its own data. A scheme-wide
- * `asist-file:` source would reach every allowed folder, so each source names the one folder.
+ * which holds wherever the document is loaded. `sandbox allow-scripts` is the document's only sandbox, since
+ * the webview that shows it has none of its own: it gives the document an opaque origin, and it leaves the
+ * document no popup, form or dialog. Every source that loads is the document's own folder and the data the
+ * document itself carries (`data:` and `blob:`, which are made from what it already holds), never another
+ * folder and never a remote host, so the document cannot read a file the folder does not hold, and
+ * `connect-src 'none'` with no remote source anywhere leaves it no way to send out what it does read: no
+ * fetch, no beacon, no WebSocket, no request to a remote script, style, image or font, and no frame, form or
+ * navigation that could carry bytes. `blob:` closes nothing (a blob is the document's own bytes, and a worker
+ * started from one inherits this policy), so it is allowed where a page builds images, audio or a worker from
+ * its own data. A scheme-wide `asist-file:` source would reach every allowed folder, so each source names the
+ * one folder.
  */
 export function documentPolicy(filePath: string, rules?: UrlRules): string {
   const own = ownFolderSource(filePath, rules)
@@ -149,10 +150,8 @@ const DOCUMENT_TYPES = ['text/html', 'image/svg+xml']
 /**
  * The headers that depend on the file. A document also keeps its local path out of the Referer of any
  * request it makes, and turns off the browser's implicit DNS prefetching of the links it holds, which the
- * content security policy does not reach. An explicit `<link rel="dns-prefetch">` the document itself adds
- * still resolves its host; Electron exposes no way to stop that for one frame, and it is the one channel a
- * confined document keeps, able to carry a hostname out but nothing a page reads back. A `rel="preconnect"`
- * does nothing, because Electron does not act on a renderer's preconnect request on its own.
+ * content security policy does not reach. An explicit `<link rel="dns-prefetch">` ignores that header; the
+ * renderer of the session the page is shown in (page-viewer.ts) has DNS prefetching off for both.
  */
 export function contentHeaders(filePath: string, rules?: UrlRules): Record<string, string> {
   const type = MIME[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream'
@@ -207,9 +206,13 @@ export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
  */
 const PREVIEW_CORS = { 'Access-Control-Allow-Origin': PREVIEW_ORIGIN, 'Access-Control-Expose-Headers': 'Content-Range' }
 
-/** Has to be called after app.whenReady. allowedRoots is read per request, because a new job adds roots. */
-export function handleFileScheme(allowedRoots: () => string[]): void {
-  protocol.handle(FILE_SCHEME, (request) => {
+/**
+ * Serves the scheme in the session `target` belongs to: the app's own, for the files card's images, documents,
+ * audio and video, and the one the HTML page is shown in. Has to be called after app.whenReady. allowedRoots is
+ * read per request, because a new job adds roots.
+ */
+export function handleFileScheme(target: Protocol, allowedRoots: () => string[]): void {
+  target.handle(FILE_SCHEME, (request) => {
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         status: 204,

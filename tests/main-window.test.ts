@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   windows: [] as Array<{ webContents: FakeWebContents; loadURL: ReturnType<typeof vi.fn>; loadFile: ReturnType<typeof vi.fn>; destroyed: boolean }>,
   registerIpc: vi.fn(),
   handlePreviewScheme: vi.fn(),
+  setUpPageViewer: vi.fn(() => Promise.resolve()),
   micStop: vi.fn(),
   liveStop: vi.fn(() => Promise.resolve())
 }))
@@ -60,6 +61,7 @@ vi.mock('../src/main/os-integration', () => ({ setupOsIntegration: vi.fn() }))
 vi.mock('../src/main/window-chrome', () => ({ windowChrome: () => ({ frame: {}, prepare: vi.fn() }) }))
 vi.mock('../src/main/file-protocol', () => ({ handleFileScheme: vi.fn(), fileScheme: {} }))
 vi.mock('../src/main/preview-protocol', () => ({ handlePreviewScheme: mocks.handlePreviewScheme, previewScheme: {} }))
+vi.mock('../src/main/page-viewer', () => ({ setUpPageViewer: mocks.setUpPageViewer }))
 vi.mock('../src/main/services/native-mic', () => ({ stop: mocks.micStop }))
 vi.mock('../src/main/services/live', () => ({ stop: mocks.liveStop }))
 vi.mock('../src/main/services/asr', () => ({ ensureServer: () => Promise.resolve(true) }))
@@ -98,6 +100,7 @@ beforeEach(() => {
   mocks.windows.length = 0
   mocks.registerIpc.mockClear()
   mocks.handlePreviewScheme.mockClear()
+  mocks.setUpPageViewer.mockClear()
   mocks.micStop.mockClear()
   mocks.liveStop.mockClear()
   vi.stubEnv('ELECTRON_RENDERER_URL', undefined)
@@ -137,6 +140,19 @@ describe('the page the main window shows', () => {
     vi.stubEnv('ELECTRON_RENDERER_URL', 'http://localhost:5173/')
     const { trusted } = await startApp()
     expect(mocks.handlePreviewScheme.mock.calls[0]).toEqual([{ server: trusted }, trusted])
+  })
+})
+
+describe('the session the files card shows an HTML page in', () => {
+  it('is cut off from the network before the window, and any page in it, is created', async () => {
+    let finish = (): void => undefined
+    mocks.setUpPageViewer.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)))
+    void import('../src/main/index')
+    await vi.waitFor(() => expect(mocks.setUpPageViewer).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(mocks.windows).toHaveLength(0)
+    finish()
+    await vi.waitFor(() => expect(mocks.windows).toHaveLength(1))
   })
 })
 

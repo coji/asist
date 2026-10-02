@@ -23,7 +23,8 @@ import * as memory from './services/memory'
 import { initAppUpdates, installAfterFailedStart, installFailure, updatesItself, versionAfterFailedStart } from './services/app-update'
 import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
-import { FILE_SCHEME, fileScheme, handleFileScheme } from './file-protocol'
+import { fileScheme, handleFileScheme } from './file-protocol'
+import { setUpPageViewer } from './page-viewer'
 import { handlePreviewScheme, previewScheme, type RendererSource } from './preview-protocol'
 import { errorMessageIn, translatorIn } from './services/i18n'
 import { platformCapabilities } from './services/platform'
@@ -78,7 +79,10 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      // The files card shows an HTML page in a <webview>, which main attaches in a session that reaches no
+      // network (page-viewer.ts).
+      webviewTag: true
     }
   })
 
@@ -101,18 +105,6 @@ function createWindow(): void {
     if (isAppPage(event.url, appPage)) return
     event.preventDefault()
     if (isExternalLink(event.url)) void shell.openExternal(event.url)
-  })
-
-  // A document served from an allowed folder (the HTML page the files card shows, and any SVG, XML or
-  // other document a frame could be pointed at) is a fixed view of one file: it never navigates its own
-  // frame. Its sandboxed scripts could otherwise move the frame to a file in another folder, or to a
-  // document type served without the confining policy, or to a remote URL built from what they read, so a
-  // navigation out of a frame that already shows such a document is refused here, where the policy cannot
-  // reach. The frame's first load, from about:blank to the file, and the map card's Google frame, whose
-  // document is not served from this scheme, are left alone.
-  mainWindow.webContents.on('will-frame-navigate', (event) => {
-    if (event.isMainFrame) return
-    if (event.frame?.url.startsWith(`${FILE_SCHEME}:`)) event.preventDefault()
   })
 
   // Electron grants every permission by default, including to the map's iframe.
@@ -217,7 +209,7 @@ if (!hasSingleInstanceLock) {
     mainWindow.focus()
   })
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     // A development launch uses the same image as the packaged app rather than Electron's default icon.
     if (process.platform === 'darwin' && !app.isPackaged) {
       const icon = nativeImage.createFromPath(path.join(app.getAppPath(), 'build/icon.png'))
@@ -230,7 +222,7 @@ if (!hasSingleInstanceLock) {
     // Reading the settings first keeps a broken file from starting any service; the original file is kept
     // and the place to fix is shown.
     getSettings()
-    handleFileScheme(allowedFileRoots)
+    handleFileScheme(protocol, allowedFileRoots)
     handlePreviewScheme(rendererSource(), appPageUrl())
 
     // In self-test mode the whole pipeline runs against the real services and the app then exits.
@@ -257,6 +249,7 @@ if (!hasSingleInstanceLock) {
 
     // The window and the voice open only once the services have started, so that a service that fails to start
     // leaves no page under its error, where the page would load, turn the microphone on and wait to show itself.
+    await setUpPageViewer(allowedFileRoots)
     createWindow()
     // The sidecars are warmed up here, and a failure does not stop the app from starting.
     watchdog.checkAfter(asr.ensureServer().catch((error) => console.error('speech recognition failed to start:', error)))

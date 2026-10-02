@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CodeBlock, languageFor } from './CodeViewer'
 import { Frame } from './Frame'
+import { PageView } from './PageView'
 import type { Viewer, ViewerProps } from './types'
 import { useParsedBytes } from './use-parsed-bytes'
 import './HtmlViewer.css'
@@ -12,19 +13,12 @@ import { platformCapabilities } from '@/platform'
  * An HTML page, rendered by default and switchable to its highlighted source. The page is loaded from its
  * own URL rather than from srcdoc: a srcdoc document inherits the app's policy, which blocks inline
  * scripts, and it has no address for its relative links to resolve against. The main process serves the
- * page with a policy of its own (documentPolicy in file-protocol.ts), confined to the page's folder, and
- * refuses any navigation out of the frame, so a link in the page opens nothing; a user who wants to follow
- * one opens the page's file in the browser themselves.
+ * page with a policy of its own (documentPolicy in file-protocol.ts), confined to the page's folder, shows it
+ * in a session that reaches no network and refuses any navigation the page starts, so a link in the page
+ * opens nothing; a user who wants to follow one opens the page's file in the browser themselves.
  */
 
-/**
- * The iframe's sandbox. Without allow-same-origin the page has an opaque origin and cannot touch the app's
- * page or window.api; without allow-top-navigation it cannot move the app's window; without allow-popups,
- * allow-forms and allow-modals it opens no window, submits nothing and cannot block the app with a dialog.
- */
-export const PAGE_SANDBOX = 'allow-scripts'
-
-/** The URL is fetched once before the frame is shown, because a frame reports no failure to its parent. */
+/** The URL is fetched once before the page is shown, because a webview's page reports no HTTP error to the app. */
 const reachable = async (): Promise<true> => true
 
 type View = 'page' | 'source'
@@ -67,5 +61,5 @@ function Page({ item }: { item: ViewerProps['item'] }): React.JSX.Element {
       </p>
     )
   }
-  return <iframe className="fv-html-page" src={item.url} sandbox={PAGE_SANDBOX} referrerPolicy="no-referrer" title={item.name} />
+  return <PageView url={item.url} title={item.name} />
 }

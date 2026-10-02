@@ -33,9 +33,10 @@
   color: var(--ui-text-strong);
 }
 /* A page that sets no background of its own is transparent inside a frame, and its default black text
-   would sit on the card's dark background, so the frame gives it the white a browser would. */
+   would sit on the card's dark background, so the frame gives it the white a browser would. A webview
+   stays a flex box, since the frame inside it fills its height only as a flex item. */
 .fv-html-page {
-  display: block;
+  display: flex;
   width: 100%;
   height: calc(var(--fv-max) - var(--fv-html-tabs) - 2px);
   border: 0;

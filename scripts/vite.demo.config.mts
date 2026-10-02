@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -36,6 +37,24 @@ const demoPolicies: Plugin = {
     })
   }
 }
+/**
+ * The files card shows an HTML page in Electron's <webview>, which a browser does not have, so the demo puts its
+ * own PageView, an iframe, in place of the app's.
+ */
+const APP_PAGE_VIEW = resolve(root, 'src/renderer/src/panels/viewers/PageView.tsx')
+const DEMO_PAGE_VIEW = resolve(root, 'src/renderer/src/demo/PageView.tsx')
+const demoPageView: Plugin = {
+  name: 'asist-demo-page-view',
+  enforce: 'pre',
+  buildStart() {
+    for (const file of [APP_PAGE_VIEW, DEMO_PAGE_VIEW]) if (!existsSync(file)) throw new Error(`${file} がありません。demo が HTML のページを iframe に置き換えられません`)
+  },
+  async resolveId(source, importer) {
+    const resolved = await this.resolve(source, importer, { skipSelf: true })
+    return resolved?.id === APP_PAGE_VIEW ? DEMO_PAGE_VIEW : null
+  }
+}
+
 export default defineConfig({
   root: resolve(root, 'src/renderer'),
   // .env is read from the repository root, as electron-vite does for the app, with the same renderer prefixes.
@@ -50,6 +69,6 @@ export default defineConfig({
     }
   },
   // The aizuchi review page (/aizuchi) reads and writes the clips under resources/aizuchi through it.
-  plugins: [react(), tailwindcss(), demoPolicies, aizuchiReview(root)],
+  plugins: [demoPageView, react(), tailwindcss(), demoPolicies, aizuchiReview(root)],
   server: { port: 5174, strictPort: true }
 })

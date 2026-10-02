@@ -5,6 +5,7 @@ import { crc32, deflateRawSync } from 'node:zlib'
 import JSZip from 'jszip'
 import mammoth from 'mammoth/mammoth.browser.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Protocol } from 'electron'
 import { errorKey } from '@shared/i18n/error-key'
 import { openZip } from '@/preview/zip-ranges'
 import { fileUrl, handleFileScheme } from '../src/main/file-protocol'
@@ -254,7 +255,7 @@ describe('reading a zip by ranges', () => {
   it('reads a zip served by asist-file, and the file as it is after it was saved again', async () => {
     const folder = longTempFolder('asist-zip-')
     try {
-      handleFileScheme(() => [folder])
+      handleFileScheme({ handle: electron.handle } as unknown as Protocol, () => [folder])
       const handler = electron.handle.mock.calls[0][1] as (request: { url: string; headers: Headers }) => Response
       vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => handler({ url, headers: new Headers(init?.headers) }))
       const target = path.join(folder, 'report.docx')
