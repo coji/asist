@@ -89,33 +89,78 @@ const MIME: Record<string, string> = {
 }
 
 /**
- * The policy an HTML page is served with, which holds even where the page is loaded without the files
- * card's sandboxed iframe. `sandbox allow-scripts` gives the document an opaque origin, so it cannot reach
- * the app's page or the preload bridge, and asist-file:// sends it no CORS header, so it can run and draw
- * the files next to it but cannot read them. Remote scripts, styles and images load, because reports draw
- * their charts with a library from a CDN; frames are refused, so a page never shows a remote site inside
- * the app.
+ * The policy a document served from an allowed folder is given, confined to the folder the document is in,
+ * which holds even where the document is loaded without the files card's sandboxed iframe. `sandbox
+ * allow-scripts` gives the document an opaque origin, so it cannot reach the app's page or the preload
+ * bridge. Every source that loads is the document's own folder and the data the document itself carries
+ * (`data:` and `blob:`, which are made from what it already holds), never another folder and never a remote
+ * host, so the document cannot read a file the folder does not hold, and `connect-src 'none'` with no remote
+ * source anywhere leaves it no way to send out what it does read: no fetch, no beacon, no WebSocket, no
+ * request to a remote script, style, image or font, and no frame, form or navigation that could carry bytes.
+ * `blob:` closes nothing (a blob is the document's own bytes, and a worker started from one inherits this
+ * policy), so it is allowed where a page builds images, audio or a worker from its own data. A scheme-wide
+ * `asist-file:` source would reach every allowed folder, so each source names the one folder.
  */
-export const HTML_PAGE_POLICY = [
-  'sandbox allow-scripts',
-  "default-src 'none'",
-  `script-src ${FILE_SCHEME}: https: blob: 'unsafe-inline' 'unsafe-eval'`,
-  `style-src ${FILE_SCHEME}: https: 'unsafe-inline'`,
-  `img-src ${FILE_SCHEME}: https: data: blob:`,
-  `font-src ${FILE_SCHEME}: https: data:`,
-  `media-src ${FILE_SCHEME}: https: data: blob:`,
-  'connect-src https:',
-  "frame-src 'none'",
-  "worker-src blob:",
-  "form-action 'none'",
-  `base-uri ${FILE_SCHEME}:`
-].join('; ')
+export function documentPolicy(filePath: string, rules?: UrlRules): string {
+  const own = ownFolderSource(filePath, rules)
+  return [
+    'sandbox allow-scripts',
+    "default-src 'none'",
+    `script-src ${own} 'unsafe-inline' 'unsafe-eval' blob:`,
+    `style-src ${own} 'unsafe-inline'`,
+    `img-src ${own} data: blob:`,
+    `font-src ${own} data:`,
+    `media-src ${own} data: blob:`,
+    "connect-src 'none'",
+    "frame-src 'none'",
+    'worker-src blob:',
+    "form-action 'none'",
+    "base-uri 'none'"
+  ].join('; ')
+}
 
-/** The headers that depend on the file. An HTML page also keeps its local path out of the Referer of its remote requests. */
-export function contentHeaders(filePath: string): Record<string, string> {
+/**
+ * The folder the document is in, as a CSP source that matches that folder and everything below it. A CSP
+ * host-source needs a host, but an asist-file:// URL for a local path has none (the path carries the whole
+ * location), so `*` stands in for the empty host and the path still confines the source to the one folder; a
+ * Windows share keeps its server as the host. fileUrl escapes each name the way the file is served, so a
+ * folder whose name holds a space or a '#' still matches. The path already ends in a slash at a volume or
+ * share root, so the trailing slash the source needs is added only when it is missing.
+ */
+export function ownFolderSource(filePath: string, rules?: UrlRules): string {
+  // dirname follows the same rules as the rest of the path: Windows on Windows, or when a test asks for it.
+  const parent = (windowsRules(rules) ? path.win32 : path.posix).dirname(filePath)
+  const url = new URL(fileUrl(parent, rules))
+  // One trailing slash, so the source matches the folder and everything below it. A volume or share root
+  // comes back with a slash already, which would otherwise double it and match nothing.
+  const folder = url.pathname.replace(/\/*$/, '/')
+  return `${FILE_SCHEME}://${url.host || '*'}${folder}`
+}
+
+/**
+ * The media types a browser renders as a document and runs scripts in, so that a frame navigated to one is
+ * confined like the page the files card opened. SVG scripts run only when the SVG is the document, never
+ * when it is drawn by an <img>, where the policy's fetch directives do not apply.
+ */
+const DOCUMENT_TYPES = ['text/html', 'image/svg+xml']
+
+/**
+ * The headers that depend on the file. A document also keeps its local path out of the Referer of any
+ * request it makes, and turns off the browser's implicit DNS prefetching of the links it holds, which the
+ * content security policy does not reach. An explicit `<link rel="dns-prefetch">` the document itself adds
+ * still resolves its host; Electron exposes no way to stop that for one frame, and it is the one channel a
+ * confined document keeps, able to carry a hostname out but nothing a page reads back. A `rel="preconnect"`
+ * does nothing, because Electron does not act on a renderer's preconnect request on its own.
+ */
+export function contentHeaders(filePath: string, rules?: UrlRules): Record<string, string> {
   const type = MIME[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream'
-  if (!type.startsWith('text/html')) return { 'Content-Type': type }
-  return { 'Content-Type': type, 'Content-Security-Policy': HTML_PAGE_POLICY, 'Referrer-Policy': 'no-referrer' }
+  if (!DOCUMENT_TYPES.some((documentType) => type.startsWith(documentType))) return { 'Content-Type': type }
+  return {
+    'Content-Type': type,
+    'Content-Security-Policy': documentPolicy(filePath, rules),
+    'Referrer-Policy': 'no-referrer',
+    'X-DNS-Prefetch-Control': 'off'
+  }
 }
 
 /**

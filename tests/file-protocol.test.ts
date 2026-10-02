@@ -203,28 +203,92 @@ const ESCAPING_FLAGS = [
   'allow-modals'
 ]
 
-describe('the headers an HTML page is served with', () => {
-  it('sandboxes the page with scripts only, whatever frame loads it', async () => {
-    const { contentHeaders } = await load()
-    for (const name of ['/r/report.html', '/r/INDEX.HTM']) {
-      const sandbox = directives(contentHeaders(name)['Content-Security-Policy']).get('sandbox')
-      expect(sandbox).toContain('allow-scripts')
-      for (const flag of ESCAPING_FLAGS) expect(sandbox).not.toContain(flag)
+/** The whole policy as a map of directive to its exact list of sources, so a source added anywhere is caught. */
+async function documentDirectives(filePath: string, rules: { windows?: boolean }): Promise<Map<string, string[]>> {
+  const { contentHeaders } = await load()
+  return directives(contentHeaders(filePath, rules)['Content-Security-Policy'])
+}
+
+describe('the policy a document is served with', () => {
+  it('admits exactly the document\'s own folder and the data it carries, and nothing else, in every directive', async () => {
+    const { ownFolderSource } = await load()
+    const own = ownFolderSource('/r/reports/q3/index.html', MACOS)
+    const policy = await documentDirectives('/r/reports/q3/index.html', MACOS)
+    expect(policy.get('sandbox')).toEqual(['allow-scripts'])
+    expect(policy.get('default-src')).toEqual(["'none'"])
+    expect(policy.get('script-src')).toEqual([own, "'unsafe-inline'", "'unsafe-eval'", 'blob:'])
+    expect(policy.get('style-src')).toEqual([own, "'unsafe-inline'"])
+    expect(policy.get('img-src')).toEqual([own, 'data:', 'blob:'])
+    expect(policy.get('font-src')).toEqual([own, 'data:'])
+    expect(policy.get('media-src')).toEqual([own, 'data:', 'blob:'])
+    expect(policy.get('connect-src')).toEqual(["'none'"])
+    expect(policy.get('frame-src')).toEqual(["'none'"])
+    expect(policy.get('worker-src')).toEqual(['blob:'])
+    expect(policy.get('form-action')).toEqual(["'none'"])
+    expect(policy.get('base-uri')).toEqual(["'none'"])
+  })
+
+  it('does not reach a sibling folder of the page, only the page\'s own folder and below it', async () => {
+    const { ownFolderSource } = await load()
+    const own = ownFolderSource('/r/reports/q3/index.html', MACOS)
+    const sibling = ownFolderSource('/r/photos/x.html', MACOS)
+    const policy = await documentDirectives('/r/reports/q3/index.html', MACOS)
+    for (const directive of ['script-src', 'style-src', 'img-src', 'font-src', 'media-src']) {
+      const sources = policy.get(directive) ?? []
+      expect(sources).toContain(own)
+      expect(sources.some((source) => source.startsWith(sibling.slice(0, -1)))).toBe(false)
+    }
+    // The sibling's source is a different folder, not a prefix of the page's own.
+    expect(own.startsWith(sibling)).toBe(false)
+  })
+
+  it('names the folder as the file is served, with a space in a name escaped', async () => {
+    const { ownFolderSource } = await load()
+    const own = ownFolderSource('/r/My Report/index.html', MACOS)
+    expect(own).toBe('asist-file://*/r/My%20Report/')
+    expect((await documentDirectives('/r/My Report/index.html', MACOS)).get('img-src')).toContain(own)
+  })
+
+  it('confines a Windows page to its own drive folder or share, with one trailing slash at a volume or share root', async () => {
+    const { ownFolderSource } = await load()
+    const WIN = { windows: true }
+    // A drive path has no host in its URL, so the source stands '*' in for it; a share keeps its server.
+    expect(ownFolderSource('C:\\Users\\me\\r\\page.html', WIN)).toBe('asist-file://*/C:/Users/me/r/')
+    expect(ownFolderSource('\\\\nas\\team\\reports\\page.html', WIN)).toBe('asist-file://nas/team/reports/')
+    // A page at the root of a drive or a share ends in exactly one slash, so its own files still match.
+    expect(ownFolderSource('C:\\page.html', WIN)).toBe('asist-file://*/C:/')
+    expect(ownFolderSource('\\\\nas\\team\\page.html', WIN)).toBe('asist-file://nas/team/')
+    expect(ownFolderSource('/page.html', MACOS)).toBe('asist-file://*/')
+  })
+
+  it('carries the policy on every document a browser runs scripts in, such as an SVG, but not on a subresource', async () => {
+    const { contentHeaders, ownFolderSource } = await load()
+    for (const name of ['/r/report.html', '/r/INDEX.HTM', '/r/pic.svg']) {
+      const headers = contentHeaders(name, MACOS)
+      expect(directives(headers['Content-Security-Policy']).get('script-src')).toEqual([
+        ownFolderSource(name, MACOS),
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        'blob:'
+      ])
+    }
+    // A script, stylesheet or image the page loads is not a document and carries no policy of its own.
+    for (const name of ['/r/chart.js', '/r/style.css', '/r/own.png']) {
+      expect(contentHeaders(name, MACOS)['Content-Security-Policy']).toBeUndefined()
     }
   })
 
-  it('lets the page read no local file, embed no frame and submit no form', async () => {
-    const { contentHeaders } = await load()
-    const policy = directives(contentHeaders('/r/report.html')['Content-Security-Policy'])
-    expect(policy.get('default-src')).toEqual(["'none'"])
-    expect(policy.get('connect-src')).toEqual(['https:'])
-    expect(policy.get('frame-src')).toEqual(["'none'"])
-    expect(policy.get('form-action')).toEqual(["'none'"])
+  it('sandboxes the document with scripts only, whatever frame loads it', async () => {
+    const policy = await documentDirectives('/r/report.html', MACOS)
+    const sandbox = policy.get('sandbox') ?? []
+    expect(sandbox).toContain('allow-scripts')
+    for (const flag of ESCAPING_FLAGS) expect(sandbox).not.toContain(flag)
   })
 
-  it('keeps the local path out of the Referer of the remote resources a page loads', async () => {
+  it('keeps the local path out of the Referer and turns off the browser\'s implicit prefetching of its links', async () => {
     const { contentHeaders } = await load()
-    expect(contentHeaders('/r/report.html')['Referrer-Policy']).toBe('no-referrer')
+    expect(contentHeaders('/r/report.html', MACOS)['Referrer-Policy']).toBe('no-referrer')
+    expect(contentHeaders('/r/report.html', MACOS)['X-DNS-Prefetch-Control']).toBe('off')
   })
 
   it('serves the stylesheet and script next to a page with types a browser applies and runs', async () => {
