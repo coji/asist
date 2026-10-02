@@ -18,9 +18,8 @@ Word, Excel, PowerPoint and PDF files and Jupyter notebooks are read whole befor
 | PowerPoint | 32 MB |
 | PDF | 256 MB |
 | Jupyter notebook | 512 KB |
-| Audio waveform | 8 MB |
 
-Audio plays at any size. Over the limit, only its waveform is left out.
+Audio plays at any size. For MP3, AAC (.m4a, .aac) and WAV, the waveform is drawn as the file is read from its start, so for a long recording it grows from the left. FLAC and OGG play without a waveform.
 
 HTML appears as a page, and "Source" switches to the original HTML. The page's scripts run, but it loads only the CSS, images and scripts in its own folder and below it, nothing from a remote server. The page runs in a frame that is cut off from the app, so it can't touch the app's screens or features and can't read the contents of files in other folders. It connects to no server, submits no form, and can't be moved to another site. A link in the page doesn't open inside the app; to follow one, open the file in your browser yourself.
 

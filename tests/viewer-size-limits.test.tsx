@@ -28,7 +28,6 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} })
   vi.stubGlobal('fetch', fetch)
-  vi.stubGlobal('AudioContext', class { decodeAudioData = vi.fn(async () => ({ numberOfChannels: 0, getChannelData: () => new Float32Array() })); close = async (): Promise<void> => {} })
   fetch.mockClear()
   loadPdf.mockClear()
   setPdfLoader(loadPdf)
@@ -79,16 +78,5 @@ describe('the size limit of a viewer that reads the whole file', () => {
     const notebook = { ...itemOf('notebook', MAX_TEXT_BYTES + 1), text: '{"cells": [', truncated: true }
     const view = await render(notebook)
     expect(view.textContent).toContain(t('files.viewer.tooLarge'))
-  })
-
-  it('plays a recording over the limit and leaves only its waveform unread', async () => {
-    const limit = WHOLE_READ_LIMIT.audio!
-    const audio = itemOf('audio', limit)
-    await render(audio)
-    expect(fetch).toHaveBeenCalledTimes(1)
-    const view = await render({ ...audio, sizeBytes: limit + 1 })
-    expect(fetch).toHaveBeenCalledTimes(1)
-    expect(view.querySelector('audio')?.getAttribute('src')).toBe(audio.url)
-    expect(view.querySelector('.fv-media-wave')?.getAttribute('data-state')).toBe('skipped')
   })
 })

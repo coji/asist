@@ -6,7 +6,7 @@ import { createTranslator } from '@shared/i18n'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
 import { REGIONS, regionCurrency } from '@shared/conversation-locale'
 import { readErrorText } from '@shared/i18n/error-text'
-import { MAX_TEXT_BYTES, WHOLE_READ_LIMIT } from '@shared/files'
+import { MAX_TEXT_BYTES } from '@shared/files'
 import { smallestLimitedFile } from './helpers/files'
 import munichGeocoding from './fixtures/weather/munich-geocoding.json'
 import namesakeAnswers from './fixtures/weather/namesakes-geocoding.json'
@@ -334,7 +334,7 @@ describe('the files card (show_files)', () => {
         paths: [
           file(large, limit + 1),
           file(`fits-${large}`, limit),
-          file('lecture.mp3', (WHOLE_READ_LIMIT.audio ?? 0) + 1),
+          file('lecture.mp3', 256 * 1024 * 1024),
           file('bundle.zip', 64),
           file('budget.xls', 64),
           file('server.log', MAX_TEXT_BYTES + 1),

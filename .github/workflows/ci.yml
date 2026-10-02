@@ -64,6 +64,10 @@ jobs:
       - run: npm test
         env:
           ASIST_VAP_PYTHON: ${{ steps.python.outputs.python-path }}
+      # The budget scene below writes its two-hour MP3 with lame, which the runner does not have.
+      - run: brew install lame
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
       # Whether the files card's viewers still show large files within the budgets their cases set
       # (scripts/cdp/scenes/viewer-budgets/), in Chrome on the demo. A shared runner is slower than a developer's
       # Mac, so the times are held to three times their budgets and the memory to the budgets as written; the

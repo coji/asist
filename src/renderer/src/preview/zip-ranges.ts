@@ -1,4 +1,5 @@
 import { errorKey } from '@shared/i18n/error-key'
+import { fetchRange, loadFailed } from './fetch-range'
 
 /**
  * A zip container (docx, xlsx, pptx) read by HTTP ranges, so that a viewer reads the directory and the entries
@@ -73,32 +74,6 @@ const TAIL_LENGTH = END_LENGTH + U16_FULL + ZIP64_LOCATOR_LENGTH
 
 const damaged = (): Error => new Error(errorKey('files.errors.zipDamaged'))
 const changed = (): Error => new Error(errorKey('files.errors.changedWhileReading'))
-const loadFailed = (status: number): Error => new Error(errorKey('files.errors.loadFailed', { status }))
-
-/** The bytes of an answer to a Range request, where they start in the file, and how long the file is now. */
-interface Answer {
-  bytes: Bytes
-  start: number
-  size: number
-}
-
-/**
- * Asks for a range of the file, and reads from the answer's Content-Range which bytes it holds and the file's
- * length. asist-file answers a range that holds no byte of the file with a 200 and the whole file, which is left
- * unread, and null stands for it.
- */
-async function fetchRange(url: string, range: string): Promise<Answer | null> {
-  const response = await fetch(url, { headers: { Range: range } })
-  if (!response.ok) throw loadFailed(response.status)
-  const answered = /^bytes (\d+)-\d+\/(\d+)$/.exec(response.headers.get('Content-Range') ?? '')
-  if (response.status !== 206 || !answered) {
-    await response.body?.cancel()
-    // A 206 always names its range, so one whose Content-Range cannot be read is not an answer this can use.
-    if (response.status === 206) throw loadFailed(response.status)
-    return null
-  }
-  return { bytes: new Uint8Array(await response.arrayBuffer()), start: Number(answered[1]), size: Number(answered[2]) }
-}
 
 const viewOf = (bytes: Bytes): DataView => new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
 

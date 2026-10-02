@@ -122,8 +122,8 @@ function contentShown(root) {
 /**
  * Installs the timer that measures how long the main thread is held, and __budgetRefusal(root), which names what a
  * viewer shows in place of its content: an error note, a placard (the files card's StubViewer and its too-large
- * viewer), or a note saying the content was left out because the file is too large, matched against the
- * dictionary's wording in whatever language the page shows.
+ * viewer), or a note saying the content was left out, because the file is too large or because a recording's format
+ * gets no waveform, matched against the dictionary's wording in whatever language the page shows.
  */
 const PROBE = `(() => {
   const probe = { held: 0, last: performance.now(), waiting: [] }
@@ -136,7 +136,7 @@ const PROBE = `(() => {
   probe.tick = () => new Promise((resolve) => probe.waiting.push(resolve))
   window.__budgetProbe = probe
   const wording = (key) => window.demoText(key, { size: '\\u0001' }).split('\\u0001').filter(Boolean)
-  const leftOut = ['files.viewer.tooLarge', 'files.viewer.waveformTooLarge'].map(wording)
+  const leftOut = ['files.viewer.tooLarge', 'files.viewer.waveformUnsupported'].map(wording)
   window.__budgetRefusal = (root) => {
     const error = root.querySelector('.fv-note[data-tone="error"]')
     if (error) return 'the viewer showed an error: ' + error.textContent.trim()

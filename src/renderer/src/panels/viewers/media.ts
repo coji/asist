@@ -11,26 +11,29 @@ export function formatTime(seconds: number): string {
 }
 
 /**
- * Splits the samples of every channel into buckets and returns the peak amplitude of each, from 0 to 1. The
- * peaks are normalized so that the largest becomes 1, which keeps a quiet recording visible.
+ * The heights of the bars a waveform is drawn with, `bars` across a recording `seconds` long, from peaks that each
+ * cover `peakSeconds` of it from its start: each bar the largest peak within its stretch of time, scaled so that the
+ * largest bar is 1, which keeps a quiet recording visible. While the recording is still being read, only the bars
+ * up to what its peaks reach are given. A recording longer than `seconds` said is drawn to the end of its peaks.
  */
-export function downsampleWaveform(channels: readonly Float32Array[], buckets: number): number[] {
-  if (channels.length === 0 || buckets <= 0) return []
-  const length = channels[0].length
-  if (length === 0) return new Array(buckets).fill(0)
-  const peaks = new Array<number>(buckets).fill(0)
-  for (let b = 0; b < buckets; b++) {
-    const start = Math.floor((b * length) / buckets)
-    const end = Math.max(start + 1, Math.floor(((b + 1) * length) / buckets))
+export function waveformBars(peaks: Float32Array, peakSeconds: number, seconds: number, bars: number): Float32Array {
+  const read = peaks.length * peakSeconds
+  const total = Math.max(seconds, read)
+  if (peaks.length === 0 || !(total > 0) || bars <= 0) return new Float32Array(0)
+  const heights = new Float32Array(Math.min(bars, Math.ceil((read / total) * bars)))
+  const perBar = total / bars / peakSeconds
+  // A bar's edges are rounded to the peak they fall on when they miss it by a rounding error only.
+  const EDGE = 1e-9
+  let largest = 0
+  for (let b = 0; b < heights.length; b++) {
+    const from = Math.floor(b * perBar + EDGE)
+    // A bar narrower than a peak takes the peak it starts in.
+    const to = Math.min(peaks.length, Math.max(from + 1, Math.ceil((b + 1) * perBar - EDGE)))
     let peak = 0
-    for (const channel of channels) {
-      for (let i = start; i < end && i < channel.length; i++) {
-        const v = Math.abs(channel[i])
-        if (v > peak) peak = v
-      }
-    }
-    peaks[b] = peak
+    for (let i = from; i < to; i++) if (peaks[i] > peak) peak = peaks[i]
+    heights[b] = peak
+    if (peak > largest) largest = peak
   }
-  const max = Math.max(...peaks)
-  return max > 0 ? peaks.map((p) => p / max) : peaks
+  if (largest > 0) for (let b = 0; b < heights.length; b++) heights[b] /= largest
+  return heights
 }
