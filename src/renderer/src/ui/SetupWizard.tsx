@@ -52,6 +52,7 @@ export function SetupWizard(): React.JSX.Element | null {
   const [provider, setProvider] = useState<LlmProvider>('anthropic')
   const [apiKey, setApiKey] = useState('')
   const [apiBusy, setApiBusy] = useState(false)
+  const [chatgptSigningIn, setChatgptSigningIn] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<SpeakingMode | null>(null)
   const [liveKey, setLiveKey] = useState('')
@@ -194,14 +195,16 @@ export function SetupWizard(): React.JSX.Element | null {
   const signInWithChatgpt = async (): Promise<void> => {
     if (apiBusy) return
     setApiBusy(true)
+    setChatgptSigningIn(true)
     setError('')
     try {
-      await window.api.chatgptSignIn()
-      await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
+      const after = await window.api.chatgptSignIn()
+      if (after.chatgpt.state === 'signedIn') await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
       await refresh()
     } catch (err) {
       setError(displayError(err))
     } finally {
+      setChatgptSigningIn(false)
       setApiBusy(false)
     }
   }
@@ -452,6 +455,8 @@ export function SetupWizard(): React.JSX.Element | null {
               onVerify={() => void verifyKey(false)}
               onRecheck={() => void verifyKey(true)}
               onChatgpt={() => void signInWithChatgpt()}
+              chatgptSigningIn={chatgptSigningIn}
+              onCancelChatgpt={() => void window.api.chatgptCancelSignIn()}
             />
           )}
           {step === 'speaking' && (

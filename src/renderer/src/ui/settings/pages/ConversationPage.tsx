@@ -14,7 +14,7 @@ import {
 } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, VOICE_ENGINES, isLiveEngine, voiceEngineLabel, type LiveEngine, type VoiceEngine } from '@shared/voice-engine'
 import type { MessageKey, Translate } from '@shared/i18n'
-import type { ApiKeyState } from '@shared/ipc'
+import { credentialState, type ApiKeyState } from '@shared/ipc'
 import { useToastStore } from '@/state/stores'
 import type { SettingsContext } from '../context'
 import { Btn, Chip, Group, Page, Row, type ChipTone } from '../primitives'
@@ -75,7 +75,7 @@ export function ConversationPage({ ctx }: { ctx: SettingsContext }): React.JSX.E
   }
 
   const missingKeys = status === null ? [] : keyProviders(settings).flatMap((provider) => {
-    const state = status.llmKeys[provider]
+    const state = credentialState(status, settings.openaiAuth, provider)
     return state === 'missing' || state === 'unreadable' ? [{ provider, state }] : []
   })
 

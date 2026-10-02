@@ -14,6 +14,7 @@ import { t } from '../i18n'
 import { SecretUnreadableError } from '../encrypted-secrets'
 import { getSettings } from '../settings'
 
+import { providerKey } from './keys'
 import { apiKeyCredential, type ProviderCredential } from './adapter'
 import { ADAPTERS, completeJson } from './call'
 import { credentialIdentity, providerCredential } from './credentials'
@@ -39,15 +40,16 @@ function forgetIfUnauthenticated(error: unknown, provider: LlmProvider, identity
   }
 }
 
+/** The state of the provider's API key alone, whichever way OpenAI is used; the ChatGPT sign-in has a status of its own. */
 function keyState(provider: LlmProvider): ApiKeyState {
-  let credential: ProviderCredential | undefined
+  let key: string | undefined
   try {
-    credential = providerCredential(provider)
+    key = providerKey(provider)
   } catch (error) {
     if (error instanceof SecretUnreadableError) return 'unreadable'
     throw error
   }
-  return credential === undefined ? 'missing' : verifiedKeys.get(provider) === credentialIdentity(credential) ? 'verified' : 'saved'
+  return key === undefined ? 'missing' : verifiedKeys.get(provider) === credentialIdentity(apiKeyCredential(key)) ? 'verified' : 'saved'
 }
 
 /**

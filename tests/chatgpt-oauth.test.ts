@@ -194,6 +194,25 @@ describe('signing in with ChatGPT', () => {
     const { openBrowser } = browser(openai)
     await expect(authWith(openai, secrets, openBrowser).signIn()).rejects.toThrow(errorText('settingsIntegrations.chatgpt.errors.badIdToken'))
     expect(secrets.values.has('session')).toBe(false)
+    expect(openai.calls.filter((call) => call.url === CHATGPT_REVOKE_URL).map((call) => call.form.get('token'))).toEqual(['refresh-1'])
+  })
+
+  it('saves nothing and gives the grant back when a sign-out comes while the ID token is checked', async () => {
+    const openai = fakeOpenAI([granted()])
+    const secrets = memorySecrets()
+    const { openBrowser } = browser(openai)
+    const auth = authWith(openai, secrets, openBrowser)
+    const fetchJwks = openai.fetch
+    let signedOut!: Promise<void>
+    const deps = auth as unknown as { deps: { fetch: typeof fetch } }
+    deps.deps.fetch = (async (input: string | URL, init?: RequestInit) => {
+      if (String(input) === CHATGPT_JWKS_URL) signedOut = auth.signOut()
+      return fetchJwks(input, init)
+    }) as typeof fetch
+    await expect(auth.signIn()).rejects.toBeInstanceOf(ChatGptSignInReplaced)
+    await signedOut
+    expect(auth.signInState()).toBe('signedOut')
+    expect(openai.calls.filter((call) => call.url === CHATGPT_REVOKE_URL).map((call) => call.form.get('token'))).toEqual(['refresh-1'])
   })
 
   it('stops a sign-in that waits for the browser when it is cancelled', async () => {
@@ -258,6 +277,34 @@ describe('the ChatGPT access token', () => {
     await expect(auth.accessToken()).resolves.toBe('access-2')
   })
 
+  it('is not brought back by a refresh that was on its way when the user signed out, whose new grant is given back', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const openai = fakeOpenAI([
+      async () => {
+        await held
+        return json({ access_token: 'access-2', token_type: 'Bearer', expires_in: 3600, refresh_token: 'refresh-2', id_token: idToken({}), scope: SCOPE })
+      }
+    ])
+    const secrets = memorySecrets({ clientId: CLIENT_ID, session: session() })
+    const auth = authWith(openai, secrets)
+    const token = auth.accessToken()
+    await vi.waitFor(() => expect(openai.tokenCalls()).toHaveLength(1))
+    await auth.signOut()
+    release()
+    await expect(token).rejects.toBeInstanceOf(ChatGptSignedOut)
+    expect(auth.signInState()).toBe('signedOut')
+    expect(openai.calls.filter((call) => call.url === CHATGPT_REVOKE_URL).map((call) => call.form.get('token'))).toEqual(['refresh-old', 'refresh-2'])
+  })
+
+  it('reads a file that cannot be opened as unreadable rather than failing every status read', () => {
+    const secrets = memorySecrets()
+    secrets.get = () => {
+      throw new Error('chatgpt.json is broken')
+    }
+    expect(authWith(fakeOpenAI([]), secrets).signInState()).toBe('unreadable')
+  })
+
   it('reads a session it cannot parse as unreadable, which a sign-out clears, rather than as a sign-in that fails on every request', async () => {
     const auth = authWith(fakeOpenAI([]), memorySecrets({ clientId: CLIENT_ID, session: '{"subject":"user-1"}' }))
     expect(auth.signInState()).toBe('unreadable')
@@ -265,7 +312,7 @@ describe('the ChatGPT access token', () => {
     expect(auth.signInState()).toBe('signedOut')
   })
 
-  it('is no longer handed out after a sign-out, which revokes the refresh token and keeps the registration for the next sign-in', async () => {
+  it('is no longer handed out after a sign-out, which revokes the refresh token and forgets the registration, since the next sign-in may be another account', async () => {
     const openai = fakeOpenAI([])
     const secrets = memorySecrets({ clientId: CLIENT_ID, hostId: 'urn:uuid:x', session: session({ expiresAt: Date.now() + 3_600_000 }) })
     const auth = authWith(openai, secrets)
@@ -274,6 +321,6 @@ describe('the ChatGPT access token', () => {
     expect(revoke.url).toBe(CHATGPT_REVOKE_URL)
     expect(Object.fromEntries(revoke.form)).toEqual({ token: 'refresh-old', token_type_hint: 'refresh_token', client_id: CLIENT_ID })
     await expect(auth.accessToken()).rejects.toBeInstanceOf(ChatGptSignedOut)
-    expect([...secrets.values.keys()].sort()).toEqual(['clientId', 'hostId'])
+    expect([...secrets.values.keys()]).toEqual(['hostId'])
   })
 })

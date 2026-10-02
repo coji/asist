@@ -53,9 +53,9 @@ const TERMINAL_REFRESH_ERRORS = new Set([
 
 /**
  * `hostId` names this installation to OpenAI and stays the same across sign-ins (`ext_agent_host_id`).
- * `clientId` is the registration issued on the first sign-in; it outlives a sign-out so that signing in
- * again does not register a second app. `session` is the signed-in account and its tokens, as JSON that
- * carries the version of its form.
+ * `clientId` is the registration issued for the signed-in account, reused while that account signs in again
+ * and forgotten at a sign-out, because a registration is bound to one account and the next sign-in may be
+ * another's. `session` is the signed-in account and its tokens, as JSON that carries the version of its form.
  */
 export type ChatGptSecretId = 'hostId' | 'clientId' | 'session'
 
@@ -219,6 +219,11 @@ const decodePart = (part: string): Record<string, unknown> => JSON.parse(Buffer.
 export class ChatGptAuth {
   private refreshing: Promise<string> | null = null
   private signingIn: AbortController | null = null
+  /**
+   * Counts the sign-outs and completed sign-ins. A refresh that finds it changed once its request returns
+   * saves nothing, so a sign-out made meanwhile is not undone by the old account's tokens coming back.
+   */
+  private generation = 0
   constructor(private readonly deps: ChatGptAuthDependencies) {}
 
   private now(): number {
@@ -252,8 +257,9 @@ export class ChatGptAuth {
     try {
       return this.session() === null ? 'signedOut' : 'signedIn'
     } catch (error) {
-      if (error instanceof SecretUnreadableError) return 'unreadable'
-      throw error
+      // A file that is broken or that encryption cannot open stops only the sign-in, not every status read.
+      if (!(error instanceof SecretUnreadableError)) console.warn('ChatGPT sign-in cannot be read:', error)
+      return 'unreadable'
     }
   }
 
@@ -283,6 +289,8 @@ export class ChatGptAuth {
   private async refresh(session: Session): Promise<string> {
     const clientId = this.deps.secrets.get('clientId')
     if (clientId === null) throw new ChatGptSignedOut()
+    const generation = this.generation
+    const current = (): boolean => this.generation === generation
     const response = await this.post(CHATGPT_TOKEN_URL, {
       grant_type: 'refresh_token',
       client_id: clientId,
@@ -292,18 +300,23 @@ export class ChatGptAuth {
     if (!response.ok) {
       const code = await oauthError(response, 'refresh')
       if (code !== null && TERMINAL_REFRESH_ERRORS.has(code)) {
-        this.deps.secrets.remove('session')
+        if (current()) this.deps.secrets.remove('session')
         throw new ChatGptSignedOut()
       }
       throw new Error(errorText('settingsIntegrations.chatgpt.errors.requestFailed', { status: response.status }))
     }
     const token = await tokenOf(response)
+    if (!current()) {
+      await this.revoke(token.refresh_token, clientId).catch(() => undefined)
+      throw new ChatGptSignedOut()
+    }
     // The old refresh token is spent now, so the replacement is saved before anything else can fail, such
     // as fetching the keys that check the new ID token.
     const refreshed: Session = { ...session, accessToken: token.access_token, refreshToken: token.refresh_token, expiresAt: this.now() + token.expires_in * 1000 }
     this.saveSession(refreshed)
     if (token.id_token) {
       const identity = await this.verifyIdToken(token.id_token, clientId, null)
+      if (!current()) throw new ChatGptSignedOut()
       // A refresh that came back for another account would mix two accounts' tokens under one registration.
       if (identity.subject !== session.subject) {
         this.deps.secrets.remove('session')
@@ -398,23 +411,27 @@ export class ChatGptAuth {
       throw new Error(errorText('settingsIntegrations.chatgpt.errors.signInFailed'))
     }
     const token = await tokenOf(response)
-    if (controller.signal.aborted) {
+    // Every way this sign-in can still end without a session gives back the grant it just got.
+    let identity: { subject: string; email: string | null }
+    try {
+      controller.signal.throwIfAborted()
+      // The consent page lets the user sign in without sharing the plan, and such a token cannot pay for a request.
+      const granted = new Set((token.scope ?? '').split(/\s+/))
+      if (!granted.has(PLAN_USAGE_SCOPE)) throw new Error(errorText('settingsIntegrations.chatgpt.errors.planUsageNotGranted'))
+      if (!token.id_token) throw new Error(errorText('settingsIntegrations.chatgpt.errors.badResponse'))
+      identity = await this.verifyIdToken(token.id_token, clientId, nonce)
+      // A sign-out or a newer sign-in may have come while the keys were fetched.
+      controller.signal.throwIfAborted()
+    } catch (error) {
       await this.revoke(token.refresh_token, clientId).catch(() => undefined)
-      throw controller.signal.reason
+      throw error
     }
-    // The consent page lets the user sign in without sharing the plan, and such a token cannot pay for a request.
-    const granted = new Set((token.scope ?? '').split(/\s+/))
-    if (!granted.has(PLAN_USAGE_SCOPE)) {
-      await this.revoke(token.refresh_token, clientId).catch(() => undefined)
-      throw new Error(errorText('settingsIntegrations.chatgpt.errors.planUsageNotGranted'))
-    }
-    if (!token.id_token) throw new Error(errorText('settingsIntegrations.chatgpt.errors.badResponse'))
-    const identity = await this.verifyIdToken(token.id_token, clientId, nonce)
+    this.generation++
     this.saveSession({
       version: 1,
       subject: identity.subject,
       ...(identity.email ? { email: identity.email } : {}),
-      idToken: token.id_token,
+      idToken: token.id_token!,
       accessToken: token.access_token,
       refreshToken: token.refresh_token,
       expiresAt: this.now() + token.expires_in * 1000
@@ -469,22 +486,24 @@ export class ChatGptAuth {
   }
 
   /**
-   * Takes the grant back at OpenAI and forgets the session here; the registration and the host id stay for
-   * the next sign-in. The session is forgotten even when OpenAI cannot be reached, and the failure is then
-   * raised, since the grant still shows in ChatGPT's settings until the user removes it there.
+   * Takes the grant back at OpenAI and forgets the session and its registration here; the host id stays.
+   * Both are forgotten even when OpenAI cannot be reached, and the failure is then raised, since the grant
+   * still shows in ChatGPT's settings until the user removes it there.
    */
   async signOut(): Promise<void> {
     this.signingIn?.abort(new ChatGptSignInReplaced())
-    let session: Session | null
+    this.generation++
+    let session: Session | null = null
+    let clientId: string | null = null
     try {
       session = this.session()
+      clientId = this.deps.secrets.get('clientId')
     } catch (error) {
-      if (!(error instanceof SecretUnreadableError)) throw error
-      this.deps.secrets.remove('session')
-      return
+      // A session that cannot be read cannot be revoked from here either; it is only dropped.
+      console.warn('ChatGPT sign-in cannot be read at sign-out:', error)
     }
-    const clientId = this.deps.secrets.get('clientId')
     this.deps.secrets.remove('session')
+    this.deps.secrets.remove('clientId')
     if (session && clientId) await this.revoke(session.refreshToken, clientId)
   }
 

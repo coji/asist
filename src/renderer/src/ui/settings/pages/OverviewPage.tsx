@@ -4,7 +4,7 @@ import { HoloSwitch } from '@/components/ui/switch'
 import { LLM_PROVIDER_INFO, modelName } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { conversationFeatures } from '@shared/conversation-locale'
-import { keyReadable } from '@shared/ipc'
+import { credentialState, keyReadable } from '@shared/ipc'
 import { AGENT_CLI_UNAVAILABLE_TEXT } from '@shared/agent-cli'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT } from '@shared/platform'
 import { isLocalTtsEngine } from '@shared/tts-models'
@@ -50,7 +50,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
   const checking = { tone: 'dim', label: t('settingsModels.checking') } as const
   const starting = { tone: 'dim', label: t('settingsModels.starting') } as const
   const keyOf = (provider: keyof typeof LLM_PROVIDER_INFO): Step['chip'] =>
-    status === null ? checking : keyReadable(status.llmKeys[provider]) ? ready : { tone: 'warn', label: t('settingsConversation.models.notSet') }
+    status === null ? checking : keyReadable(credentialState(status, settings.openaiAuth, provider)) ? ready : { tone: 'warn', label: t('settingsConversation.models.notSet') }
 
   const steps: Step[] = live
     ? [

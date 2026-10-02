@@ -31,7 +31,7 @@ import type { AsrModel, ResolvedAsrModel } from './asr-models'
 import type { CacheMissReason } from './cache-diagnosis'
 import type { AppSettings, SettingsPatch } from './settings'
 export type { AppSettings } from './settings'
-import type { ConversationModel, LlmProvider } from './llm-catalog'
+import type { ConversationModel, LlmProvider, OpenAiAuthMethod } from './llm-catalog'
 export type { ConversationModel, LlmProvider } from './llm-catalog'
 import type { LiveEngine, VoiceEngine } from './voice-engine'
 export type { VoiceEngine } from './voice-engine'
@@ -739,6 +739,15 @@ export interface MemoryOverview {
  */
 export type ApiKeyState = 'missing' | 'saved' | 'verified' | 'unreadable'
 
+/**
+ * The state of what a provider's requests would be made with: the API key, or for OpenAI with ChatGPT
+ * chosen, the ChatGPT sign-in, which counts as saved while it is there.
+ */
+export function credentialState(status: Pick<AppStatus, 'llmKeys' | 'chatgpt'>, openaiAuth: OpenAiAuthMethod, provider: LlmProvider): ApiKeyState {
+  if (provider !== 'openai' || openaiAuth !== 'chatgpt') return status.llmKeys[provider]
+  return status.chatgpt.state === 'signedIn' ? 'saved' : status.chatgpt.state === 'unreadable' ? 'unreadable' : 'missing'
+}
+
 /** Whether the state is of a key the app can read and send. A missing key and one this build cannot decrypt are not. */
 export const keyReadable = (state: ApiKeyState): boolean => state === 'saved' || state === 'verified'
 
@@ -761,7 +770,7 @@ export interface AppStatus {
   /** Whether both the conversation model and the bridge phrase model could be fetched from the real API with their providers' keys. */
   llm: boolean
   conversationModel: ConversationModel
-  /** The state of each provider's credential; OpenAI's is that of the method `openaiAuth` chooses. */
+  /** The state of each provider's API key. Whether OpenAI can be called also depends on `openaiAuth`: see `credentialState`. */
   llmKeys: Record<LlmProvider, ApiKeyState>
   chatgpt: ChatGptStatus
   tts: boolean
@@ -1245,7 +1254,10 @@ export interface RendererApi {
    * reads as saved until this runs.
    */
   verifySavedApiKey(provider: LlmProvider): Promise<AppStatus>
-  /** Signs in with ChatGPT in the browser and returns the status afterwards. No token ever leaves main. */
+  /**
+   * Signs in with ChatGPT in the browser and returns the status afterwards, which shows nobody signed in when
+   * the sign-in was cancelled. No token ever leaves main.
+   */
   chatgptSignIn(): Promise<AppStatus>
   /** Stops a ChatGPT sign-in that waits for the browser; the pending chatgptSignIn then fails. */
   chatgptCancelSignIn(): Promise<void>

@@ -1,4 +1,4 @@
-import { keyReadable, type AizuchiClassifierStatus, type AppSettings, type AppStatus, type EmbeddingStatus, type VapStatus } from '@shared/ipc'
+import { credentialState, keyReadable, type AizuchiClassifierStatus, type AppSettings, type AppStatus, type EmbeddingStatus, type VapStatus } from '@shared/ipc'
 import type { LlmProvider } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { conversationFeatures } from '@shared/conversation-locale'
@@ -64,7 +64,7 @@ export function pendingItems(input: {
   if (status !== null && status.agent !== 'found') pending.push({ kind: 'agent' })
   if (status !== null) {
     for (const provider of keyProviders(settings)) {
-      const state = status.llmKeys[provider]
+      const state = credentialState(status, settings.openaiAuth, provider)
       if (!keyReadable(state)) pending.push({ kind: 'key', provider, state: state === 'unreadable' ? 'unreadable' : 'missing' })
     }
   }

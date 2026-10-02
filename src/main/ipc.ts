@@ -1,6 +1,7 @@
 import { shouldPushJobCard } from '@shared/job-cards'
 import { calendarStatus, changeCalendar, listCalendar, requestCalendarAccess, signOutCalendar } from './services/calendar'
 import { chatgptAuth, chatgptStatus } from './services/chatgpt'
+import { ChatGptSignInReplaced } from './services/chatgpt-oauth'
 import { events as mailEvents, getMailService, openMailGuide } from './services/mail'
 import { confirmEvents, pendingConfirms, resolveConfirm } from './services/confirm'
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
@@ -570,8 +571,14 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
 
   // A sign-in waits for the browser for minutes, so it does not hold the configuration lock meanwhile; only
   // what it changes afterwards, the status, is read under it.
+  // A sign-in the user cancelled, or that a newer one or a sign-out replaced, is no failure: the status it
+  // returns tells the page that nobody signed in.
   handle(IpcChannel.ChatGptSignIn, async (): Promise<AppStatus> => {
-    await chatgptAuth().signIn()
+    try {
+      await chatgptAuth().signIn()
+    } catch (error) {
+      if (!(error instanceof ChatGptSignInReplaced)) throw error
+    }
     return computeStatus()
   })
 

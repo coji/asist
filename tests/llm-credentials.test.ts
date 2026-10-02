@@ -51,3 +51,25 @@ describe('the credential of a provider', () => {
     expect(credentialIdentity({ type: 'chatgpt', account: 'oaiapp_1', accessToken: async () => 'a' })).toBe(credentialIdentity({ type: 'chatgpt', account: 'oaiapp_1', accessToken: async () => 'b' }))
   })
 })
+
+describe('the state of what OpenAI would be called with, as the settings screens read it', async () => {
+  const { credentialState } = await import('../src/shared/ipc')
+  const status = (chatgpt: 'signedIn' | 'signedOut' | 'unreadable') => ({
+    llmKeys: { anthropic: 'verified', openai: 'verified', google: 'missing', cerebras: 'missing' } as const,
+    chatgpt: { state: chatgpt, email: null }
+  })
+
+  it('is the API key while the API key is chosen', () => {
+    expect(credentialState(status('signedOut'), 'api-key', 'openai')).toBe('verified')
+  })
+
+  it('is the ChatGPT sign-in while ChatGPT is chosen, so a verified API key does not make OpenAI look ready', () => {
+    expect(credentialState(status('signedOut'), 'chatgpt', 'openai')).toBe('missing')
+    expect(credentialState(status('signedIn'), 'chatgpt', 'openai')).toBe('saved')
+    expect(credentialState(status('unreadable'), 'chatgpt', 'openai')).toBe('unreadable')
+  })
+
+  it('leaves every other provider on its API key', () => {
+    expect(credentialState(status('signedOut'), 'chatgpt', 'google')).toBe('missing')
+  })
+})

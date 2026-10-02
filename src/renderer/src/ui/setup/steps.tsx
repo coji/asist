@@ -72,7 +72,9 @@ export function ModelStep({
   busy,
   onVerify,
   onRecheck,
-  onChatgpt
+  onChatgpt,
+  chatgptSigningIn,
+  onCancelChatgpt
 }: {
   provider: LlmProvider
   onProvider: (provider: LlmProvider) => void
@@ -87,6 +89,9 @@ export function ModelStep({
   onRecheck: () => void
   /** Signs in with ChatGPT in place of an API key, offered for OpenAI alone. */
   onChatgpt: () => void
+  /** A ChatGPT sign-in waits for the browser, which the user may have closed, so it can be stopped. */
+  chatgptSigningIn: boolean
+  onCancelChatgpt: () => void
 }): React.JSX.Element {
   const t = useT()
   const info = LLM_PROVIDER_INFO[provider]
@@ -123,9 +128,18 @@ export function ModelStep({
         <>
           {provider === 'openai' && (
             <div className="su-field">
-              <Btn tone="primary" disabled={busy} onClick={onChatgpt}>
-                {busy ? t('settingsIntegrations.chatgpt.signingIn') : t('settingsIntegrations.chatgpt.signIn')}
-              </Btn>
+              {chatgptSigningIn ? (
+                <div className="su-inline">
+                  <Chip tone="cyan">{t('settingsIntegrations.chatgpt.signingIn')}</Chip>
+                  <Btn tone="quiet" onClick={onCancelChatgpt}>
+                    {t('settingsIntegrations.chatgpt.cancelSignIn')}
+                  </Btn>
+                </div>
+              ) : (
+                <Btn tone="primary" disabled={busy} onClick={onChatgpt}>
+                  {t('settingsIntegrations.chatgpt.signIn')}
+                </Btn>
+              )}
               <p className="su-hint">{t('settingsIntegrations.chatgpt.hint')}</p>
             </div>
           )}

@@ -92,8 +92,8 @@ function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
     setSigningIn(true)
     void window.api
       .chatgptSignIn()
-      .then(() => {
-        toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
+      .then((after) => {
+        if (after.chatgpt.state === 'signedIn') toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
         return refreshStatus()
       })
       .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signInFailedTitle'), body: displayError(err) }))
@@ -102,8 +102,9 @@ function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const signOut = (): void => {
     void window.api
       .chatgptSignOut()
-      .then(() => refreshStatus())
       .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signOutFailedTitle'), body: displayError(err) }))
+      // A sign-out whose revocation failed has still forgotten the sign-in here.
+      .finally(() => void refreshStatus())
   }
   return (
     <div className="st-key-form st-key-auth">
