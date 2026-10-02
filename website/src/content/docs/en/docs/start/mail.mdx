@@ -53,7 +53,7 @@ Outlook.com and Microsoft 365 do not accept IMAP connections with a password, so
 |---|---|
 | Period | "Days to fetch" in the settings (30 days by default). Older mail does not appear in the list. |
 | Folders | Inbox, Sent and Archive. Trash and spam are not fetched. |
-| New mail | ASIST waits on the inbox with IMAP IDLE and fetches new mail as soon as it arrives. Everything is fetched again every 5 minutes and when your computer wakes from sleep. |
+| New mail | ASIST waits on the inbox with IMAP IDLE and fetches new mail as soon as it arrives. Everything is fetched again every 5 minutes and when your computer wakes from sleep. After sleep, ASIST first checks that the server still answers on the connection it had, and connects again if nothing arrives from it within 10 seconds. |
 | Attachments | Only the file name and size are shown; the contents are not fetched. |
 
 ## If it does not connect

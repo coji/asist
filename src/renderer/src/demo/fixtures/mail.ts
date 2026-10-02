@@ -179,8 +179,11 @@ const SEEDS: Seed[] = [
 
 export const DEMO_MAIL_BODIES = new Map<string, string>()
 
+/** The UIDVALIDITY of every demo folder, which the demo never renews. */
+export const DEMO_UID_VALIDITY = '1'
+
 export const DEMO_MAIL_MESSAGES: MailMessage[] = SEEDS.map((seed) => {
-  const id = messageIdOf(seed.account, seed.folder, seed.uid)
+  const id = messageIdOf(seed.account, seed.folder, DEMO_UID_VALIDITY, seed.uid)
   DEMO_MAIL_BODIES.set(id, seed.text)
   return {
     id,

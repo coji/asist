@@ -1772,6 +1772,19 @@ export const mail = defineMessages({
         'pt-BR': 'Não foi possível abrir a pasta no servidor: {path}',
         'es-419': 'No se pudo abrir la carpeta en el servidor: {path}',
         'es-ES': 'No se ha podido abrir la carpeta del servidor: {path}'
+      },
+      noUidValidity: {
+        'ja-JP': 'サーバーがフォルダ {path} の UIDVALIDITY を返さないため、メールを見分けられません',
+        'en-US': "The server gives no UIDVALIDITY for the folder {path}, so its messages can't be told apart",
+        'fr-FR': "Le serveur ne fournit pas d'UIDVALIDITY pour le dossier {path}, ses messages ne peuvent donc pas être distingués",
+        'de-DE': 'Der Server liefert für den Ordner {path} keine UIDVALIDITY, deshalb lassen sich seine Nachrichten nicht unterscheiden',
+        'hi-IN': 'सर्वर फ़ोल्डर {path} के लिए UIDVALIDITY नहीं देता, इसलिए उसके ईमेल अलग-अलग नहीं पहचाने जा सकते',
+        'id-ID': 'Server tidak memberikan UIDVALIDITY untuk folder {path}, jadi pesan-pesannya tidak bisa dibedakan',
+        'it-IT': "Il server non fornisce l'UIDVALIDITY della cartella {path}, quindi i suoi messaggi non si possono distinguere",
+        'ko-KR': '서버가 폴더 {path}의 UIDVALIDITY를 주지 않아 메일을 구별할 수 없습니다',
+        'pt-BR': 'O servidor não informa o UIDVALIDITY da pasta {path}, então as mensagens dela não podem ser distinguidas',
+        'es-419': 'El servidor no da el UIDVALIDITY de la carpeta {path}, así que sus mensajes no se pueden distinguir',
+        'es-ES': 'El servidor no proporciona el UIDVALIDITY de la carpeta {path}, así que sus mensajes no se pueden distinguir'
       }
     },
     draft: {
@@ -1865,6 +1878,19 @@ export const mail = defineMessages({
         'pt-BR': '{error}. Não foi possível deixar o rascunho pronto para envio de novo, então ele não pode mais ser enviado ({reason})',
         'es-419': '{error}. No se pudo dejar el borrador listo para enviar otra vez, así que ya no se puede enviar ({reason})',
         'es-ES': '{error}. No se ha podido dejar el borrador listo para enviar otra vez, así que ya no se puede enviar ({reason})'
+      },
+      changed: {
+        'ja-JP': '表示したあとに下書きが書き換えられたため、送っていません。いまの内容を確かめて、もう一度「送信」を押してください。',
+        'en-US': 'The draft changed after it was shown, so it was not sent. Check what it says now and press "Send" again.',
+        'fr-FR': "Le brouillon a été modifié après son affichage, il n'a donc pas été envoyé. Vérifiez son contenu actuel et appuyez de nouveau sur « Envoyer ».",
+        'de-DE': 'Der Entwurf wurde nach der Anzeige geändert und deshalb nicht gesendet. Prüfen Sie den aktuellen Inhalt und drücken Sie erneut „Senden“.',
+        'hi-IN': 'दिखाए जाने के बाद ड्राफ़्ट बदल गया, इसलिए इसे नहीं भेजा गया। अभी का लिखा हुआ देखें और फिर से "भेजें" दबाएँ।',
+        'id-ID': 'Draf berubah setelah ditampilkan, jadi tidak dikirim. Periksa isinya sekarang, lalu tekan “Kirim” lagi.',
+        'it-IT': 'La bozza è cambiata dopo essere stata mostrata, quindi non è stata inviata. Controlla il contenuto attuale e premi di nuovo «Invia».',
+        'ko-KR': '표시된 뒤에 임시 저장 메일이 바뀌어 보내지 않았습니다. 지금 내용을 확인하고 "보내기"를 다시 누르십시오.',
+        'pt-BR': 'O rascunho mudou depois de ser exibido, por isso não foi enviado. Confira o conteúdo atual e toque em “Enviar” de novo.',
+        'es-419': 'El borrador cambió después de mostrarse, así que no se envió. Revisa lo que dice ahora y pulsa «Enviar» otra vez.',
+        'es-ES': 'El borrador ha cambiado después de mostrarse y no se ha enviado. Comprueba lo que dice ahora y pulsa «Enviar» otra vez.'
       }
     },
     change: {

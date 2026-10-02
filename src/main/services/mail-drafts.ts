@@ -118,7 +118,8 @@ export class MailDraftStore {
     // A reply draft keeps the recipients and the subject settled from the message it answers, so only
     // the body can be edited.
     const allowed = before.reply ? { body: patch.body } : patch
-    const next: MailDraft = { ...before, ...stripUndefined(allowed), updatedAt: this.now() }
+    // updatedAt names the version a send from the screen says it showed, so two edits in one millisecond differ.
+    const next: MailDraft = { ...before, ...stripUndefined(allowed), updatedAt: Math.max(this.now(), before.updatedAt + 1) }
     this.commit(current.map((draft, at) => (at === index ? next : draft)))
     return { ...next }
   }

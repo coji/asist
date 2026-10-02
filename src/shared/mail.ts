@@ -166,14 +166,21 @@ export interface MailAttachment {
 }
 
 export interface MailMessage {
-  /** `${accountId}:${folder}:${uid}`. Moving a message to another folder changes it. */
+  /**
+   * `${accountId}:${folder}:${uidValidity}:${uid}`. A UID names a message only within one UIDVALIDITY of its
+   * folder, and the server can renew that at any time, so an id read before a renewal names nothing after it
+   * rather than the message that took over the UID. Moving a message to another folder changes it.
+   */
   id: string
   accountId: string
   folder: MailFolder
   uid: number
   /** The Message-ID header, or an empty string when the message has none. */
   messageId: string
-  /** On Gmail the server's thread ID; elsewhere it is derived from the first entry of References. */
+  /**
+   * On Gmail the server's thread ID. Elsewhere the thread of the message the headers name as the start of the
+   * thread, threadRootOf, so that a reply whose mailer wrote only In-Reply-To stays with the message it answers.
+   */
   threadId: string
   subject: string
   from: MailAddress
@@ -390,18 +397,19 @@ export type MailEvent =
   /** Every draft, emitted once a draft's save has completed. */
   | { type: 'drafts'; drafts: MailDraft[] }
 
-export const messageIdOf = (accountId: string, folder: MailFolder, uid: number): string => `${accountId}:${folder}:${uid}`
+export const messageIdOf = (accountId: string, folder: MailFolder, uidValidity: string, uid: number): string => `${accountId}:${folder}:${uidValidity}:${uid}`
 
-export function parseMessageId(id: string): { accountId: string; folder: MailFolder; uid: number } {
-  const last = id.lastIndexOf(':')
-  const middle = id.lastIndexOf(':', last - 1)
-  const folder = id.slice(middle + 1, last)
-  const uid = Number(id.slice(last + 1))
-  const accountId = id.slice(0, middle)
-  if (middle <= 0 || !MAIL_FOLDERS.includes(folder as MailFolder) || !Number.isInteger(uid) || uid <= 0) {
+/** Reads the id from its end, since an account id may itself hold colons. */
+export function parseMessageId(id: string): { accountId: string; folder: MailFolder; uidValidity: string; uid: number } {
+  const fields = id.split(':')
+  const uid = Number(fields.at(-1))
+  const uidValidity = fields.at(-2) ?? ''
+  const folder = fields.at(-3) as MailFolder
+  const accountId = fields.slice(0, -3).join(':')
+  if (!accountId || !MAIL_FOLDERS.includes(folder) || !/^\d+$/.test(uidValidity) || !Number.isInteger(uid) || uid <= 0) {
     throw new Error(errorText('mail.errors.message.badId', { id }))
   }
-  return { accountId, folder: folder as MailFolder, uid }
+  return { accountId, folder, uidValidity, uid }
 }
 
 export const presetFor = (provider: MailProvider): { imap: MailEndpoint; smtp: MailEndpoint } | null =>
@@ -487,13 +495,19 @@ export function replyReferences(parent: { messageId: string; inReplyTo: string; 
 }
 
 /**
- * The key a thread is grouped by. Gmail's own thread ID is used as it is; elsewhere the first entry
- * of References groups the thread, falling back to In-Reply-To and then to the message's own
- * Message-ID.
+ * The Message-ID a message's headers name as the start of its thread: the first entry of References, falling
+ * back to In-Reply-To and then to the message's own Message-ID. Empty when the message has none of them.
  */
-export function threadIdOf(input: { gmailThreadId?: string | null; messageId: string; inReplyTo: string; references: string[]; fallback: string }): string {
+export const threadRootOf = (headers: { messageId: string; inReplyTo: string; references: readonly string[] }): string =>
+  headers.references[0] || headers.inReplyTo || headers.messageId
+
+/**
+ * The key a thread is grouped by, as a message's own headers give it. Gmail's own thread ID is used as it
+ * is; elsewhere the thread is keyed by its root, threadRootOf.
+ */
+export function threadIdOf(input: { gmailThreadId?: string | null; messageId: string; inReplyTo: string; references: readonly string[]; fallback: string }): string {
   if (input.gmailThreadId) return `g:${input.gmailThreadId}`
-  const root = input.references[0] || input.inReplyTo || input.messageId
+  const root = threadRootOf(input)
   return root ? `m:${root}` : `u:${input.fallback}`
 }
 

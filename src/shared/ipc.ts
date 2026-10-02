@@ -1178,8 +1178,11 @@ export interface RendererApi {
   mailDraftCreate(input: MailDraftInput): Promise<MailDraft>
   mailDraftUpdate(id: string, patch: MailDraftPatch): Promise<MailDraft>
   mailDraftRemove(id: string): Promise<void>
-  /** Sends a draft. Pressing the button is the approval, so no confirmation screen appears, and the draft is removed once it is sent. */
-  mailDraftSend(id: string): Promise<MailChangeResult>
+  /**
+   * Sends a draft. Pressing the button is the approval, so no confirmation screen appears, and the draft is removed
+   * once it is sent. `updatedAt` is that of the draft as the screen showed it, and a draft changed since is not sent.
+   */
+  mailDraftSend(id: string, updatedAt: number): Promise<MailChangeResult>
   /** The confirmations main asks for, in mail, calendar and agent jobs. `open` shows the screen and `close` takes it away. */
   onConfirmEvent(callback: (event: ConfirmEvent) => void): () => void
   /** The requests main is waiting on, oldest first, whose `open` a page that loaded after them never heard. */

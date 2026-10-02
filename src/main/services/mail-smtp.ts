@@ -7,8 +7,8 @@ import type { MailAccount, MailAddress } from '@shared/mail'
 
 /**
  * Sending over SMTP. The message is composed once and the raw bytes are both sent and returned, because
- * outside Gmail the server does not put a sent message in the Sent folder, so the caller has to append
- * exactly those bytes itself.
+ * many servers do not put a sent message in the Sent folder, so the caller has to append exactly those
+ * bytes itself.
  */
 
 export interface OutgoingMail {

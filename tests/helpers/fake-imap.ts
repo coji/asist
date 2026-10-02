@@ -25,7 +25,8 @@ export interface FakeMail {
   date: Date
   size?: number
   text?: string
-  html?: string
+  /** The HTML part as the server hands it over; bytes stand for a part whose MIME header names no charset, which imapflow passes on unconverted. */
+  html?: string | Buffer
   attachments?: Array<{ filename: string; type: string; size: number }>
   /** True for a broken mail that has no bodyStructure. */
   noStructure?: boolean
@@ -53,6 +54,19 @@ export class FakeImap extends EventEmitter {
   failDownload = new Set<number>()
   /** True while the server answers every SEARCH with NO. */
   failSearch = false
+  /**
+   * True once the connection has gone silent, as one kept across the machine's sleep: the socket still looks
+   * open, every command waits for an answer that never comes, and only closing the connection ends the wait.
+   */
+  silent = false
+  /**
+   * True while a new connection, made by reconnectable() as well, never finishes its handshake. Closing it does
+   * not end the wait either, as with imapflow closed during DNS, TCP connect or the TLS handshake.
+   */
+  hangConnect = false
+  /** The bytes received from the server, which stats() reports. A test adds to it for data still arriving. */
+  received = 0
+  private readonly unanswered: Array<(error: Error) => void> = []
   private readonly gmail: boolean
   private currentPath = ''
 
@@ -77,6 +91,7 @@ export class FakeImap extends EventEmitter {
         if (!last.usable && last.calls.includes('connect')) {
           const created = new FakeImap({ gmail: this.gmail, folders: this.folders })
           created.failConnect = this.failConnect
+          created.hangConnect = this.hangConnect
           instances.push(created)
         }
         return instances[instances.length - 1]
@@ -120,23 +135,41 @@ export class FakeImap extends EventEmitter {
   async connect(): Promise<void> {
     this.calls.push('connect')
     if (this.failConnect) throw this.failConnect
+    if (this.hangConnect) await new Promise<never>(() => undefined)
     this.usable = true
+  }
+
+  async noop(): Promise<void> {
+    this.calls.push('noop')
+    await this.answer()
+    this.received += 20
+  }
+
+  stats(): { sent: number; received: number } {
+    return { sent: 0, received: this.received }
   }
 
   async logout(): Promise<void> {
     this.calls.push('logout')
+    await this.answer()
     this.usable = false
     this.emit('close')
   }
 
   close(): void {
+    for (const reject of this.unanswered.splice(0)) reject(new Error('Connection not available'))
     if (!this.usable) return
     this.usable = false
     this.emit('close')
   }
 
+  private async answer(): Promise<void> {
+    if (this.silent) await new Promise<never>((_, reject) => this.unanswered.push(reject))
+  }
+
   async list(): Promise<ListResponse[]> {
     this.calls.push('list')
+    await this.answer()
     return [...this.folders.entries()].map(([path, folder]) => ({
       path,
       pathAsListed: path,
@@ -154,6 +187,7 @@ export class FakeImap extends EventEmitter {
   async getMailboxLock(path: string): Promise<{ path: string; release: () => void }> {
     const folder = this.requireFolder(path)
     this.calls.push(`open:${path}`)
+    await this.answer()
     this.currentPath = path
     this.mailbox = {
       path,
@@ -167,17 +201,22 @@ export class FakeImap extends EventEmitter {
   }
 
   /** Like the real client, it answers an empty list when nothing matches and false when the server rejects the command. */
-  async search(query: { since?: Date | string; all?: boolean }): Promise<number[] | false> {
+  async search(query: { since?: Date | string; all?: boolean; header?: Record<string, string> }): Promise<number[] | false> {
     const folder = this.current()
-    this.calls.push(`search:${this.currentPath}`)
+    const messageId = Object.entries(query.header ?? {}).find(([name]) => name.toLowerCase() === 'message-id')?.[1]
+    this.calls.push(messageId === undefined ? `search:${this.currentPath}` : `search:${this.currentPath}:${messageId}`)
+    await this.answer()
     if (this.failSearch) return false
     const since = query.since ? new Date(query.since).getTime() : 0
-    return [...folder.messages.values()].filter((mail) => mail.date.getTime() >= since).map((mail) => mail.uid)
+    return [...folder.messages.values()]
+      .filter((mail) => mail.date.getTime() >= since && (messageId === undefined || mail.messageId === messageId))
+      .map((mail) => mail.uid)
   }
 
   async fetchAll(range: number[] | string, query: FetchQueryObject): Promise<FetchMessageObject[]> {
     const folder = this.current()
     this.calls.push(`fetch:${this.currentPath}:${Array.isArray(range) ? range.length : range}`)
+    await this.answer()
     const uids = Array.isArray(range) ? range : [...folder.messages.keys()]
     return uids
       .map((uid) => folder.messages.get(uid))
@@ -186,6 +225,7 @@ export class FakeImap extends EventEmitter {
   }
 
   async fetchOne(uid: number, query: FetchQueryObject): Promise<FetchMessageObject | false> {
+    await this.answer()
     const mail = this.current().messages.get(uid)
     return mail ? this.toFetchObject(mail, query) : false
   }
@@ -193,15 +233,17 @@ export class FakeImap extends EventEmitter {
   async download(uid: number, part?: string): Promise<{ meta: Record<string, unknown>; content: Readable }> {
     const mail = this.current().messages.get(uid)
     this.calls.push(`download:${uid}:${part ?? ''}`)
+    await this.answer()
     if (!mail || this.failDownload.has(uid)) throw new Error(`download failed: ${uid}`)
     const body = part === '2' ? (mail.html ?? '') : part === '1' || part === 'TEXT' ? (mail.text ?? mail.html ?? '') : ''
-    return { meta: {}, content: Readable.from([Buffer.from(body)]) }
+    return { meta: {}, content: Readable.from([Buffer.isBuffer(body) ? body : Buffer.from(body)]) }
   }
 
   /** Like the real client, it takes one uid or a list, and returns false when none matches. */
   async messageFlagsAdd(range: number | number[], flags: string[]): Promise<boolean> {
     const uids = Array.isArray(range) ? range : [range]
     this.calls.push(`flags+:${this.currentPath}:${uids.join(',')}:${flags.join(',')}`)
+    await this.answer()
     const mails = uids.map((uid) => this.current().messages.get(uid)).filter((mail): mail is Stored => Boolean(mail))
     if (!mails.length) return false
     for (const mail of mails) mail.flags = [...new Set([...mail.flags, ...flags])]
@@ -211,6 +253,7 @@ export class FakeImap extends EventEmitter {
   async messageFlagsRemove(range: number | number[], flags: string[]): Promise<boolean> {
     const uids = Array.isArray(range) ? range : [range]
     this.calls.push(`flags-:${this.currentPath}:${uids.join(',')}:${flags.join(',')}`)
+    await this.answer()
     const mails = uids.map((uid) => this.current().messages.get(uid)).filter((mail): mail is Stored => Boolean(mail))
     if (!mails.length) return false
     for (const mail of mails) mail.flags = mail.flags.filter((flag) => !flags.includes(flag))
@@ -219,6 +262,7 @@ export class FakeImap extends EventEmitter {
 
   async messageMove(uid: number, destination: string): Promise<{ path: string; destination: string } | false> {
     this.calls.push(`move:${this.currentPath}:${uid}:${destination}`)
+    await this.answer()
     const from = this.current()
     const to = this.requireFolder(destination)
     const mail = from.messages.get(uid)
@@ -231,6 +275,7 @@ export class FakeImap extends EventEmitter {
 
   async append(path: string, content: Buffer, flags?: string[], date?: Date): Promise<{ destination: string; uid: number }> {
     this.calls.push(`append:${path}`)
+    await this.answer()
     const stored = this.put(path, { flags, date: date ?? new Date(), text: content.toString('utf8') })
     return { destination: path, uid: stored.uid }
   }

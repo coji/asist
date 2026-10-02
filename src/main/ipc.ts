@@ -480,7 +480,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     getMailService().draftRemove(String(id))
   })
   // Pressing send on a draft is itself the approval, so no confirmation appears.
-  handle(IpcChannel.MailDraftSend, (_e, id: string) => getMailService().draftSend(String(id), new AbortController().signal))
+  handle(IpcChannel.MailDraftSend, (_e, id: string, updatedAt: number) => getMailService().draftSend(String(id), new AbortController().signal, Number(updatedAt)))
   handle(IpcChannel.ConfirmPending, () => pendingConfirms())
   handle(IpcChannel.ConfirmResolve, (_e, id: string, approved: boolean) => {
     resolveConfirm(String(id), approved === true)

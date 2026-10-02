@@ -10,6 +10,8 @@ export type ImapClient = Pick<
   | 'connect'
   | 'logout'
   | 'close'
+  | 'noop'
+  | 'stats'
   | 'list'
   | 'getMailboxLock'
   | 'search'
@@ -60,10 +62,10 @@ export async function disconnect(client: Pick<ImapClient, 'logout' | 'close'>): 
 /** Whether the server offers the Gmail extensions: thread ids, labels and the Gmail search syntax. */
 export const supportsGmail = (client: Pick<ImapClient, 'capabilities'>): boolean => client.capabilities.has('X-GM-EXT-1')
 
-/** Reads the stream to its end. imapflow has already transcoded the content to UTF-8 at this point. */
-export async function readStream(content: NodeJS.ReadableStream | undefined): Promise<string> {
-  if (!content) return ''
+/** Reads a download to its end. imapflow resolves a download of a part it cannot find with no content. */
+export async function readBytes(content: NodeJS.ReadableStream | undefined): Promise<Buffer> {
+  if (!content) return Buffer.alloc(0)
   const chunks: Buffer[] = []
   for await (const chunk of content) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
-  return Buffer.concat(chunks).toString('utf8')
+  return Buffer.concat(chunks)
 }

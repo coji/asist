@@ -11,7 +11,8 @@ import { useMailStore, useToastStore } from '@/state/stores'
  * saved to main a short while after the typing, so that nothing travels while the user types, and
  * sending saves first. A change still waiting for that save when the editor goes away is saved at
  * once. What the Agent changed through update_mail_draft is taken over here as long as nothing is
- * half typed on this side.
+ * half typed on this side. A send names the version of the draft the fields show, and main refuses it
+ * when the Agent changed the draft after that version.
  */
 
 export interface DraftFields {
@@ -56,20 +57,27 @@ export function useDraftEditor(draft: MailDraft | null): {
   latest.current = fields
   const id = draft?.id ?? null
   const updatedAt = draft?.updatedAt ?? 0
+  const shownAt = useRef(updatedAt)
   const sending = useMailStore((s) => id !== null && s.sending.includes(id))
   const setSending = useMailStore((s) => s.setSending)
 
   // A draft changed from outside, by the Agent, is taken over unless something is half typed here.
   useEffect(() => {
-    if (draft && !dirty) setFields(fieldsOf(draft))
+    if (!draft || dirty) return
+    setFields(fieldsOf(draft))
+    shownAt.current = draft.updatedAt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, updatedAt])
 
-  const save = async (): Promise<void> => {
-    if (!id) return
+  const save = async (): Promise<number> => {
+    if (!id) return shownAt.current
     const current = latest.current
-    await window.api.mailDraftUpdate(id, patchOf(current))
-    if (latest.current === current) setDirty(false)
+    const saved = await window.api.mailDraftUpdate(id, patchOf(current))
+    if (latest.current === current) {
+      setDirty(false)
+      shownAt.current = saved.updatedAt
+    }
+    return saved.updatedAt
   }
 
   const unsaved = useRef<{ id: string; fields: DraftFields } | null>(null)
@@ -113,8 +121,8 @@ export function useDraftEditor(draft: MailDraft | null): {
     setSending(id, true)
     released.current = true
     try {
-      if (dirty) await save()
-      const result = await window.api.mailDraftSend(id)
+      const shown = dirty ? await save() : shownAt.current
+      const result = await window.api.mailDraftSend(id, shown)
       if (!result.saved) throw new Error(errorText('mail.composer.notSent'))
       setError('')
       return result.summary

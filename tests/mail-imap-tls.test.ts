@@ -1,6 +1,11 @@
 import net from 'node:net'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MailCache } from '../src/main/services/mail-cache'
 import { createImapClient } from '../src/main/services/mail-imap'
+import { MailAccountSync } from '../src/main/services/mail-sync'
+
+// The sync writes its own status text in the interface language, which it reads from the settings.
+vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ uiLocale: 'ja-JP' }) }))
 
 /**
  * A server on a plain port that does not offer STARTTLS, which is what a client sees when someone on the
@@ -43,5 +48,57 @@ describe('createImapClient on a plain port', () => {
     await expect(client.connect()).rejects.toThrow()
     expect(server.received.join('\n')).not.toContain('secret-password')
     expect(server.received.some((line) => /\b(LOGIN|AUTHENTICATE)\b/i.test(line))).toBe(false)
+  })
+})
+
+describe('a connection given up during its TLS handshake', () => {
+  let close = (): void => undefined
+  afterEach(() => close())
+
+  it('settles the sync waiting on it, and the account can still be stopped', async () => {
+    // A port that accepts the first connection and never answers its TLS handshake, as a server forgotten during
+    // sleep can, and turns every later one away at once.
+    const sockets: net.Socket[] = []
+    const server = net.createServer((socket) => {
+      socket.on('error', () => undefined)
+      if (sockets.push(socket) > 1) socket.destroy()
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    close = () => {
+      for (const socket of sockets) socket.destroy()
+      server.close()
+    }
+    const { port } = server.address() as net.AddressInfo
+    const sync = new MailAccountSync({
+      account: {
+        id: 'a1',
+        label: '仕事',
+        email: 'me@example.com',
+        name: '私',
+        provider: 'custom',
+        imap: { host: '127.0.0.1', port, secure: true },
+        smtp: { host: '127.0.0.1', port, secure: true },
+        folders: { sent: null, archive: null, trash: null }
+      },
+      password: () => 'secret-password',
+      cache: new MailCache(':memory:'),
+      createClient: createImapClient,
+      syncDays: () => 30,
+      intervals: { periodicMs: 600_000, reconnectMs: [600_000] },
+      onStatus: () => undefined,
+      onChanged: () => undefined,
+      onArrived: () => undefined
+    })
+    const settled: string[] = []
+    const record = (name: string, promise: Promise<unknown>): void =>
+      void promise.then(
+        () => settled.push(`${name} resolved`),
+        () => settled.push(`${name} rejected`)
+      )
+    record('first sync', sync.syncNow())
+    await vi.waitFor(() => expect(sockets).toHaveLength(1))
+    record('wake', sync.wake())
+    await vi.waitFor(() => expect(settled).toEqual(['first sync rejected', 'wake rejected']), { timeout: 3_000 })
+    await sync.stop()
   })
 })

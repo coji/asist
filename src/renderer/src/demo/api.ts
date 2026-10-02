@@ -31,6 +31,7 @@ import {
   DEFAULT_MAIL_SETTINGS,
   mailChangeSchema,
   mailListQuerySchema,
+  messageIdOf,
   parseAddress,
   parseMailInput,
   parseMessageId,
@@ -48,7 +49,7 @@ import { CARD_GROUPS } from './fixtures/cards'
 import { DEMO_JOB, DEMO_JOB_LOG, DEMO_JOBS } from './fixtures/jobs'
 import { DEMO_NOTES, demoNoteSummary, type DemoNote } from './fixtures/notes'
 import { DEMO_TASKS } from './fixtures/tasks'
-import { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_BODIES, DEMO_MAIL_MESSAGES, demoMailStatus, demoReplyOf } from './fixtures/mail'
+import { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_BODIES, DEMO_MAIL_MESSAGES, DEMO_UID_VALIDITY, demoMailStatus, demoReplyOf } from './fixtures/mail'
 import { commitDrafts, createDemoDraft, demoDraft, demoDrafts, emitMail, mailListeners } from './mail-state'
 import { DEMO_MEMORY, demoDocuments, demoPageTemplate } from './fixtures/memory'
 import { parseMemoryPageInput, validateDocument, documentOf } from '@shared/memory-page'
@@ -219,7 +220,7 @@ function demoSend(accountId: string, to: MailAddress[], cc: MailAddress[], subje
   const original = answered === null ? null : (demoMail.find((m) => m.id === answered) ?? null)
   const uid = Math.max(0, ...demoMail.map((m) => m.uid)) + 1
   const sent: MailMessage = {
-    id: `${account.id}:sent:${uid}`,
+    id: messageIdOf(account.id, 'sent', DEMO_UID_VALIDITY, uid),
     accountId: account.id,
     folder: 'sent',
     uid,
@@ -694,7 +695,7 @@ export const mockApi: RendererApi = {
     const before = demoDraft(id)
     // As in main, a reply draft keeps its settled recipients and subject and takes only a new body.
     const allowed = before.reply ? { body: patch.body } : patch
-    const next = { ...before, ...Object.fromEntries(Object.entries(allowed).filter(([, v]) => v !== undefined)), updatedAt: Date.now() } as MailDraft
+    const next = { ...before, ...Object.fromEntries(Object.entries(allowed).filter(([, v]) => v !== undefined)), updatedAt: Math.max(Date.now(), before.updatedAt + 1) } as MailDraft
     commitDrafts(demoDrafts().map((draft) => (draft.id === id ? next : draft)))
     return { ...next }
   },
@@ -702,8 +703,9 @@ export const mockApi: RendererApi = {
     demoDraft(id)
     commitDrafts(demoDrafts().filter((draft) => draft.id !== id))
   },
-  mailDraftSend: async (id) => {
+  mailDraftSend: async (id, updatedAt) => {
     const draft = demoDraft(id)
+    if (draft.updatedAt !== updatedAt) throw new Error(errorText('mail.errors.draft.changed'))
     const result = draft.reply
       ? demoSend(draft.accountId, draft.reply.to, draft.reply.cc, replySubject(draft.reply.subject), draft.body, draft.reply.id)
       : await demoMailChange({ operation: 'send', accountId: draft.accountId, to: draft.to, cc: draft.cc, subject: draft.subject, body: draft.body })

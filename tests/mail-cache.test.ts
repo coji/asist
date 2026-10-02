@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import { messageIdOf, type MailListQuery, type MailMessage } from '@shared/mail'
 import { MailCache, type MailBodyParts } from '../src/main/services/mail-cache'
 
@@ -8,7 +11,7 @@ let seq = 0
 const message = (folder: MailMessage['folder'], patch: Partial<MailMessage> = {}, accountId = 'a1'): MailMessage & { parts: MailBodyParts } => {
   const uid = patch.uid ?? ++seq
   return {
-    id: messageIdOf(accountId, folder, uid),
+    id: messageIdOf(accountId, folder, '1', uid),
     accountId,
     folder,
     uid,
@@ -31,6 +34,18 @@ const message = (folder: MailMessage['folder'], patch: Partial<MailMessage> = {}
     parts: { textPart: '1', htmlPart: null },
     ...patch
   }
+}
+
+/** A cache of 2000 messages whose pages from `from` to `to` (byte offsets, given the page count) are overwritten. */
+function damagedCache(dir: string, name: string, from: (pages: number) => number, to: (pages: number) => number): string {
+  const file = path.join(dir, name)
+  const filled = new MailCache(file)
+  filled.upsert(Array.from({ length: 2000 }, (_, index) => message('inbox', { uid: index + 1, subject: 'x'.repeat(400) })))
+  filled.close()
+  const bytes = fs.readFileSync(file)
+  const pages = bytes.length / 4096
+  fs.writeFileSync(file, Buffer.concat([bytes.subarray(0, from(pages)), Buffer.alloc(to(pages) - from(pages), 7), bytes.subarray(to(pages))]))
+  return file
 }
 
 describe('MailCache', () => {
@@ -89,7 +104,7 @@ describe('MailCache', () => {
   it('searches subject, sender, snippet and body by substring, treating % and _ as ordinary characters', () => {
     const cache = new MailCache(':memory:')
     cache.upsert([message('inbox', { uid: 1, subject: '100%の確率' }), message('inbox', { uid: 2, subject: 'ほか' }), message('inbox', { uid: 3, from: { name: '鈴木', address: 's@example.com' } })])
-    cache.setBody(messageIdOf('a1', 'inbox', 2), '本文にだけ ある言葉')
+    cache.setBody(messageIdOf('a1', 'inbox', '1', 2), '本文にだけ ある言葉')
     expect(cache.list({ view: 'inbox', query: '100%' }).messages.map((m) => m.uid)).toEqual([1])
     expect(cache.list({ view: 'inbox', query: '%' }).messages.map((m) => m.uid)).toEqual([1])
     expect(cache.list({ view: 'inbox', query: 'ある言葉' }).messages.map((m) => m.uid)).toEqual([2])
@@ -102,8 +117,8 @@ describe('MailCache', () => {
     cache.setUidValidity('a1', 'inbox', '10')
     cache.upsert([message('inbox', { uid: 1, unread: true }), message('inbox', { uid: 2 })])
     cache.updateFlags('a1', 'inbox', [{ uid: 1, unread: false, starred: true, answered: true, labels: [] }])
-    expect(cache.get(messageIdOf('a1', 'inbox', 1))).toMatchObject({ unread: false, starred: true, answered: true })
-    cache.setFlags(messageIdOf('a1', 'inbox', 2), { unread: true })
+    expect(cache.get(messageIdOf('a1', 'inbox', '1', 1))).toMatchObject({ unread: false, starred: true, answered: true })
+    cache.setFlags(messageIdOf('a1', 'inbox', '1', 2), { unread: true })
     expect(cache.flagsIn('a1', 'inbox').get(2)).toEqual({ unread: true, starred: false, answered: false, labels: [] })
     cache.removeUids('a1', 'inbox', [2])
     expect(cache.flagsIn('a1', 'inbox').size).toBe(1)
@@ -123,16 +138,70 @@ describe('MailCache', () => {
       message('archive', { uid: 4, threadId: 't', labels: ['\\Inbox'] })
     ])
     expect(cache.pendingBodies('a1', 'inbox', 10, [])).toEqual([
-      { uid: 1, textPart: null, htmlPart: '2' },
-      { uid: 2, textPart: '1', htmlPart: null }
+      { id: messageIdOf('a1', 'inbox', '1', 1), uid: 1, textPart: null, htmlPart: '2' },
+      { id: messageIdOf('a1', 'inbox', '1', 2), uid: 2, textPart: '1', htmlPart: null }
     ])
-    expect(cache.body(messageIdOf('a1', 'inbox', 1))).toBeNull()
-    cache.setBody(messageIdOf('a1', 'inbox', 1), '本文の一行目\n\n> 引用\n二行目')
-    expect(cache.body(messageIdOf('a1', 'inbox', 1))).toBe('本文の一行目\n\n> 引用\n二行目')
-    expect(cache.get(messageIdOf('a1', 'inbox', 1))).toMatchObject({ snippet: '本文の一行目 二行目', bodyFetched: true })
+    expect(cache.body(messageIdOf('a1', 'inbox', '1', 1))).toBeNull()
+    cache.setBody(messageIdOf('a1', 'inbox', '1', 1), '本文の一行目\n\n> 引用\n二行目')
+    expect(cache.body(messageIdOf('a1', 'inbox', '1', 1))).toBe('本文の一行目\n\n> 引用\n二行目')
+    expect(cache.get(messageIdOf('a1', 'inbox', '1', 1))).toMatchObject({ snippet: '本文の一行目 二行目', bodyFetched: true })
     expect(cache.pendingBodies('a1', 'inbox', 10, []).map((item) => item.uid)).toEqual([2])
     expect(cache.pendingBodies('a1', 'inbox', 10, [2])).toEqual([])
     expect(cache.thread('a1', 't').map((m) => m.uid)).toEqual([3, 2, 1])
+  })
+
+  it('starts over from an empty cache when its file is not a database or its schema is damaged, and keeps a file it cannot open for another reason', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-mail-cache-'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const notDatabase = path.join(dir, 'not-a-database.sqlite')
+      fs.writeFileSync(notDatabase, 'text written over the cache, long enough to fill the header of a database file')
+      const schemaPage = damagedCache(dir, 'schema-page.sqlite', () => 100, () => 4096)
+      for (const file of [notDatabase, schemaPage]) {
+        const cache = new MailCache(file)
+        expect(cache.list({ view: 'inbox' }).total).toBe(0)
+        cache.upsert([message('inbox', { uid: 1 })])
+        cache.close()
+        const reopened = new MailCache(file)
+        expect(reopened.list({ view: 'inbox' }).messages.map((m) => m.uid)).toEqual([1])
+        reopened.close()
+      }
+      // A folder in place of the file says nothing about the cache being broken.
+      const folder = path.join(dir, 'folder.sqlite')
+      fs.mkdirSync(folder)
+      expect(() => new MailCache(folder)).toThrow()
+      expect(fs.statSync(folder).isDirectory()).toBe(true)
+    } finally {
+      warn.mockRestore()
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('finds damage in the pages past the schema with its check, and starts over from an empty cache when told to', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-mail-cache-'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const intact = new MailCache(path.join(dir, 'intact.sqlite'))
+      intact.upsert([message('inbox', { uid: 1 })])
+      expect(await intact.check()).toBeNull()
+      intact.close()
+      const file = damagedCache(dir, 'data-pages.sqlite', (pages) => Math.floor(pages * 0.2) * 4096, (pages) => Math.floor(pages * 0.3) * 4096)
+      const cache = new MailCache(file)
+      const damage = await cache.check()
+      expect(damage).not.toBeNull()
+      expect(() => cache.list({ view: 'inbox' })).toThrow()
+      cache.replace(damage!)
+      expect(cache.list({ view: 'inbox' }).total).toBe(0)
+      cache.upsert([message('inbox', { uid: 1 })])
+      cache.close()
+      const reopened = new MailCache(file)
+      expect(reopened.list({ view: 'inbox' }).messages.map((m) => m.uid)).toEqual([1])
+      expect(await reopened.check()).toBeNull()
+      reopened.close()
+    } finally {
+      warn.mockRestore()
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('counts unread inbox messages and the unread ones from the last 24 hours, and clearing an account removes all of them', () => {

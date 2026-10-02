@@ -116,12 +116,12 @@ describe('threading', () => {
 })
 
 describe('ids, snippets and the sync range', () => {
-  it('round-trips account, folder and uid through the message id, and throws on a broken one', () => {
-    const id = messageIdOf('acc:with:colons', 'inbox', 42)
-    expect(parseMessageId(id)).toEqual({ accountId: 'acc:with:colons', folder: 'inbox', uid: 42 })
-    expect(() => parseMessageId('acc:nowhere:1')).toThrow(errorText('mail.errors.message.badId', { id: 'acc:nowhere:1' }))
-    expect(() => parseMessageId('acc:inbox:x')).toThrow(errorText('mail.errors.message.badId', { id: 'acc:inbox:x' }))
-    expect(() => parseMessageId('inbox:1')).toThrow(errorText('mail.errors.message.badId', { id: 'inbox:1' }))
+  it('round-trips account, folder, UIDVALIDITY and uid through the message id, and throws on a broken one', () => {
+    const id = messageIdOf('acc:with:colons', 'inbox', '1700000000', 42)
+    expect(parseMessageId(id)).toEqual({ accountId: 'acc:with:colons', folder: 'inbox', uidValidity: '1700000000', uid: 42 })
+    for (const broken of ['acc:nowhere:1:1', 'acc:inbox:1:x', 'acc:inbox:x:1', 'inbox:1:1', 'acc:inbox:1']) {
+      expect(() => parseMessageId(broken)).toThrow(errorText('mail.errors.message.badId', { id: broken }))
+    }
   })
   it('drops blank lines and quotes from the snippet, collapses whitespace, and stops at 200 characters', () => {
     expect(snippetOf('一行目\r\n\r\n> 引用\n  二行目  \n')).toBe('一行目 二行目')

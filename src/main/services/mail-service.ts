@@ -16,6 +16,7 @@ import {
   replyRecipients,
   replyReferences,
   replySubject,
+  syncSince,
   type MailAccount,
   type MailAccountStatus,
   type MailAddress,
@@ -122,6 +123,18 @@ export class MailService {
   start(): void {
     this.started = true
     this.applySettings()
+  }
+
+  /**
+   * Checks the cache file, and replaces it with an empty cache when it is damaged. It runs before start(): the
+   * syncs are the cache's only writers, and one that kept running across the replacement would take every
+   * message of the empty cache's first fetch for new mail.
+   */
+  async checkCache(): Promise<void> {
+    const damage = await this.deps.cache.check()
+    if (damage === null) return
+    this.deps.cache.replace(damage)
+    for (const account of this.deps.settings().accounts) this.deps.emit({ type: 'changed', accountId: account.id })
   }
 
   async stop(): Promise<void> {
@@ -326,15 +339,18 @@ export class MailService {
   }
 
   async read(id: string): Promise<MailMessageBody> {
-    const { accountId, folder, uid } = parseMessageId(id)
-    const message = this.deps.cache.get(id)
-    if (!message) throw new Error(errorText('mail.errors.message.notFound'))
-    const text = await this.requireSync(accountId).fetchBody(folder, uid)
+    const message = this.requireMessage(id)
+    const text = await this.requireSync(message.accountId).fetchBody(id)
     return { message: this.deps.cache.get(id) ?? message, text }
   }
 
   syncNow(): Promise<void> {
     return Promise.all([...this.syncs.values()].map((sync) => sync.syncNow())).then(() => undefined)
+  }
+
+  /** Fetches every account again when the machine wakes from sleep, over a new connection where the old one no longer answers. */
+  wake(): Promise<void> {
+    return Promise.all([...this.syncs.values()].map((sync) => sync.wake())).then(() => undefined)
   }
 
   private requireSync(accountId: string): MailAccountSync {
@@ -433,16 +449,19 @@ export class MailService {
 
   /**
    * Sends a draft. The user's press is the approval, so no confirmation is shown, and the draft is removed
-   * once the send succeeds. The start of the send is written to the draft file before the message leaves:
-   * removing the draft can fail after the message went out, and only a record made beforehand keeps the
-   * draft from being sent twice, in this session and after a restart.
+   * once the send succeeds. `shown` is the updatedAt of the draft as the screen showed it when the button was
+   * pressed: the Agent can change the draft until then, and a version the user did not see is not sent. The
+   * start of the send is written to the draft file before the message leaves: removing the draft can fail after
+   * the message went out, and only a record made beforehand keeps the draft from being sent twice, in this
+   * session and after a restart.
    */
-  async draftSend(id: string, signal: AbortSignal): Promise<MailChangeResult> {
+  async draftSend(id: string, signal: AbortSignal, shown: number): Promise<MailChangeResult> {
     this.requireIdle(id)
     this.sendingDrafts.add(id)
     try {
       const draft = this.deps.drafts.require(id)
       requireUnsent(draft)
+      if (draft.updatedAt !== shown) throw new Error(errorText('mail.errors.draft.changed'))
       signal.throwIfAborted()
       if (!this.deps.settings().enabled) throw new Error(errorText('mail.errors.disabled'))
       if (!draft.body.trim()) throw new Error(errorText('mail.errors.draft.emptyBody'))
@@ -499,9 +518,8 @@ export class MailService {
    */
   private async settleReply(message: MailMessage, account: MailAccount, replyAll: boolean): Promise<MailReply> {
     const sync = this.requireSync(account.id)
-    const uidValidity = this.uidValidityOf(message)
-    const text = await sync.fetchBody(message.folder, message.uid)
-    const parent = await sync.byUid(message.folder, uidValidity, async (client) => {
+    const text = await sync.fetchBody(message.id)
+    const parent = await sync.byUid(message.folder, parseMessageId(message.id).uidValidity, async (client) => {
       const fetched = await client.fetchOne(message.uid, { envelope: true, headers: ['references'] }, { uid: true })
       if (!fetched) throw new Error(errorText('mail.errors.message.notFound'))
       return { inReplyTo: fetched.envelope?.inReplyTo ?? '', references: parseReferences(fetched.headers?.toString('latin1')) }
@@ -566,7 +584,7 @@ export class MailService {
     const account = this.accountOf(message.accountId)
     const sync = this.requireSync(account.id)
     const head = { label: account.label, ...describe(message) }
-    const uidValidity = this.uidValidityOf(message)
+    const { uidValidity } = parseMessageId(message.id)
     if (input.operation === 'archive') {
       if (message.folder !== 'inbox') throw new Error(errorText('mail.errors.change.notInInbox'))
       const destination = account.folders.archive
@@ -620,13 +638,14 @@ export class MailService {
    */
   private planMarkRead(ids: readonly string[], read: boolean): { detail: string; perform: () => Promise<MailChangeResult> } {
     const messages = [...new Set(ids)].map((id) => this.requireMessage(id))
-    const groups = new Map<string, { account: MailAccount; sync: MailAccountSync; folder: MailFolder; uidValidity: string | null; messages: MailMessage[] }>()
+    const groups = new Map<string, { account: MailAccount; sync: MailAccountSync; folder: MailFolder; uidValidity: string; messages: MailMessage[] }>()
     for (const message of messages) {
-      const key = `${message.accountId}:${message.folder}`
+      const { uidValidity } = parseMessageId(message.id)
+      const key = `${message.accountId}:${message.folder}:${uidValidity}`
       let group = groups.get(key)
       if (!group) {
         const account = this.accountOf(message.accountId)
-        group = { account, sync: this.requireSync(account.id), folder: message.folder, uidValidity: this.uidValidityOf(message), messages: [] }
+        group = { account, sync: this.requireSync(account.id), folder: message.folder, uidValidity, messages: [] }
         groups.set(key, group)
       }
       group.messages.push(message)
@@ -667,11 +686,6 @@ export class MailService {
     return message
   }
 
-  /** The UIDVALIDITY the UID of a message just read from the cache belongs to, which an operation by that UID hands to byUid. */
-  private uidValidityOf(message: MailMessage): string | null {
-    return this.deps.cache.uidValidity(message.accountId, message.folder)
-  }
-
   private afterChange(accountId: string): void {
     this.deps.emit({ type: 'changed', accountId })
     this.emitStatus()
@@ -696,7 +710,7 @@ export class MailService {
     }
     const notes: string[] = []
     try {
-      await this.afterSent(account, sent.raw, answered, notes)
+      await this.afterSent(account, sent, answered, notes)
     } catch (error) {
       notes.push(t('mail.result.afterSendFailed', { reason: errorMessage(error) }))
     }
@@ -710,26 +724,40 @@ export class MailService {
   }
 
   /**
-   * What follows a message SMTP accepted. Outside Gmail the same bytes are appended to the Sent folder, and a
-   * reply puts the \Answered flag on the message it answers, `answered`, while that message is still in the
-   * cache. A step that fails adds its note to `notes`.
+   * What follows a message SMTP accepted. Outside Gmail, which files every message sent through it in Sent Mail
+   * itself, the same bytes go into the Sent folder unless a search finds that the server filed the message there,
+   * as Exchange Online and Yahoo do. A reply puts the \Answered flag on the message it answers, `answered`, while
+   * that message is still in the cache. A step that fails adds its note to `notes`.
    */
-  private async afterSent(account: MailAccount, raw: Buffer, answered: { id: string; messageId: string } | null, notes: string[]): Promise<void> {
+  private async afterSent(account: MailAccount, sent: { messageId: string; raw: Buffer }, answered: { id: string; messageId: string } | null, notes: string[]): Promise<void> {
     const sync = this.syncs.get(account.id)
-    if (sync && account.provider !== 'gmail' && account.folders.sent) {
-      const sentFolder = account.folders.sent
+    const sentFolder = account.folders.sent
+    if (sync && sentFolder && account.provider !== 'gmail') {
       try {
-        await sync.run((client) => client.append(sentFolder, raw, ['\\Seen'], new Date(this.now())))
+        await sync.run(async (client) => {
+          const lock = await client.getMailboxLock(sentFolder)
+          try {
+            // Only a search that answered with the message skips the copy. imapflow answers false for one the server
+            // refused or the connection cut, and a missing copy is worse than a second one. A server that files its
+            // own copy only after the search still ends up with two.
+            const filed = await client.search({ header: { 'message-id': sent.messageId }, since: syncSince(new Date(this.now()), 1) }, { uid: true })
+            if (!Array.isArray(filed) || filed.length === 0) await client.append(sentFolder, sent.raw, ['\\Seen'], new Date(this.now()))
+          } finally {
+            lock.release()
+          }
+        })
       } catch (error) {
         notes.push(t('mail.result.sentFolderFailed', { reason: errorMessage(error) }))
       }
     }
     if (sync && answered !== null) {
       try {
-        // The id was settled with the reply, and since then a fetch of a renewed UIDVALIDITY can have filed another message under it.
+        // The id names its folder by role, and a folder pointed at another mailbox with the same UIDVALIDITY can
+        // have filed another message under it since the reply was settled.
+        // A message without a Message-ID cannot be told from another one, so it is never taken for the original.
         const original = this.deps.cache.get(answered.id)
-        if (!original || original.messageId !== answered.messageId) throw new Error(errorText('mail.errors.message.notFound'))
-        await sync.byUid(original.folder, this.uidValidityOf(original), (client) => storeFlag(client, [original.uid], '\\Answered', true))
+        if (!original || !answered.messageId || original.messageId !== answered.messageId) throw new Error(errorText('mail.errors.message.notFound'))
+        await sync.byUid(original.folder, parseMessageId(original.id).uidValidity, (client) => storeFlag(client, [original.uid], '\\Answered', true))
         this.deps.cache.setFlags(original.id, { answered: true })
       } catch (error) {
         notes.push(t('mail.result.answeredFailed', { reason: errorMessage(error) }))

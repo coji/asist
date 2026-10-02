@@ -11,7 +11,7 @@ import { mailDraftCard } from '../src/renderer/src/panels/builtin/mail-draft'
 import { useMailStore, useSettingsStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
 import { useConfirmStore } from '../src/renderer/src/state/confirm'
-import { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_BODIES, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGES, demoMailStatus, demoReplyOf } from '../src/renderer/src/demo/fixtures/mail'
+import { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_BODIES, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGES, DEMO_UID_VALIDITY, demoMailStatus, demoReplyOf } from '../src/renderer/src/demo/fixtures/mail'
 
 const t = createTranslator('ja-JP')
 const inbox = (): MailMessage[] => DEMO_MAIL_MESSAGES.filter((m) => m.folder === 'inbox').sort((a, b) => b.date - a.date)
@@ -181,7 +181,7 @@ describe('loading more', () => {
       .map((date, index): MailMessage => {
         const uid = index + 1
         return {
-          id: messageIdOf('demo-work', 'inbox', uid),
+          id: messageIdOf('demo-work', 'inbox', DEMO_UID_VALIDITY, uid),
           accountId: 'demo-work',
           folder: 'inbox',
           uid,
@@ -401,7 +401,7 @@ describe('composing and Escape', () => {
     const form = view.querySelector<HTMLElement>('.ml-composer')!
     expect(form.querySelector<HTMLInputElement>(`[aria-label="${t('mail.fields.subject')}"]`)?.value).toBe('季節のご挨拶')
     await act(async () => form.querySelector<HTMLButtonElement>('.cal-primary')!.click())
-    expect(api.mailDraftSend).toHaveBeenCalledWith(DEMO_MAIL_DRAFTS[0].id)
+    expect(api.mailDraftSend).toHaveBeenCalledWith(DEMO_MAIL_DRAFTS[0].id, DEMO_MAIL_DRAFTS[0].updatedAt)
     expect(api.mailChange).not.toHaveBeenCalled()
     expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'ok', title: t('mail.done.send') })
     expect(view.querySelector('.ml-composer')).toBeNull()
@@ -512,7 +512,7 @@ describe('composing and Escape', () => {
     expect(api.mailDraftUpdate).not.toHaveBeenCalled()
     // Sending saves the change first, and that one save is all.
     await typeAndPress(DEMO_MAIL_DRAFTS[1].id, '.ml-composer .cal-primary')
-    expect(api.mailDraftSend).toHaveBeenCalledWith(DEMO_MAIL_DRAFTS[1].id)
+    expect(api.mailDraftSend).toHaveBeenCalledWith(DEMO_MAIL_DRAFTS[1].id, DEMO_MAIL_DRAFTS[1].updatedAt)
     expect(api.mailDraftUpdate).toHaveBeenCalledOnce()
     expect(useToastStore.getState().toasts.filter((toast) => toast.kind === 'error')).toEqual([])
   })
