@@ -152,6 +152,36 @@ function offsetTag(seconds: number): string {
 const instant = (local: string, offset: string): string =>
   `${local}${local.length === 16 ? ':00' : ''}${offset}`
 
+/** The hourly columns the card reads, each holding one value for every hour of the answer. */
+interface Forecast {
+  codes: unknown[]
+  temperatures: unknown[]
+  percents: unknown[]
+}
+/** The values a column holds for some hours of the answer, without the hours it has no value for. */
+const valuesOf = (column: unknown[], hours: Array<{ index: number }>): number[] =>
+  hours.map((hour) => number(column[hour.index])).filter((value): value is number => value !== null)
+const highest = (values: number[]): number | null => (values.length ? Math.max(...values) : null)
+const lowest = (values: number[]): number | null => (values.length ? Math.min(...values) : null)
+
+/**
+ * A day's weather from its hours on the place's clock, worked out as Open-Meteo works out its own daily
+ * values (its source, read on 2026-10-02): the highest and lowest temperature, the highest chance of rain,
+ * and the highest weather code, which its documentation calls the most severe condition of the day.
+ * Open-Meteo takes them over 24 hours of the answer's one offset, so on and after a change of the clocks
+ * its day is an hour off the place's: Munich's 2025-10-26 read a low of 6.1 there, while its 25 hours
+ * reach 6.0.
+ */
+function dayOf(date: string, hours: Array<{ index: number }>, forecast: Forecast): WeatherDay {
+  return {
+    date,
+    condition: wmoCondition(highest(valuesOf(forecast.codes, hours))),
+    max: highest(valuesOf(forecast.temperatures, hours)),
+    min: lowest(valuesOf(forecast.temperatures, hours)),
+    percent: highest(valuesOf(forecast.percents, hours))
+  }
+}
+
 export interface GlobalWeatherRequest {
   place: string
   date: 'today' | 'tomorrow'
@@ -170,12 +200,14 @@ export async function fetchGlobalWeather(
   // Fahrenheit and miles per hour are what the United States reads; every other region takes the
   // metric answer, which is Open-Meteo's own default.
   const imperial = request.region === 'US'
+  // Open-Meteo cuts its days in the one offset of the answer, so a day of the place's clock can begin
+  // before the answer's first hour or end after its last. The request asks for a day more on each side
+  // to keep the days shown whole, and not for Open-Meteo's daily values, which it takes over its own days.
   const url =
     `${FORECAST}?latitude=${location.latitude}&longitude=${location.longitude}` +
-    `&timezone=auto&forecast_days=${DAYS}` +
+    `&timezone=auto&past_days=1&forecast_days=${DAYS + 1}` +
     '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m' +
     '&hourly=temperature_2m,weather_code,precipitation_probability' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
     (imperial ? '&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch' : '')
   const now = Date.now()
   const fetchedAt = new Date(now).toISOString()
@@ -187,40 +219,40 @@ export async function fetchGlobalWeather(
   if (offsetSeconds === null || timeZone === null)
     throw new Error(errorText('cardsWeather.errors.badData'))
   const offset = offsetTag(offsetSeconds)
-  const daily = series(data.daily)
-  const today = zonedDate(now, timeZone)
-  const todayIndex = daily.time.indexOf(today)
-  const targetIndex = todayIndex + (request.date === 'tomorrow' ? 1 : 0)
-  const targetDate = daily.time[targetIndex]
-  if (todayIndex < 0 || targetDate === undefined)
-    throw new Error(errorText('cardsWeather.errors.badData'))
-
-  const dailyCodes = column(daily, 'weather_code')
-  const dailyMax = column(daily, 'temperature_2m_max')
-  const dailyMin = column(daily, 'temperature_2m_min')
-  const dailyPercent = column(daily, 'precipitation_probability_max')
-  const days: WeatherDay[] = daily.time.map((date, i) => ({
-    date,
-    condition: wmoCondition(dailyCodes[i]),
-    max: number(dailyMax[i]),
-    min: number(dailyMin[i]),
-    percent: number(dailyPercent[i])
-  }))
-
   const hours = series(data.hourly)
-  const hourCodes = column(hours, 'weather_code')
-  const hourTemperature = column(hours, 'temperature_2m')
-  const hourPercent = column(hours, 'precipitation_probability')
+  const forecast: Forecast = {
+    codes: column(hours, 'weather_code'),
+    temperatures: column(hours, 'temperature_2m'),
+    percents: column(hours, 'precipitation_probability')
+  }
+  const rows = hours.time.map((local, index) => {
+    const at = Date.parse(instant(local, offset))
+    return { at, date: zonedDate(at, timeZone), clock: zonedHour(at, timeZone), index }
+  })
+  const hoursOn = new Map<string, typeof rows>()
+  for (const row of rows) hoursOn.set(row.date, [...(hoursOn.get(row.date) ?? []), row])
+  // A date at either end of the answer can lack some of its hours, so a date is a day of the week only
+  // when the hour before its first row and the hour after its last fall on other dates.
+  const dates = [...hoursOn]
+    .filter(
+      ([date, hours]) =>
+        zonedDate(hours[0].at - 3600_000, timeZone) !== date &&
+        zonedDate(hours[hours.length - 1].at + 3600_000, timeZone) !== date
+    )
+    .map(([date]) => date)
+  const todayIndex = dates.indexOf(zonedDate(now, timeZone))
+  const week = dates.slice(todayIndex, todayIndex + DAYS)
+  const targetIndex = request.date === 'tomorrow' ? 1 : 0
+  const targetDate = week[targetIndex]
+  if (todayIndex < 0 || targetDate === undefined) throw new Error(errorText('cardsWeather.errors.badData'))
+  const days = week.map((date) => dayOf(date, hoursOn.get(date)!, forecast))
+
   // The card shows the target day from the hour that is still running, as the card of Japan does, in
   // steps of three hours of the place's clock, counted from that hour today and from midnight tomorrow.
   // The steps lie on that grid of the clock, so an hour the clock skips or repeats changes how many hours
   // its own step holds and never moves the steps after it: a step whose first hour is skipped begins
   // with the hour after it.
-  const kept = hours.time.flatMap((local, i) => {
-    const at = Date.parse(instant(local, offset))
-    if (zonedDate(at, timeZone) !== targetDate || at + 3600_000 <= now) return []
-    return [{ at, clock: zonedHour(at, timeZone), index: i }]
-  })
+  const kept = rows.filter((row) => row.date === targetDate && row.at + 3600_000 > now)
   const base = request.date === 'today' && kept.length ? kept[0].clock : 0
   const steps = new Map<number, typeof kept>()
   for (const hour of kept) {
@@ -237,15 +269,12 @@ export async function fetchGlobalWeather(
     hourly.push({
       at: from,
       until,
-      temperature: number(hourTemperature[index]),
-      condition: wmoCondition(hourCodes[index])
+      temperature: number(forecast.temperatures[index]),
+      condition: wmoCondition(forecast.codes[index])
     })
     // Open-Meteo gives a probability for each single hour, so the value shown for the period is the
     // highest of the hours it covers rather than a probability computed for the period itself.
-    const inside = step
-      .map((hour) => number(hourPercent[hour.index]))
-      .filter((value): value is number => value !== null)
-    precipitationPeriods.push({ from, to: until, percent: inside.length ? Math.max(...inside) : null })
+    precipitationPeriods.push({ from, to: until, percent: highest(valuesOf(forecast.percents, step)) })
   }
 
   const current = (data.current ?? {}) as Record<string, unknown>
