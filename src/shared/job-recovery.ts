@@ -18,9 +18,11 @@ const TEXTS: Record<'confirmingStop' | 'neverStarted', PromptText> = {
 /**
  * A saved job that still carries a process identity goes back to waiting for its stop to be
  * confirmed. Only a job that never got permission to start can be settled as interrupted right here.
+ * Either was cut off by an end of the app that did not stop it, which the job keeps as `interrupted`.
  *
  * The summaries below are read by the LLM as well as stored, and the job carries nothing else that
- * says a restart interrupted it, so they are written in the language of the conversation.
+ * the LLM reads to learn that a restart interrupted it, so they are written in the language of the
+ * conversation.
  */
 export function recoverAgentJob(
   saved: AgentJob,
@@ -33,12 +35,14 @@ export function recoverAgentJob(
   const job = { ...saved }
   if (job.processIdentity) {
     job.status = 'stopping'
+    job.interrupted = true
     delete job.endedAt
     delete job.mergeState
     if (job.worktree) job.worktree = { ...job.worktree, commit: undefined }
     job.summary = TEXTS.confirmingStop[language]
   } else if (isJobExecuting(job.status)) {
     job.status = job.status === 'stopping' ? 'cancelled' : 'error'
+    job.interrupted = true
     job.endedAt ??= now
     job.summary ??= TEXTS.neverStarted[language]
   }

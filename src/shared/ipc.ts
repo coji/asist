@@ -545,6 +545,13 @@ export interface AgentJob {
   processIdentity?: AgentProcessIdentity
   startedAt: number
   endedAt?: number
+  /**
+   * Set when ASIST ended without stopping the job, by a crash or a forced end, while the job was running or
+   * stopping, as the next start finds it. The job did not end by itself: its agent was stopped by that end of
+   * ASIST or by the next start, or never started. This is not told by ending the job as cancelled: a cancelled
+   * job is taken for the user's own stop and is not reported, while the user may not know of the crash.
+   */
+  interrupted?: true
   /** The summary written when the job finished. It is also what the voice reports. */
   summary?: string
   /** How many turns the job used. */
@@ -610,6 +617,12 @@ export type JobDiff = MergeVerdict & {
    * them, by their paths in the repository. A merge leaves them behind, and they are deleted with the worktree.
    */
   leftOut: string[]
+  /**
+   * Whether the history of the branch merged into already holds the commit the job made, as when ASIST ended
+   * between git's merge and the job's record of it, or the user merged the job's branch, even if a later commit
+   * reverted it. The diff is then empty, and a merge only records the job as merged and removes its worktree.
+   */
+  alreadyMerged: boolean
 }
 
 /** What the user saw and approved in a review, which a merge carries so that main merges only that. */

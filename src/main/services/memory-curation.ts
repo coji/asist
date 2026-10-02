@@ -282,28 +282,44 @@ function discardUnmerged(job: AgentJob): void {
 }
 
 /**
- * A curation job the Agent ended without success, or whose merge could not be made. Only the app cancels a
- * curation, as it quits, which alone says nothing about the curation: its changes are discarded without a
- * failure, so that the next start curates the same days rather than waiting for the next midnight.
+ * Whether the end of the app stopped the curation, rather than the curation ending by itself. A quit cancels
+ * it, as only the app cancels a curation; a crash or a forced end leaves it to the next start, which finds it
+ * interrupted. Neither says anything about the curation.
+ */
+const stoppedByAppEnd = (job: AgentJob): boolean => job.status === 'cancelled' || job.interrupted === true
+
+/**
+ * A curation that the end of the app stopped has its changes discarded without a failure, so that the next start
+ * curates the same days rather than waiting for the next midnight, unless the curation before it was stopped so
+ * as well.
+ */
+function judgeStop(job: AgentJob): void {
+  if (stoppedAfterStop(job)) fail(job, t('memory.curation.quitTwice'))
+  else discardUnmerged(job)
+}
+
+/**
+ * A curation job that ended without success, or whose merge could not be made. An interrupted one was judged
+ * when the start found it, and only its changes are left to discard once its recovery has ended it.
  */
 function observeFailure(job: AgentJob): void {
   if (!job.memoryCuration || job.memoryCuration.applied || processing.has(job.id) || job.mergeState === 'discarded') return
-  if (job.status === 'cancelled') {
-    if (quitAfterQuit(job)) fail(job, t('memory.curation.quitTwice'))
-    else discardUnmerged(job)
-  } else if (job.status === 'error') fail(job, job.summary ?? job.status)
+  if (!isJobTerminal(job.status)) return
+  if (job.interrupted) discardUnmerged(job)
+  else if (job.status === 'cancelled') judgeStop(job)
+  else if (job.status === 'error') fail(job, job.summary ?? job.status)
   else if (job.mergeState === 'conflict' || job.mergeState === 'error') fail(job, job.summary ?? job.mergeState)
 }
 
 /**
- * Whether the curation before this one was stopped by a quit as well, which the job history tells. A
- * curation that cannot end by itself, such as a CLI waiting for an answer, runs until the app quits; tried
- * again at every start, it would spend the Agent's usage each time and give no reason. The second quit in a
- * row is therefore a failure, and the next curation waits for the next day.
+ * Whether the end of the app stopped the curation before this one as well, which the job history tells. A
+ * curation that cannot end by itself, such as a CLI waiting for an answer, runs until the app ends; tried
+ * again at every start, it would spend the Agent's usage each time and give no reason. The second curation
+ * in a row stopped so is therefore a failure, and the next curation waits for the next day.
  */
-function quitAfterQuit(job: AgentJob): boolean {
+function stoppedAfterStop(job: AgentJob): boolean {
   const before = agentRunner.list().find((other) => other.memoryCuration && other.startedAt < job.startedAt)
-  return before?.status === 'cancelled'
+  return before !== undefined && stoppedByAppEnd(before)
 }
 
 /**
@@ -356,6 +372,10 @@ export function initMemoryCuration(): void {
     // locked, so the failure is judged on the job as it stands afterwards rather than on this copy.
     observeFailure(agentRunner.get(event.job.id) ?? event.job)
   })
+  // A curation that the end of the last run cut off is judged as this start finds it, before a new one may
+  // start: its recovery can end only after that, and one whose Agent never started ended as the history was
+  // read, which sends no update.
+  for (const job of agentRunner.cutOffByLastEnd()) if (job.memoryCuration) judgeStop(job)
   reconcileMemoryCuration()
   startIfDue()
   setInterval(startIfDue, DUE_CHECK_MS)

@@ -81,12 +81,14 @@ const jobs = new Map<string, JobEntry>()
 let shuttingDown = false
 
 let jobsLoaded = false
+/** The ids of the jobs that this run found cut off by an end of the app that did not stop them. */
+let cutOff: string[] = []
 
 function ensureLoaded(): void {
   if (jobsLoaded) return
-  const restored = readJobHistory().map((job) =>
-    recoverAgentJob(job, Date.now(), language())
-  )
+  const saved = readJobHistory()
+  const restored = saved.map((job) => recoverAgentJob(job, Date.now(), language()))
+  cutOff = restored.filter((job, index) => job.interrupted && !saved[index].interrupted).map((job) => job.id)
   for (const job of restored) jobs.set(job.id, { job, process: null })
   jobsLoaded = true
   try {
@@ -139,6 +141,15 @@ function persistJobs(): void {
   ensureLoaded()
   const removed = writeJobHistory([...jobs.values()].map(({ job }) => job))
   for (const id of removed) jobs.delete(id)
+}
+
+/**
+ * The jobs that the end of the last run cut off without stopping them, as this run found them in the history. One
+ * that an earlier run found so, and whose stop it could not confirm, is not among them.
+ */
+export function cutOffByLastEnd(): AgentJob[] {
+  ensureLoaded()
+  return cutOff.flatMap((id) => jobs.get(id)?.job ?? [])
 }
 
 export function list(): AgentJob[] {

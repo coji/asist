@@ -197,26 +197,38 @@ export function assertWorktreeReview(job: AgentJob, commit: string): void {
  * changes a merge counted from `base` would bring in touch, and those whose folders in the worktree may hold
  * work, looked into on every call: the merge removes the worktree and whatever work appeared in them since
  * the job settled.
+ *
+ * The branch's history already holds the job's commit when that commit is the merge base, and the job moved
+ * its branch from where it started: ASIST ended after git had merged the job and before the job's record said
+ * so, or the user merged the job's branch. A job that committed nothing has the commit it started from, which
+ * the branch can hold as well, and has nothing to merge; so has one kept only for files git ignores, whose
+ * branch moved, if at all, only onto commits of the user's. Such a merge writes nothing into the working tree,
+ * so it needs neither a clean one nor a free place for the files; it only records the job as merged.
  */
-function mergeVerdict(job: AgentJob, into: string | null, base: string, commit: string): MergeVerdict & { submodules: string[] } {
+function mergeVerdict(
+  job: AgentJob, into: string | null, base: string, commit: string
+): MergeVerdict & { submodules: string[]; alreadyMerged: boolean } {
   const worktree = job.worktree!
   const submodules = sortedUnique([
     ...(worktree.submodules ?? []),
     ...git.submoduleEntryChanges(worktree.repo, base, commit),
     ...git.submodulesWithWork(worktree.dir)
   ])
+  const alreadyMerged = base === commit && commit !== worktree.base && !worktree.keptFor
+  const found = { submodules, alreadyMerged }
   // A merge into a detached HEAD moves only HEAD: the work is left to a reflog once the branch is checked
   // out again, as after a bisect, while the job's branch and worktree are already deleted.
-  if (into === null) return { into, submodules, blocked: errorText('jobs.merging.detached') }
+  if (into === null) return { ...found, into, blocked: errorText('jobs.merging.detached') }
   if (submodules.length > 0) {
     const blocked = errorText('jobs.merging.submodules', { paths: submodules.join(', '), branch: worktree.branch, dir: worktree.dir })
-    return { into, submodules, blocked }
+    return { ...found, into, blocked }
   }
-  if (!git.hasChanges(worktree.repo, base, commit)) return { into, submodules, blocked: errorText('jobs.merging.noChanges', { id: job.id }) }
-  if (!git.isClean(worktree.repo)) return { into, submodules, blocked: errorText('jobs.merging.dirtyRepo') }
+  if (alreadyMerged) return { ...found, into, blocked: null }
+  if (!git.hasChanges(worktree.repo, base, commit)) return { ...found, into, blocked: errorText('jobs.merging.noChanges', { id: job.id }) }
+  if (!git.isClean(worktree.repo)) return { ...found, into, blocked: errorText('jobs.merging.dirtyRepo') }
   const inTheWay = git.untrackedInTheWay(worktree.repo, base, commit)
-  if (inTheWay.length > 0) return { into, submodules, blocked: errorText('jobs.merging.untrackedInTheWay', { paths: git.named(inTheWay) }) }
-  return { into, submodules, blocked: null }
+  if (inTheWay.length > 0) return { ...found, into, blocked: errorText('jobs.merging.untrackedInTheWay', { paths: git.named(inTheWay) }) }
+  return { ...found, into, blocked: null }
 }
 
 /**

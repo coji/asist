@@ -776,11 +776,13 @@ export function checkoutTree(repo: string, tree: string, dir: string): void {
  * only by a fast-forward. git merge would stop half done in them on a conflict or when a hook of the
  * user's, such as a commit-msg hook that rejects the message, fails, and a later git commit of the user's
  * would then commit changes nobody reviewed. Without --no-overwrite-ignore the fast-forward replaces a file
- * git ignores, such as the user's .env, with the one the job committed at that path.
+ * git ignores, such as the user's .env, with the one the job committed at that path. A branch that HEAD
+ * already holds is up to date, as git merge says of it, and nothing is committed.
  */
 export function mergeNoFf(repo: string, branch: string, message: string): MergeOutcome {
   const head = headCommit(repo)
   const incoming = headCommit(repo, branch)
+  if (mergeBase(repo, incoming) === incoming) return { ok: true }
   const merged = mergedTree(repo, head, incoming)
   if ('conflict' in merged) return { ok: false, conflict: true, message: merged.conflict }
   const commit = git(repo, [

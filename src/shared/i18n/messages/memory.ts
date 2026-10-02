@@ -912,14 +912,14 @@ export const memory = defineMessages({
       'es-ES': 'No se puede confirmar que la organización de la memoria haya terminado y se haya fusionado.'
     },
     quitTwice: {
-      'ja-JP': 'アプリを終了するまでに 2 回続けて終わりませんでした',
-      'en-US': 'it did not finish before the app quit, twice in a row',
+      'ja-JP': 'アプリが終了するまでに 2 回続けて終わりませんでした',
+      'en-US': 'it did not finish before the app closed, twice in a row',
       'fr-FR': "elle ne s'est pas terminée avant la fermeture de l'app, deux fois de suite",
       'de-DE': 'sie wurde zweimal hintereinander nicht fertig, bevor die App beendet wurde',
       'hi-IN': 'यह लगातार दो बार ऐप बंद होने से पहले पूरी नहीं हुई',
-      'id-ID': 'penataan tidak selesai sebelum aplikasi ditutup, dua kali berturut-turut',
+      'id-ID': 'penataan tidak selesai sebelum aplikasi berhenti, dua kali berturut-turut',
       'it-IT': "non è finito prima della chiusura dell'app, per due volte di seguito",
-      'ko-KR': '앱을 종료하기 전까지 두 번 연속으로 끝나지 않았습니다',
+      'ko-KR': '앱이 종료되기 전까지 두 번 연속으로 끝나지 않았습니다',
       'pt-BR': 'ela não terminou antes de o app ser encerrado, duas vezes seguidas',
       'es-419': 'no terminó antes de que se cerrara la app, dos veces seguidas',
       'es-ES': 'no ha terminado antes de que se cerrara la aplicación, dos veces seguidas'
