@@ -1,6 +1,15 @@
-import type { Translate } from '@shared/i18n'
+import type { MessageKey, Translate } from '@shared/i18n'
+import type { BridgeOutcome } from '@shared/ipc'
 import { displayError } from '@/display-error'
 import type { RouterNote } from '@/state/stores'
+
+/** Why a bridge never sounded, as the HUD says it. It names no phrase, which would read as one ASIST said. */
+const BRIDGE_NOT_PLAYED = {
+  late: 'hud.router.bridgeLate',
+  unsettled: 'hud.router.bridgeUnsettled',
+  declined: 'hud.router.bridgeDeclined',
+  failed: 'hud.router.bridgeFailed'
+} as const satisfies Record<Exclude<BridgeOutcome, 'played'>, MessageKey>
 
 /** What the HUD calls the tool the turn is running. A tool with no name of its own is shown by its own name. */
 function toolLabel(t: Translate, name: string, detail?: string): string {
@@ -20,11 +29,16 @@ function toolLabel(t: Translate, name: string, detail?: string): string {
   }
 }
 
-/** The sentence the HUD shows for the routing of the latest turn, in the language of the translator. */
-export function routerNoteText(note: RouterNote, t: Translate): string {
+/**
+ * The sentence the HUD shows for the routing of the latest turn, in the language of the translator, beside
+ * the measurements of `shownUtterance`. The bridge of another utterance says nothing there, since it is
+ * not the bridge of the turn those measurements are of.
+ */
+export function routerNoteText(note: RouterNote, t: Translate, shownUtterance: number | null): string {
   switch (note.kind) {
     case 'bridge':
-      return t('hud.router.bridge', { text: note.text })
+      if (note.utterance !== shownUtterance) return ''
+      return note.outcome === 'played' ? t('hud.router.bridge', { text: note.text }) : t(BRIDGE_NOT_PLAYED[note.outcome])
     case 'aizuchi':
       return t('hud.router.aizuchi', { kind: t(`hud.aizuchiClass.${note.cls}`), percent: note.percent })
     case 'live': {

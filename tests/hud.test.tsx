@@ -41,6 +41,26 @@ describe('the HUD', () => {
     expect(router.classList.contains('is-empty')).toBe(false)
   })
 
+  it('names a bridge phrase only beside the measurements of the utterance it played in', async () => {
+    await act(async () => root.render(<Hud />))
+    const router = container.querySelector('.hud-value.is-router')!
+    const turn = useTurnStore.getState()
+    await act(async () => {
+      turn.setTimings({ vadMs: 350, bridgeMs: 900, bridge: 'played' }, 10)
+      turn.setRouterNote({ kind: 'bridge', utterance: 10, outcome: 'played', text: '会議の件ですね。' })
+    })
+    expect(router.textContent).toBe(t('hud.router.bridge', { text: '会議の件ですね。' }))
+
+    // The next speech ends and the HUD turns to it, before anything of its own bridge is known.
+    await act(async () => turn.setTimings({ vadMs: 420 }, 20))
+    expect(router.textContent).not.toContain('会議の件ですね。')
+    expect(router.classList.contains('is-empty')).toBe(true)
+
+    // That speech yields no turn, and the HUD shows the one before again.
+    await act(async () => turn.setTimings({ vadMs: 350, bridgeMs: 900, bridge: 'played' }, 10))
+    expect(router.textContent).toBe(t('hud.router.bridge', { text: '会議の件ですね。' }))
+  })
+
   it('words the note of the latest turn again when the interface language changes, an error in it included', async () => {
     const en = createTranslator('en-US')
     useSettingsStore.setState({ settings: { uiLocale: 'ja-JP', voiceEngine: 'gemini-live' } as unknown as AppSettings })
