@@ -19,7 +19,7 @@ import { installSkill } from '../src/main/services/memory-curation-skill'
 const ja = createTranslator('ja-JP')
 
 const LOCALES = ['ja-JP', 'en-US'] as const
-const TEMPLATES = ['page', 'user', 'me', 'journal', 'instruction']
+const TEMPLATES = ['page', 'user', 'me', 'journal']
 const skillDir = (locale: 'ja-JP' | 'en-US'): string => path.join(process.cwd(), 'resources', 'skills', curationSkillSource(locale))
 const validate = (skill: string, dir: string): { ok: boolean; output: string } => {
   try {
@@ -53,10 +53,6 @@ function wellFormed(): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'asist-memory-skill-'))
   fs.mkdirSync(path.join(dir, 'pages'))
   fs.mkdirSync(path.join(dir, 'journal'))
-  fs.writeFileSync(
-    path.join(dir, 'instruction.md'),
-    '# いつも覚えておくこと\n\n## この人について\n最寄り駅は三鷹駅。\n\n## 私について\n落ち着いて話す。\n\n## 頼まれていること\n一言でと言われたら一言で返す。\n'
-  )
   fs.writeFileSync(path.join(dir, 'user.md'), '---\nupdated: 2026-09-22\n---\n# ユーザー\n\n## 好み\n麺類が好きで、辛さは控えめを選ぶ。\n')
   fs.writeFileSync(path.join(dir, 'me.md'), '---\nupdated: 2026-09-22\n---\n# 私について\n\n落ち着いて話す。\n')
   fs.writeFileSync(
@@ -129,7 +125,6 @@ describe('the memory-curation skill', () => {
       fs.mkdirSync(path.join(dir, 'pages'))
       fs.mkdirSync(path.join(dir, 'journal'))
       const fill = (name: string): string => fs.readFileSync(path.join(templates, `${name}.md`), 'utf8').replaceAll('YYYY-MM-DD', '2026-09-22')
-      fs.writeFileSync(path.join(dir, 'instruction.md'), fill('instruction'))
       fs.writeFileSync(path.join(dir, 'user.md'), fill('user'))
       fs.writeFileSync(path.join(dir, 'me.md'), fill('me'))
       fs.writeFileSync(path.join(dir, 'pages', 'Page.md'), fill('page'))
@@ -150,12 +145,11 @@ describe('the memory-curation skill', () => {
     expect(problemsIn(dir)).toEqual(['user.md', 'user.md', 'pages/松葉軒.md'])
   })
 
-  it('requires instruction.md, without frontmatter and with a title line and a heading', () => {
+  it('flags an instruction.md that is still there, as ASIST refuses to merge a curation that leaves one', () => {
     const dir = wellFormed()
-    fs.rmSync(path.join(dir, 'instruction.md'))
+    const instruction = '# いつも覚えておくこと\n\n## 頼まれていること\n一言でと言われたら一言で返す。\n'
+    fs.writeFileSync(path.join(dir, 'instruction.md'), instruction)
     expect(problemsIn(dir)).toEqual(['instruction.md'])
-    fs.writeFileSync(path.join(dir, 'instruction.md'), '---\nupdated: 2026-09-22\n---\n最寄り駅は三鷹駅。\n')
-    expect(problemsIn(dir)).toEqual(['instruction.md', 'instruction.md', 'instruction.md'])
   })
 
   it('counts what each document of the prompt costs against its limit with count.mjs, in both skills, as ASIST counts it', () => {
@@ -195,7 +189,6 @@ describe('the memory-curation skill', () => {
     fs.writeFileSync(path.join(dir, 'me.md'), `---\n---\n# 私について\n\n## 話し方\n${long}\n`)
     fs.writeFileSync(path.join(dir, 'pages', '松葉軒.md'), `---\n---\n# 松葉軒\n\n## 要約\n${long}\n`)
     fs.writeFileSync(path.join(dir, 'journal', '2026-09-08.md'), `# 2026-09-08\n\n## 食事\n${long.slice(0, 400)}\n${long.slice(400)}\n`)
-    fs.writeFileSync(path.join(dir, 'instruction.md'), `# いつも覚えておくこと\n\n## この人について\n${long}\n`)
     expect(problemsIn(dir)).toEqual(['pages/松葉軒.md:5', 'journal/2026-09-08.md:3'])
   })
 
@@ -224,7 +217,7 @@ describe('the memory-curation skill', () => {
       'pages/大川俊介.md': '---\nupdated: 2026-09-20\n---\n# 大川俊介\n\n## 要約\n本人の上司。\n\n## 私の印象\n落ち着いた人。\n\n## 私の印象\nくるみアレルギーがある。\n',
       'pages/松葉軒.md': '---\naliases:\n- 松葉軒\nupdated: 2026-09-22\n---\n# 松葉軒\n行きつけの店。\n\n## 要約\nラーメン屋。\n',
       'journal/2026-09-09.md': '---\nupdated: 昨日\n---\n# 2026-09-09\n\n## 食事\n麺類の話。\n',
-      'instruction.md': `# いつも覚えておくこと\n\n${'前置き。'.repeat(175)}\n\n## この人について\n${'あ'.repeat(700)}\n\n## 頼まれていること\n${'い'.repeat(700)}\n`
+      'user.md': `---\nupdated: 2026-09-22\n---\n# ユーザー\n\n${['属性', '好み', '習慣', 'ASIST への期待'].map((heading) => `## ${heading}\n${'麺類が好きで、辛さは控えめを選ぶ。'.repeat(30)}`).join('\n\n')}\n`
     }
     for (const [file, markdown] of Object.entries(files)) fs.writeFileSync(path.join(dir, file), markdown)
     const reported = problemsIn(dir)

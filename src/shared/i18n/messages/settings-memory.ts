@@ -410,17 +410,17 @@ export const settingsMemory = defineMessages({
       'es-ES': 'Memoria'
     },
     description: {
-      'ja-JP': 'いつも覚えておくこと(instruction.md)、ユーザー(user.md)、私について(me.md)、ページ、日記を読み書きします。',
-      'en-US': 'Read and edit Always keep in mind (instruction.md), The user (user.md), About me (me.md), the pages and the diary.',
-      'fr-FR': "Lisez et modifiez À toujours garder en tête (instruction.md), l'utilisateur (user.md), À mon sujet (me.md), les pages et le journal.",
-      'de-DE': 'Lesen und bearbeiten Sie „Immer im Blick“ (instruction.md), den Nutzer (user.md), „Über mich“ (me.md), die Seiten und das Tagebuch.',
-      'hi-IN': 'हमेशा याद रखने वाली बातें (instruction.md), यूज़र (user.md), मेरे बारे में (me.md), पेज और डायरी पढ़ें और बदलें।',
-      'id-ID': 'Membaca dan mengedit Selalu diingat (instruction.md), pengguna (user.md), Tentang saya (me.md), halaman, dan jurnal.',
-      'it-IT': "Leggi e modifica «Da tenere sempre a mente» (instruction.md), l'utente (user.md), «Su di me» (me.md), le pagine e il diario.",
-      'ko-KR': '늘 기억해 둘 것(instruction.md), 사용자(user.md), 나에 대하여(me.md), 페이지, 일기를 읽고 씁니다.',
-      'pt-BR': 'Leia e edite Manter sempre em mente (instruction.md), o usuário (user.md), Sobre mim (me.md), as páginas e o diário.',
-      'es-419': 'Lee y edita «Tener siempre presente» (instruction.md), el usuario (user.md), «Acerca de mí» (me.md), las páginas y el diario.',
-      'es-ES': 'Lee y edita “Tener siempre presente” (instruction.md), el usuario (user.md), “Sobre mí” (me.md), las páginas y el diario.'
+      'ja-JP': '私について(me.md)、ユーザー(user.md)、ページ、日記を読み書きします。',
+      'en-US': 'Read and edit About me (me.md), The user (user.md), the pages and the diary.',
+      'fr-FR': "Lisez et modifiez À mon sujet (me.md), l'utilisateur (user.md), les pages et le journal.",
+      'de-DE': 'Lesen und bearbeiten Sie „Über mich“ (me.md), den Nutzer (user.md), die Seiten und das Tagebuch.',
+      'hi-IN': 'मेरे बारे में (me.md), यूज़र (user.md), पेज और डायरी पढ़ें और बदलें।',
+      'id-ID': 'Membaca dan mengedit Tentang saya (me.md), pengguna (user.md), halaman, dan jurnal.',
+      'it-IT': "Leggi e modifica «Su di me» (me.md), l'utente (user.md), le pagine e il diario.",
+      'ko-KR': '나에 대하여(me.md), 사용자(user.md), 페이지, 일기를 읽고 씁니다.',
+      'pt-BR': 'Leia e edite Sobre mim (me.md), o usuário (user.md), as páginas e o diário.',
+      'es-419': 'Lee y edita «Acerca de mí» (me.md), el usuario (user.md), las páginas y el diario.',
+      'es-ES': 'Lee y edita “Sobre mí” (me.md), el usuario (user.md), las páginas y el diario.'
     },
     dockHint: {
       'ja-JP': 'Dock の「記憶」からも開けます',

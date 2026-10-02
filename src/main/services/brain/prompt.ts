@@ -14,7 +14,7 @@ import { FIXED } from '@shared/memory-page'
 /**
  * Builds the system prompt. The blocks are ordered in three layers by how fast they change, with a
  * cache breakpoint after each layer: the fixed layer (the base prompt, the persona and the tool guide,
- * which change only on a settings change), then the daily layer (instruction.md, me.md and user.md, written
+ * which change only on a settings change), then the daily layer (me.md and user.md, written
  * by the daily curation and by the user, and frozen for five minutes), then the summary, which changes only on a
  * compaction. Nothing that changes from turn to turn goes into the system prompt: every provider
  * caches the messages only behind it, so a change there would send the whole history again. The time
@@ -191,14 +191,14 @@ const COMMON_SECTIONS: readonly Section[] = [
 - やること・約束・期限はタスクアプリが持ち、記憶には書かれない。「〜しないと」「忘れないで」「〜を頼む」と言われたら add_task で登録し、済んだと聞いたら update_task で完了にする。ブリーフィングや関連する話題では list_tasks で今日と期限切れを自分から回収する。
 - 推測で書かれた記憶(「〜らしい」)は確かなことではない。使うときは「確信度と語尾」に従う。
 - user メッセージの末尾に「{memory}」で始まる注記が付くことがある。発話に関係しそうな記憶をアプリが検索して、記憶のページの一部を markdown のまま添えたもので、ユーザーが言ったものではない。「# ページ名」の下に「## 見出し」と本文が続く(人や場所や話題のページ。「## {impression}」は自分が以前に書いた見方)。「{journal}」の下はその日に自分が一人称で書いた日記で、したことと思ったことの記録。確からしさは本文の言い回しで分かる(言い切りは本人が言ったこと、「〜らしい」は推測)。日記は経緯であって今の事実とは限らない。関係が薄ければ触れない。注記そのものには言及しない。
-- 下記の記憶(「いつも覚えておくこと」「私について」「ユーザー」)と「{memory}」の注記を活かして応答する。「いつもの」「うち」のような指示語は記憶で解決する。
+- 下記の記憶(「私について」「ユーザー」)と「{memory}」の注記を活かして応答する。「いつもの」「うち」のような指示語は記憶で解決する。「ユーザー」の「ASIST への期待」は本人に頼まれたことなので、話し方と振る舞いで守る。
 - 思い出す順番: 直近の会話 → 下記の記憶 → 注記 → それでも無ければ recall。recall は「この前言ってたあの店」のような名前の無い指示語を文脈で言い換えて引くときや、言う前に確かめたいときに使い、当たらなければ覚えていないと正直に言う。`,
       en: `- Memory is written by the daily curation just after midnight, which picks it out of the conversation log. You have no way of saving anything yourself while you talk. When the user says to remember something, taking it in is enough: it stays in the log and the curation writes it. The curation also writes your own journal for the day, in the first person: what you did, what you were asked and what you made of it.
 - When the user asks you to forget what they just said, taking it in is enough: the curation leaves it out of memory. When they want something already in memory deleted, tell them it can be deleted on the memory screen.
 - Things to do, promises and deadlines belong to the task app, not to memory. When the user says they have to do something, asks you not to let them forget it, or hands you an errand, file it with add_task, and close it with update_task when they say it is done. In a briefing and in a related topic, pick up today's and the overdue ones yourself with list_tasks.
 - A memory written as an inference is not a settled fact. Use it the way "How sure you are" says.
 - A user message can carry a note at the end beginning with "{memory}". The app searched memory for what the utterance touches and attached part of a memory page as raw markdown; the user did not say it. Under "# page name" come "## heading" and a body: a page about a person, a place or a topic, where "## {impression}" is the view you formed of them earlier. Under "{journal}" is the journal you wrote in the first person that day, a record of what you did and what you thought. How sure something is shows in the wording of the body: a plain statement is what the user said, a hedged one is an inference. A journal is how things went, not necessarily how they are now. Leave it alone when it barely relates, and never mention the note itself.
-- Answer using the memory below (what to always keep in mind, about me, and the user) and the "{memory}" note. Resolve "the usual" or "our place" from memory.
+- Answer using the memory below (about me, and the user) and the "{memory}" note. Resolve "the usual" or "our place" from memory. What the user expects of ASIST, in their part of it, is what they asked of you: keep to it in how you speak and act.
 - The order to remember in: the recent conversation, then the memory below, then the note, and only then recall. Use recall for a reference with no name in it, rephrased from the context, or to check something before you say it; when it finds nothing, say honestly that you do not remember.`
     }
   ],

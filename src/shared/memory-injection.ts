@@ -10,7 +10,7 @@ import type { ToolExecution } from './tool-registry'
  * and `memoryIds`, and is appended after the text in the history as well, so that what the model read
  * and what the history holds agree.
  *
- * A unit whose body the memory block, made of instruction.md, me.md and user.md, already holds is skipped, and so is a unit
+ * A unit whose body the memory block, made of me.md and user.md, already holds is skipped, and so is a unit
  * already shown in the recent history that is sent unsummarized, whether it appeared in an earlier
  * note or in the result of recall.
  *

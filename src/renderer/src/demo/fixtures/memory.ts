@@ -3,8 +3,8 @@ import { addDaysKey, dayKeyOf } from '@shared/tasks'
 import { documentOf } from '@shared/memory-page'
 
 /**
- * The fixed memory data: instruction.md with what goes into every turn, me.md about the assistant itself,
- * user.md about the user, three days of first-person diary written as though the curation produced it, dated
+ * The fixed memory data: me.md about the assistant itself and user.md about the user, which go into every
+ * turn, three days of first-person diary written as though the curation produced it, dated
  * relative to the day the demo runs, and pages about people, places and topics. The user is an invented
  * person who plans features at a booking service, lives near Nakano and comes from Sendai, and the
  * mail, calendar, tasks and notes of the demo describe the same person.
@@ -42,17 +42,6 @@ updated: ${today}
 
 ## ASIST への期待
 調べた結果は、結論と数字を先に聞きたい。候補は多く並べず、二つか三つに絞ってほしい。`
-
-const DEMO_INSTRUCTION = `# いつも覚えておくこと
-
-## この人について
-予約サービスの会社で新機能の企画をしている。上司は大川俊介さんで、いまは来期の提案書が相談の中心。最寄り駅は中野、実家は仙台。
-
-## 私について
-この人の隣で声で話すアシスタント。急がず、確かめてから言う。迷ったら根拠を添えて短く言う。
-
-## 頼まれていること
-結論と数字を先に言う。候補は二つか三つに絞ってから見せる。`
 
 export const DEMO_DIARY: Record<string, string> = {
   [day(-1)]: `# ${day(-1)}
@@ -140,16 +129,15 @@ ${day(-6)} に打ち合わせで確かめたいことを三つに絞った。${d
 
 /** Maps a file name to its markdown. The mock behind the memory screen writes back into this table. */
 export const DEMO_MEMORY: Record<string, string> = {
-  'instruction.md': DEMO_INSTRUCTION,
   'me.md': DEMO_ME,
   'user.md': DEMO_USER,
   ...Object.fromEntries(Object.entries(DEMO_DIARY).map(([date, text]) => [`journal/${date}.md`, text])),
   ...Object.fromEntries(Object.entries(DEMO_PAGES).map(([name, text]) => [`pages/${name}.md`, text]))
 }
 
-const ORDER: Record<MemoryDocument['kind'], number> = { instruction: 0, me: 1, user: 2, page: 3, journal: 4 }
+const ORDER: Record<MemoryDocument['kind'], number> = { me: 0, user: 1, page: 2, journal: 3 }
 
-/** Orders documents exactly as listDocuments in the main process does: instruction, me, user, pages by name, then the diary with the newest day first. */
+/** Orders documents exactly as listDocuments in the main process does: me, user, pages by name, then the diary with the newest day first. */
 export function demoDocuments(files: Record<string, string>): MemoryDocument[] {
   return Object.entries(files)
     .map(([file, text]) => documentOf(file, text))

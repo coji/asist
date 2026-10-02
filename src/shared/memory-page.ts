@@ -48,10 +48,9 @@ export const FIXED = {
   journalSelf: { ja: '今日の私', en: 'Myself today' },
   /** The heading the curation keeps on every page about a person, a place or a topic for its own view of them. */
   impression: { ja: '私の印象', en: 'My impression' },
-  /** The `# name` line of the three pages whose name comes from their role rather than from a person. */
+  /** The `# name` line of the two documents whose name comes from their role rather than from a person. */
   user: { ja: 'ユーザー', en: 'The user' },
   me: { ja: '私について', en: 'About me' },
-  instruction: { ja: 'いつも覚えておくこと', en: 'Always keep in mind' },
   /** The word that stands before a journal entry in the text that gets embedded. */
   journalOf: { ja: '{date}の日記', en: 'Journal of {date}' }
 } as const satisfies Record<string, PromptText>
@@ -85,7 +84,7 @@ export function unitId(file: string, key: string): string {
   return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')
 }
 
-export type FileKind = 'user' | 'me' | 'instruction' | 'page' | 'journal' | null
+export type FileKind = 'user' | 'me' | 'page' | 'journal' | null
 
 /** Derives the kind and the page's default name from the file path. */
 export function classifyFile(file: string): { kind: FileKind; title: string } {
@@ -94,7 +93,6 @@ export function classifyFile(file: string): { kind: FileKind; title: string } {
   // The title is what a page is called when its own `# name` line is missing, so the Japanese form stands.
   if (base === 'user') return { kind: 'user', title: FIXED.user.ja }
   if (base === 'me') return { kind: 'me', title: FIXED.me.ja }
-  if (base === 'instruction') return { kind: 'instruction', title: FIXED.instruction.ja }
   if (base.startsWith('journal/')) return { kind: 'journal', title: name }
   if (base.startsWith('pages/')) return { kind: 'page', title: name }
   return { kind: null, title: name }
@@ -179,11 +177,8 @@ export function embeddingTextOf(unit: Pick<MemoryUnit, 'file' | 'kind' | 'page' 
 }
 
 
-/**
- * The files the memory screen can open: instruction.md, me.md, user.md, pages/<name>.md and
- * journal/YYYY-MM-DD.md.
- */
-export const DOCUMENT_FILE = /^(instruction\.md|me\.md|user\.md|pages\/[^/\\]+\.md|journal\/\d{4}-\d{2}-\d{2}\.md)$/
+/** The files the memory screen can open: me.md, user.md, pages/<name>.md and journal/YYYY-MM-DD.md. */
+export const DOCUMENT_FILE = /^(me\.md|user\.md|pages\/[^/\\]+\.md|journal\/\d{4}-\d{2}-\d{2}\.md)$/
 
 const MAX_PAGE_NAME_LENGTH = 60
 
@@ -242,6 +237,45 @@ export function documentOf(file: string, markdown: string): MemoryDocument {
     headings: page.sections.map((section) => section.heading),
     summary: first ? firstSentence(first.text) : ''
   }
+}
+
+/** me.md and user.md as they are, null for one that does not exist. */
+export interface PromptDocuments {
+  me: string | null
+  user: string | null
+}
+
+/**
+ * Where what an instruction.md held goes, now that me.md and user.md ride in every turn and it does not: its
+ * section about the assistant into me.md, every other section into user.md. Each keeps its heading and its
+ * text as they were, appended to the section of the same heading where the document has one, so nothing is
+ * lost and no heading stands twice. A document that does not exist yet is started under its name in the form
+ * the instruction was written in. The next curation folds the moved sections into the document's own headings.
+ */
+export function foldInstruction(instruction: string, documents: PromptDocuments, today: string): PromptDocuments {
+  const { sections } = parsePage(instruction, '')
+  const form = writtenInJapanese(instruction) ? 'ja' : 'en'
+  const folded = { ...documents }
+  for (const target of ['me', 'user'] as const) {
+    const moved = sections.filter((section) => (section.heading === FIXED.me.ja || section.heading === FIXED.me.en) === (target === 'me'))
+    if (moved.length === 0) continue
+    let markdown = documents[target] ?? `---\nupdated: ${today}\n---\n# ${FIXED[target][form]}\n`
+    for (const { heading, text } of moved) markdown = appendToSection(markdown, heading, text)
+    folded[target] = markdown
+  }
+  return folded
+}
+
+/** The document with the text added at the end of the section under the heading, or in a new section at its end. */
+function appendToSection(markdown: string, heading: string, text: string): string {
+  const lines = markdown.replace(/\s+$/, '').split(/\r?\n/)
+  const at = lines.findIndex((line) => /^## /.test(line) && line.slice(3).trim() === heading)
+  if (at === -1) return `${lines.join('\n')}\n\n## ${heading}\n${text}\n`
+  let end = lines.findIndex((line, index) => index > at && /^## /.test(line))
+  if (end === -1) end = lines.length
+  while (end > at + 1 && !lines[end - 1].trim()) end--
+  lines.splice(end, 0, '', text)
+  return `${lines.join('\n')}\n`
 }
 
 /** A finding of documentIssues as a sentence in the language of the interface. */
