@@ -1,6 +1,6 @@
 import path from 'node:path'
 import fs from 'node:fs'
-import { carriesUrl, classifyFile, MAX_TEXT_BYTES, TEXT_KINDS, type FileEntry, type FileItem } from '@shared/files'
+import { carriesUrl, classifyFile, MAX_TEXT_BYTES, TEXT_KINDS, tooLargeToRead, type FileEntry, type FileItem } from '@shared/files'
 import { errorText } from '@shared/i18n/error-text'
 import { isFullPath } from './full-path'
 import { errorMessage, t } from './i18n'
@@ -209,7 +209,7 @@ export function readFileItem(filePath: string, toUrl: (filePath: string) => stri
   if (!stat.isFile()) return failedItem(filePath, t('files.errors.notAFile'))
   const kind = classifyFile(filePath)
   const base: FileItem = { path: filePath, name, kind, sizeBytes: stat.size, modifiedAt: stat.mtimeMs }
-  if (TEXT_KINDS.has(kind)) {
+  if (TEXT_KINDS.has(kind) && !tooLargeToRead(base)) {
     const fd = fs.openSync(filePath, 'r')
     try {
       const buffer = Buffer.alloc(Math.min(stat.size, MAX_TEXT_BYTES))

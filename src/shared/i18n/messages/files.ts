@@ -733,19 +733,6 @@ export const files = defineMessages({
       'es-419': 'Esto no tiene el formato de un notebook',
       'es-ES': 'Esto no tiene el formato de un notebook'
     },
-    notebookTruncated: {
-      'ja-JP': '先頭だけ読み込んだので notebook として解釈できません',
-      'en-US': 'Only the beginning was read, so it cannot be parsed as a notebook',
-      'fr-FR': 'Seul le début a été lu : le notebook ne peut pas être analysé',
-      'de-DE': 'Nur der Anfang wurde gelesen, deshalb lässt es sich nicht als Notebook auswerten',
-      'hi-IN': 'सिर्फ़ शुरुआत पढ़ी गई, इसलिए इसे notebook के रूप में नहीं पढ़ा जा सकता',
-      'id-ID': 'Hanya bagian awal yang dibaca, jadi tidak bisa diurai sebagai notebook',
-      'it-IT': "È stato letto solo l'inizio, quindi non si può interpretare come notebook",
-      'ko-KR': '앞부분만 읽어서 notebook으로 해석할 수 없습니다',
-      'pt-BR': 'Só o começo foi lido, então não dá para interpretar como notebook',
-      'es-419': 'Solo se leyó el principio, así que no se puede interpretar como notebook',
-      'es-ES': 'Solo se ha leído el principio, así que no se puede interpretar como notebook'
-    },
     notebookCells: {
       'ja-JP': { other: '他 {count} セル' },
       'en-US': { one: '{count} more cell', other: '{count} more cells' },

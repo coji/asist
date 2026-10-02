@@ -1,5 +1,5 @@
 import { errorText } from '@shared/i18n/error-text'
-import { languageOf, regionCurrency } from '@shared/conversation-locale'
+import { fillPrompt, languageOf, promptText, regionCurrency, type PromptText } from '@shared/conversation-locale'
 import { conversationLocale, region } from './conversation-locale'
 import { weatherPanelProps } from './weather'
 import { chooseGeocoded, geocodingUrl, type GeocodedPlace } from './weather/open-meteo'
@@ -9,9 +9,12 @@ import { addDays } from '@shared/calendar-layout'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
 import { searchCalendar } from './calendar'
 import { getMailService } from './mail'
+import { cardView, type FileItem } from '@shared/files'
+import { osMessageKey } from '@shared/i18n/os-message'
 import { fileItem } from './file-preview'
 import { fileUrl } from '../file-protocol'
 import { allowedFileRoots } from './agent'
+import { platformCapabilities } from './platform'
 import { userAgent } from './user-agent'
 import { fetchFailure } from './fetch-failure'
 import { t } from './i18n'
@@ -223,6 +226,59 @@ const mailMessage: Fetcher = async (props) => {
   }
 }
 
+/**
+ * What the model is told of the files the card did not show, and of those it showed only the first part of. Each
+ * sentence is kept to about 100 characters, the button's name included: a cut of a long result shortens every string
+ * alike (formatToolResult), and leaves at least that much of each while it keeps five items of every list.
+ */
+const CARD_TOLD = {
+  tooLarge: {
+    ja: '大きすぎるので、カードには中身を出さず、名前と大きさだけを出している。',
+    en: 'Too large for the card to show, so it shows only the name and the size.'
+  },
+  noViewer: {
+    ja: 'カードはこの種類のファイルの中身を出せないので、名前と大きさだけを出している。',
+    en: 'The card cannot show files of this kind, so it shows only the name and the size.'
+  },
+  firstPart: {
+    ja: 'カードにもこの結果にも、最初の部分しかない。',
+    en: 'The card and this result hold only the first part.'
+  },
+  button: {
+    ja: '「{button}」のボタンは、ファイルが一つならカードに、複数なら一覧で選んだ先にある。',
+    en: 'The button "{button}" is under a single file, or one picked from the list.'
+  }
+} as const satisfies Record<string, PromptText>
+
+type ToldGroup = { files: string[]; why: string; button?: string }
+
+/**
+ * The result show_files gives the model: the items, led by the names of the files the card did not show and of those
+ * it showed only the first part of, grouped by reason. A result longer than the tool may return keeps only the first
+ * items of each list (formatToolResult), so these files are named apart from the items that carry them, where the
+ * cut keeps them. The paths and the title the model wrote are not repeated, and an item's asist-file URL, which the
+ * model has no use for, is left out, so that less of the rest is cut.
+ */
+function filesForModel(items: FileItem[]): Props {
+  const say = (text: PromptText): string =>
+    fillPrompt(promptText(conversationLocale(), text), { button: t(osMessageKey('files.reveal', platformCapabilities().os)) })
+  const notShown = new Map<string, ToldGroup>()
+  const partlyShown: string[] = []
+  for (const item of items) {
+    const view = cardView(item)
+    if (view.shows === 'firstPart') partlyShown.push(item.name)
+    if (view.shows !== 'nothing') continue
+    // A file that could not be read gets no button on the card.
+    const told = view.why === 'unreadable' ? { why: view.error } : { why: say(CARD_TOLD[view.why]), button: say(CARD_TOLD.button) }
+    notShown.set(told.why, { files: [...(notShown.get(told.why)?.files ?? []), item.name], ...told })
+  }
+  return {
+    ...(notShown.size > 0 ? { notShown: [...notShown.values()] } : {}),
+    ...(partlyShown.length > 0 ? { partlyShown: [{ files: partlyShown, why: say(CARD_TOLD.firstPart), button: say(CARD_TOLD.button) }] } : {}),
+    items: items.map(({ url, ...item }) => item)
+  }
+}
+
 const files: Fetcher = async (props) => {
   const paths = Array.isArray(props.paths) ? props.paths.map(String) : []
   if (paths.length === 0) throw new Error(errorText('panels.errors.noPaths'))
@@ -231,7 +287,11 @@ const files: Fetcher = async (props) => {
   if (items.every((item) => item.error)) {
     throw new Error(errorText('panels.errors.filesUnreadable', { files: items.map((item) => `${item.name}: ${item.error}`).join(' / ') }))
   }
-  return { props: { ...props, paths, items }, source: items.length === 1 ? items[0].kind : t('files.source', { count: items.length }) }
+  return {
+    props: { ...props, paths, items },
+    data: filesForModel(items),
+    source: items.length === 1 ? items[0].kind : t('files.source', { count: items.length })
+  }
 }
 
 const FETCHERS: Record<string, Fetcher> = {

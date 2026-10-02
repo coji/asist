@@ -1,4 +1,4 @@
-import { isHtmlPage, tooLargeToRead, type FileItem, type FileKind } from '@shared/files'
+import { cardView, isHtmlPage, type FileItem, type ViewedKind } from '@shared/files'
 import { CodeViewer } from './CodeViewer'
 import { DataViewer } from './DataViewer'
 import { AudioViewer } from './AudioViewer'
@@ -18,8 +18,7 @@ import { VideoViewer } from './VideoViewer'
 import type { Viewer, ViewerProps } from './types'
 import './viewers.css'
 
-/** A kind with no entry here, such as binary, and an item that could not be read both fall back to StubViewer. */
-const VIEWERS: Partial<Record<FileKind, Viewer>> = {
+const VIEWERS: Record<ViewedKind, Viewer> = {
   markdown: MarkdownViewer,
   text: TextViewer,
   table: TableViewer,
@@ -37,11 +36,10 @@ const VIEWERS: Partial<Record<FileKind, Viewer>> = {
 }
 
 export function viewerFor(item: FileItem): Viewer {
-  if (item.error) return StubViewer
-  // Audio plays by ranges whatever its size, and AudioViewer leaves out only the waveform of a file over the limit.
-  if (item.kind !== 'audio' && tooLargeToRead(item)) return TooLargeViewer
-  if (item.kind === 'code' && isHtmlPage(item.path)) return HtmlViewer
-  return VIEWERS[item.kind] ?? StubViewer
+  const view = cardView(item)
+  if (view.shows === 'nothing') return view.why === 'tooLarge' ? TooLargeViewer : StubViewer
+  if (view.kind === 'code' && isHtmlPage(item.path)) return HtmlViewer
+  return VIEWERS[view.kind]
 }
 
 /**

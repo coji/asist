@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { WHOLE_READ_LIMIT, type FileItem, type FileKind } from '@shared/files'
+import { MAX_TEXT_BYTES, WHOLE_READ_LIMIT, type FileItem, type FileKind } from '@shared/files'
 import { createTranslator } from '@shared/i18n'
 import { FileViewer } from '@/panels/viewers'
 import { setPdfLoader } from '@/panels/viewers/PdfViewer'
@@ -72,6 +72,12 @@ describe('the size limit of a viewer that reads the whole file', () => {
     expect(reads()).toBe(1)
     const view = await render(itemOf(kind, limit + 1))
     expect(reads()).toBe(1)
+    expect(view.textContent).toContain(t('files.viewer.tooLarge'))
+  })
+
+  it('says a notebook too long to travel whole is too large to show, rather than parsing its beginning', async () => {
+    const notebook = { ...itemOf('notebook', MAX_TEXT_BYTES + 1), text: '{"cells": [', truncated: true }
+    const view = await render(notebook)
     expect(view.textContent).toContain(t('files.viewer.tooLarge'))
   })
 
