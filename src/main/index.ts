@@ -32,6 +32,7 @@ import { initMail } from './services/mail'
 import { isAppPage } from '@shared/app-page'
 import { isExternalLink } from '@shared/external-link'
 import { windowChrome } from './window-chrome'
+import { watchAppPage } from './page-lifetime'
 
 let mainWindow: BrowserWindow | null = null
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
@@ -42,11 +43,20 @@ registerFileScheme()
 /** The permissions the app's own page asks for: the microphone, copying a job's text, and a video in full screen. */
 const PAGE_PERMISSIONS = new Set(['media', 'clipboard-sanitized-write', 'fullscreen'])
 
+/**
+ * The page the window shows, and the only page trusted with the preload bridge. A development launch takes
+ * it from electron-vite's server; a packaged app always shows the page inside its package, whatever its
+ * environment says.
+ */
+function appPageUrl(): string {
+  const devServer = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL
+  return devServer ?? pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
+}
+
 function createWindow(): void {
   const chrome = windowChrome(platformCapabilities().os)
   chrome.prepare()
-  const rendererFile = path.join(__dirname, '../renderer/index.html')
-  const appPage = process.env.ELECTRON_RENDERER_URL ?? pathToFileURL(rendererFile).href
+  const appPage = appPageUrl()
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -94,15 +104,12 @@ function createWindow(): void {
     PAGE_PERMISSIONS.has(permission) && details.isMainFrame && isAppPage(details.requestingUrl ?? '', appPage)
   )
 
-  logRenderer(mainWindow)
+  watchAppPage(mainWindow, appPage)
+  logRenderer(mainWindow, appPage)
   registerIpc(mainWindow, appPage)
   setupOsIntegration(mainWindow)
 
-  if (process.env.ELECTRON_RENDERER_URL) {
-    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    void mainWindow.loadFile(rendererFile)
-  }
+  void mainWindow.loadURL(appPage)
 }
 
 /**

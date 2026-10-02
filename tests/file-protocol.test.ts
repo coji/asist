@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { allowedPath, type PathSystem } from '../src/main/services/file-preview'
 
 const electron = vi.hoisted(() => ({ handle: vi.fn() }))
 vi.mock('electron', () => ({ protocol: { registerSchemesAsPrivileged: vi.fn(), handle: electron.handle } }))
@@ -32,14 +33,30 @@ describe('asist-file:// URLs and paths', () => {
   it('rejects other schemes and relative paths', async () => {
     const { filePathFromUrl } = await load()
     expect(filePathFromUrl('file:///etc/passwd')).toBeNull()
-    expect(filePathFromUrl('asist-file://relative/a.png')).toBeNull()
+    expect(filePathFromUrl('asist-file:a.png')).toBeNull()
   })
 
-  it('refuses a URL with a host, localhost included, on macOS and on Windows', async () => {
+  it('refuses a URL that names a server on macOS', async () => {
     const { filePathFromUrl } = await load()
-    for (const windows of [false, true]) {
-      expect(filePathFromUrl('asist-file://localhost/etc/passwd', { windows })).toBeNull()
-      expect(filePathFromUrl('asist-file://nas/team/a.pdf', { windows })).toBeNull()
+    expect(filePathFromUrl('asist-file://nas/team/a.pdf', MACOS)).toBeNull()
+    expect(filePathFromUrl('asist-file://attacker.example/etc/passwd', MACOS)).toBeNull()
+  })
+
+  it('reads a server in a Windows URL as a share that is refused before the disk is asked when no allowed folder is on it', async () => {
+    const { filePathFromUrl } = await load()
+    const disk: PathSystem = { path: path.win32, realpath: vi.fn((target: string) => target) }
+    for (const url of ['asist-file://attacker.example/share/a.png', 'asist-file://nas/other/a.pdf']) {
+      const requested = filePathFromUrl(url, { windows: true })
+      expect(requested).not.toBeNull()
+      expect(allowedPath(requested!, ['C:\\Users\\me', '\\\\nas\\team\\reports'], disk)).toBeNull()
+    }
+    expect(disk.realpath).not.toHaveBeenCalled()
+  })
+
+  it('refuses a Windows URL that names a server but no share on it, which allowedPath would take for a root without a drive', async () => {
+    const { filePathFromUrl } = await load()
+    for (const url of ['asist-file://attacker.example/', 'asist-file://nas/team/..', 'asist-file://nas//team/a.pdf']) {
+      expect([url, filePathFromUrl(url, { windows: true })]).toEqual([url, null])
     }
   })
 
@@ -73,6 +90,16 @@ describe('asist-file:// URLs and paths', () => {
       expect([file, new URL(url).hash, new URL(url).search]).toEqual([file, '', ''])
     }
     expect(fileUrl('C:\\Users\\me\\a b.png', windows)).toBe('asist-file:///C:/Users/me/a%20b.png')
+  })
+
+  it('reads back a file on a Windows network share from the URL it writes for it, and the files a page there links to', async () => {
+    const { fileUrl, filePathFromUrl } = await load()
+    const windows = { windows: true }
+    for (const file of ['\\\\nas\\team\\reports\\q3.pdf', '\\\\nas\\team\\C# notes\\大川俊介 100%.png']) {
+      expect([file, filePathFromUrl(fileUrl(file, windows), windows)]).toEqual([file, file])
+    }
+    const page = fileUrl('\\\\nas\\team\\reports\\index.html', windows)
+    expect(filePathFromUrl(new URL('img/Q1%2C%20Q2.png', page).href, windows)).toBe('\\\\nas\\team\\reports\\img\\Q1, Q2.png')
   })
 
   it('reads the file a Windows page names in a relative link, and refuses a path without a drive or with an escaped separator', async () => {

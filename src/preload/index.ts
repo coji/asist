@@ -159,6 +159,7 @@ const api: RendererApi = {
   revealPath: (path) => ipcRenderer.invoke(IpcChannel.RevealPath, path),
   appVersion: () => ipcRenderer.invoke(IpcChannel.AppVersion),
   getPlatformCapabilities: () => ipcRenderer.invoke(IpcChannel.GetPlatformCapabilities),
+  isLaunchPage: () => ipcRenderer.invoke(IpcChannel.IsLaunchPage),
   hotkeyStatus: () => ipcRenderer.invoke(IpcChannel.HotkeyStatus),
   paintWindowControls: (colors) => ipcRenderer.invoke(IpcChannel.PaintWindowControls, colors),
   licensesOpen: () => ipcRenderer.invoke(IpcChannel.LicensesOpen),

@@ -270,6 +270,20 @@ describe('the native microphone', () => {
   })
 })
 
+describe('the microphone set to turn on at launch', () => {
+  it('turns on for the first page the app shows', async () => {
+    mocks.settings.micAutoStart = true
+    await start({ isLaunchPage: async () => true })
+    expect(voice().enable).toHaveBeenCalled()
+  })
+
+  it('stays off on a page loaded again after a reload or a crash', async () => {
+    mocks.settings.micAutoStart = true
+    await start({ isLaunchPage: async () => false })
+    expect(voice().enable).not.toHaveBeenCalled()
+  })
+})
+
 describe('the aizuchi classifier', () => {
   it('is asked about each partial recognition on Windows as on a Mac', async () => {
     const classifiedOn = async (windows: boolean): Promise<number> => {

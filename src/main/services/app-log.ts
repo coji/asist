@@ -5,8 +5,8 @@ import { APP_LOG_RETENTION_DAYS, formatLogEntry, redactSecrets, secretValues, ty
 import { expiredDatedFiles, localDateKey } from '@shared/local-date'
 
 /**
- * The app's activity log. It writes main's console output and the renderer's warnings and errors into one
- * file per day, named YYYY-MM-DD.log. An app started from the Dock or from Finder keeps its standard
+ * The app's activity log. It writes main's console output and the warnings and errors of the app's page into
+ * one file per day, named YYYY-MM-DD.log. An app started from the Dock or from Finder keeps its standard
  * output nowhere, so the log is written however the app was launched, which is what makes a problem
  * investigable afterwards and attachable to a report.
  *

@@ -7,11 +7,12 @@ import { allowedPath } from './services/file-preview'
 
 /**
  * Serves files under an allowed folder to the renderer as asist-file:// URLs, which carry the path the way a
- * file:// URL does without a host: asist-file:///Users/me/a.png and asist-file:///C:/Users/me/a.png. The files card
- * fetches its images, PDFs, Office documents, audio and video over this URL rather than carrying bytes in
- * its props, and loads an HTML page from it so that the page's relative links resolve to the files next to
- * it. Range requests are answered so that video and audio can seek. Permission is checked on every
- * request, because a job adds new working directories as it goes.
+ * file:// URL does: asist-file:///Users/me/a.png, asist-file:///C:/Users/me/a.png, and on a Windows network
+ * share asist-file://nas/team/a.png, whose host is the server. The files card fetches its images, PDFs,
+ * Office documents, audio and video over this URL rather than carrying bytes in its props, and loads an HTML
+ * page from it so that the page's relative links resolve to the files next to it. Range requests are
+ * answered so that video and audio can seek. Permission is checked on every request, because a job adds new
+ * working directories as it goes.
  */
 
 export const FILE_SCHEME = 'asist-file'
@@ -107,9 +108,12 @@ export function contentHeaders(filePath: string): Record<string, string> {
 }
 
 /**
- * Takes the absolute path out of the URL, as fileURLToPath does for a file:// URL without a host. A URL with
- * a host is refused on every OS, localhost included, and so is an escaped separator. Every other escape is
- * decoded, because a page's relative link may escape a reserved character, such as %2C for a comma.
+ * Takes the absolute path out of the URL, as fileURLToPath does for the file:// URL with the same host and
+ * path, so that every URL fileUrl writes reads back as its path. A host is the server of a Windows share, and
+ * macOS refuses every host but localhost, which file:// takes for this machine. A share is not checked here:
+ * allowedPath refuses a server that holds no allowed folder before asking the disk, since resolving a path on
+ * a server hands it the user's credentials. An escaped separator is refused. Every other escape is decoded,
+ * because a page's relative link may escape a reserved character, such as %2C for a comma.
  */
 export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
   let parsed: URL
@@ -118,11 +122,14 @@ export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
   } catch {
     return null
   }
-  if (parsed.protocol !== `${FILE_SCHEME}:` || parsed.host !== '' || !parsed.pathname.startsWith('/')) return null
+  if (parsed.protocol !== `${FILE_SCHEME}:` || !parsed.pathname.startsWith('/')) return null
+  // A path on a server starts with the name of a share. \\server\ alone normalizes to a root without a drive,
+  // which allowedPath would match with any root written without one and then resolve on that server.
+  if (parsed.host !== '' && !/^\/[^/]+/.test(parsed.pathname)) return null
   try {
     // A file:// URL takes a raw backslash for a separator, while in an asist-file:// URL it belongs to the
     // name, so it is escaped before the path is carried over.
-    return fileURLToPath(`file://${parsed.pathname.replace(/\\/g, '%5C')}`, rules)
+    return fileURLToPath(`file://${parsed.host}${parsed.pathname.replace(/\\/g, '%5C')}`, rules)
   } catch {
     return null
   }

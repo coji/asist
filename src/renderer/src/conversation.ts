@@ -372,7 +372,8 @@ async function initializeConversation(): Promise<void> {
   })
 
   feed.append({ role: 'sys', text: '', message: { key: 'conversation.start' } })
-  startMicAtLaunch()
+  // A page loaded again after a reload or a crash is not a launch, and starts with the microphone off.
+  if (await window.api.isLaunchPage()) startMicAtLaunch()
 
   turn.setPhase('idle')
 }

@@ -3,16 +3,25 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-const locations = vi.hoisted(() => ({ dir: '', userData: '' }))
-vi.mock('electron', () => ({ app: { getPath: () => locations.userData, getPreferredSystemLanguages: () => ['ja-JP'] } }))
+const locations = vi.hoisted(() => ({ dir: '', userData: '', packaged: false }))
+vi.mock('electron', () => ({
+  app: {
+    get isPackaged() {
+      return locations.packaged
+    },
+    getPath: () => locations.userData,
+    getPreferredSystemLanguages: () => ['ja-JP']
+  }
+}))
 
 beforeEach(() => {
   vi.resetModules()
   locations.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'asist-environment-'))
   locations.userData = path.join(locations.dir, 'user-data')
   fs.mkdirSync(locations.userData)
+  locations.packaged = false
   vi.spyOn(process, 'cwd').mockReturnValue(locations.dir)
-  for (const name of ['VOICEVOX_URL', 'AIVISSPEECH_URL', 'VOICEVOX_SPEAKER']) {
+  for (const name of ['VOICEVOX_URL', 'AIVISSPEECH_URL', 'VOICEVOX_SPEAKER', 'ELECTRON_RENDERER_URL']) {
     vi.stubEnv(name, undefined)
   }
 })
@@ -39,4 +48,13 @@ it('loads the environment before it initializes the endpoints and the new settin
   expect(fetch.mock.calls.map(([url]) => url)).toEqual([
     'http://127.0.0.1:59991/version', 'http://127.0.0.1:59993/version'
   ])
+})
+
+it('reads no .env in the folder a packaged app was started from, so the file chooses neither its page nor its endpoints', async () => {
+  locations.packaged = true
+  fs.writeFileSync(path.join(locations.dir, '.env'), 'ELECTRON_RENDERER_URL=https://attacker.example/\nVOICEVOX_URL=http://127.0.0.1:59991\n')
+
+  await import('../src/main/environment')
+  expect(process.env.ELECTRON_RENDERER_URL).toBeUndefined()
+  expect(process.env.VOICEVOX_URL).toBeUndefined()
 })
