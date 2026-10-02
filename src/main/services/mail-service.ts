@@ -388,6 +388,7 @@ export class MailService {
       const message = this.requireMessage(input.id)
       const account = this.accountOf(message.accountId)
       const reply = await this.settleReply(message, account, input.replyAll)
+      signal.throwIfAborted()
       const draft = this.deps.drafts.create({ accountId: account.id, to: [], cc: [], subject: '', body: input.body, reply, origin: 'agent' })
       return { drafted: true, saved: false, draftId: draft.id, summary: draftSummary(draft) }
     }

@@ -9,6 +9,7 @@ import {
   executeTool,
   formatToolResult,
   inputJsonSchema,
+  operationStarted,
   renderToolGuide,
   resolvePromptTexts,
   truncateMiddle,
@@ -238,21 +239,19 @@ describe('executeTool', () => {
     expect(seen!.aborted).toBe(true)
   })
 
-  it('gives an operation the user approved late in the time limit a limit of its own, and says it started when that one passes too', async () => {
+  it('gives an operation that started late in the time limit a limit of its own, and says it started when that one passes too', async () => {
     vi.useFakeTimers()
     try {
       let approve!: () => void
       const approval = new Promise<void>((resolve) => { approve = resolve })
       let finishSend!: () => void
       const registry = createToolRegistry([
-        def({ name: 'send', timeoutMs: 1000, run: async () => { await approval; await new Promise<void>((resolve) => { finishSend = resolve }); return 'sent' } }),
-        def({ name: 'archive', timeoutMs: 1000, run: async () => { await approval; await new Promise(() => {}) } })
+        def({ name: 'send', timeoutMs: 1000, run: async (_input, _ctx, s) => { await approval; operationStarted(s); await new Promise<void>((resolve) => { finishSend = resolve }); return 'sent' } }),
+        def({ name: 'archive', timeoutMs: 1000, run: async (_input, _ctx, s) => { await approval; operationStarted(s); await new Promise(() => {}) } })
       ])
       const sent = executeTool(registry, 'send', {}, ctx, signal, 'ja')
       const archived = executeTool(registry, 'archive', {}, ctx, signal, 'ja')
       await vi.advanceTimersByTimeAsync(900)
-      sent.operationStarted()
-      archived.operationStarted()
       approve()
       await vi.advanceTimersByTimeAsync(500)
       finishSend()
@@ -264,6 +263,31 @@ describe('executeTool', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('tells the model that an operation the caller cut off after it started may have happened, and one cut off before it did not', async () => {
+    const begun = new AbortController()
+    const waiting = new AbortController()
+    let started!: () => void
+    const ready = new Promise<void>((resolve) => { started = resolve })
+    // Both go on past their abort until the test ends them, as a write that has started does.
+    let finish!: () => void
+    const work = new Promise<string>((resolve) => { finish = () => resolve('done') })
+    const registry = createToolRegistry([
+      def({ name: 'write', run: (_input, _ctx, s) => { started(); operationStarted(s); return work } }),
+      def({ name: 'wait', run: () => work })
+    ])
+    const written = executeTool(registry, 'write', {}, ctx, begun.signal, 'ja')
+    const waited = executeTool(registry, 'wait', {}, ctx, waiting.signal, 'ja')
+    await ready
+    begun.abort()
+    waiting.abort()
+    expect(await written).toMatchObject({ isError: true, unfinished: true })
+    const interrupted = await waited
+    expect(interrupted.isError).toBe(true)
+    expect(interrupted.unfinished).toBeUndefined()
+    finish()
+    await Promise.all([written.completion, waited.completion])
   })
 
   it('keeps waiting for a tool that timed out until it stops, and gives up on one that ignores its abort after the grace, saying so', async () => {

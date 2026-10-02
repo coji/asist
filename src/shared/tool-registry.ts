@@ -106,7 +106,8 @@ export interface ToolDefinition<Ctx = unknown> {
    * Returns a string or anything that can be turned into JSON, and throws on failure; a ToolError's
    * message reaches the model unchanged. The result reaches the model as it is, so the text a tool adds
    * to it is already in the language of the turn. The signal combines the caller's abort and the time
-   * limit.
+   * limit, and whatever the run hands it to says through it when the operation has started (see
+   * operationStarted).
    */
   run: (input: Record<string, unknown>, ctx: Ctx, signal: AbortSignal) => Promise<unknown> | unknown
 }
@@ -131,7 +132,7 @@ export interface ToolExecution {
    * shortened the way content shows them, or the text of a result that is a string. An error has none.
    */
   value?: unknown
-  /** The user approved the operation and it started, but the wait for its result was cut off (see operationStarted). */
+  /** The operation started, but the wait for its result was cut off, so whether it succeeded is not known (see operationStarted). */
   unfinished?: boolean
 }
 
@@ -141,13 +142,24 @@ export interface ToolExecution {
  */
 export interface ToolExecutionTask extends Promise<ToolExecution> {
   readonly completion: Promise<void>
-  /**
-   * Says that the operation of the tool has started, once the user approved it. The time limit counted the
-   * wait for the answer, so it starts again for the operation alone, and a wait cut off from here on is
-   * reported as an operation that started with its result unknown. The operation does not stop with the
-   * wait, and a timeout would lead the model to take a sent mail or a started job for a failure and retry it.
-   */
-  operationStarted(): void
+}
+
+/** What each execution still waiting for its tool does when told its operation started, by the signal it handed the run. */
+const startNotices = new WeakMap<AbortSignal, () => void>()
+
+/**
+ * Says that the operation run under this signal, the one a tool's run was handed, has passed the point where
+ * its abort stops it: the user approved it, or the file it writes is being renamed into place. A wait cut off
+ * before that point is reported as timed out or interrupted, which the model may simply try again. One cut off
+ * after it is reported as an operation that started with its result unknown, because the operation goes on
+ * without the wait, and a timeout would lead the model to take an archived mail, a started job or a saved note
+ * for a failure and do it a second time. The time limit starts again here for the operation alone: before an
+ * approval it counted the user's answer, and from here on cutting the wait off stops nothing and only leaves
+ * the result unknown. A signal no tool's run was handed, such as that of a save from a screen, has no one to
+ * tell.
+ */
+export function operationStarted(signal: AbortSignal | undefined): void {
+  if (signal) startNotices.get(signal)?.()
 }
 
 /** What this file says to the model, in both prompt languages. */
@@ -180,8 +192,8 @@ const TEXTS = {
     en: `${name} was interrupted while running.`
   }),
   unfinished: (name: string): PromptText => ({
-    ja: `${name} は承認されて実行を始めたが、結果を待つのを打ち切った。成否は分からないので、やり直す前に今の状態を確かめること。`,
-    en: `${name} was approved and started, but the wait for its result was cut off, so whether it succeeded is not known. Check the current state before trying it again.`
+    ja: `${name} は実行を始めたが、結果を待つのを打ち切った。成否は分からないので、やり直す前に今の状態を確かめること。`,
+    en: `${name} started, but the wait for its result was cut off, so whether it succeeded is not known. Check the current state before trying it again.`
   }),
   failed: (name: string, reason: string): PromptText => ({
     ja: `${name} の実行に失敗した: ${reason}。入力を見直すか、別の手段を選ぶこと。`,
@@ -373,7 +385,8 @@ const errMessage = (err: unknown): string => (err instanceof Error ? err.message
 /**
  * Runs one tool and produces the content for its tool_result. An exception or a timeout becomes a
  * result with isError rather than failing the turn, and a stop caused by the caller's signal comes
- * back as a result saying the tool was interrupted.
+ * back as a result saying the tool was interrupted, or, once its operation has started, that its
+ * result is not known.
  */
 export function executeTool<Ctx>(
   registry: ToolRegistry<Ctx>,
@@ -394,10 +407,7 @@ export function executeTool<Ctx>(
   })
   const def = registry.find(name)
   if (!def) {
-    return Object.assign(Promise.resolve(failure(TEXTS.unknownTool(name)[language])), {
-      completion: Promise.resolve(),
-      operationStarted: () => {}
-    })
+    return Object.assign(Promise.resolve(failure(TEXTS.unknownTool(name)[language])), { completion: Promise.resolve() })
   }
 
   const timeout = new AbortController()
@@ -408,7 +418,12 @@ export function executeTool<Ctx>(
   const expire = (): void => timeout.abort(new DOMException(`${def.name} ran past ${def.timeoutMs} ms`, 'TimeoutError'))
   let timer = setTimeout(expire, def.timeoutMs)
   let started = false
-  let settled = false
+  startNotices.set(combined, () => {
+    if (started || combined.aborted) return
+    started = true
+    clearTimeout(timer)
+    timer = setTimeout(expire, def.timeoutMs)
+  })
   let rejectAbort!: (reason: unknown) => void
   const aborted = new Promise<never>((_, reject) => { rejectAbort = reject })
   const onAbort = (): void => rejectAbort(combined.reason)
@@ -449,15 +464,9 @@ export function executeTool<Ctx>(
       return failure(TEXTS.failed(def.name, errMessage(err))[language])
     })
     .finally(() => {
-      settled = true
+      startNotices.delete(combined)
       clearTimeout(timer)
       combined.removeEventListener('abort', onAbort)
     })
-  const operationStarted = (): void => {
-    if (started || settled || combined.aborted) return
-    started = true
-    clearTimeout(timer)
-    timer = setTimeout(expire, def.timeoutMs)
-  }
-  return Object.assign(response, { completion, operationStarted })
+  return Object.assign(response, { completion })
 }

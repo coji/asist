@@ -3,11 +3,13 @@ import fs from 'node:fs/promises'
 import fsSync from 'node:fs'
 import path from 'node:path'
 import { errorText } from '@shared/i18n/error-text'
+import { operationStarted } from '@shared/tool-registry'
 
 /**
  * Replaces a file as a whole. The content goes to a temporary file beside the target, is flushed to the
  * disk, and is then renamed over the target, and the rename is the point at which the save counts as
- * done. An abort is accepted until the rename starts, and a rename that has started is awaited.
+ * done. An abort is accepted until the rename starts, and a rename that has started is awaited, so the
+ * rename is where the operation of a tool that handed the write its signal starts (operationStarted).
  */
 
 /** Every file written here is readable by the user alone. On Windows the mode has no effect, and the profile's access rights protect userData. */
@@ -104,6 +106,7 @@ export async function replaceFileAtomic(
     }
     await fill(temporary)
     signal?.throwIfAborted()
+    operationStarted(signal)
     await renameOver(temporary, target)
   } catch (error) {
     await fs.rm(temporary, { force: true }).catch(() => undefined)

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConfirmEvent } from '@shared/confirm'
+import { createToolRegistry, executeTool } from '@shared/tool-registry'
 import { askingFrom, createConfirmGate } from '../src/main/services/confirm'
 import { useConfirmStore } from '../src/renderer/src/state/confirm'
 
@@ -47,7 +48,7 @@ describe('createConfirmGate', () => {
     const input = { title: 't', message: 'm', detail: 'd', confirmLabel: '実行', destructive: false }
     const asked: number[] = []
     const fromTurn = askingFrom(
-      { onAsk: () => asked.push(events.length) > 0, onApprove: () => {} },
+      () => asked.push(events.length) > 0,
       async () => {
         // The mail and calendar services read their state before they ask.
         await new Promise((resolve) => setTimeout(resolve, 0))
@@ -67,22 +68,36 @@ describe('createConfirmGate', () => {
   })
 })
 
-describe('an approval told to the tool that asked', () => {
-  it('tells the tool when the user approves, and not when the user cancels or the request is aborted', async () => {
+describe('an approval starts the operation of the tool that asked', () => {
+  it('has a tool cut off after the user approved reported as started, and one cut off while the sheet was open as interrupted', async () => {
     const { gate } = setup()
     const input = { title: 't', message: 'm', detail: 'd', confirmLabel: '実行', destructive: false }
-    const approvals: string[] = []
-    const ask = (name: string, signal = new AbortController().signal): Promise<boolean> =>
-      askingFrom({ onAsk: () => false, onApprove: () => approvals.push(name) }, () => gate.request(input, signal))
-    const approved = ask('approved')
-    const cancelled = ask('cancelled')
-    const controller = new AbortController()
-    const aborted = ask('aborted', controller.signal)
+    // The operation after the approval goes on past the wait, as a mail operation on a slow server does.
+    let finishArchive!: () => void
+    const archiving = new Promise<string>((resolve) => { finishArchive = () => resolve('archived') })
+    const registry = createToolRegistry([{
+      name: 'archive',
+      description: { ja: 'archive', en: 'archive' },
+      inputSchema: { type: 'object', properties: {} },
+      parallel: false,
+      timeoutMs: 300_000,
+      maxResultChars: 500,
+      run: async (_input, _ctx, signal) => ((await gate.request(input, signal)) ? archiving : 'cancelled')
+    }])
+    const approvedCall = new AbortController()
+    const waitingCall = new AbortController()
+    const approved = executeTool(registry, 'archive', {}, undefined, approvedCall.signal, 'ja')
+    const waiting = executeTool(registry, 'archive', {}, undefined, waitingCall.signal, 'ja')
+    await vi.waitFor(() => expect(gate.pending()).toHaveLength(2))
     gate.resolve('c1', true)
-    gate.resolve('c2', false)
-    controller.abort()
-    await expect(Promise.all([approved, cancelled, aborted])).resolves.toEqual([true, false, false])
-    expect(approvals).toEqual(['approved'])
+    approvedCall.abort()
+    waitingCall.abort()
+    expect(await approved).toMatchObject({ isError: true, unfinished: true })
+    const interrupted = await waiting
+    expect(interrupted.isError).toBe(true)
+    expect(interrupted.unfinished).toBeUndefined()
+    finishArchive()
+    await approved.completion
   })
 })
 

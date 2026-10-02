@@ -56,7 +56,7 @@ const CAFE: InjectableMemory = { id: 'm-cafe', kind: 'section', page: '行きつ
 const CAFE_NOTE = buildMemoryInjection([CAFE], { locale: 'ja-JP' })!.text
 
 /** A tool call whose answer and work have both ended. */
-const finished = (content: string): ToolExecutionTask => Object.assign(Promise.resolve(result(content)), { completion: Promise.resolve(), operationStarted: () => {} })
+const finished = (content: string): ToolExecutionTask => Object.assign(Promise.resolve(result(content)), { completion: Promise.resolve() })
 
 async function setup(execute?: ExecuteTool): Promise<{
   engine: import('../src/main/services/live/gemini-live').GeminiLiveEngine
@@ -107,7 +107,7 @@ function held(): { task: ToolExecutionTask; answer: (content: string) => void; f
   let finish!: () => void
   const response = new Promise<ToolExecution>((resolve) => (answer = (content) => resolve(result(content))))
   const completion = new Promise<void>((resolve) => (finish = resolve))
-  return { task: Object.assign(response, { completion, operationStarted: () => {} }), answer, finish }
+  return { task: Object.assign(response, { completion }), answer, finish }
 }
 
 /** Seconds of the model's voice as Gemini sends it, base64 PCM16 at 24 kHz. */
@@ -434,12 +434,11 @@ describe('GeminiLiveEngine', () => {
     await engine.stop()
   })
 
-  it('records a call Gemini cancels after the user approved it, and tells Gemini that its operation started', async () => {
-    const unfinished = { ...result('change_mail は承認されて実行を始めたが、結果を待つのを打ち切った。'), isError: true, unfinished: true }
+  it('records a call Gemini cancels after its operation started, and tells Gemini that it started', async () => {
+    const unfinished = { ...result('change_mail は実行を始めたが、結果を待つのを打ち切った。'), isError: true, unfinished: true }
     const { engine, sessions, recordTool } = await setup((_name, _input, ctx) =>
       Object.assign(new Promise<ToolExecution>((resolve) => ctx.signal.addEventListener('abort', () => resolve(unfinished))), {
-        completion: new Promise<void>(() => {}),
-        operationStarted: () => {}
+        completion: new Promise<void>(() => {})
       }))
     const session = await open(engine, sessions)
     session.message({ toolCall: { functionCalls: [{ id: 'a', name: 'change_mail', args: { operation: 'archive' } }] } })

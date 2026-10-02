@@ -3,11 +3,13 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { LOCAL_TIMEOUT_MS } from '@shared/tool-registry'
 import { ToolRoundExecutor } from '@shared/tool-round'
 import { executeClientTool, toolRegistry } from '../src/main/services/brain/tools'
 import { createNoteService } from '../src/main/services/notes'
+import { createTaskService } from '../src/main/services/tasks'
 
-const mocks = vi.hoisted(() => ({ service: undefined as unknown }))
+const mocks = vi.hoisted(() => ({ service: undefined as unknown, tasks: undefined as unknown }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ conversationLocale: 'ja-JP' }) }))
 vi.mock('../src/main/services/memory', () => ({}))
@@ -16,7 +18,7 @@ vi.mock('../src/main/services/project-index', () => ({}))
 vi.mock('../src/main/services/panel-fetchers', () => ({}))
 vi.mock('../src/main/services/timers', () => ({}))
 vi.mock('../src/main/services/user-notes', () => ({ getNoteService: () => mocks.service }))
-vi.mock('../src/main/services/user-tasks', () => ({ getTaskService: () => ({}) }))
+vi.mock('../src/main/services/user-tasks', () => ({ getTaskService: () => mocks.tasks }))
 
 let directory: string
 beforeEach(() => { directory = fs.mkdtempSync(path.join(tmpdir(), 'asist-tool-write-')) })
@@ -39,12 +41,28 @@ async function setup() {
   mocks.service = service
   const saved = (): string[] => (fs.existsSync(notesDirectory) ? fs.readdirSync(notesDirectory) : [])
   const bodies = (): string[] => saved().map((name) => fs.readFileSync(path.join(notesDirectory, name), 'utf8'))
+  const tasks = createTaskService({ filePath: path.join(directory, 'tasks.json') })
+  mocks.tasks = tasks
   const round = new ToolRoundExecutor({
     signal: new AbortController().signal,
+    locale: 'ja-JP',
     isParallel: (name) => toolRegistry('ja-JP').find(name)!.parallel,
     execute: (call, signal) => executeClientTool(call.name, call.input, { turnId: 1, signal, emit: () => {} }, 'ja-JP')
   })
-  return { saved, bodies, notify, service, round }
+  return { saved, bodies, notify, service, tasks, round }
+}
+
+/** How the wait for a tool is cut off: by its time limit, or by the user cutting in, which closes the round. */
+type Cut = 'its time limit' | 'the user cutting in'
+
+/** Cuts off the wait for the call, lets the held step go on, and returns what the model is told once the round has closed. */
+async function cutOff(round: ToolRoundExecutor, result: ReturnType<ToolRoundExecutor['submit']>, cut: Cut, gate: { resolve: () => void }) {
+  if (cut === 'its time limit') await vi.advanceTimersByTimeAsync(LOCAL_TIMEOUT_MS + 1)
+  const closing = round.close()
+  const { execution } = await result
+  gate.resolve()
+  await closing
+  return execution
 }
 
 describe('tool completion and committing a local save', () => {
@@ -94,7 +112,10 @@ describe('tool completion and committing a local save', () => {
     const result = round.submit({ id: 'note', name: 'add_note', input: { markdown: '# 保存を中断するメモ' } })
     await entered.promise
     await vi.advanceTimersByTimeAsync(2_001)
-    expect((await result).execution.isError).toBe(true)
+    // Nothing was written, so the model may simply call it again.
+    const { execution } = await result
+    expect(execution.isError).toBe(true)
+    expect(execution.unfinished).toBeUndefined()
     const closing = round.close()
     gate.resolve()
     await closing
@@ -125,5 +146,44 @@ describe('tool completion and committing a local save', () => {
     await first
     await rejected
     expect(bodies()).toEqual(['# 先行する保存\n'])
+  })
+})
+
+describe('a write whose wait is cut off once it has begun', () => {
+  it.each<Cut>(['its time limit', 'the user cutting in'])('tells the model that add_note cut off by %s after the note reached the disk may have saved it, so that it does not save a second one', async (cut) => {
+    const { saved, round } = await setup()
+    const gate = deferred()
+    const entered = deferred()
+    const stat = fsp.stat.bind(fsp)
+    // The note is in place, and its save goes on to read the whole folder back, which is slow when it holds many notes.
+    vi.spyOn(fsp, 'stat').mockImplementationOnce(async (file) => {
+      entered.resolve()
+      await gate.promise
+      return stat(file)
+    })
+    vi.useFakeTimers()
+    const result = round.submit({ id: 'note', name: 'add_note', input: { markdown: '# 一度だけ残すメモ' } })
+    await entered.promise
+    const execution = await cutOff(round, result, cut, gate)
+    expect(execution).toMatchObject({ isError: true, unfinished: true })
+    expect(saved()).toHaveLength(1)
+  })
+
+  it.each<Cut>(['its time limit', 'the user cutting in'])('tells the model the same of add_task cut off by %s while its file was being renamed into place', async (cut) => {
+    const { tasks, round } = await setup()
+    const gate = deferred()
+    const entered = deferred()
+    const rename = fsp.rename.bind(fsp)
+    vi.spyOn(fsp, 'rename').mockImplementationOnce(async (from, to) => {
+      entered.resolve()
+      await gate.promise
+      await rename(from, to)
+    })
+    vi.useFakeTimers()
+    const result = round.submit({ id: 'task', name: 'add_task', input: { title: '請求書を送る' } })
+    await entered.promise
+    const execution = await cutOff(round, result, cut, gate)
+    expect(execution).toMatchObject({ isError: true, unfinished: true })
+    expect((await tasks.list()).map((task) => task.title)).toEqual(['請求書を送る'])
   })
 })

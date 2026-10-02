@@ -4,32 +4,29 @@ import { BrowserWindow } from 'electron'
 import mitt from 'mitt'
 import type { ConfirmEvent, ConfirmRequest } from '@shared/confirm'
 import { errorText } from '@shared/i18n/error-text'
+import { operationStarted } from '@shared/tool-registry'
 
 /**
  * The approval gate. A mail or calendar operation that leaves the machine or is hard to undo, and an
  * agent job the conversation model starts, carries on, merges or discards, opens the renderer's
  * confirmation screen here and waits for the user's answer before it runs. Aborting the caller's signal
- * closes the screen and returns false. The confirmation is a single sheet inside the app, ConfirmSheet,
- * and the gate is the one place that knows which requests are still waiting.
+ * closes the screen and returns false, and an approval starts the operation of the tool the signal was
+ * handed to (operationStarted). The confirmation is a single sheet inside the app, ConfirmSheet, and the
+ * gate is the one place that knows which requests are still waiting.
  */
 
 export type ConfirmInput = Omit<ConfirmRequest, 'id' | 'holdsConversation'>
 
 /**
- * The tool a confirmation is asked from, carried along its asynchronous calls. The mail and calendar
- * services ask with nothing but a signal, so the tool cannot be handed down as an argument; a tool runs
- * inside askingFrom. `onAsk` asks the conversation turn behind the tool to wait for the answer and says
- * whether it does, because whatever a tool starts, such as a job's process, carries the same context on
- * after the turn has moved past that tool. `onApprove` hears that the user approved, as the operation starts.
+ * Asks the conversation turn behind the tool a confirmation comes from to wait for the answer, and says
+ * whether it does; the turn decides, because whatever a tool starts, such as a job's process, carries the
+ * same context on after the turn has moved past that tool. It is carried along the tool's asynchronous
+ * calls, since the mail and calendar services ask with nothing but a signal and cannot be handed it as an
+ * argument; a tool runs inside askingFrom.
  */
-export interface ConfirmAsker {
-  onAsk: () => boolean
-  onApprove: () => void
-}
+const asking = new AsyncLocalStorage<() => boolean>()
 
-const asking = new AsyncLocalStorage<ConfirmAsker>()
-
-export const askingFrom = <T>(asker: ConfirmAsker, run: () => T): T => asking.run(asker, run)
+export const askingFrom = <T>(onAsk: () => boolean, run: () => T): T => asking.run(onAsk, run)
 
 export interface ConfirmGate {
   request(input: ConfirmInput, signal: AbortSignal): Promise<boolean>
@@ -46,14 +43,13 @@ export function createConfirmGate(options: { emit: (event: ConfirmEvent) => void
       if (signal.aborted) return Promise.resolve(false)
       const id = options.createId?.() ?? randomUUID()
       options.beforeOpen?.()
-      const asker = asking.getStore()
-      const request: ConfirmRequest = { id, ...input, holdsConversation: asker?.onAsk() ?? false }
+      const request: ConfirmRequest = { id, ...input, holdsConversation: asking.getStore()?.() ?? false }
       return new Promise<boolean>((resolve) => {
         const finish = (approved: boolean): void => {
           pending.delete(id)
           signal.removeEventListener('abort', onAbort)
           options.emit({ type: 'close', id })
-          if (approved) asker?.onApprove()
+          if (approved) operationStarted(signal)
           resolve(approved)
         }
         const onAbort = (): void => finish(false)

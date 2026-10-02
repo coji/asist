@@ -19,7 +19,7 @@ const call = (id: string, name: string): ToolUseCall => ({ id, name, input: {} }
 const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
 const task = (result: Promise<ToolExecution>): ToolExecutionTask =>
-  Object.assign(result, { completion: result.then(() => undefined, () => undefined), operationStarted: () => {} })
+  Object.assign(result, { completion: result.then(() => undefined, () => undefined) })
 
 /** A fake execution whose per-name duration decides the order in which the calls finish. */
 function harness(durations: Record<string, number>, signal = new AbortController().signal) {

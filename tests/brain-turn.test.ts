@@ -555,6 +555,47 @@ describe('brain turn', () => {
     expect(timers.create).toHaveBeenCalledOnce()
   })
 
+  it('keeps add_note whose save had begun when the user cut in as a call whose result is unknown, in the history the next turn sends', async () => {
+    const fsp = (await import('node:fs/promises')).default
+    const { createToolRegistry, executeTool, operationStarted } = await import('@shared/tool-registry')
+    // What the registry says of any call whose operation started before the wait for it was cut off.
+    const call = new AbortController()
+    const startedThenCut = await executeTool(createToolRegistry([{
+      name: 'add_note', description: { ja: '', en: '' }, inputSchema: { type: 'object' }, parallel: false, timeoutMs: 1000, maxResultChars: 1000,
+      run: (_input, _ctx, signal) => { operationStarted(signal); call.abort(); return 'saved' }
+    }]), 'add_note', {}, undefined, call.signal, 'ja')
+    const rename = fsp.rename.bind(fsp)
+    let renaming!: () => void
+    const entered = new Promise<void>((resolve) => { renaming = resolve })
+    let release!: () => void
+    const held = new Promise<void>((resolve) => { release = resolve })
+    const spy = vi.spyOn(fsp, 'rename').mockImplementationOnce(async (from, to) => {
+      renaming()
+      await held
+      await rename(from, to)
+    })
+    const { brain } = await loadBrain()
+    mocks.rounds.push(async (round) => {
+      round.text('メモしますね。')
+      round.toolUse('t1', 'add_note', { markdown: '# 会議の議題' })
+      return round.untilAborted()
+    })
+    mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+    try {
+      const first = brain.beginTurn({ text: '会議の議題をメモして' }, {}, 'user', false)!
+      await entered
+      brain.abortTurn(first.turnId)
+      release()
+      await first.completion
+      await runToDone(brain, '保存できた?')
+      const results = mocks.requests[1].messages.flatMap((message) => message.parts).filter((part) => part.type === 'tool_result')
+      expect(results).toEqual([{ type: 'tool_result', callId: 't1', name: 'add_note', content: startedThenCut.content, isError: true }])
+      expect(fs.readdirSync(path.join(mocks.userData, 'notes')).filter((name) => name.endsWith('.md'))).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('keeps a tool call that arrives after the user cut in, answered as interrupted without running it', async () => {
     const { brain } = await loadBrain()
     const timers = await import('../src/main/services/timers')

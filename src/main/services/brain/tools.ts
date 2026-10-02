@@ -303,8 +303,7 @@ export function toolGuide(locale: ConversationLocale, { webSearch: withSearch }:
 /**
  * Runs a client tool from the registry of the conversation language the caller read, which for a turn is
  * the language it read when it started. A failure or a timeout comes back as a result marked isError
- * rather than as an exception. A confirmation the tool opens calls `onAsk` (see askingFrom), and its
- * approval tells the execution that the operation has started.
+ * rather than as an exception. A confirmation the tool opens calls `onAsk` (see askingFrom).
  */
 export function executeClientTool(
   name: string,
@@ -313,12 +312,7 @@ export function executeClientTool(
   locale: ConversationLocale,
   onAsk: () => boolean = () => false
 ): ToolExecutionTask {
-  // The approval comes from the user long after this returns, so the task is there by then.
-  let task: ToolExecutionTask | undefined
-  task = askingFrom({ onAsk, onApprove: () => task?.operationStarted() }, () =>
-    executeTool(toolRegistry(locale), name, input, ctx, ctx.signal, promptLanguage(locale))
-  )
-  return task
+  return askingFrom(onAsk, () => executeTool(toolRegistry(locale), name, input, ctx, ctx.signal, promptLanguage(locale)))
 }
 
 type SearchResult = { title: string; url: string; site?: string; cited?: boolean; snippet?: string }

@@ -24,10 +24,10 @@ export interface GeminiCallsDeps extends Pick<GeminiLiveDeps, 'executeTool' | 'i
   memoriesSent: (ids: readonly string[]) => void
 }
 
-/** Tells Gemini what came of a call it cancelled after the user had approved it. */
-const CANCELLED_AFTER_APPROVAL: PromptText = {
-  ja: `{notice} 取り消した呼び出しは、ユーザーが承認したあとだったので実行が始まっている: {result}`,
-  en: `{notice} The call you cancelled had already been approved by the user, so it has started: {result}`
+/** Tells Gemini what came of a call it cancelled after its operation had started. */
+const CANCELLED_AFTER_START: PromptText = {
+  ja: `{notice} 取り消した呼び出しは、すでに実行が始まっていた: {result}`,
+  en: `{notice} The call you cancelled had already started: {result}`
 }
 
 /** The result of a call whose tool failed instead of answering. It still goes back to the model, because Gemini waits for one. */
@@ -69,7 +69,7 @@ export class GeminiCalls {
         } catch (err) {
           // executeClientTool reads the conversation language and the tool registry before it returns its
           // task, and either can throw, for instance on settings that cannot be read.
-          return Object.assign(Promise.resolve(failedExecution(err)), { completion: Promise.resolve(), operationStarted: () => {} })
+          return Object.assign(Promise.resolve(failedExecution(err)), { completion: Promise.resolve() })
         }
       })
       .then((started) => (started ? this.answer(call, turnId, controller, started.work) : undefined))
@@ -107,12 +107,12 @@ export class GeminiCalls {
     const id = call.id ?? ''
     const name = call.name ?? ''
     if (controller.signal.aborted) {
-      // Gemini dropped the call, but an operation the user approved goes on, so what is known of it is
+      // Gemini dropped the call, but an operation that has started goes on, so what is known of it is
       // recorded and told to Gemini as context: it has no call left to answer.
       if (execution.unfinished) {
         this.deps.recordTool(turnId, name, call.args ?? {}, execution)
         const locale = conversationLocale()
-        const text = fillPrompt(promptText(locale, CANCELLED_AFTER_APPROVAL), { notice: marker(locale, 'systemNotice'), result: execution.content })
+        const text = fillPrompt(promptText(locale, CANCELLED_AFTER_START), { notice: marker(locale, 'systemNotice'), result: execution.content })
         this.deps.session()?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false })
       }
       return
