@@ -74,7 +74,11 @@ export class SpeechPlayer {
   private fallbackTimer: ReturnType<typeof setTimeout> | null = null
   private fallbackFinish: (() => void) | null = null
   private fallbackUtterance: SpeechSynthesisUtterance | null = null
-  /** The segment playing and what the karaoke subtitle computes its progress from. A streamed segment's length settles while it plays. */
+  /**
+   * The segment playing and what the karaoke subtitle computes its progress from. A streamed segment's
+   * length settles while it plays. A segment that has ended stays here until the next one sounds, so
+   * that its subtitle holds through the pause and the decode before that one.
+   */
   private current: { segment: SpeechSegment; startedAt: number; durationMs: number; stream?: SegmentStream } | null = null
   /** The piece of an answer that played last and when it ended, which decides the pause before the next piece of the same answer. */
   private lastAnswer: { turnId: number; text: string; endedAt: number } | null = null
@@ -213,15 +217,23 @@ registerProcessor('speech-tap', TapProcessor)
     if (this.audioEl.paused) await this.audioEl.play()
   }
 
+  /**
+   * The segment that sounds now or is about to. One that is starting comes first, because the segment
+   * before it stays current after it has ended.
+   */
+  private get audibleSegment(): SpeechSegment | null {
+    return this.starting ?? this.current?.segment ?? null
+  }
+
   /** Whether what is playing, or about to start, is a single clip such as an aizuchi or a bridge. */
   get isPlayingClip(): boolean {
-    const segment = this.current?.segment ?? this.starting
+    const segment = this.audibleSegment
     return this.playing && segment !== null && segment.index === -1
   }
 
   /** The turn whose reply is sounding, or about to, or -1 while only a clip or nothing plays. */
   get readingTurn(): number {
-    const segment = this.current?.segment ?? this.starting
+    const segment = this.audibleSegment
     return this.playing && segment !== null && segment.index >= 0 ? segment.turnId : -1
   }
 
@@ -311,8 +323,7 @@ registerProcessor('speech-tap', TapProcessor)
   /** Drops the preview playing and any preview waiting, leaving aizuchi and body segments alone. */
   private cancelPreview(): void {
     const rest = this.queue.filter((s) => s.clip !== 'preview')
-    const current = this.current?.segment ?? this.starting
-    if (current?.clip === 'preview') {
+    if (this.audibleSegment?.clip === 'preview') {
       this.stopPlayback()
       this.queue = rest
       if (rest.length > 0) void this.playNext()

@@ -179,6 +179,42 @@ describe('SpeechPlayer.discardBody drops only the body of the previous turn when
     player.interrupt()
   })
 
+  it('stops the previous turn\'s sentence that is being decoded once the aizuchi before it has ended', async () => {
+    const { player, context } = await createHarness()
+    const starts: string[] = []
+    player.events.on('segmentstart', (value) => starts.push(value.segment.text))
+    player.beginTurn(1)
+    player.playClip('eA==', 'はい。', { role: 'aizuchi' })
+    context.decodeResolvers[0]({ duration: 0.5 } as AudioBuffer)
+    await flushMicrotasks()
+    player.enqueue(segment(1, 0, 'old body', 'eA=='))
+    context.sources[0].onended?.()
+    await flushMicrotasks()
+
+    player.discardBody()
+    context.decodeResolvers[1]({ duration: 2 } as AudioBuffer)
+    await flushMicrotasks()
+
+    expect(starts).toEqual(['はい。'])
+    expect(context.sources).toHaveLength(1)
+    expect(player.isPlaying).toBe(false)
+  })
+
+  it('counts the previous turn as being read while its first sentence is decoded after the aizuchi ended', async () => {
+    const { player, context } = await createHarness()
+    player.beginTurn(1)
+    player.playClip('eA==', 'はい。', { role: 'aizuchi' })
+    context.decodeResolvers[0]({ duration: 0.5 } as AudioBuffer)
+    await flushMicrotasks()
+    player.enqueue(segment(1, 0, 'old body', 'eA=='))
+    context.sources[0].onended?.()
+    await flushMicrotasks()
+
+    expect(player.isPlayingClip).toBe(false)
+    expect(player.readingTurn).toBe(1)
+    player.interrupt()
+  })
+
   it('does not stop an aizuchi that is still waiting to be decoded', async () => {
     const { player, context } = await createHarness()
     player.beginTurn(1)
@@ -528,6 +564,22 @@ describe('the pause between the pieces of an answer', () => {
     utterances[1].onend?.()
     await vi.advanceTimersByTimeAsync(0)
     expect(spoken(synthesis)).toEqual(['調べますね。', 'ちょっと待ってくださいね。', '見つかりました。'])
+    player.interrupt()
+  })
+
+  it('keeps the subtitle of the sentence that ended through the pause, until the next one sounds', async () => {
+    vi.useFakeTimers()
+    const { player, utterances } = await createHarness()
+    player.beginTurn(1)
+    player.enqueue(segment(1, 0, '一文目。'))
+    player.enqueue(segment(1, 1, '二文目。'))
+    utterances[0].onstart?.()
+    utterances[0].onend?.()
+    await vi.advanceTimersByTimeAsync(pauseAfter('一文目。') / 2)
+    expect(player.karaoke()?.text).toBe('一文目。')
+    await vi.advanceTimersByTimeAsync(pauseAfter('一文目。'))
+    utterances[1].onstart?.()
+    expect(player.karaoke()?.text).toBe('二文目。')
     player.interrupt()
   })
 

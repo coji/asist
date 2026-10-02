@@ -26,6 +26,8 @@ class FakeAudioContext {
   readonly sources: FakeSource[] = []
   readonly resume = vi.fn(async () => undefined)
   readonly audioWorklet = { addModule: vi.fn(async () => undefined) }
+  /** A clip's synthesized audio, which decodes at once to half a second. */
+  readonly decodeAudioData = vi.fn(async () => ({ duration: 0.5 }) as AudioBuffer)
   constructor() {
     FakeAudioContext.instances.push(this)
   }
@@ -241,6 +243,24 @@ describe('SpeechPlayer with a streamed segment', () => {
     expect(idle).toHaveBeenCalledOnce()
     player.pushSegmentAudio(1, 0, piece(0.5), true)
     expect(context.sources).toHaveLength(1)
+    expect(player.isPlaying).toBe(false)
+  })
+
+  it('drops a sentence of the previous turn that is still gathering its start once the bridge before it has ended', async () => {
+    const { player, context, started } = await harness()
+    player.playClip('eA==', '会議の件ですね。', { role: 'bridge' })
+    await vi.advanceTimersByTimeAsync(0)
+    player.enqueue(streamed(1, 0, '古い返事です。'))
+    player.pushSegmentAudio(1, 0, piece(0.1), false)
+    playOut(context)
+    await vi.advanceTimersByTimeAsync(0)
+
+    // New input arrives while the sentence waits for enough audio to start.
+    player.discardBody()
+    player.pushSegmentAudio(1, 0, piece(1), true)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(started).toEqual(['会議の件ですね。'])
     expect(player.isPlaying).toBe(false)
   })
 

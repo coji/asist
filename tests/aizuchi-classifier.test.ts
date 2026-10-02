@@ -90,7 +90,7 @@ describe('AizuchiClassifierFeed', () => {
     )
     const onResult = vi.fn()
     const onFailure = vi.fn()
-    const feed = new AizuchiClassifierFeed({ classify, onResult, onFailure })
+    const feed = new AizuchiClassifierFeed({ classify, running: async () => true, onResult, onFailure })
     return { feed, classify, resolvers, onResult, onFailure }
   }
   const flush = async (): Promise<void> => {
@@ -141,5 +141,30 @@ describe('AizuchiClassifierFeed', () => {
     await flush()
     expect(feed.holding()).toBe(true)
     expect(onResult).toHaveBeenCalledOnce()
+  })
+
+  it('takes the worker as running only from the newest answer of main, and as not running when asking fails', async () => {
+    const answers: Array<{ resolve: (running: boolean) => void; reject: (error: Error) => void }> = []
+    const onFailure = vi.fn()
+    const feed = new AizuchiClassifierFeed({
+      classify: vi.fn(),
+      running: () => new Promise<boolean>((resolve, reject) => answers.push({ resolve, reject })),
+      onResult: vi.fn(),
+      onFailure
+    })
+    expect(feed.running).toBe(false)
+    const older = feed.check()
+    const newer = feed.check()
+    answers[1].resolve(true)
+    await newer
+    answers[0].resolve(false)
+    await older
+    expect(feed.running).toBe(true)
+
+    const failed = feed.check()
+    answers[2].reject(new Error('no answer'))
+    await failed
+    expect(feed.running).toBe(false)
+    expect(onFailure).toHaveBeenCalledOnce()
   })
 })

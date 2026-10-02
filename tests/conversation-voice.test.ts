@@ -9,17 +9,32 @@ import mitt from 'mitt'
 const mocks = vi.hoisted(() => {
   const turn = {
     phase: 'idle' as string,
+    /** Every phase set, in order, to tell a phase that only flickered past. */
+    phases: [] as string[],
+    partial: '',
     activeTurnId: -1,
-    timings: {},
+    timings: {} as Record<string, unknown>,
+    timingsTurnId: -1,
     setPhase: (phase: string) => {
       turn.phase = phase
+      turn.phases.push(phase)
     },
     setActiveTurn: (id: number) => {
       turn.activeTurnId = id
     },
-    resetTimings: () => {},
-    mergeTimings: () => {},
-    setPartial: () => {},
+    resetTimings: () => {
+      turn.timings = {}
+      turn.timingsTurnId = -1
+    },
+    mergeTimings: (timings: Record<string, unknown>) => {
+      turn.timings = { ...turn.timings, ...timings }
+    },
+    setTimingsTurn: (id: number) => {
+      turn.timingsTurnId = id
+    },
+    setPartial: (partial: string) => {
+      turn.partial = partial
+    },
     setRouterNote: () => {},
     setMic: () => {}
   }
@@ -196,6 +211,7 @@ function api(overrides: Record<string, unknown>): unknown {
       if (key.startsWith('on')) return () => () => {}
       if (key === 'getStatus') return async () => ({ asr: true, tts: true })
       if (key === 'confirmPending') return async () => []
+      if (key === 'aizuchiClassifierStatus') return async () => ({ runtimeInstalled: true, modelInstalled: true, running: true })
       return async () => undefined
     }
   })
@@ -241,8 +257,11 @@ beforeEach(() => {
   mocks.playing = false
   mocks.readingTurn = -1
   mocks.turn.phase = 'idle'
+  mocks.turn.phases = []
+  mocks.turn.partial = ''
   mocks.turn.activeTurnId = -1
   mocks.turn.timings = {}
+  mocks.turn.timingsTurnId = -1
   mocks.confirmOpened = []
   mocks.feed.lines.length = 0
   for (const key of Object.keys(mocks.settings)) delete mocks.settings[key]
@@ -392,6 +411,153 @@ describe('the bridge of a turn that goes wrong', () => {
     await flush()
     expect(playedRoles()).toContain('bridge')
   })
+})
+
+describe('the bridge and what brain is told of it', () => {
+  const playedRoles = (): string[] =>
+    player().playClip.mock.calls.map((call) => ((call as unknown[])[2] as { role: string }).role)
+  const startOptions = (turnStart: Mock): { bridge?: string; bridgePending?: boolean } =>
+    (turnStart.mock.calls[0] as unknown[])[1] as { bridge?: string; bridgePending?: boolean }
+
+  /** Speaks one utterance whose look-ahead answers only when `planned` is called, after the final transcript. */
+  async function speakAheadOfTheLookahead(
+    words: { partial: string; final: string },
+    overrides: Record<string, unknown> = {}
+  ): Promise<{ turnStart: Mock; bridgeSynthesize: Mock; planned: (plan: { bridge: string }) => void }> {
+    let planned!: (plan: { bridge: string }) => void
+    const turnStart = vi.fn(async () => 42)
+    const bridgeSynthesize = vi.fn(async (text: string) => ({ text, audio: 'eA==' }))
+    await start({
+      bridgePlan: vi.fn(() => new Promise((resolve) => (planned = resolve))),
+      bridgeSynthesize,
+      turnStart,
+      ...overrides
+    })
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', words.partial)
+    await flush()
+    utterance(speechEnd(performance.now() - 3000, words.partial), words.final)
+    await flush()
+    return { turnStart, bridgeSynthesize, planned: (plan) => planned(plan) }
+  }
+
+  it('plays in a language with no aizuchi classifier, decided by the look-ahead alone', async () => {
+    mocks.settings.conversationLocale = 'en-US'
+    const bridgeSynthesize = vi.fn(async (text: string) => ({ text, audio: 'eA==' }))
+    const turnStart = vi.fn(async () => 42)
+    await start({ bridgePlan: vi.fn(async () => ({ bridge: "Tomorrow's weather, right." })), bridgeSynthesize, turnStart })
+
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', 'what is the weather tomorrow')
+    await flush()
+    const end = speechEnd(performance.now() - 3000, 'what is the weather tomorrow')
+    await flush()
+    utterance(end, 'What is the weather tomorrow?')
+    await flush()
+
+    expect(bridgeSynthesize).toHaveBeenCalledWith("Tomorrow's weather, right.")
+    expect(playedRoles()).toContain('bridge')
+    expect(startOptions(turnStart).bridge).toBe("Tomorrow's weather, right.")
+  })
+
+  it('is neither announced nor played in a language with no classifier when the look-ahead has not answered by the final transcript', async () => {
+    mocks.settings.conversationLocale = 'en-US'
+    const { turnStart, bridgeSynthesize, planned } = await speakAheadOfTheLookahead({
+      partial: 'no I meant Tuesday not Thursday',
+      final: 'No, I meant Tuesday, not Thursday.'
+    })
+    expect(startOptions(turnStart).bridgePending).toBeUndefined()
+
+    planned({ bridge: 'Tuesday, then.' })
+    await flush()
+
+    expect(bridgeSynthesize).not.toHaveBeenCalled()
+    expect(playedRoles()).not.toContain('bridge')
+  })
+
+  it('is announced as coming for a Japanese utterance the classifier lets have one, and plays once the look-ahead answers', async () => {
+    const { turnStart, planned } = await speakAheadOfTheLookahead(
+      { partial: '昨日の会議の件なんですけど', final: '昨日の会議の件なんですけど' },
+      { aizuchiClassify: vi.fn(async () => ({ cls: 'understand', prob: 0.9, complete: 0.9 })) }
+    )
+    expect(startOptions(turnStart).bridgePending).toBe(true)
+
+    planned({ bridge: '会議の件ですね。' })
+    await flush()
+
+    expect(playedRoles()).toContain('bridge')
+  })
+
+  it('is decided by the look-ahead alone for a Japanese utterance while the classifier does not run', async () => {
+    const aizuchiClassify = vi.fn(async () => {
+      throw new Error('the classifier is not running')
+    })
+    const bridgeSynthesize = vi.fn(async (text: string) => ({ text, audio: 'eA==' }))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await start({
+      aizuchiClassifierStatus: async () => ({ runtimeInstalled: false, modelInstalled: false, running: false }),
+      aizuchiClassify,
+      bridgePlan: vi.fn(async () => ({ bridge: '明日の天気ですね。' })),
+      bridgeSynthesize,
+      turnStart: vi.fn(async () => 42)
+    })
+
+    voice().events.emit('state', 'capturing')
+    await flush()
+    voice().events.emit('partial', '明日の天気を教えて')
+    await flush()
+    const end = speechEnd(performance.now() - 3000, '明日の天気を教えて')
+    await flush()
+    utterance(end, '明日の天気を教えて')
+    await flush()
+
+    expect(bridgeSynthesize).toHaveBeenCalledWith('明日の天気ですね。')
+    expect(playedRoles()).toContain('bridge')
+    expect(aizuchiClassify).not.toHaveBeenCalled()
+    vi.mocked(console.warn).mockRestore()
+  })
+
+  it('is not played before the reply to a message typed right after the utterance it was made for', async () => {
+    mocks.settings.conversationLocale = 'en-US'
+    let synthesized!: (clip: { text: string; audio: string }) => void
+    const turnStart = vi.fn().mockResolvedValueOnce(42).mockResolvedValueOnce(43)
+    const conversation = await start({
+      bridgePlan: vi.fn(async () => ({ bridge: "Tomorrow's weather, right." })),
+      bridgeSynthesize: vi.fn(() => new Promise((resolve) => (synthesized = resolve))),
+      turnStart
+    })
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', 'what is the weather tomorrow')
+    await flush()
+    const end = speechEnd(performance.now() - 3000, 'what is the weather tomorrow')
+    await flush()
+    utterance(end, 'What is the weather tomorrow?')
+    await flush()
+
+    await conversation.sendTypedMessage('Actually, set a timer for five minutes')
+    synthesized({ text: "Tomorrow's weather, right.", audio: 'eA==' })
+    await flush()
+
+    expect(turnStart).toHaveBeenCalledTimes(2)
+    expect(playedRoles()).not.toContain('bridge')
+  })
+
+  for (const cls of ['flow', 'correct', 'hold', 'none', null] as const) {
+    it(`is neither announced nor played for a Japanese utterance classified as ${cls ?? 'nothing yet'}`, async () => {
+      const aizuchiClassify = vi.fn(() => (cls ? Promise.resolve({ cls, prob: 0.9, complete: 0.9 }) : new Promise(() => {})))
+      const { turnStart, bridgeSynthesize, planned } = await speakAheadOfTheLookahead(
+        { partial: '明日の天気を教えて', final: '明日の天気を教えて' },
+        { aizuchiClassify }
+      )
+      expect(startOptions(turnStart).bridgePending).toBeUndefined()
+
+      planned({ bridge: '明日の天気ですね。' })
+      await flush()
+
+      expect(bridgeSynthesize).not.toHaveBeenCalled()
+      expect(playedRoles()).not.toContain('bridge')
+    })
+  }
 })
 
 describe('echo of what the speaker played', () => {
@@ -574,6 +740,133 @@ describe('the phase shown after a turn', () => {
     player().events.emit('idle', { turnId: 42 })
 
     expect(mocks.turn.phase).toBe('think')
+  })
+})
+
+describe('a capture that yields no turn', () => {
+  it('clears the partial transcript and goes back to the reply being read when the speech was its echo', async () => {
+    const turnStart = vi.fn(async () => 9)
+    await start({ turnStart })
+    // The assistant reads a reply and its voice leaks into the microphone.
+    mocks.playing = true
+    mocks.readingTurn = 7
+    player().events.emit('segmentstart', {
+      segment: { turnId: 7, index: 0, text: '明日の東京は晴れで、最高気温は28度です。', audio: 'eA==', phonemes: null },
+      durationMs: 4000
+    })
+    const startedAt = performance.now()
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', '明日の東京は晴れで')
+    expect(mocks.turn.phase).toBe('listen')
+    const end = speechEnd(startedAt, '明日の東京は晴れで')
+    voice().events.emit('state', 'transcribing')
+    utterance(end, '明日の東京は晴れで最高気温は28度です')
+    voice().events.emit('state', 'listening')
+    await flush()
+
+    expect(turnStart).not.toHaveBeenCalled()
+    expect(mocks.turn.partial).toBe('')
+    expect(mocks.turn.phase).toBe('speak')
+  })
+
+  it('clears the partial transcript and leaves the listening phase when the microphone goes off mid-capture', async () => {
+    await start({})
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', '明日の予定を')
+    expect(mocks.turn.phase).toBe('listen')
+    // disable() reports the capture dropped, then the state.
+    voice().events.emit('speechdropped', { startedAt: 1 })
+    voice().events.emit('state', 'off')
+
+    expect(mocks.turn.partial).toBe('')
+    expect(mocks.turn.phase).toBe('idle')
+  })
+
+  it('goes from listening to thinking with nothing between when the speech starts a turn after the previous one is aborted', async () => {
+    let aborted!: () => void
+    const turnAbort = vi.fn(() => new Promise<void>((resolve) => (aborted = resolve)))
+    const turnStart = vi.fn().mockResolvedValueOnce(42).mockResolvedValueOnce(43)
+    await start({ turnStart, turnAbort })
+    speak('明日の予定を登録して')
+    await flush()
+
+    voice().events.emit('state', 'capturing')
+    voice().events.emit('partial', 'やっぱり明後日')
+    const end = speechEnd(performance.now() - 2000, 'やっぱり明後日')
+    voice().events.emit('state', 'transcribing')
+    mocks.turn.phases = []
+    utterance(end, 'やっぱり明後日にして')
+    voice().events.emit('state', 'listening')
+    aborted()
+    await flush()
+
+    expect(turnStart).toHaveBeenLastCalledWith('やっぱり明後日にして', expect.anything())
+    expect(mocks.turn.phases).not.toContain('idle')
+    expect(mocks.turn.phase).toBe('think')
+  })
+})
+
+describe('the measurements shown in the HUD', () => {
+  const body = { turnId: 42, index: 0, text: '十時です。', audio: 'eA==', phonemes: null }
+  const logged = (metricsLog: Mock): unknown =>
+    metricsLog.mock.calls.map((call) => (call as Array<{ e2eMs?: number }>)[0]).find((payload) => payload.e2eMs !== undefined)?.e2eMs
+
+  it('is the latest turn\'s, whose only sentence started sounding after brain reported it done', async () => {
+    const metricsLog = vi.fn(async (_payload: Record<string, unknown>) => {})
+    const conversation = await start({ turnStart: vi.fn(async () => 42), metricsLog })
+    speak('今何時?')
+    await flush()
+    conversation.handleTurnEvent({ type: 'segment', turnId: 42, segment: body })
+    conversation.handleTurnEvent({ type: 'done', turnId: 42, fullText: body.text })
+    // The opening clip ends and the reply's only sentence starts sounding.
+    player().events.emit('segmentstart', { segment: body, durationMs: 900 })
+
+    expect(logged(metricsLog)).toEqual(expect.any(Number))
+    expect(mocks.turn.timings.e2eMs).toBe(logged(metricsLog))
+  })
+
+  it('leaves out what brain measured of a turn the next utterance has already reset the HUD for', async () => {
+    const conversation = await start({ turnStart: vi.fn(async () => 42) })
+    speak('今何時?')
+    await flush()
+    // The user speaks again while turn 42 is still thinking.
+    speechEnd(performance.now() - 1500)
+    conversation.handleTurnEvent({ type: 'metrics', turnId: 42, timings: { ttftMs: 777 } })
+
+    expect(mocks.turn.timings.ttftMs).toBeUndefined()
+  })
+
+  it('counts the opening clip of the next utterance in the HUD, not in the measurements of the turn still under way', async () => {
+    const metricsLog = vi.fn(async (_payload: Record<string, unknown>) => {})
+    const conversation = await start({ turnStart: vi.fn(async () => 42), metricsLog })
+    speak('今何時?')
+    await flush()
+    speechEnd(performance.now() - 1500)
+    player().events.emit('segmentstart', {
+      segment: { turnId: 42, index: -1, text: 'はい。', audio: 'eA==', phonemes: null, clip: 'aizuchi' },
+      durationMs: 400
+    })
+    conversation.handleTurnEvent({ type: 'done', turnId: 42, fullText: '' })
+
+    expect(mocks.turn.timings.aizuchiMs).toEqual(expect.any(Number))
+    const saved = metricsLog.mock.calls.map((call) => (call as Array<Record<string, unknown>>)[0])
+    expect(saved.length).toBeGreaterThan(0)
+    expect(saved.every((payload) => payload.aizuchiMs === undefined)).toBe(true)
+  })
+
+  it('stays out of the measurements of the next utterance when the older turn\'s sentence starts after it', async () => {
+    const metricsLog = vi.fn(async (_payload: Record<string, unknown>) => {})
+    const conversation = await start({ turnStart: vi.fn(async () => 42), metricsLog })
+    speak('今何時?')
+    await flush()
+    conversation.handleTurnEvent({ type: 'segment', turnId: 42, segment: body })
+    conversation.handleTurnEvent({ type: 'done', turnId: 42, fullText: body.text })
+    // The user speaks again before the reply sounds, and the HUD starts over for that utterance.
+    speechEnd(performance.now() - 1500)
+    player().events.emit('segmentstart', { segment: body, durationMs: 900 })
+
+    expect(logged(metricsLog)).toEqual(expect.any(Number))
+    expect(mocks.turn.timings.e2eMs).toBeUndefined()
   })
 })
 

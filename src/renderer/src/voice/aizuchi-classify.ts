@@ -11,6 +11,9 @@ import { PartialLookahead } from './lookahead'
  * End of speech, as decided by the VAD, does not wait for a request. The worker answers a sentence
  * in about 2 ms, so by then the classification of the last partial transcript or the one before it
  * is available; with none, no aizuchi plays.
+ *
+ * The worker runs only once its model is prepared, starts some time after the app does, and can
+ * stop, so whether it runs is asked of main again at each capture.
  */
 
 /** A partial transcript shorter than this carries nothing to classify on. */
@@ -23,6 +26,8 @@ export interface ClassifyInput {
 
 export interface ClassifierPorts {
   classify(input: ClassifyInput): Promise<AizuchiClassification>
+  /** Whether the worker runs in main. */
+  running(): Promise<boolean>
   /** Called whenever the classification changes; the HUD displays it. */
   onResult(result: AizuchiClassification, input: ClassifyInput): void
   onFailure(error: unknown): void
@@ -30,14 +35,35 @@ export interface ClassifierPorts {
 
 export class AizuchiClassifierFeed {
   private readonly lookahead: PartialLookahead<ClassifyInput, AizuchiClassification>
+  private workerRunning = false
+  /** Counts the checks, so that an answer to an older one that arrives late does not replace a newer one. */
+  private checks = 0
 
-  constructor(ports: ClassifierPorts) {
+  constructor(private readonly ports: ClassifierPorts) {
     this.lookahead = new PartialLookahead({
       request: (input) => ports.classify(input),
       fold: nextClassification,
       onResult: (result, input) => ports.onResult(result, input),
       onFailure: (error) => ports.onFailure(error)
     })
+  }
+
+  /** Asks main whether the worker runs and holds the answer until the next check. A check that fails counts as not running. */
+  async check(): Promise<void> {
+    const check = ++this.checks
+    let running: boolean
+    try {
+      running = await this.ports.running()
+    } catch (error) {
+      running = false
+      this.ports.onFailure(error)
+    }
+    if (check === this.checks) this.workerRunning = running
+  }
+
+  /** Whether the worker ran at the last check, false before the first answer. While it does not, no classification comes. */
+  get running(): boolean {
+    return this.workerRunning
   }
 
   /** Called when capture starts. It discards the previous utterance's classification and any request still in flight. */

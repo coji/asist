@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => {
     activeTurnId: 7,
     timings: {},
     resetTimings: vi.fn(),
+    setTimingsTurn: vi.fn(),
     setPhase: vi.fn(),
     setActiveTurn: vi.fn((id: number) => {
       turn.activeTurnId = id

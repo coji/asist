@@ -10,8 +10,8 @@ const input = {
   startedAt: 10,
   speechEndAt: 1000,
   classification,
-  /** The lookahead plan is already resolved when the speech ends. */
-  plan: Promise.resolve<BridgePlan | null>(plan),
+  /** The lookahead plan is already resolved when the speech ends, and the classification lets the utterance have a bridge. */
+  bridge: { plan: Promise.resolve<BridgePlan | null>(plan), screened: true },
   sinceListeningMs: 9000
 }
 
@@ -74,7 +74,7 @@ describe('TurnOpening', () => {
     const { opening, play, pickAizuchi, synthesizeBridge, resolvers } = setup()
     let settle!: (plan: BridgePlan | null) => void
     const settled = new Promise<BridgePlan | null>((resolve) => (settle = resolve))
-    opening.begin({ ...input, plan: settled })
+    opening.begin({ ...input, bridge: { plan: settled, screened: true } })
     expect(pickAizuchi).toHaveBeenCalledWith(classification)
     expect(play).toHaveBeenCalledWith(clip, 'aizuchi')
     // The final transcript arrives first, so the bridge is handed over as still pending.
@@ -89,23 +89,38 @@ describe('TurnOpening', () => {
 
   it('settles without a bridge when the lookahead produced no plan', async () => {
     const { opening, synthesizeBridge } = setup()
-    opening.begin({ ...input, plan: Promise.resolve(null) })
+    opening.begin({ ...input, bridge: { plan: Promise.resolve(null), screened: true } })
     await flush()
     expect(synthesizeBridge).not.toHaveBeenCalled()
     expect(opening.claim(10)).toEqual({ aizuchi: 'なるほど。', bridge: null, bridgePending: false })
   })
 
-  it('plays neither aizuchi nor bridge without a classification, and asks for no bridge on flow, correct, hold and none', async () => {
+  it('neither tells nor plays a bridge no classification screened whose phrase is unsettled when the final transcript arrives', async () => {
+    const { opening, synthesizeBridge } = setup()
+    let settle!: (plan: BridgePlan | null) => void
+    opening.begin({ ...input, bridge: { plan: new Promise((resolve) => (settle = resolve)), screened: false } })
+    expect(opening.claim(10)).toEqual({ aizuchi: 'なるほど。', bridge: null, bridgePending: false })
+    settle(plan)
+    await flush()
+    expect(synthesizeBridge).not.toHaveBeenCalled()
+  })
+
+  it('hands over and plays a bridge no classification screened once its phrase is settled before the final transcript', async () => {
+    const { opening, play, resolvers } = setup()
+    opening.begin({ ...input, bridge: { plan: Promise.resolve(plan), screened: false } })
+    await flush()
+    expect(opening.claim(10)).toEqual({ aizuchi: 'なるほど。', bridge: '会議の件ですね。', bridgePending: false })
+    resolvers[0]({ text: '会議の件ですね。', audio: 'YQ==' })
+    await flush()
+    expect(play).toHaveBeenLastCalledWith({ text: '会議の件ですね。', audio: 'YQ==' }, 'bridge')
+  })
+
+  it('settles at once without a bridge for an utterance that may have none, so brain is never told one is coming', async () => {
     const { opening, play, synthesizeBridge } = setup(null)
-    opening.begin({ ...input, classification: null })
+    opening.begin({ ...input, classification: null, bridge: null })
+    expect(opening.claim(10)).toEqual({ aizuchi: null, bridge: null, bridgePending: false })
     await flush()
     expect(play).not.toHaveBeenCalled()
-    expect(synthesizeBridge).not.toHaveBeenCalled()
-    expect(opening.claim(10)).toEqual({ aizuchi: null, bridge: null, bridgePending: false })
-    for (const cls of ['flow', 'correct', 'hold', 'none'] as const) {
-      opening.begin({ ...input, startedAt: 20, classification: { cls, prob: 0.95, complete: 0.9 } })
-      await flush()
-    }
     expect(synthesizeBridge).not.toHaveBeenCalled()
   })
 
@@ -134,7 +149,7 @@ describe('TurnOpening', () => {
 
   it('asks for no bridge and hands over the aizuchi alone when the lookahead carries no bridge text', async () => {
     const { opening, synthesizeBridge } = setup()
-    opening.begin({ ...input, plan: Promise.resolve({ bridge: '' }) })
+    opening.begin({ ...input, bridge: { plan: Promise.resolve({ bridge: '' }), screened: true } })
     await flush()
     expect(synthesizeBridge).not.toHaveBeenCalled()
     expect(opening.claim(10)).toEqual({ aizuchi: 'なるほど。', bridge: null, bridgePending: false })

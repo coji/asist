@@ -1,5 +1,6 @@
 import type { HangoverMode, LiveEvent, TurnEvent, TurnTimings } from '@shared/ipc'
 import { isSelfEcho, PlaybackLog, stripClipEcho } from '@shared/self-echo'
+import { bridgeAllowed, type AizuchiClassification } from '@shared/aizuchi-classifier'
 import { conversationFeatures } from '@shared/conversation-locale'
 import { isLiveEngine, liveTextInput, type VoiceEngine } from '@shared/voice-engine'
 import { stopsLiveEngine } from '@shared/live-session-policy'
@@ -11,7 +12,7 @@ import { speechPlayer } from '@/voice/SpeechPlayer'
 import { InterjectPlaybackAcks } from '@/interject-playback'
 import { TurnMetrics, type RequestTimings } from '@/turn-metrics'
 import { loadAizuchiBank, pickAizuchi, pickListeningClip } from '@/voice/aizuchi-bank'
-import { TurnOpening } from '@/voice/opening'
+import { TurnOpening, type OpeningBridge } from '@/voice/opening'
 import { BridgePlanner } from '@/voice/bridge-plan'
 import { AizuchiClassifierFeed } from '@/voice/aizuchi-classify'
 import {
@@ -21,7 +22,8 @@ import {
   useSettingsStore,
   useStatusStore,
   useToastStore,
-  useTurnStore
+  useTurnStore,
+  type Phase
 } from '@/state/stores'
 import { startStoreSync } from '@/state/store-sync'
 import { reportMiniAppAnswer, startMiniAppReports, useViewStore } from '@/state/view'
@@ -35,14 +37,20 @@ let aiLineId: number | null = null
 let pendingRequestId: string | null = null
 let activeRequestId: string | null = null
 const turnMetrics = new TurnMetrics((payload) => window.api.metricsLog(payload))
+interface OpeningPolicy {
+  /** The aizuchi may play, and the classifier that picks it runs on the partial transcripts. */
+  aizuchi: boolean
+  bridge: boolean
+}
 /**
- * What may sound at the opening of a turn. With the TTS engine set to none neither part is played,
- * and the aizuchi are Japanese while the bridge sentence is spoken in every language.
+ * What may sound at the opening of a turn. With the TTS engine set to none neither part is played.
+ * The aizuchi are Japanese and need the classifier, which runs only once its model is prepared, while
+ * the bridge sentence is spoken in every language.
  */
-function openingPolicy(): { aizuchi: boolean; bridge: boolean } {
+function openingPolicy(): OpeningPolicy {
   const settings = useSettingsStore.getState().settings
   if (!settings || !settings.aizuchi || settings.ttsEngine === 'none') return { aizuchi: false, bridge: false }
-  return { aizuchi: conversationFeatures(settings.conversationLocale).aizuchi, bridge: true }
+  return { aizuchi: conversationFeatures(settings.conversationLocale).aizuchi && classifier.running, bridge: true }
 }
 /** The configured voice engine. A live engine takes the microphone and the typed text instead of the voice pipeline and brain. */
 const voiceEngine = (): VoiceEngine => useSettingsStore.getState().settings?.voiceEngine ?? 'cascade'
@@ -80,15 +88,37 @@ const planner = new BridgePlanner({
 /** The aizuchi classifier runs on every partial recognition; the latest result at speech end picks the aizuchi. Without the worker no aizuchi sounds. */
 const classifier = new AizuchiClassifierFeed({
   classify: (input) => window.api.aizuchiClassify(input),
+  running: async () => (await window.api.aizuchiClassifierStatus()).running,
   onResult: (result) => useTurnStore.getState().setRouterNote({ kind: 'aizuchi', cls: result.cls, percent: Math.round(result.prob * 100) }),
   onFailure: (error) => console.warn('aizuchi classify failed:', error)
 })
 
-/** Records the outcome of the bridge, including why it did not sound, in the HUD and the turn metrics. */
-function noteBridgeOutcome(patch: TurnTimings): void {
+/**
+ * The bridge an utterance that ended with this classification may have. Where the classifier runs, it
+ * keeps the bridge out of replies, corrections, greetings and unfinished sentences, and none plays
+ * before it has a classification. Where it does not run, only the look-ahead's own answer can rule a
+ * bridge out, since its prompt returns no line for those.
+ */
+function openingBridge(policy: OpeningPolicy, classification: AizuchiClassification | null, partialText: string): OpeningBridge | null {
+  if (!policy.bridge) return null
+  if (policy.aizuchi && (classification === null || !bridgeAllowed(classification.cls))) return null
+  return { plan: planner.finish({ text: partialText, lastAssistantText: lastAssistantText() }), screened: policy.aizuchi }
+}
+
+/**
+ * Records a measurement of the latest utterance's opening, a clip that sounded or why the bridge did
+ * not, in the HUD, which already shows that utterance, and once the utterance is a turn in its metrics.
+ */
+function noteOpeningTimings(patch: TurnTimings): void {
   const turn = useTurnStore.getState()
   turn.mergeTimings(patch)
-  if (turn.activeTurnId >= 0) turnMetrics.update(turn.activeTurnId, patch)
+  if (turn.timingsTurnId >= 0) turnMetrics.update(turn.timingsTurnId, patch)
+}
+
+/** Shows a measurement of a turn in the HUD when the HUD shows that turn, which leaves out an interjection's and an older turn's. */
+function showTurnTimings(turnId: number, timings: TurnTimings): void {
+  const turn = useTurnStore.getState()
+  if (turnId === turn.timingsTurnId) turn.mergeTimings(timings)
 }
 
 /** The opening of a turn, the aizuchi and the bridge. It sounds at speech end from VAD and is handed to the brain with the final transcript. */
@@ -100,7 +130,7 @@ const opening = new TurnOpening({
   play: (clip, role) => speechPlayer.playClip(clip.audio, clip.text, { role }),
   synthesizeBridge: (text) => window.api.bridgeSynthesize(text),
   bodyQueuedAfter: (time) => speechPlayer.bodyQueuedAfter(time),
-  onBridgeOutcome: noteBridgeOutcome,
+  onBridgeOutcome: noteOpeningTimings,
   withdrawBridge: (queued) => speechPlayer.dropWaiting(queued)
 })
 const interjectPlayback = new InterjectPlaybackAcks((turnId, status) =>
@@ -109,6 +139,12 @@ const interjectPlayback = new InterjectPlaybackAcks((turnId, status) =>
 
 /** What the speaker played and when, which tells what can have leaked back into the microphone during a capture. */
 const playback = new PlaybackLog()
+
+/** The phase once the user is no longer heard: a reply being read, a turn under way or on its way, or nothing. */
+function phaseAfterCapture(): Phase {
+  if (speechPlayer.readingTurn >= 0) return 'speak'
+  return pendingRequestId !== null || useTurnStore.getState().activeTurnId >= 0 ? 'think' : 'idle'
+}
 
 /**
  * The turn that takes the barge-ins and the user's aizuchi counted while it sounds: the turn under
@@ -156,6 +192,7 @@ async function initializeConversation(): Promise<void> {
 
   window.api.onAizuchiBankChanged(() => void loadAizuchiBank())
   void loadAizuchiBank()
+  void classifier.check()
 
   window.api.onStatusChanged((status) => {
     const prev = useStatusStore.getState().status
@@ -209,6 +246,13 @@ async function initializeConversation(): Promise<void> {
       t.setPhase('listen')
       planner.reset()
       classifier.reset()
+      void classifier.check()
+    }
+    // The partial transcript and the listening phase last while a capture is under way or awaits its
+    // transcript, however it ends: as a turn, as echo, as nothing, or with the microphone turned off.
+    if (state === 'listening' || state === 'off') {
+      t.setPartial('')
+      if (t.phase === 'listen') t.setPhase(phaseAfterCapture())
     }
   })
 
@@ -269,15 +313,14 @@ async function initializeConversation(): Promise<void> {
       vadMode: end.vadMode,
       ...(end.listening.length > 0 ? { listening: end.listening } : {})
     })
+    // The aizuchi is chosen from the classification available now and is skipped when there is none,
+    // while the bridge waits for the look-ahead in flight.
+    const classification = policy.aizuchi ? classifier.current() : null
     opening.begin({
       startedAt: end.startedAt,
       speechEndAt: end.speechEndAt,
-      // The aizuchi is chosen from the classification available now and is skipped when there is
-      // none, while the bridge waits for the look-ahead in flight.
-      classification: policy.aizuchi ? classifier.current() : null,
-      plan: policy.bridge
-        ? planner.finish({ text: end.partialText, lastAssistantText: lastAssistantText() })
-        : Promise.resolve(null),
+      classification,
+      bridge: openingBridge(policy, classification, end.partialText),
       sinceListeningMs: voiceController.msSinceBackchannel
     })
   })
@@ -343,19 +386,15 @@ async function initializeConversation(): Promise<void> {
     playback.started(segment, performance.now())
     const t = useTurnStore.getState()
     if (segment.clip) {
-      // An aizuchi is measured at the moment it actually sounds. Before the turn starts the value is
-      // only held for the HUD; once the turn is running it is added to the turn's metrics.
+      // An aizuchi is measured at the moment it actually sounds.
       const patch = opening.clipStarted(segment.clip, durationMs, performance.now())
-      if (patch) {
-        t.mergeTimings(patch)
-        if (t.activeTurnId >= 0) turnMetrics.update(t.activeTurnId, patch)
-      }
+      if (patch) noteOpeningTimings(patch)
       return
     }
     if (segment.index >= 0) {
       t.setPhase('speak')
       const e2eMs = turnMetrics.playbackStarted(segment.turnId, segment.index)
-      if (e2eMs !== undefined && segment.turnId === t.activeTurnId) t.mergeTimings({ e2eMs })
+      if (e2eMs !== undefined) showTurnTimings(segment.turnId, { e2eMs })
     }
   })
 
@@ -532,6 +571,7 @@ function activateTurn(
   turn.setActiveTurn(turnId)
   if (!alreadyActive && requestId !== null) {
     turnMetrics.activate(turnId, requestId, turn.timings)
+    turn.setTimingsTurn(turnId)
   }
   activeRequestId = requestId
   pendingRequestId = null
@@ -642,6 +682,8 @@ export async function sendTypedMessage(text: string): Promise<void> {
     }
     return
   }
+  // The bridge of the voice utterance before this message would lead into the reply to the message.
+  opening.withdraw()
   const { requestId, previousTurnId } = beginUserTurnRequest({ typed: true })
   if (previousTurnId >= 0) await window.api.turnAbort(previousTurnId).catch(() => {})
   if (!isCurrentUserTurnRequest(requestId)) return
@@ -731,9 +773,8 @@ export function handleTurnEvent(event: TurnEvent): void {
       break
     }
     case 'metrics': {
-      // Metrics of an interjection must not mix into the HUD values or the statistics of the user
-      // turn before it.
-      if (turnMetrics.update(event.turnId, event.timings)) turn.mergeTimings(event.timings)
+      turnMetrics.update(event.turnId, event.timings)
+      showTurnTimings(event.turnId, event.timings)
       break
     }
     case 'done': {
