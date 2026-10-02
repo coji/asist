@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { journalHeading, marker } from '@shared/conversation-markers'
 import { FIXED, embeddingTextOf } from '@shared/memory-page'
 import { baseSystem, buildLiveSystemInstruction, buildSystemLayers, stampUserMessage } from '../src/main/services/brain/prompt'
@@ -80,12 +80,9 @@ describe('the base prompt for the brain speaking for itself and for Live', () =>
       locale: 'ja-JP',
       persona: 'PERSONA-TEXT',
       memoryBlock: 'MEMORY-BLOCK',
-      historySummary: 'S',
-      jobContext: 'JOB-STATUS',
-      startedAt: new Date(2026, 8, 16, 9, 5)
+      historySummary: 'S'
     })
     expect(text).toContain('# 音声での会話(Live)')
-    expect(text).toContain('[2026/9/16(水) 09:05]')
     expect(text).toContain('呼ぶ前に予告や前置きを言わない')
     expect(text).toContain('ユーザーは日本語で話す')
     // A filler such as "見てみますね" appears neither as an example nor as a counter-example, because the model reuses the wording either way.
@@ -94,8 +91,19 @@ describe('the base prompt for the brain speaking for itself and for Live', () =>
     expect(text).not.toContain('# 話し方の例')
     expect(text).not.toContain('# つなぎ文')
     expect(text.indexOf('MEMORY-BLOCK')).toBeGreaterThan(text.indexOf('PERSONA-TEXT'))
-    // A Live session reads its instruction once when it opens, so the job status as of then goes there.
-    expect(text.indexOf('JOB-STATUS')).toBeGreaterThan(text.indexOf('MEMORY-BLOCK'))
+  })
+
+  it('reads no clock when it builds the Live instruction, since a session resumed hours later keeps the one it first opened with', () => {
+    vi.useFakeTimers()
+    try {
+      const input = { locale: 'ja-JP' as const, persona: 'PERSONA-TEXT', memoryBlock: 'MEMORY-BLOCK', historySummary: 'S' }
+      vi.setSystemTime(new Date(2026, 9, 2, 10, 0))
+      const opened = buildLiveSystemInstruction(input)
+      vi.setSystemTime(new Date(2026, 9, 3, 1, 30))
+      expect(buildLiveSystemInstruction(input)).toBe(opened)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -121,9 +129,7 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
         locale,
         persona: '',
         memoryBlock: null,
-        historySummary: '',
-        jobContext: null,
-        startedAt: new Date(2026, 8, 16, 9, 5)
+        historySummary: ''
       })
       expect(live).toContain(`The user speaks ${language}. Listen and answer in ${language}`)
       expect(live).not.toMatch(JAPANESE)

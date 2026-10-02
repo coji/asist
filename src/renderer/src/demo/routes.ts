@@ -28,6 +28,13 @@ export const CARDS_PATH = '/cards'
 export const SCREENS_PATH = '/screens'
 const PREVIEW = '/preview'
 
+/**
+ * The host the demo serves the viewers' preview page from (src/renderer/preview.html). It is a site apart from the
+ * demo's localhost, as asist-preview:// is apart from the app's page, so that Chrome runs the page's frame in a
+ * process of its own here too. Chrome takes every name under localhost for this machine.
+ */
+export const PREVIEW_PAGE_HOST = 'preview.localhost'
+
 export const cardPath = (id: string): string => `${CARDS_PATH}/${id}`
 export const screenPath = (name: string): string => `${SCREENS_PATH}/${name}`
 /** The sample / opens on. The full card list is heavy, so the shell starts on the conversation screen. */

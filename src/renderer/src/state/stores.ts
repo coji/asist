@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Task } from '@shared/tasks'
-import { applyNoteChange, type NoteChange, type NoteSummary } from '@shared/notes'
+import { applyNoteChanges, type NoteChange, type NoteSummary } from '@shared/notes'
 import type { MailDraft, MailStatus } from '@shared/mail'
 import type { SettingsPatch } from '@shared/settings'
 import type {
@@ -425,10 +425,10 @@ interface NoteState {
   error: string
   load: () => Promise<void>
   /**
-   * One change main has written. Before the list has been read there is nothing to change, and the list
-   * that load reads already holds it.
+   * The changes main sent together. Before the list has been read there is nothing to change, and the list
+   * that load reads already holds them.
    */
-  apply: (change: NoteChange) => void
+  apply: (changes: NoteChange[]) => void
 }
 
 export const useNoteStore = create<NoteState>((set) => ({
@@ -442,7 +442,7 @@ export const useNoteStore = create<NoteState>((set) => ({
       set({ error: displayError(error) })
     }
   },
-  apply: (change) => set((state) => (state.loaded ? { notes: applyNoteChange(state.notes, change) } : {}))
+  apply: (changes) => set((state) => (state.loaded ? { notes: applyNoteChanges(state.notes, changes) } : {}))
 }))
 
 interface MailState {

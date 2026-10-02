@@ -98,7 +98,7 @@ const api: RendererApi = {
   noteCreate: (markdown) => ipcRenderer.invoke(IpcChannel.NoteCreate, markdown),
   noteWrite: (id, markdown) => ipcRenderer.invoke(IpcChannel.NoteWrite, id, markdown),
   noteRemove: (id) => ipcRenderer.invoke(IpcChannel.NoteRemove, id),
-  onNotesChanged: subscribe<NoteChange>(IpcChannel.NotesChanged),
+  onNotesChanged: subscribe<NoteChange[]>(IpcChannel.NotesChanged),
   notify: (title, body) => ipcRenderer.invoke(IpcChannel.Notify, title, body),
   reportMiniAppView: (view) => ipcRenderer.invoke(IpcChannel.MiniAppView, view),
   onHotkeyMic: subscribe<void>(IpcChannel.HotkeyMic),

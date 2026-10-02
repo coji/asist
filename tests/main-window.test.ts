@@ -1,4 +1,6 @@
 import { EventEmitter } from 'node:events'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
@@ -15,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   packaged: true,
   windows: [] as Array<{ webContents: FakeWebContents; loadURL: ReturnType<typeof vi.fn>; loadFile: ReturnType<typeof vi.fn>; destroyed: boolean }>,
   registerIpc: vi.fn(),
+  handlePreviewScheme: vi.fn(),
   micStop: vi.fn(),
   liveStop: vi.fn(() => Promise.resolve())
 }))
@@ -46,6 +49,7 @@ vi.mock('electron', () => {
     BrowserWindow,
     dialog: { showErrorBox: vi.fn() },
     nativeImage: { createFromPath: () => ({ isEmpty: () => false }) },
+    protocol: { registerSchemesAsPrivileged: vi.fn() },
     shell: { openExternal: vi.fn() }
   }
 })
@@ -54,7 +58,8 @@ vi.mock('../src/main/logging', () => ({ logRenderer: vi.fn() }))
 vi.mock('../src/main/ipc', () => ({ registerIpc: mocks.registerIpc }))
 vi.mock('../src/main/os-integration', () => ({ setupOsIntegration: vi.fn() }))
 vi.mock('../src/main/window-chrome', () => ({ windowChrome: () => ({ frame: {}, prepare: vi.fn() }) }))
-vi.mock('../src/main/file-protocol', () => ({ handleFileScheme: vi.fn(), registerFileScheme: vi.fn() }))
+vi.mock('../src/main/file-protocol', () => ({ handleFileScheme: vi.fn(), fileScheme: {} }))
+vi.mock('../src/main/preview-protocol', () => ({ handlePreviewScheme: mocks.handlePreviewScheme, previewScheme: {} }))
 vi.mock('../src/main/services/native-mic', () => ({ stop: mocks.micStop }))
 vi.mock('../src/main/services/live', () => ({ stop: mocks.liveStop }))
 vi.mock('../src/main/services/asr', () => ({ ensureServer: () => Promise.resolve(true) }))
@@ -92,6 +97,7 @@ beforeEach(() => {
   mocks.packaged = true
   mocks.windows.length = 0
   mocks.registerIpc.mockClear()
+  mocks.handlePreviewScheme.mockClear()
   mocks.micStop.mockClear()
   mocks.liveStop.mockClear()
   vi.stubEnv('ELECTRON_RENDERER_URL', undefined)
@@ -115,6 +121,22 @@ describe('the page the main window shows', () => {
     const { window, trusted } = await startApp()
     expect(new URL(trusted).origin).toBe('http://localhost:5173')
     expect(loadedPages(window)).toEqual([trusted])
+  })
+
+  it('serves the preview page from inside the package of a packaged app, embedded by the page the window trusts', async () => {
+    vi.stubEnv('ELECTRON_RENDERER_URL', 'https://attacker.example/')
+    const { trusted } = await startApp()
+    const [source, embedder] = mocks.handlePreviewScheme.mock.calls[0] as [{ folder: string }, string]
+    expect(source).toEqual({ folder: expect.any(String) })
+    expect(fileURLToPath(trusted)).toBe(path.join(source.folder, 'index.html'))
+    expect(embedder).toBe(trusted)
+  })
+
+  it('serves the preview page from the development server a development launch shows', async () => {
+    mocks.packaged = false
+    vi.stubEnv('ELECTRON_RENDERER_URL', 'http://localhost:5173/')
+    const { trusted } = await startApp()
+    expect(mocks.handlePreviewScheme.mock.calls[0]).toEqual([{ server: trusted }, trusted])
   })
 })
 

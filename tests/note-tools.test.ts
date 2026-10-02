@@ -24,7 +24,10 @@ beforeEach(() => {
   service = createNoteService({ directory, trash: async () => {} })
   mocks.service = service
 })
-afterEach(() => fs.rmSync(directory, { recursive: true, force: true }))
+afterEach(() => {
+  service.close()
+  fs.rmSync(directory, { recursive: true, force: true })
+})
 
 async function call(name: string, input: Record<string, unknown>) {
   const events: TurnEvent[] = []

@@ -7,7 +7,7 @@ import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import { marker } from '@shared/conversation-markers'
 import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import type { GeminiConnectParams, GeminiServerMessage, GeminiSession } from '../src/main/services/live/gemini-live'
-import { stampUserMessage } from '../src/main/services/brain/prompt'
+import { jobStatusNote, stampUserMessage } from '../src/main/services/brain/prompt'
 
 /** These tests drive the Gemini Live engine end to end against a fake session. */
 
@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   record: vi.fn(),
   nextTurnId: 200,
   conversationLocale: 'ja-JP' as 'ja-JP' | 'en-US',
+  /** The status of the agent jobs as the engine reads it when a session opens. */
+  jobContext: null as string | null,
   /** What connecting waits for before the session arrives, as the socket opening does. */
   connected: Promise.resolve()
 }))
@@ -26,19 +28,27 @@ vi.mock('../src/main/services/brain/session', () => ({
 }))
 
 class FakeSession implements GeminiSession {
-  readonly realtime: unknown[] = []
-  readonly contents: unknown[] = []
-  readonly toolResponses: unknown[] = []
+  /** Everything sent to the session, in the order it was sent. */
+  readonly sent: Array<{ kind: 'realtime' | 'content' | 'toolResponse'; params: unknown }> = []
   closed = false
   constructor(readonly params: GeminiConnectParams) {}
+  get realtime(): unknown[] {
+    return this.sent.filter((entry) => entry.kind === 'realtime').map((entry) => entry.params)
+  }
+  get contents(): unknown[] {
+    return this.sent.filter((entry) => entry.kind === 'content').map((entry) => entry.params)
+  }
+  get toolResponses(): unknown[] {
+    return this.sent.filter((entry) => entry.kind === 'toolResponse').map((entry) => entry.params)
+  }
   sendRealtimeInput(params: unknown): void {
-    this.realtime.push(params)
+    this.sent.push({ kind: 'realtime', params })
   }
   sendClientContent(params: unknown): void {
-    this.contents.push(params)
+    this.sent.push({ kind: 'content', params })
   }
   sendToolResponse(params: { functionResponses: unknown[] }): void {
-    this.toolResponses.push(params)
+    this.sent.push({ kind: 'toolResponse', params })
   }
   close(): void {
     this.closed = true
@@ -79,12 +89,15 @@ async function setup(execute?: ExecuteTool): Promise<{
     settings: () => ({ liveIdleSeconds: 30, geminiLive: { model: 'gemini-3.8-live', voice: 'Kore' } }) as never,
     apiKey: () => 'key',
     connect: async (params) => {
-      await mocks.connected
+      // The session exists from the call on, so that a test can deliver messages before connecting
+      // resolves, as the SDK does with those that come with setupComplete.
       const session = new FakeSession(params)
       sessions.push(session)
+      await mocks.connected
       return session
     },
     systemInstruction: () => 'SYSTEM',
+    jobContext: () => mocks.jobContext,
     functionDeclarations: () => [{ name: 'show_weather', parametersJsonSchema: { type: 'object' }, behavior: 'NON_BLOCKING' }],
     executeTool: executeTool as never,
     // The show_ tools only read, as in the registry; every other name stands for a tool that writes.
@@ -114,6 +127,17 @@ function held(): { task: ToolExecutionTask; answer: (content: string) => void; f
 /** Seconds of the model's voice as Gemini sends it, base64 PCM16 at 24 kHz. */
 const voice = (seconds: number): string => Buffer.from(new Int16Array(24_000 * seconds).buffer).toString('base64')
 
+/** How a notice sent at `at` begins: the stamp of that time, then the notice marker. */
+const noticeAt = (at: Date): string => stampUserMessage('ja-JP', marker('ja-JP', 'systemNotice'), at)
+
+/** The note a session was given as it opened: the last turn of the first content it was sent, which asks for no reply. */
+function openingNote(session: FakeSession): string {
+  const first = session.contents[0] as { turns: Array<{ role: string; parts: Array<{ text: string }> }>; turnComplete: boolean }
+  expect(first.turnComplete).toBe(false)
+  expect(first.turns.at(-1)!.role).toBe('user')
+  return first.turns.at(-1)!.parts[0].text
+}
+
 const responseIds = (session: FakeSession): string[] =>
   session.toolResponses.map((response) => (response as { functionResponses: Array<{ id: string }> }).functionResponses[0].id)
 
@@ -133,6 +157,7 @@ describe('GeminiLiveEngine', () => {
     mocks.record.mockClear()
     mocks.nextTurnId = 200
     mocks.conversationLocale = 'ja-JP'
+    mocks.jobContext = null
     mocks.connected = Promise.resolve()
   })
   afterEach(() => vi.useRealTimers())
@@ -141,7 +166,10 @@ describe('GeminiLiveEngine', () => {
     const { engine, sessions } = await setup()
     const session = await open(engine, sessions)
     expect(session.params).toMatchObject({ model: 'gemini-3.8-live', voice: 'Kore', systemInstruction: 'SYSTEM', resumptionHandle: null })
-    expect(session.contents[0]).toEqual({ turns: [{ role: 'user', parts: [{ text: '前の話' }] }], turnComplete: false })
+    expect(session.contents[0]).toEqual({
+      turns: [{ role: 'user', parts: [{ text: '前の話' }] }, { role: 'user', parts: [{ text: expect.stringContaining(noticeAt(new Date())) }] }],
+      turnComplete: false
+    })
     engine.pushAudio(new Float32Array(160))
     expect(session.realtime[0]).toMatchObject({ audio: { mimeType: 'audio/pcm;rate=16000' } })
     await engine.stop()
@@ -331,7 +359,11 @@ describe('GeminiLiveEngine', () => {
     expect(resumed.params.resumptionHandle).toBe('h1')
     resumed.message({ setupComplete: {} })
     await notified
-    expect(resumed.contents).toEqual([{ turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, reportedAt) }] }], turnComplete: true }])
+    // The session is told the time as it opens, before the report.
+    expect(resumed.contents).toEqual([
+      { turns: [{ role: 'user', parts: [{ text: expect.stringContaining(noticeAt(reportedAt)) }] }], turnComplete: false },
+      { turns: [{ role: 'user', parts: [{ text: stampUserMessage('ja-JP', report, reportedAt) }] }], turnComplete: true }
+    ])
     await engine.stop()
   })
 
@@ -371,7 +403,7 @@ describe('GeminiLiveEngine', () => {
     await engine.stop()
   })
 
-  it('passes a resumption handle when it reopens the session and feeds no history then', async () => {
+  it('passes a resumption handle when it reopens the session and feeds no history then, only the time', async () => {
     const { engine, sessions } = await setup()
     const first = await open(engine, sessions)
     first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
@@ -379,7 +411,146 @@ describe('GeminiLiveEngine', () => {
     expect(first.closed).toBe(true)
     const second = await open(engine, sessions)
     expect(second.params.resumptionHandle).toBe('h1')
-    expect(second.contents).toHaveLength(0)
+    expect(second.contents).toEqual([{ turns: [{ role: 'user', parts: [{ text: expect.stringContaining(noticeAt(new Date())) }] }], turnComplete: false }])
+    await engine.stop()
+  })
+
+  it('tells each session the time it opens at, a resumed one included, since a resumed session keeps the instruction it first opened with', async () => {
+    const openedAt = new Date(2026, 9, 2, 10, 0)
+    vi.setSystemTime(openedAt)
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    expect(openingNote(first).startsWith(noticeAt(openedAt))).toBe(true)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const resumedAt = new Date(2026, 9, 2, 11, 30)
+    vi.setSystemTime(resumedAt)
+    const second = await open(engine, sessions)
+    expect(second.params.resumptionHandle).toBe('h1')
+    expect(openingNote(second).startsWith(noticeAt(resumedAt))).toBe(true)
+    await engine.stop()
+  })
+
+  it('tells a session the job status as it opens, and a resumed one only what changed since it last read the status', async () => {
+    mocks.jobContext = 'JOBS: survey running 3 min'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    const shown = jobStatusNote('ja-JP', 'JOBS: survey running 3 min', null)!
+    expect(openingNote(first)).toContain(shown)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    // Nothing changed: the resumed session already read this status.
+    const second = await open(engine, sessions)
+    expect(openingNote(second)).not.toContain(shown)
+    second.message({ sessionResumptionUpdate: { newHandle: 'h2', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    mocks.jobContext = 'JOBS: survey done 1 min ago'
+    const third = await open(engine, sessions)
+    const changed = jobStatusNote('ja-JP', 'JOBS: survey done 1 min ago', shown)!
+    expect(openingNote(third)).toContain(changed)
+    third.message({ sessionResumptionUpdate: { newHandle: 'h3', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    // The jobs are gone, which a session that read them is told once rather than left reading the old status.
+    mocks.jobContext = null
+    const fourth = await open(engine, sessions)
+    expect(openingNote(fourth)).toContain(jobStatusNote('ja-JP', null, changed)!)
+    await engine.stop()
+  })
+
+  it('tells a session that opens blank the whole job status, whatever an earlier session read', async () => {
+    mocks.jobContext = 'JOBS: survey running 3 min'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    // The session goes idle and closes before the provider gave a resumption handle.
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(first.closed).toBe(true)
+    const second = await open(engine, sessions)
+    expect(second.params.resumptionHandle).toBeNull()
+    expect(openingNote(second)).toContain(jobStatusNote('ja-JP', 'JOBS: survey running 3 min', null)!)
+    await engine.stop()
+  })
+
+  it('tells a session that resumed with the status unchanged, and resumes again once the jobs are gone, that they are gone', async () => {
+    mocks.jobContext = 'JOBS: survey running 3 min'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    const shown = jobStatusNote('ja-JP', 'JOBS: survey running 3 min', null)!
+    expect(openingNote(first)).toContain(shown)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const second = await open(engine, sessions)
+    expect(openingNote(second)).not.toContain(shown)
+    second.message({ sessionResumptionUpdate: { newHandle: 'h2', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    mocks.jobContext = null
+    const third = await open(engine, sessions)
+    expect(openingNote(third)).toContain(jobStatusNote('ja-JP', null, shown)!)
+    await engine.stop()
+  })
+
+  it('tells a session resumed from a handle the job status that handle carried, not what a later session that issued no handle read', async () => {
+    mocks.jobContext = 'JOBS: survey running 3 min'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const running = jobStatusNote('ja-JP', 'JOBS: survey running 3 min', null)!
+    mocks.jobContext = 'JOBS: survey done 1 min ago'
+    const second = await open(engine, sessions)
+    const done = jobStatusNote('ja-JP', 'JOBS: survey done 1 min ago', running)!
+    expect(openingNote(second)).toContain(done)
+    // The provider ends the session before it offers a handle, so the next one resumes from h1 again,
+    // which never read that the job was done.
+    second.params.callbacks.onclose('session time limit')
+    await vi.advanceTimersByTimeAsync(0)
+    const third = await open(engine, sessions)
+    expect(third.params.resumptionHandle).toBe('h1')
+    expect(openingNote(third)).toContain(done)
+    await engine.stop()
+  })
+
+  it('ties a handle that comes with setupComplete, before connecting resolves, to the job status the new session reads', async () => {
+    mocks.jobContext = 'JOBS: survey running 3 min'
+    const { engine, sessions } = await setup()
+    const first = await open(engine, sessions)
+    first.message({ sessionResumptionUpdate: { newHandle: 'h1', resumable: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    const running = jobStatusNote('ja-JP', 'JOBS: survey running 3 min', null)!
+    mocks.jobContext = 'JOBS: survey done 1 min ago'
+    let connect!: () => void
+    mocks.connected = new Promise((resolve) => (connect = resolve))
+    engine.activity(true)
+    await vi.advanceTimersByTimeAsync(0)
+    const second = sessions[1]
+    second.message({ setupComplete: {} })
+    second.message({ sessionResumptionUpdate: { newHandle: 'h2', resumable: true } })
+    connect()
+    await vi.advanceTimersByTimeAsync(0)
+    const done = jobStatusNote('ja-JP', 'JOBS: survey done 1 min ago', running)!
+    expect(openingNote(second)).toContain(done)
+    second.params.callbacks.onclose('session time limit')
+    await vi.advanceTimersByTimeAsync(0)
+    const third = await open(engine, sessions)
+    expect(third.params.resumptionHandle).toBe('h2')
+    // h2 came from a session that read that the job was done, so a session resumed from it is not told again.
+    expect(openingNote(third).startsWith(noticeAt(new Date()))).toBe(true)
+    expect(openingNote(third)).not.toContain(done)
+    await engine.stop()
+  })
+
+  it('gives a session its opening note before the audio of the speech that opened it', async () => {
+    const { engine, sessions } = await setup()
+    // The start of speech opens the session, and what is heard while it connects goes out once it is open.
+    engine.activity(true)
+    engine.pushAudio(new Float32Array(1600))
+    await vi.advanceTimersByTimeAsync(0)
+    const session = sessions[0]
+    engine.pushAudio(new Float32Array(1600))
+    session.message({ setupComplete: {} })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(session.sent.map((entry) => entry.kind)).toEqual(['content', 'realtime', 'realtime'])
+    expect(session.sent[0].params).toEqual(session.contents[0])
+    expect(openingNote(session).startsWith(noticeAt(new Date()))).toBe(true)
     await engine.stop()
   })
 
@@ -729,7 +900,9 @@ describe('GeminiLiveEngine', () => {
     expect(second.contents).toEqual([])
     second.message({ setupComplete: {} })
     await vi.advanceTimersByTimeAsync(0)
-    expect(second.contents).toEqual([{ turns: [{ role: 'user', parts: [{ text: '前の話' }] }], turnComplete: false }])
+    expect(second.contents).toEqual([
+      { turns: [{ role: 'user', parts: [{ text: '前の話' }] }, { role: 'user', parts: [{ text: expect.stringContaining(noticeAt(new Date())) }] }], turnComplete: false }
+    ])
     expect(mocks.record.mock.calls.map((c) => c[0].kind)).toEqual(['user'])
     await engine.stop()
   })

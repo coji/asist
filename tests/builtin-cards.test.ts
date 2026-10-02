@@ -448,7 +448,7 @@ describe('todo and notes cards', () => {
   it('redraws when main delivers a note it has written', async () => {
     const card = await renderAt(spec('notes', {}), L)
     expect(card.querySelector('.card-empty')).not.toBeNull()
-    await act(async () => useNoteStore.getState().apply({ type: 'saved', note: summarizeNote('20260923-090000-00aa', '# 配信されたメモ\n', 1) }))
+    await act(async () => useNoteStore.getState().apply([{ type: 'saved', note: summarizeNote('20260923-090000-00aa', '# 配信されたメモ\n', 1) }]))
     expect(card.textContent).toContain('配信されたメモ')
   })
 })

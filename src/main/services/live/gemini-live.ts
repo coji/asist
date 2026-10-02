@@ -3,7 +3,7 @@ import type { AppSettings, LiveConnection, LiveEvent, LiveUsage, TurnEvent } fro
 import type { LiveEngineInfo } from '@shared/voice-engine'
 import { geminiLiveCost } from '@shared/voice-engine'
 import { errMessage } from '@shared/api-errors'
-import { fillPrompt, promptText, type PromptText } from '@shared/conversation-locale'
+import { fillPrompt, promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
 import { marker } from '@shared/conversation-markers'
 import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from '../conversation-locale'
@@ -12,7 +12,7 @@ import type { ToolExecution, ToolExecutionTask } from '@shared/tool-registry'
 import { buildMemoryInjection, type InjectableMemory } from '@shared/memory-injection'
 import { record, turnScheduler, type ConversationOwner } from '../brain/session'
 import type { HistoryMessage } from '../brain/history'
-import { stampUserMessage } from '../brain/prompt'
+import { jobStatusNote, stampUserMessage } from '../brain/prompt'
 import { decodeOutput } from './audio'
 import { GeminiCalls } from './gemini-calls'
 import type { GeminiFunctionDeclaration } from './gemini-tools'
@@ -98,7 +98,9 @@ export interface GeminiLiveDeps {
   now?: () => number
   apiKey: () => string | undefined
   connect: (params: GeminiConnectParams) => Promise<GeminiSession>
-  systemInstruction: (startedAt: Date) => string
+  systemInstruction: () => string
+  /** The status of the agent jobs and the recent projects as the model is told it, or null when there is none. */
+  jobContext: () => string | null
   functionDeclarations: () => GeminiFunctionDeclaration[]
   executeTool: (name: string, input: Record<string, unknown>, ctx: { turnId: number; signal: AbortSignal; emit: (event: TurnEvent) => void }) => ToolExecutionTask
   /** Whether the registry lets the tool run at the same time as other calls, which a writing tool does not. */
@@ -120,6 +122,12 @@ export interface GeminiLiveDeps {
 const READ_ALOUD: PromptText = {
   ja: `{systemNotice} 次の文をそのまま読み上げる: {text}`,
   en: `{systemNotice} Read the following sentence aloud exactly as it is: {text}`
+}
+
+/** The note every session is given as it opens, stamped with the time, before anything the user says. */
+const SESSION_OPENED: PromptText = {
+  ja: `{notice} 今の時刻を知らせる。`,
+  en: `{notice} This gives the time now.`
 }
 
 const OPEN_TIMEOUT_MS = 15_000
@@ -153,16 +161,21 @@ export class GeminiLiveEngine implements ConversationOwner {
   /**
    * The session the engine owns, from the call that creates it until it is closed. Connecting resolves
    * only once the socket is open, so the session itself is filled in then, and closing reaches it from
-   * that moment. Anything else is sent only once it is `ready`: its setup has completed and, when it
-   * opened blank, it has had the history as its context.
+   * that moment. Anything else is sent only once it is `ready`: its setup has completed and it has had
+   * its opening note, after the history when it opened blank.
    */
   private owned: { session: GeminiSession | null; ready: boolean } | null = null
   /**
-   * The last handle the provider offered as resumable, with the memories the session held when it
-   * arrived. A handle carries the session's state only up to the moment it was issued, and the provider
-   * offers none while it generates or runs a call, so what is sent after it is lost on a resume.
+   * The last handle the provider offered as resumable, with the memories and the job status the session
+   * held when it arrived. The provider offers none while it generates or runs a call. What a handle
+   * carries is not documented: one issued as a resumed session opened, before the session's opening note
+   * reached the server, still resumed with the note known (2 of 2 tries with gemini-3.8-live on
+   * 2026-10-02), so the opening note counts as held from the moment the session is created. Anything sent
+   * later counts only for a later handle, which at worst shows a memory or the job status again.
    */
-  private resumption: { handle: string; at: number; memories: ReadonlyMap<string, number> } | null = null
+  private resumption: { handle: string; at: number; memories: ReadonlyMap<string, number>; jobStatus: string | null } | null = null
+  /** The job status the current session last read, in the form a note gives it, or null when it read none. */
+  private sessionJobStatus: string | null = null
   private inputSeconds = 0
   private outputSeconds = 0
   private readonly calls: GeminiCalls
@@ -243,10 +256,17 @@ export class GeminiLiveEngine implements ConversationOwner {
     const settings = this.deps.settings().geminiLive
     const resumption = this.resumption && this.now() - this.resumption.at < RESUMPTION_TTL_MS ? this.resumption : null
     const resume = resumption?.handle ?? null
-    // Built before the timer exists, since building it reads the history, which can fail.
-    const systemInstruction = this.deps.systemInstruction(new Date(this.now()))
+    const locale = conversationLocale()
+    // Built before the timer exists, since building them reads the history and the jobs, which can fail.
+    const systemInstruction = this.deps.systemInstruction()
+    const shown = resumption?.jobStatus ?? null
+    const jobStatus = jobStatusNote(locale, this.deps.jobContext(), shown)
     const owned: { session: GeminiSession | null; ready: boolean } = { session: null, ready: false }
     this.owned = owned
+    // What the session holds is set before it is connected: the SDK hands over the messages that came with
+    // setupComplete before connecting resolves, and a resumption handle among them is tied to these.
+    this.sessionMemories = new Map(resumption?.memories)
+    this.sessionJobStatus = jobStatus ?? shown
     let connected!: Promise<GeminiSession>
     const setup = new Promise<void>((resolve, reject) => {
       const fail = (error: Error): void => {
@@ -295,10 +315,27 @@ export class GeminiLiveEngine implements ConversationOwner {
     })
     await setup
     const session = await connected
-    // A session that could not be resumed opens blank, so the recent history is sent as its context.
-    if (!resume) this.seedHistory(session)
-    this.sessionMemories = new Map(resumption?.memories)
+    // A session that could not be resumed opens blank, so the recent history goes before the note.
+    session.sendClientContent({ turns: [...(resume ? [] : this.historyTurns()), { role: 'user', parts: [{ text: this.openingNote(locale, jobStatus) }] }], turnComplete: false })
     owned.ready = true
+  }
+
+  /**
+   * The note a session is given as it opens, before the user's audio: the time, stamped, and the job
+   * status when it differs from what the session last read, which for a resumed session is what its
+   * handle carried and for a blank one is nothing. It asks for no reply.
+   *
+   * Gemini Live takes a UTC clock of its own for the local time, over a time the instruction gives, and a
+   * resumed session keeps the instruction it first opened with. Measured with gemini-3.8-live on
+   * 2026-10-02, asked by voice for the time now and two hours ahead in Asia/Tokyo, and for tomorrow's
+   * date at 0 o'clock in Pacific/Auckland, where the local date is a day ahead of UTC, it was right in 22
+   * of 60 runs with no note and in 85 of 88 with the note and the instruction's line about its clock. The
+   * reply's first audio came no later: a median of 1.61 s after the end of speech with the note, against
+   * 1.66 s without it.
+   */
+  private openingNote(locale: ConversationLocale, jobStatus: string | null): string {
+    const note = fillPrompt(promptText(locale, SESSION_OPENED), { notice: marker(locale, 'systemNotice') })
+    return [stampUserMessage(locale, note, new Date(this.now())), jobStatus].filter(Boolean).join('\n\n')
   }
 
   /** The session anything but closing is sent to, which is none while one is still opening. */
@@ -343,13 +380,11 @@ export class GeminiLiveEngine implements ConversationOwner {
     if (opened) this.emitUsage()
   }
 
-  private seedHistory(session: GeminiSession): void {
-    const messages = this.deps.history().slice(-30)
-    if (messages.length === 0) return
-    session.sendClientContent({
-      turns: messages.map((message) => ({ role: message.role === 'user' ? 'user' : 'model', parts: [{ text: message.content }] })),
-      turnComplete: false
-    })
+  private historyTurns(): Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> {
+    return this.deps
+      .history()
+      .slice(-30)
+      .map((message) => ({ role: message.role === 'user' ? 'user' : 'model', parts: [{ text: message.content }] }))
   }
 
   private onMessage(message: GeminiServerMessage): void {
@@ -382,7 +417,12 @@ export class GeminiLiveEngine implements ConversationOwner {
     for (const call of message.toolCall?.functionCalls ?? []) this.calls.submit(call, this.ensureTurnStarted())
     this.calls.cancel(message.toolCallCancellation?.ids ?? [])
     if (message.sessionResumptionUpdate?.resumable && message.sessionResumptionUpdate.newHandle) {
-      this.resumption = { handle: message.sessionResumptionUpdate.newHandle, at: this.now(), memories: new Map(this.sessionMemories) }
+      this.resumption = {
+        handle: message.sessionResumptionUpdate.newHandle,
+        at: this.now(),
+        memories: new Map(this.sessionMemories),
+        jobStatus: this.sessionJobStatus
+      }
     }
     if (message.goAway) console.warn(`gemini-live: GoAway (${message.goAway.timeLeft ?? '?'})`)
   }
@@ -412,13 +452,10 @@ export class GeminiLiveEngine implements ConversationOwner {
 
   /**
    * A notice is stamped with the time it is sent, as the conversation engine stamps its notices, since
-   * without a stamp the model has no reliable clock. Measured with gemini-3.8-live on 2026-10-02 in
-   * Asia/Tokyo, asked for the time two hours after a job report in a session whose instruction gave a
-   * start three hours earlier, it answered from a UTC clock of its own read as local time, or from that
-   * start, in 12 of 14 runs, and rightly in 19 of 21 with the report stamped. With the right start and no
-   * report it still answered from the UTC clock in 4 of 6. The start does not move either: a session
-   * resumed from a handle keeps the instruction it first opened with, whatever instruction the resume
-   * sends.
+   * the model takes the newest stamp for the time it is now. Measured with gemini-3.8-live on 2026-10-02
+   * in Asia/Tokyo, asked for the time two hours after a job report in a session whose instruction gave a
+   * start three hours earlier, it answered rightly in 2 of 14 runs without the stamp and in 19 of 21 with
+   * it.
    */
   async notify(text: string): Promise<void> {
     await this.lifecycle.ensureOpen()

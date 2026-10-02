@@ -74,6 +74,7 @@ vi.mock('electron', () => ({
   },
   dialog: { showErrorBox: mocks.showErrorBox },
   nativeImage: { createFromPath: () => ({ isEmpty: () => false }) },
+  protocol: { registerSchemesAsPrivileged: () => undefined },
   shell: { openExternal: () => undefined },
   get autoUpdater() {
     return mocks.squirrel
@@ -93,7 +94,8 @@ vi.mock('../src/main/os-integration', () => ({
   quitAfterAgentsStop: mocks.quitAfterAgentsStop
 }))
 vi.mock('../src/main/window-chrome', () => ({ windowChrome: () => ({ frame: {}, prepare: mocks.prepare }) }))
-vi.mock('../src/main/file-protocol', () => ({ handleFileScheme: () => undefined, registerFileScheme: () => undefined }))
+vi.mock('../src/main/file-protocol', () => ({ handleFileScheme: () => undefined, fileScheme: {} }))
+vi.mock('../src/main/preview-protocol', () => ({ handlePreviewScheme: () => undefined, previewScheme: {} }))
 vi.mock('../src/main/services/native-mic', () => ({ stop: () => undefined }))
 vi.mock('../src/main/services/live', () => ({ stop: () => Promise.resolve() }))
 vi.mock('../src/main/services/asr', () => ({ ensureServer: mocks.ensureServer }))

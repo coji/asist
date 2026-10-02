@@ -98,11 +98,21 @@ export function byUpdated(a: NoteSummary, b: NoteSummary): number {
   return b.updatedAt - a.updatedAt || b.id.localeCompare(a.id)
 }
 
-/** One change main has written: a note saved, new or rewritten, or a note moved to the trash. */
+/**
+ * One change to a note that main has written or seen in the folder: a note saved, new or rewritten, or a
+ * note gone, moved to the trash or deleted outside ASIST.
+ */
 export type NoteChange = { type: 'saved'; note: NoteSummary } | { type: 'removed'; id: string }
 
-/** The list of notes, newest change first, after one change. */
-export function applyNoteChange(notes: NoteSummary[], change: NoteChange): NoteSummary[] {
-  if (change.type === 'removed') return notes.filter((note) => note.id !== change.id)
-  return [...notes.filter((note) => note.id !== change.note.id), change.note].sort(byUpdated)
+/**
+ * The list of notes, newest change first, after the changes main sent together, in their order. They are
+ * applied at once and sorted once, because a folder replaced outside ASIST sends every note in one go.
+ */
+export function applyNoteChanges(notes: NoteSummary[], changes: NoteChange[]): NoteSummary[] {
+  const byId = new Map(notes.map((note) => [note.id, note]))
+  for (const change of changes) {
+    if (change.type === 'removed') byId.delete(change.id)
+    else byId.set(change.note.id, change.note)
+  }
+  return [...byId.values()].sort(byUpdated)
 }

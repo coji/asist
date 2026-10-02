@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import fs from 'node:fs/promises'
-import fsSync from 'node:fs'
+import fsSync, { type Stats } from 'node:fs'
 import path from 'node:path'
 import { errorText } from '@shared/i18n/error-text'
 import { operationStarted } from '@shared/tool-registry'
@@ -88,14 +88,11 @@ function renameOverSync(temporary: string, target: string): void {
 }
 
 /**
- * Replaces target with the file that fill writes at the temporary path it is given. fill creates that
- * file itself, flushed to the disk before it resolves, and a fill that throws leaves the target as it was.
+ * Replaces target with the file that fill writes at the temporary path it is given, and resolves with what
+ * fill resolved with. fill creates that file itself, flushed to the disk before it resolves, and a fill that
+ * throws leaves the target as it was.
  */
-export async function replaceFileAtomic(
-  target: string,
-  fill: (temporary: string) => Promise<void>,
-  signal?: AbortSignal
-): Promise<void> {
+export async function replaceFileAtomic<T>(target: string, fill: (temporary: string) => Promise<T>, signal?: AbortSignal): Promise<T> {
   signal?.throwIfAborted()
   const temporary = temporaryPathBeside(target)
   unfinished.add(temporary)
@@ -104,10 +101,11 @@ export async function replaceFileAtomic(
     for (const file of abandonedBeside(target, await fs.readdir(path.dirname(target)))) {
       await fs.rm(file, { force: true }).catch((error: unknown) => leftoverStays(file, error))
     }
-    await fill(temporary)
+    const filled = await fill(temporary)
     signal?.throwIfAborted()
     operationStarted(signal)
     await renameOver(temporary, target)
+    return filled
   } catch (error) {
     await fs.rm(temporary, { force: true }).catch(() => undefined)
     throw error
@@ -116,10 +114,18 @@ export async function replaceFileAtomic(
   }
 }
 
-export function writeFileAtomic(target: string, data: string, signal?: AbortSignal): Promise<void> {
+/**
+ * Resolves with the stat of the file as written. It is taken of the temporary file before the rename, which
+ * keeps the file's inode, size and modification time, so that nothing that can fail is left once the file
+ * is in place.
+ */
+export function writeFileAtomic(target: string, data: string, signal?: AbortSignal): Promise<Stats> {
   return replaceFileAtomic(
     target,
-    (temporary) => fs.writeFile(temporary, data, { encoding: 'utf8', mode: FILE_MODE, flag: 'wx', flush: true, signal }),
+    async (temporary) => {
+      await fs.writeFile(temporary, data, { encoding: 'utf8', mode: FILE_MODE, flag: 'wx', flush: true, signal })
+      return fs.stat(temporary)
+    },
     signal
   )
 }
@@ -166,8 +172,8 @@ export async function readJsonFile(filePath: string): Promise<unknown | null> {
 
 const jsonText = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 
-export function writeJsonFileAtomic(filePath: string, value: unknown, signal?: AbortSignal): Promise<void> {
-  return writeFileAtomic(filePath, jsonText(value), signal)
+export async function writeJsonFileAtomic(filePath: string, value: unknown, signal?: AbortSignal): Promise<void> {
+  await writeFileAtomic(filePath, jsonText(value), signal)
 }
 
 export function writeJsonFileAtomicSync(filePath: string, value: unknown): void {

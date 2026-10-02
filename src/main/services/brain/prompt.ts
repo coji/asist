@@ -296,6 +296,25 @@ export function stampUserMessage(locale: ConversationLocale, text: string, date:
   return `[${weekday} ${date.getFullYear()}-${month}-${day} ${hh}:${mm}] ${text}`
 }
 
+/** Stands for the job status once it has emptied after the model saw one, which it would otherwise go on reading as current. */
+const NO_JOBS: PromptText = {
+  ja: `動いているジョブも、最近終わったジョブも無い。`,
+  en: `No agent job is running, and none has finished recently.`
+}
+
+/**
+ * The job status to send to the model, or null when what it last read already says the same. It rides
+ * on a message rather than in the system prompt: the messages are cached behind the system prompt, so
+ * its running minutes there would send the whole history again on every turn, and a resumed Gemini Live
+ * session keeps the instruction it first opened with. It is sent only when it changed, so an unchanged
+ * list of projects is not repeated turn after turn.
+ */
+export function jobStatusNote(locale: ConversationLocale, block: string | null, shown: string | null): string | null {
+  const status = block ?? (shown ? promptText(locale, NO_JOBS) : null)
+  const note = status === null ? null : `${marker(locale, 'jobStatus')}\n${status}`
+  return note === shown ? null : note
+}
+
 export interface SystemPromptInput {
   /** The language of the conversation, read when the turn starts. */
   locale: ConversationLocale
@@ -333,43 +352,47 @@ export function buildSystemLayers(input: SystemPromptInput): SystemLayer[] {
  * The trailing block of the Live system instruction. Backchannels are the voice model's own doing
  * there, not the app's, so the line asking it not to open every turn with one stays in both
  * languages; what is left out of the English one is the guidance that only reads in Japanese.
+ *
+ * The line about the model's own clock comes last. Measured with gemini-3.8-live on 2026-10-02, asked
+ * by voice for tomorrow's date at 0 o'clock local time, where the local date is a day ahead of UTC, the
+ * Japanese answers were right in 32 of 32 runs with the line last and in 10 of 16 with it merged into
+ * the first line, which named the UTC date in the rest.
  */
 const LIVE_SECTION: PromptText = {
   ja: `# 音声での会話(Live)
-- ユーザーの発話は音声で届く。文字のスタンプは付かない。このセッションの開始時刻は {started} で、以後の経過はここからの目安。アプリからの通知には送られた時刻のスタンプが付くので、通知が届いたあとは、最新の通知の時刻から経過を数える。
+- ユーザーの発話は音声で届き、時刻のスタンプは付かない。アプリはセッションを開くたびに今の時刻を通知で知らせ、どの通知にも送られた時刻のスタンプが付く。今の時刻と今日の日付は、いちばん新しい通知のスタンプから経過を数えて考える。
 - ユーザーは日本語で話す。聞き取りも返事も日本語で行い、他の言語に聞こえても日本語として解釈する。
 - 「{memory}」で始まる user の文はアプリが検索して足した記憶で、ユーザーの発話ではない。関係があれば活かし、無ければ触れない。言及しない。
 - 「{systemNotice}」が付いた user の文はアプリからの通知。自然な話し言葉で短く伝える。
 - 「{typedInput}」で始まる user の文はキーボードからの入力。転写の前提(誤認識や句読点の欠け)は外して読む。
 - function は呼んでいる間も話せる。呼ぶ前に予告や前置きを言わない。黙って呼び、結果が届いてから中身を話す。予告するのは run_agent_task のように何分も掛かる作業だけ。
 - 相槌や受けを毎回言わない。聞かれたことに一文目から答える。
-- 口調は「{personaHeading}」と「私について」に従い、丁寧語や決まり文句の癖より優先する。同じ受けや同じ結びを続けて使わない。これまでの会話に自分の発話があれば、その口調を保つ。`,
+- 口調は「{personaHeading}」と「私について」に従い、丁寧語や決まり文句の癖より優先する。同じ受けや同じ結びを続けて使わない。これまでの会話に自分の発話があれば、その口調を保つ。
+- あなた自身の時計は UTC で動いていて、ここの時刻とは違う。今の時刻と今日の日付は、いつもいちばん新しい通知のスタンプから考える。`,
   en: `# Speaking out loud (Live)
-- The user's words arrive as audio. They carry no written time stamp. This session started at {started}, and time since then is measured from there. A notice from the app carries a stamp of the time it was sent, so once one has come, time is measured from the newest notice instead.
+- The user's words arrive as audio and carry no written time stamp. The app sends a notice with the time whenever a session opens, and every notice carries a stamp of the time it was sent. Work out the time and today's date from the stamp of the newest notice and the time since.
 - The user speaks {language}. Listen and answer in {language}, and when something sounds like another language, read it as {language}.
 - A user line beginning with "{memory}" is memory the app looked up and added; the user did not say it. Use it where it fits, leave it where it does not, and never mention it.
 - A user line marked "{systemNotice}" is a notice from the app. Pass it on in natural spoken words, briefly.
 - A user line beginning with "{typedInput}" was typed on a keyboard. Read it literally: no misrecognition, no missing punctuation.
 - You can keep talking while a function runs. Do not announce a call or lead up to it. Call it silently, and talk about the result once it arrives. The only thing you announce is work that takes minutes, such as run_agent_task.
 - Do not open every turn with an acknowledgement. Answer what was asked in the first sentence.
-- Take how you sound from "{personaHeading}" and from what you have written about yourself, ahead of any habit of set phrases. Do not use the same opener or the same closing twice in a row. When your own lines are in the conversation already, keep that voice.`
+- Take how you sound from "{personaHeading}" and from what you have written about yourself, ahead of any habit of set phrases. Do not use the same opener or the same closing twice in a row. When your own lines are in the conversation already, keep that voice.
+- Your own clock runs on UTC, which is not the time here. Always take the time and today's date from the stamp of the newest notice.`
 }
 
 /**
  * The system instruction as one piece of text, for an engine such as Gemini Live where one model
- * listens, speaks and decides. The layers come in the same order but without cache breakpoints. The
- * user's words are spoken, so they carry no time stamp and the start time is written here instead, and
- * so is the status of the agent jobs as it was when the session opened. A notice from the app carries a
- * stamp of its own.
+ * listens, speaks and decides. The layers come in the same order but without cache breakpoints. It
+ * carries neither the time nor the status of the agent jobs: a session resumed from a handle keeps the
+ * instruction it first opened with, so both go in the note every session is given as it opens.
  */
-export function buildLiveSystemInstruction(input: SystemPromptInput & { startedAt: Date; jobContext: string | null }): string {
+export function buildLiveSystemInstruction(input: SystemPromptInput): string {
   const { locale } = input
   const blocks = buildSystemLayers({ ...input, voiceLayer: 'live' }).map((layer) => layer.text)
-  if (input.jobContext) blocks.push(input.jobContext)
   blocks.push(
     fillPrompt(promptText(locale, LIVE_SECTION), {
       ...promptValues(locale),
-      started: stampUserMessage(locale, '', input.startedAt).trim(),
       personaHeading: promptText(locale, PERSONA_HEADING)
     })
   )

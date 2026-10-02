@@ -1296,6 +1296,19 @@ export const files = defineMessages({
       'es-419': 'ASIST no tiene permiso para abrir esta ubicación',
       'es-ES': 'ASIST no tiene permiso para abrir esta ubicación'
     },
+    previewStopped: {
+      'ja-JP': '読み込みが途中で止まりました',
+      'en-US': 'Loading stopped partway through',
+      'fr-FR': "Le chargement s'est arrêté en cours de route",
+      'de-DE': 'Das Laden brach mittendrin ab',
+      'hi-IN': 'लोड होना बीच में ही रुक गया',
+      'id-ID': 'Pemuatan berhenti di tengah jalan',
+      'it-IT': 'Il caricamento si è interrotto a metà',
+      'ko-KR': '불러오는 중에 멈췄습니다',
+      'pt-BR': 'O carregamento parou no meio do caminho',
+      'es-419': 'La carga se detuvo a mitad de camino',
+      'es-ES': 'La carga se ha detenido a medias'
+    },
     zipDamaged: {
       'ja-JP': 'ファイルが壊れているか、形式が違います。',
       'en-US': 'The file is damaged or in a different format.',

@@ -25,7 +25,7 @@ import { randomClip as randomAizuchiClip } from '../aizuchi'
 import * as memory from '../memory'
 import { summarizeToolInput, summarizeToolResult, type NoticeKind } from './conversation-log'
 import { openAppNote } from './mini-app-tools'
-import { buildSystemLayers } from './prompt'
+import { buildSystemLayers, jobStatusNote } from './prompt'
 import { currentSpeechRoute, emit, history, lastRequestFingerprint, noteRequestFingerprint, record, turnScheduler } from './session'
 import type { SpeechRoute } from './speech-route'
 import {
@@ -91,24 +91,6 @@ const CONTINUE_AFTER_MAX_TOKENS: PromptText = {
 const REPLY_AFTER_EMPTY: PromptText = {
   ja: `直前の応答が空だった。ユーザーへの返事をここで短く話すこと。この注記には言及しない。`,
   en: `Your last reply came back empty. Give the user your reply now, briefly. Never mention this note.`
-}
-
-/** Stands for the job status once it has emptied after the model saw one, which it would otherwise go on reading as current. */
-const NO_JOBS: PromptText = {
-  ja: `動いているジョブも、最近終わったジョブも無い。`,
-  en: `No agent job is running, and none has finished recently.`
-}
-
-/**
- * The job status to send with an input, or null when the history already shows the same one. It rides
- * on the input rather than in the system prompt: the messages are cached behind the system prompt, so
- * its running minutes there would send the whole history again on every turn. It is sent only when it
- * changed, so an unchanged list of projects is not repeated turn after turn.
- */
-function jobStatusNote(locale: ConversationLocale, block: string | null, shown: string | null): string | null {
-  const status = block ?? (shown ? promptText(locale, NO_JOBS) : null)
-  const note = status === null ? null : `${marker(locale, 'jobStatus')}\n${status}`
-  return note === shown ? null : note
 }
 
 /** Ends a turn with a prepared sentence, which is said aloud and therefore read in the language of the conversation. */

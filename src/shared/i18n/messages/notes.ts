@@ -491,5 +491,59 @@ export const notes = defineMessages({
       'es-419': 'No se encontró la nota. Quizá se eliminó.',
       'es-ES': 'No se ha encontrado la nota. Puede que se haya eliminado.'
     }
+  },
+  changedOutside: {
+    message: {
+      'ja-JP': 'このメモは ASIST の外で書き換えられました。新しい内容を読み込むと、編集中の内容は消えます。',
+      'en-US': 'This note was changed outside ASIST. Loading the new version discards your edits.',
+      'fr-FR': 'Cette note a été modifiée en dehors d’ASIST. Charger la nouvelle version efface vos modifications.',
+      'de-DE': 'Diese Notiz wurde außerhalb von ASIST geändert. Wenn Sie die neue Fassung laden, gehen Ihre Änderungen verloren.',
+      'hi-IN': 'यह नोट ASIST के बाहर बदला गया है। नया संस्करण लोड करने पर आपके बदलाव मिट जाएँगे।',
+      'id-ID': 'Catatan ini diubah di luar ASIST. Memuat versi baru akan membuang perubahan Anda.',
+      'it-IT': 'Questa nota è stata modificata fuori da ASIST. Se carichi la nuova versione, le tue modifiche vanno perse.',
+      'ko-KR': '이 메모는 ASIST 밖에서 수정되었습니다. 새 내용을 불러오면 편집 중인 내용은 사라집니다.',
+      'pt-BR': 'Esta nota foi alterada fora do ASIST. Carregar a nova versão descarta suas alterações.',
+      'es-419': 'Esta nota se cambió fuera de ASIST. Si cargas la versión nueva, se descartan tus cambios.',
+      'es-ES': 'Esta nota se ha cambiado fuera de ASIST. Si cargas la versión nueva, se descartarán tus cambios.'
+    },
+    load: {
+      'ja-JP': '新しい内容を読み込む',
+      'en-US': 'Load the new version',
+      'fr-FR': 'Charger la nouvelle version',
+      'de-DE': 'Neue Fassung laden',
+      'hi-IN': 'नया संस्करण लोड करें',
+      'id-ID': 'Muat versi baru',
+      'it-IT': 'Carica la nuova versione',
+      'ko-KR': '새 내용 불러오기',
+      'pt-BR': 'Carregar a nova versão',
+      'es-419': 'Cargar la versión nueva',
+      'es-ES': 'Cargar la versión nueva'
+    },
+    overwrite: {
+      'ja-JP': '編集中の内容で上書き',
+      'en-US': 'Overwrite with my edits',
+      'fr-FR': 'Écraser avec mes modifications',
+      'de-DE': 'Mit meinen Änderungen überschreiben',
+      'hi-IN': 'मेरे बदलावों से बदलें',
+      'id-ID': 'Timpa dengan perubahan saya',
+      'it-IT': 'Sovrascrivi con le mie modifiche',
+      'ko-KR': '편집 중인 내용으로 덮어쓰기',
+      'pt-BR': 'Substituir pelas minhas alterações',
+      'es-419': 'Sobrescribir con mis cambios',
+      'es-ES': 'Sobrescribir con mis cambios'
+    }
+  },
+  deletedOutside: {
+    'ja-JP': 'このメモは ASIST の外で削除されました。保存すると、新しいメモとして残ります。',
+    'en-US': 'This note was deleted outside ASIST. Saving keeps your text as a new note.',
+    'fr-FR': 'Cette note a été supprimée en dehors d’ASIST. Si vous l’enregistrez, votre texte devient une nouvelle note.',
+    'de-DE': 'Diese Notiz wurde außerhalb von ASIST gelöscht. Beim Speichern wird Ihr Text als neue Notiz angelegt.',
+    'hi-IN': 'यह नोट ASIST के बाहर मिटाया गया है। सेव करने पर आपका टेक्स्ट नए नोट के रूप में रहेगा।',
+    'id-ID': 'Catatan ini dihapus di luar ASIST. Jika disimpan, teks Anda menjadi catatan baru.',
+    'it-IT': 'Questa nota è stata eliminata fuori da ASIST. Se la salvi, il testo diventa una nuova nota.',
+    'ko-KR': '이 메모는 ASIST 밖에서 삭제되었습니다. 저장하면 새 메모로 남습니다.',
+    'pt-BR': 'Esta nota foi apagada fora do ASIST. Ao salvar, seu texto vira uma nova nota.',
+    'es-419': 'Esta nota se eliminó fuera de ASIST. Al guardarla, tu texto queda como una nota nueva.',
+    'es-ES': 'Esta nota se ha eliminado fuera de ASIST. Al guardarla, tu texto se conserva como una nota nueva.'
   }
 })

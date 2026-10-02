@@ -148,7 +148,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     } satisfies PanelEvent)
   })
   timers.events.on('event', (event) => send(IpcChannel.TimerEvent, event))
-  noteEvents.on('changed', (change) => send(IpcChannel.NotesChanged, change))
+  noteEvents.on('changed', (changes) => send(IpcChannel.NotesChanged, changes))
   taskEvents.on('changed', (tasks) => send(IpcChannel.TasksChanged, tasks))
   mailEvents.on('event', (event) => send(IpcChannel.MailEvent, event))
   confirmEvents.on('event', (event) => send(IpcChannel.ConfirmEvent, event))
