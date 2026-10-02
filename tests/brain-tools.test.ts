@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
   windows: false,
   settings: { agentMode: 'readonly' as const, agentEngine: 'claude' as const, region: 'JP', uiLocale: 'ja-JP', conversationLocale: 'ja-JP' as string },
   memory: {
-    search: vi.fn(() => [])
+    search: vi.fn(() => []),
+    promptDocumentBodies: vi.fn((): string[] => [])
   },
   agent: {
     findActive: vi.fn(() => undefined),
@@ -104,6 +105,7 @@ describe('brain tools registry', () => {
     vi.resetModules()
     vi.clearAllMocks()
     mocks.windows = false
+    mocks.memory.promptDocumentBodies.mockReturnValue([])
   })
 
   it('offers the calendar to the model on Windows as on a Mac, as a card, as a change and as a mini app', async () => {
@@ -486,6 +488,19 @@ describe('brain tools registry', () => {
     const none = JSON.parse((await executeClientTool('resolve_project', { name: '宇宙' }, ctx)).content)
     expect(none.candidates).toEqual([])
     expect(none.note).toContain('register_project')
+  })
+
+  it('answers resolve_project with a path written in me.md or user.md, which the index of the memory leaves out, on a line that names the place', async () => {
+    const { executeClientTool } = await load()
+    const { ctx } = makeCtx()
+    mocks.memory.promptDocumentBodies.mockReturnValue(['## 仕事\n- 例のLPは /Users/me/work/lp にある\n- ASIST のリポジトリ: /Users/me/src/asist\n\n## 好み\n辛さは控えめ。'])
+    const paths = async (name: string): Promise<string[]> =>
+      JSON.parse((await executeClientTool('resolve_project', { name }, ctx)).content).candidates.map((c: { path: string }) => c.path)
+    expect(await paths('例のLP')).toEqual(['/Users/me/work/lp'])
+    expect(await paths('asist')).toEqual(['/Users/me/src/asist'])
+    expect(await paths('宇宙')).toEqual([])
+    expect(JSON.parse((await executeClientTool('resolve_project', { name: '例のLP' }, ctx)).content).candidates)
+      .toEqual([{ name: '- 例のLPは /Users/me/work/lp にある', path: '/Users/me/work/lp', lastUsed: '' }])
   })
 
   it('takes from a memory only a path that starts a word, not the slash of a date or of a URL', async () => {

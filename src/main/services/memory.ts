@@ -202,6 +202,15 @@ export async function search(
   return idx.search(query, { ...options, queryVector })
 }
 
+/**
+ * The bodies of me.md and user.md as they are now. The index leaves them out, since every prompt holds them
+ * whole, so a lookup that searches the memory for something other than the prompt reads them here.
+ */
+export function promptDocumentBodies(): string[] {
+  open()
+  return store.readPromptDocuments().map(({ body }) => body)
+}
+
 export function overview(): MemoryOverview {
   const reason = unavailableReason()
   if (reason) {

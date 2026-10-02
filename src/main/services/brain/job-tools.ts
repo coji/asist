@@ -9,6 +9,7 @@ import {
 import { errorText } from '@shared/i18n/error-text'
 import type { AgentEngine, JobDiff } from '@shared/ipc'
 import { resolveJobAccess } from '@shared/job-workspace'
+import { matchProjects } from '@shared/project-index'
 import {
   LOCAL_TIMEOUT_MS,
   ToolError,
@@ -248,13 +249,21 @@ export function projectTools(locale: ConversationLocale): Def[] {
           path: c.entry.path,
           lastUsed: new Date(c.entry.lastUsedAt).toLocaleDateString(locale)
         }))
-        // When the index has nothing, a path written in the memories serves as another name for the place.
+        // When the index has nothing, a path written in the memory serves as another name for the place: a line
+        // of me.md or user.md that names it, since the index leaves those two out, then a section a search finds.
         if (candidates.length === 0) {
+          const add = (text: string, path: string, lastUsed: string): void => {
+            if (!candidates.some((c) => c.path === path)) candidates.push({ name: text, path, lastUsed })
+          }
+          const lines = memory.promptDocumentBodies().flatMap((body) => body.split(/\r?\n/))
+          const written = lines.flatMap((line) => {
+            const path = ABSOLUTE_PATH.exec(line)?.[0]
+            return path ? [{ name: line.trim(), path, aliases: [], lastUsedAt: 0, source: 'told' as const }] : []
+          })
+          for (const { entry } of matchProjects(written, name)) add(entry.name, entry.path, '')
           for (const hit of await memory.search(name, { limit: 5, kinds: ['section'] }, signal)) {
             const path = ABSOLUTE_PATH.exec(hit.record.text)?.[0]
-            if (path && !candidates.some((c) => c.path === path)) {
-              candidates.push({ name: hit.record.text, path, lastUsed: hit.record.date })
-            }
+            if (path) add(hit.record.text, path, hit.record.date)
           }
         }
         const note =
