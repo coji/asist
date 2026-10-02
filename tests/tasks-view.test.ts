@@ -8,6 +8,21 @@ import { TasksView } from '../src/renderer/src/ui/tasks/TasksView'
 import { useTaskStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
 import { answerConfirm } from './helpers/confirm'
+import type { DndContextProps, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+
+/** The board's own drag handlers, so that a test can lift and drop a card as a pointer would. */
+const dnd = vi.hoisted(() => ({ props: null as null | DndContextProps }))
+vi.mock('@dnd-kit/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@dnd-kit/core')>()
+  const { createElement } = await import('react')
+  return {
+    ...actual,
+    DndContext: (props: DndContextProps) => {
+      dnd.props = props
+      return createElement(actual.DndContext, props)
+    }
+  }
+})
 
 /** The tasks view: what the board and the list show, that add, edit and complete reach main, and the order Escape closes things in. */
 
@@ -150,6 +165,19 @@ describe('board', () => {
 
     await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
     expect(useViewStore.getState().open?.app).not.toBe('tasks')
+  })
+
+  it('puts a dropped card where it was let go even when main removed a card above that place during the drag', async () => {
+    await render()
+    const [a, b, c, d] = tasks
+    await act(async () => dnd.props!.onDragStart!({ active: { id: c.id } } as unknown as DragStartEvent))
+    // The model finishes the first to-do while the card is held.
+    await act(async () => useTaskStore.setState({ tasks: [{ ...b, order: 0 }, c, { ...d, order: 1 }, { ...a, status: 'done', order: 0 }] }))
+    // Let go above the second to-do, which is now the first.
+    await act(async () =>
+      dnd.props!.onDragEnd!({ active: { id: c.id }, over: { id: b.id }, collisions: [{ id: b.id, data: { placement: 'before' } }] } as unknown as DragEndEvent)
+    )
+    expect(api.taskMove).toHaveBeenCalledWith({ id: c.id, status: 'todo', index: 0 })
   })
 
   it('clears every done task at once from the tool on the done column, after a confirmation', async () => {

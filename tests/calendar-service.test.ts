@@ -485,6 +485,45 @@ describe('calendar dates', () => {
       else process.env.TZ = previous
     }
   })
+  it('takes back an all-day event in a time zone whose clock skips or repeats midnight, as show_calendar shows it', () => {
+    const previous = process.env.TZ
+    try {
+      // Chile moves its clock from 00:00 to 01:00 on 2026-09-06, so that day begins at 01:00.
+      process.env.TZ = 'America/Santiago'
+      const holiday = { ...event, allDay: true, timeZone: 'America/Santiago', start: new Date(2026, 8, 6).getTime(), end: new Date(2026, 8, 7).getTime() }
+      for (const shown of [detailCalendarEvent('en-US', holiday), detailCalendarEvent('en-US', { ...holiday, start: new Date(2026, 8, 5).getTime(), end: holiday.start })]) {
+        const update = { title: 'Holiday', start: shown.start, end: shown.end, allDay: true, timeZone: shown.timeZone, location: '', notes: '' }
+        expect(calendarEventInputSchema.safeParse(update).success).toBe(true)
+        expect(calendarEventInputSchema.safeParse({ ...update, end: '2026-09-07T01:00:00-03:00' }).success).toBe(false)
+      }
+      // The Azores turn their clock back from 01:00 to 00:00 on 2026-10-25, so midnight comes twice and both name that day.
+      const azores = { title: 'Holiday', allDay: true, timeZone: 'Atlantic/Azores', location: '', notes: '' }
+      for (const end of ['2026-10-25T00:00:00+00:00', '2026-10-25T00:00:00-01:00'])
+        expect(calendarEventInputSchema.safeParse({ ...azores, start: '2026-10-24T00:00:00+00:00', end }).success).toBe(true)
+    } finally {
+      if (previous === undefined) delete process.env.TZ
+      else process.env.TZ = previous
+    }
+  })
+  it('refuses an all-day event that starts where the clock turns back into the day before, or that covers no day', () => {
+    const reasons = (start: string, end: string, timeZone: string): string[] => {
+      const result = calendarEventInputSchema.safeParse({ title: 'Holiday', allDay: true, start, end, timeZone, location: '', notes: '' })
+      return result.success ? [] : result.error.issues.map((issue) => issue.message)
+    }
+    // St. John's turned its clock back from 00:01 on 2010-11-07 to 23:01 on 2010-11-06.
+    expect(reasons('2010-11-06T23:01:00-03:30', '2010-11-08T00:00:00-03:30', 'America/St_Johns')).toEqual([errorText('calendar.errors.allDayNotMidnight')])
+    // The two midnights of 2026-10-25 in the Azores are an hour apart and name the same day.
+    expect(reasons('2026-10-25T00:00:00+00:00', '2026-10-25T00:00:00-01:00', 'Atlantic/Azores')).toEqual([errorText('calendar.errors.allDayEmpty')])
+  })
+  it('gives an all-day event a time zone or a time it cannot read as its reason rather than throwing', () => {
+    const allDay = { ...fields, allDay: true, start: '2026-09-15T00:00:00+09:00', end: '2026-09-16T00:00:00+09:00' }
+    const reasons = (patch: Partial<typeof allDay>): string[] => {
+      const result = calendarEventInputSchema.safeParse({ ...allDay, ...patch })
+      return result.success ? [] : result.error.issues.map((issue) => issue.message)
+    }
+    expect(reasons({ timeZone: 'Mars/Olympus' })).toEqual([errorText('calendar.errors.timeZoneUnknown')])
+    expect(calendarEventInputSchema.safeParse({ ...allDay, start: 'the fifteenth' }).success).toBe(false)
+  })
   it('tells the model that an event ending at midnight is on the day it starts', () => {
     const previous = process.env.TZ
     try {

@@ -304,6 +304,30 @@ describe('the draft of the event editor', () => {
     })
   })
 
+  describe('on a computer whose clock skips midnight when daylight saving time starts', () => {
+    let zone: string | undefined
+    beforeEach(() => {
+      zone = process.env.TZ
+      // Chile moves its clock from 00:00 to 01:00 on 2026-09-06, so that day begins at 01:00.
+      process.env.TZ = 'America/Santiago'
+    })
+    afterEach(() => {
+      if (zone === undefined) delete process.env.TZ
+      else process.env.TZ = zone
+    })
+    const savedDays = (draft: Draft): string[] => {
+      const change = calendarChangeSchema.parse(changeFromDraft(draft))
+      if (change.operation === 'delete') throw new Error('the draft was not saved as an event')
+      return [change.event.start, change.event.end].map((iso) => isoWithOffset(Date.parse(iso), change.event.timeZone).slice(0, 10))
+    }
+
+    it('saves a new all-day event on that day and an existing one that ends as it begins', () => {
+      expect(savedDays(newDraft('2026-09-06', { title: '休み', allDay: true }))).toEqual(['2026-09-06', '2026-09-07'])
+      const before = event({ allDay: true, start: day(5), end: day(6), timeZone: 'America/Santiago' })
+      expect(savedDays(draftFromEvent(before))).toEqual(['2026-09-05', '2026-09-06'])
+    })
+  })
+
   it('cannot be saved while a date or a time is cleared', () => {
     const draft = draftFromEvent(event({ title: '打合せ' }))
     expect(changeFromDraft(draft)).not.toBeNull()

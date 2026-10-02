@@ -268,7 +268,7 @@ export class GoogleAuth {
       await this.deps.openBrowser(url.href)
       const { code, answer } = await loopback.arrival
       try {
-        await this.exchange(code, verifier, loopback.uri, controller.signal)
+        await this.exchange(code, verifier, loopback.uri, controller)
       } catch (error) {
         answer(false)
         throw error
@@ -282,9 +282,12 @@ export class GoogleAuth {
 
   /**
    * Trades the code for tokens. The request is not aborted halfway, since Google may already have granted
-   * the tokens; a sign-out or a newer sign-in that came meanwhile has the new grant revoked instead of saved.
+   * the tokens. A sign-in stopped meanwhile saves nothing. When a sign-out was the last thing to stop it,
+   * the grant is revoked; when a newer sign-in started after it, the grant is only dropped, because Google's
+   * revocation takes back every grant the account gave the app, the one the newer sign-in asks for included.
    */
-  private async exchange(code: string, verifier: string, redirectUri: string, signal: AbortSignal): Promise<void> {
+  private async exchange(code: string, verifier: string, redirectUri: string, controller: AbortController): Promise<void> {
+    const { signal } = controller
     const response = await this.post(GOOGLE_TOKEN_URL, {
       grant_type: 'authorization_code',
       code,
@@ -300,7 +303,7 @@ export class GoogleAuth {
     const token = await tokenOf(response)
     if (!token.refresh_token) throw new Error(errorText('calendar.errors.googleSignInFailed'))
     if (signal.aborted) {
-      await this.revoke(token.refresh_token)
+      if (this.signingIn === controller) await this.revoke(token.refresh_token)
       throw signal.reason
     }
     // The consent page lets the user leave out any of the scopes, and the calendar needs both.

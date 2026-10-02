@@ -87,6 +87,16 @@ export function previewColumns(
   return { ...columns, [from]: source, [to]: target }
 }
 
+/**
+ * The position main is told for a dropped card: how many cards above it in the column on the screen main
+ * still holds in that column. The columns stand still during a drag while main may add, move or remove
+ * tasks, so a card shown above the dropped one may have left the column by then.
+ */
+function committedPosition(order: readonly string[], id: string, column: readonly Task[]): number {
+  const held = new Set(column.map((task) => task.id))
+  return order.slice(0, order.indexOf(id)).filter((other) => held.has(other)).length
+}
+
 interface Point {
   x: number
   y: number
@@ -217,7 +227,7 @@ export function Board({ tasks, today, selectedId, onSelect, onMove, onAdd, onCle
     const status = columnHolding(final, active.id)
     setActiveId(null)
     const task = status ? byId.get(String(active.id)) : undefined
-    const index = status ? final[status].indexOf(String(active.id)) : -1
+    const index = status && task ? committedPosition(final[status], task.id, columnOf(tasks, status)) : -1
     if (!status || !task || (task.status === status && task.order === index)) {
       setColumns(columnsOf(tasksRef.current))
       return

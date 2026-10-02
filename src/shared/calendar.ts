@@ -74,21 +74,16 @@ export const calendarEventInputSchema = z
     (value) => Date.parse(value.end) > Date.parse(value.start),
     errorText('calendar.errors.endBeforeStart')
   )
-  .refine((value) => {
-    if (!value.allDay) return true
-    const formatter = new Intl.DateTimeFormat('en-GB', {
-      timeZone: value.timeZone,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23'
-    })
-    return [value.start, value.end].every(
-      (date) =>
-        formatter.format(new Date(date)) === '00:00:00' &&
-        new Date(date).getMilliseconds() === 0
-    )
-  }, errorText('calendar.errors.allDayNotMidnight'))
+  // zod runs a check of the whole object even after a field failed its own, and these read the time zone
+  // and the instants, which Intl refuses to work with when they are not valid.
+  .refine((value) => !value.allDay || [value.start, value.end].every((date) => beginsDay(Date.parse(date), value.timeZone)), {
+    message: errorText('calendar.errors.allDayNotMidnight'),
+    when: (payload) => payload.issues.length === 0
+  })
+  .refine((value) => !value.allDay || dateIn(Date.parse(value.start), value.timeZone) < dateIn(Date.parse(value.end), value.timeZone), {
+    message: errorText('calendar.errors.allDayEmpty'),
+    when: (payload) => payload.issues.length === 0
+  })
 export type CalendarEventInput = z.infer<typeof calendarEventInputSchema>
 export const calendarChangeSchema = z.discriminatedUnion('operation', [
   z.strictObject({
@@ -234,9 +229,11 @@ export interface CalendarEventDetail extends CalendarEventSummary {
   writable: boolean
 }
 
-/** An ISO timestamp with the offset of the given time zone, like "2026-09-15T10:00:00+09:00". */
-export function isoWithOffset(at: number, timeZone: string): string {
-  const parts = Object.fromEntries(
+type ClockField = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'timeZoneName'
+
+/** What a clock in the time zone reads at an instant, each field zero-padded, the hour from 00 to 23. */
+function clockIn(at: number, timeZone: string): Record<ClockField, string> {
+  return Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', {
       timeZone,
       year: 'numeric',
@@ -250,9 +247,34 @@ export function isoWithOffset(at: number, timeZone: string): string {
     })
       .formatToParts(at)
       .map((part) => [part.type, part.value])
-  )
-  const offset = parts.timeZoneName === 'GMT' ? '+00:00' : parts.timeZoneName.replace('GMT', '')
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${offset}`
+  ) as Record<ClockField, string>
+}
+
+/** An ISO timestamp with the offset of the given time zone, like "2026-09-15T10:00:00+09:00". */
+export function isoWithOffset(at: number, timeZone: string): string {
+  const clock = clockIn(at, timeZone)
+  const offset = clock.timeZoneName === 'GMT' ? '+00:00' : clock.timeZoneName.replace('GMT', '')
+  return `${clock.year}-${clock.month}-${clock.day}T${clock.hour}:${clock.minute}:${clock.second}${offset}`
+}
+
+/** The date an instant falls on in the time zone, as "2026-09-06", which sorts in the order of the dates. */
+function dateIn(at: number, timeZone: string): string {
+  const clock = clockIn(at, timeZone)
+  return `${clock.year}-${clock.month}-${clock.day}`
+}
+
+/**
+ * Whether a day begins at the instant in the time zone, as the bounds of an all-day event do. A day
+ * begins at midnight, except where daylight saving time starts by skipping midnight: there it begins at
+ * the first moment after the skipped hour, as 2026-09-06 begins at 01:00 in America/Santiago. Where the
+ * clock turns back over midnight, as at 01:00 on 2026-10-25 in Atlantic/Azores, midnight comes twice and
+ * either reading names that day. A clock turned back into the day before, as St. John's did from 00:01 to
+ * 23:01 on 2010-11-06, begins no day there.
+ */
+function beginsDay(at: number, timeZone: string): boolean {
+  const clock = clockIn(at, timeZone)
+  const midnight = clock.hour === '00' && clock.minute === '00' && clock.second === '00' && new Date(at).getUTCMilliseconds() === 0
+  return midnight || dateIn(at - 1, timeZone) < dateIn(at, timeZone)
 }
 
 /**

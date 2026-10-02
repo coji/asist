@@ -1600,6 +1600,19 @@ export const calendar = defineMessages({
       'pt-BR': 'Este build não tem cliente OAuth do Google. Coloque ASIST_GOOGLE_CLIENT_ID e ASIST_GOOGLE_CLIENT_SECRET no .env ou no ambiente do build e gere o build de novo.',
       'es-419': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.',
       'es-ES': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.'
+    },
+    allDayEmpty: {
+      'ja-JP': '終日の予定は1日以上にしてください。終了は最終日の翌日0時です。',
+      'en-US': 'An all-day event covers at least one day, so it ends at midnight after its last day.',
+      'fr-FR': "Un événement d'une journée entière dure au moins un jour et se termine à minuit après son dernier jour.",
+      'de-DE': 'Ein ganztägiger Termin umfasst mindestens einen Tag und endet um Mitternacht nach seinem letzten Tag.',
+      'hi-IN': 'पूरे दिन का इवेंट कम से कम एक दिन का होता है, इसलिए वह अपने आख़िरी दिन के बाद की आधी रात को खत्म होता है।',
+      'id-ID': 'Acara sehari penuh mencakup setidaknya satu hari, jadi selesai pada tengah malam setelah hari terakhirnya.',
+      'it-IT': "Un evento di un'intera giornata dura almeno un giorno, quindi finisce a mezzanotte dopo il suo ultimo giorno.",
+      'ko-KR': '종일 일정은 하루 이상이어야 하므로 마지막 날 다음 날 자정에 끝나야 합니다.',
+      'pt-BR': 'Um evento de dia inteiro abrange pelo menos um dia, então termina à meia-noite depois do último dia.',
+      'es-419': 'Un evento de todo el día abarca al menos un día, así que termina a medianoche después de su último día.',
+      'es-ES': 'Un evento de todo el día abarca al menos un día, así que termina a medianoche después de su último día.'
     }
   },
   google: {

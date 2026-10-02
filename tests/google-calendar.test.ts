@@ -269,6 +269,81 @@ describe('signing in to Google', () => {
     expect(tokens.value).toBe('refresh-new')
   })
 
+  /**
+   * Google's token endpoints as its documentation describes revocation: revoking any token takes back
+   * every scope the account granted the app, and with it every token issued for them. The exchange of the
+   * code `first` waits for `firstExchange`, as on a network that stalls.
+   */
+  function grantingGoogle(firstExchange: Promise<unknown>) {
+    const valid = new Set<string>()
+    const route: Route = async (call) => {
+      if (call.url.href === GOOGLE_REVOKE_URL) {
+        valid.clear()
+        return new Response('', { status: 200 })
+      }
+      if (call.url.href !== GOOGLE_TOKEN_URL) return undefined
+      const form = new URLSearchParams(call.body)
+      const scope = GOOGLE_CALENDAR_SCOPES.join(' ')
+      if (form.get('grant_type') === 'refresh_token')
+        return valid.has(form.get('refresh_token')!) ? json({ access_token: 'access-renewed', expires_in: 3599, scope }) : json({ error: 'invalid_grant' }, 400)
+      const code = form.get('code')!
+      if (code === 'first') await firstExchange
+      valid.add(`refresh-${code}`)
+      return json({ access_token: `access-${code}`, refresh_token: `refresh-${code}`, expires_in: 3599, scope })
+    }
+    return { route, valid }
+  }
+
+  /** Signs in with a browser in which the user consents at once, giving the code `first` and then `second`. */
+  function consentingAtOnce(google: ReturnType<typeof fakeGoogle>, tokens: ReturnType<typeof memoryTokens>) {
+    const context = calendarWith(google, tokens)
+    let consents = 0
+    context.openBrowser.mockImplementation(async (url: string) => {
+      const authorize = new URL(url)
+      const code = ++consents === 1 ? 'first' : 'second'
+      void globalThis.fetch(`${authorize.searchParams.get('redirect_uri')}/?code=${code}&state=${authorize.searchParams.get('state')}`)
+    })
+    const exchanging = (code: string): boolean => google.calls.some((call) => new URLSearchParams(call.body).get('code') === code)
+    return { ...context, exchanging }
+  }
+
+  it('keeps the newer sign-in working when the one a sign-in or a sign-out stopped was still trading its code', async () => {
+    for (const between of ['nothing', 'signOut'] as const) {
+      const grants = grantingGoogle(new Promise((resolve) => setTimeout(resolve, 200)))
+      const google = fakeGoogle(grants.route)
+      const tokens = memoryTokens(null)
+      const { auth, exchanging } = consentingAtOnce(google, tokens)
+      const first = auth.signIn().catch((error: unknown) => error)
+      await vi.waitFor(() => expect(exchanging('first')).toBe(true))
+      if (between === 'signOut') await auth.signOut()
+      await auth.signIn()
+      expect(await first).toBeInstanceOf(SignInReplaced)
+      expect(tokens.value).toBe('refresh-second')
+      auth.forgetAccessToken('access-second')
+      await expect(auth.accessToken()).resolves.toBe('access-renewed')
+    }
+  })
+
+  it('opens the browser for a newer sign-in at once while the one it replaced is still trading its code', async () => {
+    let release!: () => void
+    const grants = grantingGoogle(new Promise<void>((resolve) => (release = resolve)))
+    const google = fakeGoogle(grants.route)
+    const tokens = memoryTokens(null)
+    const { auth, openBrowser, exchanging } = consentingAtOnce(google, tokens)
+    const first = auth.signIn().catch((error: unknown) => error)
+    try {
+      await vi.waitFor(() => expect(exchanging('first')).toBe(true))
+      const second = auth.signIn()
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(2))
+      await second
+      expect(tokens.value).toBe('refresh-second')
+    } finally {
+      release()
+    }
+    expect(await first).toBeInstanceOf(SignInReplaced)
+    expect(tokens.value).toBe('refresh-second')
+  })
+
   it('opens no browser for a sign-in stopped while its loopback server was starting', async () => {
     const { auth, openBrowser } = calendarWith(fakeGoogle(), memoryTokens(null))
     const signingIn = auth.signIn().catch((error: unknown) => error)
@@ -370,9 +445,10 @@ describe('the Google calendar through CalendarService', () => {
   }
   const getsEvent: Route = (call) =>
     call.method === 'GET' && call.url.pathname === `/calendar/v3/calendars/me%40example.com/events/ev1` ? json(timed) : undefined
+  /** The calendar's own fields of its events page, which is how Google answers a request for those fields alone. */
   const getsCalendar: Route = (call) =>
-    call.method === 'GET' && call.url.pathname === '/calendar/v3/users/me/calendarList/me%40example.com'
-      ? json({ id: 'me@example.com', summary: 'me@example.com', accessRole: 'owner', timeZone: 'Asia/Tokyo', primary: true })
+    call.method === 'GET' && call.url.pathname === '/calendar/v3/calendars/me%40example.com/events'
+      ? json({ summary: 'me@example.com', timeZone: 'Asia/Tokyo', accessRole: 'owner' })
       : undefined
 
   function serviceWith(google: ReturnType<typeof fakeGoogle>, approve = true) {
@@ -509,6 +585,36 @@ describe('the Google calendar through CalendarService', () => {
     const error = await service.change({ operation: 'create', event: fields }, new AbortController().signal).catch((e: Error) => e)
     expect((error as Error).message).toBe(errorText('calendar.errors.googleRequestFailed', { status: 503 }))
     expect(google.api().filter((call) => call.method !== 'GET')).toHaveLength(0)
+  })
+
+  it('lists the calendars, and reads and deletes an event in the zone its list gives, when the calendar list leaves out a zone', async () => {
+    // Google's API documents the zone of a calendar list entry as optional, and that of an events page as always there.
+    const zonelessList: Route = (call) =>
+      call.method === 'GET' && call.url.pathname === '/calendar/v3/users/me/calendarList'
+        ? json({
+            items: [
+              { id: 'me@example.com', summary: 'me@example.com', accessRole: 'owner', primary: true },
+              { id: 'team@group.calendar.google.com', summary: 'チーム', accessRole: 'writer', timeZone: 'Asia/Tokyo' }
+            ]
+          })
+        : undefined
+    const floating = { ...timed, start: { dateTime: timed.start.dateTime }, end: { dateTime: timed.end.dateTime } }
+    const getsFloating: Route = (call) =>
+      call.url.pathname === '/calendar/v3/calendars/me%40example.com/events/ev1' ? (call.method === 'DELETE' ? new Response(null, { status: 204 }) : json(floating)) : undefined
+    const google = fakeGoogle(refreshes, zonelessList, getsFloating, eventsOf('me@example.com', [floating]), eventsOf('team@group.calendar.google.com', []))
+    const { service } = serviceWith(google)
+    expect(await service.status()).toEqual({
+      signIn: 'signedIn',
+      calendars: [
+        { id: 'me@example.com', title: 'me@example.com', writable: true },
+        { id: 'team@group.calendar.google.com', title: 'チーム', writable: true }
+      ],
+      account: 'me@example.com'
+    })
+    const [listed] = await service.list({ start: '2026-09-14T00:00:00+09:00', end: '2026-09-21T00:00:00+09:00' })
+    expect(listed.timeZone).toBe('Asia/Tokyo')
+    expect(await calendarWith(google).calendar.event(listed.id)).toEqual(listed)
+    await expect(service.change({ operation: 'delete', eventId: listed.id }, new AbortController().signal)).resolves.toMatchObject({ saved: true })
   })
 
   it('finds no event in a cancelled occurrence Google returns without its times', async () => {
