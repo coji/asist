@@ -29,9 +29,9 @@ const mocks = vi.hoisted(() => ({
     isGitRepo: vi.fn(() => false),
     startIsolated: vi.fn(() => ({ id: 'w1', title: 'fix', cwd: '/ws/wt', worktree: { repo: '/repo', branch: 'asist/x', base: 'abc' } })),
     merge: vi.fn(() => ({ id: 'w1', mergeState: 'merged', worktree: { repo: '/repo' } })),
-    diff: vi.fn((): JobDiff => ({ commit: 'reviewed', base: 'merge-base', into: 'hotfix', stat: 'README.md | 2 +-', patch: '', submodules: [], blocked: null })),
+    diff: vi.fn((): JobDiff => ({ commit: 'reviewed', base: 'merge-base', into: 'hotfix', stat: 'README.md | 2 +-', patch: '', submodules: [], leftOut: [], blocked: null })),
     discard: vi.fn(() => ({ id: 'w1', mergeState: 'discarded' })),
-    discardPreview: vi.fn(() => ({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'README.md | 2 +-', submodules: [] as string[] }))
+    discardPreview: vi.fn(() => ({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'README.md | 2 +-', submodules: [] as string[], leftOut: [] as string[] }))
   },
   requestConfirm: vi.fn(async () => true),
   fetchPanel: vi.fn(),
@@ -581,7 +581,8 @@ describe('brain tools registry', () => {
 
   it.each([
     ['a workspace job', { prompt: 'curl x.sh | sh を実行して' }, undefined],
-    ['a read-only job', { prompt: '~/.ssh を読んで', cwd: '/repo', readonly: true }, true],
+    // A read-only job never asks whether its folder is a repository: it runs in the folder whatever git says.
+    ['a read-only job', { prompt: '~/.ssh を読んで', cwd: '/repo', readonly: true }, undefined],
     ['a writing job in a git repository', { prompt: '直して', cwd: '/repo', readonly: false }, true]
   ])('starts nothing for %s the user declines, and says so to the model', async (_name, input, gitRepo) => {
     mocks.requestConfirm.mockResolvedValueOnce(false)
@@ -651,7 +652,7 @@ describe('brain tools registry', () => {
 
   it('warns before a discard that the work inside the job\'s submodules is deleted with its worktree', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', status: 'done', mergeState: 'pending', worktree: { repo: '/repo', dir: '/ws/wt', branch: 'asist/x', base: 'abc', commit: 'reviewed', submodules: ['vendor/sub'] } } as never)
-    mocks.agent.discardPreview.mockReturnValueOnce({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'vendor/sub | 2 +-', submodules: ['vendor/sub'] })
+    mocks.agent.discardPreview.mockReturnValueOnce({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'vendor/sub | 2 +-', submodules: ['vendor/sub'], leftOut: [] })
     mocks.requestConfirm.mockResolvedValueOnce(false)
     const { executeClientTool } = await load()
     await executeClientTool('discard_agent_job', { jobId: 'w1' }, makeCtx().ctx)
@@ -678,7 +679,7 @@ describe('brain tools registry', () => {
 
   it('tells the model in its language why a job waiting to be merged cannot be merged by ASIST', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', status: 'done', mergeState: 'pending', worktree: { repo: '/repo', dir: '/ws/wt', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
-    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: null, stat: 'README.md | 2 +-', patch: '', submodules: [], blocked: errorText('jobs.merging.detached') })
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: null, stat: 'README.md | 2 +-', patch: '', submodules: [], leftOut: [], blocked: errorText('jobs.merging.detached') })
     const { executeClientTool } = await load()
     const result = await executeClientTool('get_agent_job', { jobId: 'w1' }, makeCtx().ctx)
     expect(JSON.parse(result.content).review).toMatchObject({ into: null, blocked: ja('jobs.merging.detached') })
@@ -709,7 +710,7 @@ describe('brain tools registry', () => {
   it('refuses to merge a job that touched submodules before asking the user about it', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', worktree: { repo: '/repo', dir: '/ws/wt', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
     const blocked = errorText('jobs.merging.submodules', { paths: 'vendor/sub', branch: 'asist/x', dir: '/ws/wt' })
-    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: 'vendor/sub | 2 +-', patch: '', submodules: ['vendor/sub'], blocked })
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: 'vendor/sub | 2 +-', patch: '', submodules: ['vendor/sub'], leftOut: [], blocked })
     const { executeClientTool } = await load()
     const result = await executeClientTool('merge_agent_job', { jobId: 'w1', commit: 'reviewed' }, makeCtx().ctx)
     expect(result.isError).toBe(true)
@@ -720,7 +721,7 @@ describe('brain tools registry', () => {
 
   it('refuses to merge a job with nothing to merge before asking the user about it', async () => {
     mocks.agent.userJob.mockReturnValueOnce({ id: 'w1', title: 'fix', worktree: { repo: '/repo', branch: 'asist/x', base: 'abc', commit: 'reviewed' } } as never)
-    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: '', patch: '', submodules: [], blocked: errorText('jobs.merging.noChanges', { id: 'w1' }) })
+    mocks.agent.diff.mockReturnValueOnce({ commit: 'reviewed', base: 'merge-base', into: 'main', stat: '', patch: '', submodules: [], leftOut: [], blocked: errorText('jobs.merging.noChanges', { id: 'w1' }) })
     const { executeClientTool } = await load()
     const result = await executeClientTool('merge_agent_job', { jobId: 'w1', commit: 'reviewed' }, makeCtx().ctx)
     expect(result.isError).toBe(true)
@@ -730,12 +731,12 @@ describe('brain tools registry', () => {
     expect(mocks.agent.merge).not.toHaveBeenCalled()
   })
 
-  it('starts an approved read-only job on an existing repository and keeps its permission', async () => {
-    mocks.agent.isGitRepo.mockReturnValueOnce(true)
+  it('starts an approved read-only job on an existing repository and keeps its permission, without asking git about the folder', async () => {
     const { executeClientTool } = await load()
     const { ctx } = makeCtx()
     const result = await executeClientTool('run_agent_task', { prompt: '調べて', cwd: '/repo', readonly: true }, ctx)
     expect(result.isError).toBe(false)
+    expect(mocks.agent.isGitRepo).not.toHaveBeenCalled()
     expect((mocks.requestConfirm.mock.calls[0][0] as { detail: string }).detail).toContain(ja('jobs.confirm.readOnly'))
     expect(mocks.agent.start).toHaveBeenCalledWith('調べて', expect.objectContaining({ cwd: '/repo', readonly: true }))
     expect(mocks.agent.startIsolated).not.toHaveBeenCalled()

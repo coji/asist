@@ -128,12 +128,22 @@ export function agentTool(locale: ConversationLocale): Def {
         }
       }
       const settings = getSettings()
-      const access = resolveJobAccess({
+      const wanted = {
         explicitCwd: Boolean(options.cwd),
         readonlyInput: options.readonly,
-        defaultReadonly: settings.agentMode === 'readonly',
-        gitRepo: options.cwd ? agentRunner.isGitRepo(options.cwd) : false
-      })
+        defaultReadonly: settings.agentMode === 'readonly'
+      }
+      // Only a job that writes into the folder is isolated in a worktree, so only it asks git, and a repository
+      // ASIST's git refuses to open is no plain folder to write in: such a job is refused before the user is asked.
+      let gitRepo = false
+      if (options.cwd && !resolveJobAccess(wanted).readonly) {
+        try {
+          gitRepo = agentRunner.isGitRepo(options.cwd)
+        } catch (err) {
+          throw new ToolError(TEXTS.startFailed(detail(err, locale)))
+        }
+      }
+      const access = resolveJobAccess({ ...wanted, gitRepo })
       const approved = await confirmJob(
         {
           kind: 'start',
@@ -302,8 +312,8 @@ export function jobTools(locale: ConversationLocale): Def[] {
     {
       name: 'get_agent_job',
       description: {
-        ja: '特定ジョブの詳細(状態、要約、成果物、最近のログ15行)を確認する。結果は { jobId, title, status, cwd, summary, numTurns, costUsd, artifacts, mergeState, review, reviewUnavailable, logTail }。reviewには確認対象のcommitと差分、取り込み先のブランチ(into。HEADがブランチを指していないときはnullで、取り込めない)、ジョブが触れたサブモジュールと.gitmodules(submodules)が入る。ASISTが取り込まないときはその理由がblockedに入り(サブモジュールに触れたジョブ、HEADがブランチを指していないときなど)、取り込めるときはnull。取り込み待ちのジョブの差分を読めなかったときは、reviewの代わりにreviewUnavailableにその理由が入る。',
-        en: 'Gives the detail of one job: its status, its summary, what it produced and the last fifteen lines of its log. The result is { jobId, title, status, cwd, summary, numTurns, costUsd, artifacts, mergeState, review, reviewUnavailable, logTail }, where review holds the commit to look over, its diff, the branch a merge goes into (into, null when HEAD is not on a branch, while nothing can be merged), and the submodules and .gitmodules the job touched (submodules). blocked gives the reason ASIST will not merge the job, such as submodules it touched or a HEAD that is not on a branch, and is null when it can be merged. When the diff of a job waiting to be merged cannot be read, reviewUnavailable gives the reason in place of review.'
+        ja: '特定ジョブの詳細(状態、要約、成果物、最近のログ15行)を確認する。結果は { jobId, title, status, cwd, summary, numTurns, costUsd, artifacts, mergeState, review, reviewUnavailable, logTail }。reviewには確認対象のcommitと差分、取り込み先のブランチ(into。HEADがブランチを指していないときはnullで、取り込めない)、ジョブが触れたサブモジュールと.gitmodules(submodules)、ジョブが知らせたファイルのうちgitが無視するのでコミットに入らないもの(leftOut。取り込まれず、worktreeと一緒に消える)が入る。ASISTが取り込まないときはその理由がblockedに入り(サブモジュールに触れたジョブ、HEADがブランチを指していないときなど)、取り込めるときはnull。取り込み待ちのジョブの差分を読めなかったときは、reviewの代わりにreviewUnavailableにその理由が入る。',
+        en: 'Gives the detail of one job: its status, its summary, what it produced and the last fifteen lines of its log. The result is { jobId, title, status, cwd, summary, numTurns, costUsd, artifacts, mergeState, review, reviewUnavailable, logTail }, where review holds the commit to look over, its diff, the branch a merge goes into (into, null when HEAD is not on a branch, while nothing can be merged), the submodules and .gitmodules the job touched (submodules), and the files the job reported that git ignores, which its commit does not hold (leftOut): a merge leaves them out, and they are deleted with the worktree. blocked gives the reason ASIST will not merge the job, such as submodules it touched or a HEAD that is not on a branch, and is null when it can be merged. When the diff of a job waiting to be merged cannot be read, reviewUnavailable gives the reason in place of review.'
       },
       usage: {
         ja: '特定のジョブの進捗や成果物のパスを知りたいとき、完了報告で詳細が要るとき',
@@ -417,8 +427,8 @@ export function jobTools(locale: ConversationLocale): Def[] {
     {
       name: 'merge_agent_job',
       description: {
-        ja: 'worktreeで隔離して行った変更をユーザーのリポジトリへ取り込む(merge)。前提: 取り込み待ちのジョブにだけ使える。get_agent_jobのreviewで確認したcommitを指定する。手順: 呼ぶと変更の一覧を載せた確認画面が出て、ユーザーが承認したときだけ取り込む。後条件: 成功すると worktree は消え、結果は { merged, jobId, repo }。キャンセルされたら { declined } が返り、worktree は残る。衝突したら取り込みは中止され worktree は残るので、解消を continue_agent_job で提案する。作業ツリーに未コミットの変更があると取り込めない。',
-        en: "Merges the changes made in an isolated worktree into the user's repository. Precondition: only a job whose changes are waiting to be merged can be merged, and you name the commit you looked over in get_agent_job's review. Steps: calling it brings up a confirmation window listing the changed files, and the merge happens only when the user approves it. Postcondition: on success the worktree is gone and the result is { merged, jobId, repo }. When the user cancels, the result is { declined } and the worktree stays. On a conflict the merge is called off and the worktree stays, so offer to resolve it with continue_agent_job. Nothing can be merged while the working tree holds uncommitted changes."
+        ja: 'worktreeで隔離して行った変更をユーザーのリポジトリへ取り込む(merge)。前提: 取り込み待ちのジョブにだけ使える。get_agent_jobのreviewで確認したcommitを指定する。手順: 呼ぶと変更の一覧を載せた確認画面が出て、ユーザーが承認したときだけ取り込む。後条件: 成功すると worktree は消え、結果は { merged, jobId, repo }。キャンセルされたら { declined } が返り、worktree は残る。衝突したら取り込みは中止され worktree は残るので、解消を continue_agent_job で提案する。作業ツリーに未コミットの変更があるときと、取り込むファイルの場所にgitが追跡していないユーザーのファイルがあるときは取り込めない。',
+        en: "Merges the changes made in an isolated worktree into the user's repository. Precondition: only a job whose changes are waiting to be merged can be merged, and you name the commit you looked over in get_agent_job's review. Steps: calling it brings up a confirmation window listing the changed files, and the merge happens only when the user approves it. Postcondition: on success the worktree is gone and the result is { merged, jobId, repo }. When the user cancels, the result is { declined } and the worktree stays. On a conflict the merge is called off and the worktree stays, so offer to resolve it with continue_agent_job. Nothing can be merged while the working tree holds uncommitted changes, or a file of the user's that git does not track where the merge would write one."
       },
       usage: {
         ja: '「取り込んで」「反映して」。取り込み待ちの変更をユーザーのリポジトリへ入れる。呼ぶ前に確認画面で承認するよう伝える',

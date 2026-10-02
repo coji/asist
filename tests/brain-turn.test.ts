@@ -781,6 +781,24 @@ describe('brain turn', () => {
     expect(text).not.toContain('merge_agent_job')
   })
 
+  it('tells the model which files alone keep a job with nothing to merge, and offers only the discard', async () => {
+    await loadBrain()
+    const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+    const worktree = { dir: '/w/job-1', repo: '/r', branch: 'asist/b', base: 'c', commit: 'c', keptFor: ['dist/report.html'] }
+    const text = reportNotice({ ...FINISHED_JOB, worktree, mergeState: 'pending' } as AgentJob).text
+    for (const value of ['dist/report.html', '/w/job-1', 'discard_agent_job']) expect(text).toContain(value)
+    expect(text).not.toContain('merge_agent_job')
+  })
+
+  it('tells the model the branch an agent switched its worktree to, and offers only the discard', async () => {
+    await loadBrain()
+    const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+    const worktree = { dir: '/w/job-1', repo: '/r', branch: 'asist/b', base: 'c', commit: 'd', movedTo: 'feature/greeting' }
+    const text = reportNotice({ ...FINISHED_JOB, worktree, mergeState: 'pending' } as AgentJob).text
+    for (const value of ['feature/greeting', '/w/job-1', 'discard_agent_job']) expect(text).toContain(value)
+    expect(text).not.toContain('merge_agent_job')
+  })
+
   it('reports a finished job once when its turn takes longer to start speaking than the wait for playback', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     try {

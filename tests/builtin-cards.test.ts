@@ -93,7 +93,7 @@ const api = {
   taskUpdate: vi.fn(async (id: string): Promise<Task> => taskOf(id, id, 'done', 0)),
   notesList: vi.fn(async () => []),
   jobLog: vi.fn(async () => []),
-  jobDiff: vi.fn(async (): Promise<JobDiff> => ({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], blocked: null })),
+  jobDiff: vi.fn(async (): Promise<JobDiff> => ({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], leftOut: [], blocked: null })),
   jobMerge: vi.fn(async () => {}),
   jobDiscard: vi.fn(async () => {}),
   jobDiscardPreview: vi.fn(async () => ({ repo: '/r', dir: '/w', branch: 'asist/x', stat: '', submodules: [] as string[] })),
@@ -522,6 +522,16 @@ describe('agent job card', () => {
     expect(card.querySelector('.card-hero p')?.textContent).toContain('1分05秒で完了')
   })
 
+  it('names beside the diff the files the job wrote that the merge leaves behind', async () => {
+    useJobStore.setState({
+      jobs: [{ ...DEMO_JOB, status: 'done', endedAt: DEMO_JOB.startedAt + 65_000, mergeState: 'pending', worktree: { repo: '/r', dir: '/w', branch: 'asist/x', base: 'main' } }],
+      logs: {}
+    })
+    api.jobDiff.mockResolvedValueOnce({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], leftOut: ['dist/report.html'], blocked: null })
+    const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
+    expect(card.querySelector('.aj-merge')?.textContent).toContain(t('jobs.merging.leftOut', { paths: 'dist/report.html' }))
+  })
+
   it('offers no merge for a job that touched submodules, says why and where its commits are, and asks before discarding them', async () => {
     useConfirmStore.setState({ queue: [] })
     useJobStore.setState({
@@ -535,6 +545,7 @@ describe('agent job card', () => {
       stat: ' vendor/sub | 2 +-',
       patch: '',
       submodules: ['vendor/sub'],
+      leftOut: [],
       blocked: errorText('jobs.merging.submodules', { paths: 'vendor/sub', branch: 'asist/x', dir: '/w' })
     }
     api.jobDiff.mockResolvedValueOnce(touched).mockResolvedValueOnce(touched)
@@ -560,7 +571,7 @@ describe('agent job card', () => {
       jobs: [{ ...DEMO_JOB, status: 'done', endedAt: DEMO_JOB.startedAt + 65_000, mergeState: 'pending', worktree: { repo: '/r', dir: '/w', branch: 'asist/x', base: 'main' } }],
       logs: {}
     })
-    const detached: JobDiff = { commit: 'abc', base: 'a0c', into: null, stat: '1 file changed', patch: '', submodules: [], blocked: errorText('jobs.merging.detached') }
+    const detached: JobDiff = { commit: 'abc', base: 'a0c', into: null, stat: '1 file changed', patch: '', submodules: [], leftOut: [], blocked: errorText('jobs.merging.detached') }
     api.jobDiff.mockResolvedValueOnce(detached).mockResolvedValueOnce(detached)
     const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
     expect(card.querySelector('.aj-merge')?.textContent).toContain(t('jobs.merging.detached'))
@@ -587,8 +598,8 @@ describe('agent job card', () => {
     api.jobMerge.mockRejectedValueOnce(new Error(errorText('jobs.merging.baseChanged')))
     const card = await renderAt(spec('agent-job', { jobId: DEMO_JOB.id }), L)
     api.jobDiff
-      .mockResolvedValueOnce({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], blocked: null })
-      .mockResolvedValueOnce({ commit: 'abc', base: 'b1d', into: 'main', stat: '2 files changed', patch: '', submodules: [], blocked: null })
+      .mockResolvedValueOnce({ commit: 'abc', base: 'a0c', into: 'main', stat: '1 file changed', patch: '', submodules: [], leftOut: [], blocked: null })
+      .mockResolvedValueOnce({ commit: 'abc', base: 'b1d', into: 'main', stat: '2 files changed', patch: '', submodules: [], leftOut: [], blocked: null })
     await act(async () => card.querySelector<HTMLButtonElement>('.aj-merge .card-action')!.click())
     expect(api.jobDiff).toHaveBeenCalledTimes(3)
     expect(card.querySelector('.aj-diff')?.textContent).toContain('2 files changed')

@@ -141,8 +141,10 @@ function MergeControls({ job }: { job: AgentJob }): React.JSX.Element {
           : `${worktree.branch} → ${worktree.repo}`}
       </p>
       {diff?.blocked && <p className="aj-text">{displayError(diff.blocked)}</p>}
+      {/* The files left out of the merge grow in number, so they scroll with the diff rather than lengthen the card. */}
       {diff && (
         <pre className="aj-diff">
+          {diff.leftOut.length > 0 ? `${t('jobs.merging.leftOut', { paths: diff.leftOut.join(', ') })}\n\n` : ''}
           {diff.stat || t('jobs.card.merge.noDiff')}
           {diff.patch ? `\n\n${diff.patch}` : ''}
         </pre>

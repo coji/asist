@@ -28,7 +28,11 @@ const HISTORY_LOAD_RETRY_MS = 30_000
 
 /** What the model is told about a job that ended. It reads it and reports it in its own words. */
 const REPORT: Readonly<
-  Record<'done' | 'error' | 'artifacts' | 'mergePending' | 'submodules' | 'mergeUnchanged' | 'merged' | 'discarded' | 'noSummary' | 'noReason', PromptText>
+  Record<
+    | 'done' | 'error' | 'artifacts' | 'mergePending' | 'submodules' | 'movedTo' | 'keptFor' | 'mergeUnchanged' | 'merged' | 'discarded'
+    | 'noSummary' | 'noReason',
+    PromptText
+  >
 > = {
   done: {
     ja: `{notice} ジョブ「{title}」(jobId: {jobId})が完了した。結果の要約: {summary}{artifactNote}{mergeNote}`,
@@ -46,6 +50,14 @@ const REPORT: Readonly<
   submodules: {
     ja: ` このジョブはサブモジュールか.gitmodules({paths})に触れたので、ASISTでは取り込めない。変更はworktreeのブランチ{branch}にある。サブモジュールの中で作ったコミットはworktree({dir})の中の複製にしかないことがあり、その場合はユーザーのチェックアウトでgit submodule updateをしても取ってこられない。ユーザー自身が必要ならそこからpushしてブランチを取り込むか、捨てる(discard_agent_job)かを伝えること。捨てるとその複製も消える。`,
     en: ` This job touched submodules or .gitmodules ({paths}), so ASIST cannot merge it. The changes are on the branch {branch} of its worktree. Commits made inside a submodule may exist only in the copy in the worktree ({dir}), and if so git submodule update in the user's checkout cannot fetch them. Tell the user they can push them from there if needed and merge the branch themselves, or throw the job away with discard_agent_job, which deletes that copy too.`
+  },
+  movedTo: {
+    ja: ` エージェントがworktree({dir})をASISTのブランチから{branch}に切り替えて作業したので、ASISTでは取り込めない。作業は{branch}にある。ユーザー自身がそれを取り込むか、捨てる(discard_agent_job)かを伝えること。捨てるとworktreeと、そこにしかない変更も消える。`,
+    en: ` The agent switched the worktree ({dir}) from ASIST's branch to {branch} and worked there, so ASIST cannot merge it. The work is on {branch}. Tell the user they can take it in themselves, or throw the job away with discard_agent_job, which deletes the worktree and any change that exists only there.`
+  },
+  keptFor: {
+    ja: ` このジョブはgitが無視する場所にファイル({paths})を書いただけで、取り込める変更は無い。それらはworktree({dir})にあり、捨てると一緒に消える。必要なら開いて別の場所へ移すようユーザーに伝え、そのあとで捨てる(discard_agent_job)かを聞くこと。`,
+    en: ` This job only wrote files where git ignores them ({paths}), so there is nothing to merge. They are in the worktree ({dir}) and go with it when it is thrown away. Tell the user to open them and move them elsewhere if they need them, and then ask whether to throw the job away with discard_agent_job.`
   },
   mergeUnchanged: { ja: ` 変更は無かったのでworktreeは片付けた。`, en: ` Nothing changed, so the worktree has been cleared away.` },
   merged: { ja: ` 変更はすでに取り込んだ。`, en: ` The changes have already been taken in.` },
@@ -137,25 +149,29 @@ async function reportDelivery(handle: TurnHandle, route: SpeechRoute): Promise<P
   return delivery
 }
 
+/** What the report says about where the changes of a job stand, and which of merging and discarding it offers. */
+function mergeNote(job: AgentJob): string {
+  const locale = conversationLocale()
+  const worktree = job.worktree
+  if (job.mergeState === 'pending' && worktree) {
+    if (worktree.movedTo) return fillPrompt(promptText(locale, REPORT.movedTo), { branch: worktree.movedTo, dir: worktree.dir })
+    if (worktree.keptFor) return fillPrompt(promptText(locale, REPORT.keptFor), { paths: worktree.keptFor.join(', '), dir: worktree.dir })
+    if (worktree.submodules) {
+      return fillPrompt(promptText(locale, REPORT.submodules), { paths: worktree.submodules.join(', '), branch: worktree.branch, dir: worktree.dir })
+    }
+  }
+  if (job.mergeState === 'pending') return promptText(locale, REPORT.mergePending)
+  if (job.mergeState === 'merged') return promptText(locale, REPORT.merged)
+  if (job.mergeState === 'discarded') return promptText(locale, REPORT.discarded)
+  return worktree && job.mergeState === 'unchanged' ? promptText(locale, REPORT.mergeUnchanged) : ''
+}
+
 /** The notice a turn is given for a finished job, written from the job as it is and in the language the conversation is held in now. */
 export function reportNotice(job: AgentJob): { notice: NoticeKind; text: string } {
   const locale = conversationLocale()
   const artifacts = (job.artifacts ?? []).slice(-5)
   const artifactNote = artifacts.length > 0 ? fillPrompt(promptText(locale, REPORT.artifacts), { artifacts: artifacts.join(', ') }) : ''
-  const submodules = job.worktree?.submodules
-  const mergeNote =
-    job.mergeState === 'pending' && submodules
-      ? fillPrompt(promptText(locale, REPORT.submodules), { paths: submodules.join(', '), branch: job.worktree!.branch, dir: job.worktree!.dir })
-      : job.mergeState === 'pending'
-        ? promptText(locale, REPORT.mergePending)
-        : job.mergeState === 'merged'
-          ? promptText(locale, REPORT.merged)
-          : job.mergeState === 'discarded'
-            ? promptText(locale, REPORT.discarded)
-            : job.worktree && job.mergeState === 'unchanged'
-              ? promptText(locale, REPORT.mergeUnchanged)
-              : ''
-  const values = { notice: marker(locale, 'systemNotice'), title: job.title, jobId: job.id, artifactNote, mergeNote }
+  const values = { notice: marker(locale, 'systemNotice'), title: job.title, jobId: job.id, artifactNote, mergeNote: mergeNote(job) }
   return job.status === 'done'
     ? {
         notice: 'job-done',

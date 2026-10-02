@@ -5,8 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { errorText } from '@shared/i18n/error-text'
 import { shellPath, testGitEnv } from './helpers/git'
 import { longTempFolder } from './helpers/temp'
-const mocks = vi.hoisted(() => ({ windows: false }))
+const mocks = vi.hoisted(() => ({ windows: false, differentOwner: false }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd() } }))
+// git's own switch for taking every repository for another user's, which a git that reads no safe.directory refuses to open.
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>()
+  const execFileSync = ((file: string, args: readonly string[], options: { env?: NodeJS.ProcessEnv }) =>
+    actual.execFileSync(file, args, mocks.differentOwner ? { ...options, env: { ...options.env, GIT_TEST_ASSUME_DIFFERENT_OWNER: '1' } } : options)) as typeof actual.execFileSync
+  return { ...actual, default: { ...actual, execFileSync }, execFileSync }
+})
 // The git of the machine the tests run on, unless a test asks for what ASIST does on Windows.
 vi.mock('../src/main/services/platform', async () => {
   const { HOST, WINDOWS } = await import('./helpers/platform')
@@ -90,6 +97,76 @@ describe('git service with an isolated worktree', () => {
     fs.mkdirSync(path.join(repo, 'sub'))
     expect(fs.realpathSync(git.toplevel(path.join(repo, 'sub'))!)).toBe(fs.realpathSync(repo))
     expect(git.toplevel(root)).toBeNull()
+  })
+
+  it('throws git\'s reason for a repository it refuses to open, rather than taking it for a folder outside any repository', () => {
+    mocks.differentOwner = true
+    try {
+      expect(git.toplevel(root)).toBeNull()
+      expect(() => git.toplevel(repo)).toThrow('dubious ownership')
+    } finally {
+      mocks.differentOwner = false
+    }
+  })
+
+  it('refuses to fast-forward over a file of the user\'s that git ignores, and leaves the file and the branch as they were', () => {
+    fs.writeFileSync(path.join(repo, '.gitignore'), '.env\n')
+    run(repo, ['add', '.gitignore'])
+    run(repo, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'ignore'])
+    const wt = path.join(root, 'wt')
+    git.worktreeAdd(repo, wt, 'asist/env')
+    fs.writeFileSync(path.join(wt, '.env'), 'FROM_THE_JOB=1\n')
+    // What an agent does to commit a file the repository ignores.
+    run(wt, ['add', '-f', '.env'])
+    git.commitAll(wt, 'job')
+    fs.writeFileSync(path.join(repo, '.env'), 'THE_USERS_KEY=1\n')
+    const head = git.headCommit(repo)
+    expect(git.mergeNoFf(repo, 'asist/env', 'asist: job')).toMatchObject({ ok: false, conflict: false })
+    expect(fs.readFileSync(path.join(repo, '.env'), 'utf8')).toBe('THE_USERS_KEY=1\n')
+    expect(git.headCommit(repo)).toBe(head)
+    git.worktreeRemove(repo, wt, 'asist/env')
+  })
+
+  it('names the files of the user\'s that git does not track where a merge would write, a file where a folder goes and a folder where a file goes included', () => {
+    fs.writeFileSync(path.join(repo, '.gitignore'), '.env\nbuild\ncache/\nlocal.json\n')
+    for (const folder of ['conf', 'docs']) {
+      fs.mkdirSync(path.join(repo, folder))
+      fs.writeFileSync(path.join(repo, folder, 'shared.json'), '{}\n')
+    }
+    run(repo, ['add', '.'])
+    run(repo, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'ignore'])
+    const base = git.headCommit(repo)
+    const wt = path.join(root, 'wt')
+    git.worktreeAdd(repo, wt, 'asist/in-the-way')
+    fs.writeFileSync(path.join(wt, '.env'), 'FROM_THE_JOB=1\n')
+    fs.mkdirSync(path.join(wt, 'build'))
+    fs.writeFileSync(path.join(wt, 'build', 'out.txt'), 'built\n')
+    fs.writeFileSync(path.join(wt, 'cache'), 'a file\n')
+    fs.writeFileSync(path.join(wt, 'a.txt'), 'edited\n')
+    fs.writeFileSync(path.join(wt, 'c.txt'), 'new\n')
+    // Two tracked folders become files; only one of them holds a file of the user's that git ignores.
+    for (const folder of ['conf', 'docs']) {
+      fs.rmSync(path.join(wt, folder), { recursive: true })
+      fs.writeFileSync(path.join(wt, folder), 'a file now\n')
+    }
+    run(wt, ['add', '-f', '.env', 'build/out.txt'])
+    git.commitAll(wt, 'job')
+    fs.writeFileSync(path.join(repo, '.env'), 'THE_USERS_KEY=1\n')
+    fs.writeFileSync(path.join(repo, 'build'), 'a file of the user\'s\n')
+    fs.mkdirSync(path.join(repo, 'cache'))
+    fs.writeFileSync(path.join(repo, 'cache', 'entry'), 'cached\n')
+    fs.writeFileSync(path.join(repo, 'conf', 'local.json'), '{"key":1}\n')
+    expect(git.untrackedInTheWay(repo, base, 'asist/in-the-way')).toEqual(['.env', 'build', 'cache', 'conf'])
+    git.worktreeRemove(repo, wt, 'asist/in-the-way')
+  })
+
+  it('discards a worktree whose branch the agent renamed, and leaves the branch under its new name', () => {
+    const wt = path.join(root, 'wt')
+    git.worktreeAdd(repo, wt, 'asist/renamed')
+    run(wt, ['branch', '-m', 'feature/renamed'])
+    git.worktreeRemove(repo, wt, 'asist/renamed')
+    expect(fs.existsSync(wt)).toBe(false)
+    expect(run(repo, ['branch', '--list', 'feature/renamed'])).toContain('feature/renamed')
   })
 
   it('commits changes in the worktree, shows the diff, and on merge lands them on the user branch and drops the worktree', () => {

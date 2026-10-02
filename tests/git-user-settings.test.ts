@@ -121,6 +121,33 @@ describe("reading the user's git", () => {
     expect(listed.trim().split('\n')).toEqual(['core.autocrlf=true', 'core.symlinks', 'core.eol=a "quoted\\ value'])
   })
 
+  it("leaves alone, in a merge's check and a job's commit, the files the user's global excludes file ignores", async () => {
+    const { settingsSeenBy } = await actual()
+    const home = path.join(mocks.root, 'home')
+    fs.mkdirSync(home)
+    // A Mac user who ignores Finder's files in every repository, as GitHub's instructions set it up.
+    fs.writeFileSync(path.join(home, '.gitignore_global'), '.DS_Store\n')
+    fs.writeFileSync(path.join(home, '.gitconfig'), `[core]\n\tautocrlf = true\n\texcludesfile = ~/.gitignore_global\n`)
+    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith('GIT_')))
+    Object.assign(env, { HOME: home, USERPROFILE: home, XDG_CONFIG_HOME: path.join(home, 'xdg'), GIT_CONFIG_NOSYSTEM: '1' })
+    const settings = settingsSeenBy((await import('../src/main/services/git')).gitPath(), env)
+    vi.stubEnv('HOME', home)
+    vi.stubEnv('USERPROFILE', home)
+    try {
+      const git = await loadGit(Object.fromEntries(settings) as Record<string, string>)
+      fs.writeFileSync(path.join(repo, '.DS_Store'), 'finder\n')
+      expect(git.isClean(repo)).toBe(true)
+      const wt = path.join(mocks.root, 'wt')
+      git.worktreeAdd(repo, wt, 'asist/job')
+      fs.writeFileSync(path.join(wt, 'b.txt'), 'new\r\n')
+      fs.writeFileSync(path.join(wt, '.DS_Store'), 'finder\n')
+      expect(git.commitAll(wt, 'asist: job')).toBe(true)
+      expect(run(wt, ['ls-tree', '-r', '--name-only', 'HEAD']).trim().split('\n')).toEqual(['a.txt', 'b.txt'])
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it("finds the user's git on PATH and never takes ASIST's own for it", async () => {
     const { userGitOnPath } = await actual()
     const bundledRoot = path.join(mocks.root, 'resources', 'git')

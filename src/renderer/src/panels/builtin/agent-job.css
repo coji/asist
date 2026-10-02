@@ -105,6 +105,11 @@
 .aj[data-size='focus'] .aj-diff {
   max-height: 300px;
 }
+/* At s, a diff box of 140px beside the reason a merge is refused and the files it leaves out made the card
+   524px tall where 518px fit (demo, 2026-10-02). */
+.aj[data-size='s'] .aj-diff {
+  max-height: 80px;
+}
 .aj-cost {
   display: inline-flex;
   flex: 1;

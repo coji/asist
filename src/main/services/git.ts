@@ -32,11 +32,11 @@ export function gitPath(): string {
 let globalConfig: string | undefined
 
 /**
- * The file git reads as the global configuration: the user's settings for how files are written in a
- * working tree, or no file when the user's git sets none of them. They are read once per run: starting
- * the user's git again for each of the dozens of git calls a job makes would add a git call to each (23 ms
- * on Windows 11 x64, 2026-09-27), and every call of a run agrees with the others, such as the check before
- * a merge and the checkout of the job. A change of the user's settings counts from the next start.
+ * The file git reads as the global configuration: the user's settings for the files of a working tree, or
+ * no file when the user's git sets none of them. They are read once per run: starting the user's git again
+ * for each of the dozens of git calls a job makes would add a git call to each (23 ms on Windows 11 x64,
+ * 2026-09-27), and every call of a run agrees with the others, such as the check before a merge and the
+ * checkout of the job. A change of the user's settings counts from the next start.
  */
 function globalConfigFile(): string {
   if (globalConfig !== undefined) return globalConfig
@@ -54,11 +54,10 @@ function globalConfigFile(): string {
 
 /**
  * The environment git runs with: the child environment without GIT_ variables, and without the system and
- * user configuration apart from the user's settings for how files are written in a working tree. A user's
- * commit.gpgsign would otherwise make every commit wait for a signature, and a filter such as git-lfs
- * names a program that a Finder launch has no PATH to. Those settings go in at the global level rather than
- * on the command line, so that a repository's own configuration still overrides them as it does for the
- * user's git.
+ * user configuration apart from the user's settings for the files of a working tree. A user's commit.gpgsign
+ * would otherwise make every commit wait for a signature, and a filter such as git-lfs names a program that a
+ * Finder launch has no PATH to. Those settings go in at the global level rather than on the command line, so
+ * that a repository's own configuration still overrides them as it does for the user's git.
  */
 export function gitEnv(parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env = childEnv({}, parent)
@@ -99,14 +98,22 @@ function git(cwd: string, args: string[], options: GitOptions = {}): string {
 /**
  * The top level of the repository dir sits in, or null when it is not inside one. It is spelled as
  * resolvedAsFarAsExists spells a path, because git writes C:/Users/... on Windows, and a path is compared
- * and stored in that one form.
+ * and stored in that one form. Any other failure is thrown with git's reason: a repository git refuses to
+ * open, such as one it takes for another user's while ASIST's git reads no safe.directory, is still a
+ * repository, and a job that took it for a plain folder would write straight into the user's working tree.
  */
 export function toplevel(dir: string): string | null {
   let top: string
   try {
-    top = git(dir, ['rev-parse', '--show-toplevel']).trim()
-  } catch {
-    return null
+    // rev-parse exits with 128 outside a repository and in one it refuses alike, so only its message tells
+    // them apart, and LC_ALL=C keeps a git built with translations from writing that message in another language.
+    top = git(dir, ['rev-parse', '--show-toplevel'], { env: { LC_ALL: 'C' } }).trim()
+  } catch (error) {
+    const failure = error as { stderr?: unknown; message?: string }
+    const reason = typeof failure.stderr === 'string' ? failure.stderr.trim() : ''
+    if (reason.startsWith('fatal: not a git repository')) return null
+    // The lines after the first are git's advice, such as adding a safe.directory, which ASIST's git does not read.
+    throw new Error(errorText('jobs.start.repoRefused', { path: dir, detail: reason.split('\n')[0] || String(failure.message) }))
   }
   return top ? resolvedAsFarAsExists(top) : null
 }
@@ -212,7 +219,20 @@ export function worktreeRemove(repo: string, dir: string, branch: string): void 
     // A folder git does not list is not left behind in silence: git refuses to remove it and says why.
     git(repo, ['worktree', 'remove', '--force', dir])
   }
-  git(repo, ['branch', '-D', branch])
+  // An agent that renamed the branch, with `git branch -m`, already took it away under that name.
+  if (hasBranch(repo, branch)) git(repo, ['branch', '-D', branch])
+}
+
+/** Whether repo has a branch of that name. */
+export function hasBranch(repo: string, branch: string): boolean {
+  try {
+    git(repo, ['show-ref', '--verify', '--quiet', `refs/heads/${branch}`])
+    return true
+  } catch (error) {
+    // show-ref exits with 1 and prints nothing when the ref does not exist.
+    if ((error as { status?: number }).status === 1) return false
+    throw error
+  }
 }
 
 const GITMODULES = '.gitmodules'
@@ -238,6 +258,15 @@ const WHOLE = { maxBuffer: Infinity }
  */
 const EXACT_DIFF = ['--no-color', '--no-ext-diff', '--no-textconv', '--no-relative', '--ignore-submodules=none']
 const EXACT_STATUS = ['--untracked-files=normal', '--ignore-submodules=none']
+
+/**
+ * git diff with EXACT_DIFF, writing every name as it is spelled: core.quotePath, which is on unless a
+ * configuration turns it off, writes `議事録.md` as "\350\255\260\344\272\213\351\214\262.md" in the stat and the
+ * patch that the user approves a merge by and the model reads.
+ */
+function exactDiff(repo: string, args: string[], options: GitOptions = {}): string {
+  return git(repo, ['-c', 'core.quotePath=false', 'diff', ...EXACT_DIFF, ...args], options)
+}
 
 /**
  * The options of every command that reads the files of a working tree to tell what changed on disk: the job's
@@ -316,7 +345,7 @@ interface Revealed extends FlagChanges {
 }
 
 /** The first few of paths, for a message. */
-const named = (paths: string[]): string => paths.slice(0, 5).join(', ') + (paths.length > 5 ? ', …' : '')
+export const named = (paths: string[]): string => paths.slice(0, 5).join(', ') + (paths.length > 5 ? ', …' : '')
 
 /**
  * Whether git applies a sparse checkout in dir: it is on and the file of its patterns is there. git skips a
@@ -486,7 +515,7 @@ function rawEntries(raw: string): RawEntry[] {
  * to another commit, added or removed, or a path turned into a submodule or out of one.
  */
 export function submoduleEntryChanges(repo: string, base: string, commit: string): string[] {
-  return rawEntries(git(repo, ['diff', ...EXACT_DIFF, '--raw', '-z', '--no-renames', base, commit], WHOLE))
+  return rawEntries(exactDiff(repo, ['--raw', '-z', '--no-renames', base, commit], WHOLE))
     .filter((entry) => entry.oldMode === SUBMODULE_MODE || entry.newMode === SUBMODULE_MODE || entry.path === GITMODULES)
     .map((entry) => entry.path)
 }
@@ -644,7 +673,7 @@ export function checkedOut(repo: string): string | null {
 /** Whether anything changed from base to commit. */
 export function hasChanges(repo: string, base: string, commit: string): boolean {
   try {
-    git(repo, ['diff', ...EXACT_DIFF, '--quiet', base, commit])
+    exactDiff(repo, ['--quiet', base, commit])
     return false
   } catch (error) {
     if ((error as { status?: number }).status === 1) return true
@@ -657,7 +686,7 @@ export function hasChanges(repo: string, base: string, commit: string): boolean 
  * An empty string means nothing changed.
  */
 export function diffStat(repo: string, base: string, commit: string): string {
-  return git(repo, ['diff', ...EXACT_DIFF, '--stat', '--stat-count=500', base, commit]).trim()
+  return exactDiff(repo, ['--stat', '--stat-count=500', base, commit]).trim()
 }
 
 export interface DiffEntry {
@@ -670,8 +699,14 @@ export interface DiffEntry {
 
 /** Every path the changes from base to commit touch, with its mode afterwards. Renames count as a deletion and an addition. */
 export function diffEntries(repo: string, base: string, commit: string): DiffEntry[] {
-  return rawEntries(git(repo, ['diff', ...EXACT_DIFF, '--raw', '-z', '--no-renames', base, commit], WHOLE))
+  return rawEntries(exactDiff(repo, ['--raw', '-z', '--no-renames', base, commit], WHOLE))
     .map((entry) => ({ path: entry.path, mode: entry.newMode, added: entry.oldMode === '000000' }))
+}
+
+/** Those of files, paths from the top of the worktree dir written as git names them, that commit holds. */
+export function heldIn(dir: string, commit: string, files: string[]): Set<string> {
+  if (files.length === 0) return new Set()
+  return new Set(git(dir, ['ls-tree', '-z', '--name-only', commit, '--', ...files.map(literal)], WHOLE).split('\0').filter(Boolean))
 }
 
 /**
@@ -683,7 +718,7 @@ export function diffEntries(repo: string, base: string, commit: string): DiffEnt
 export function diffPatch(repo: string, base: string, commit: string, maxChars = 60_000): string {
   let patch: string
   try {
-    patch = git(repo, ['diff', ...EXACT_DIFF, base, commit], { maxBuffer: maxChars * 4 })
+    patch = exactDiff(repo, [base, commit], { maxBuffer: maxChars * 4 })
   } catch (error) {
     // Node ends git with ENOBUFS at the buffer's size and hands over the output read until then.
     const cut = error as NodeJS.ErrnoException & { stdout?: unknown }
@@ -740,7 +775,8 @@ export function checkoutTree(repo: string, tree: string, dir: string): void {
  * commit-tree, which touch neither the working tree nor the index, and the working tree then moves to it
  * only by a fast-forward. git merge would stop half done in them on a conflict or when a hook of the
  * user's, such as a commit-msg hook that rejects the message, fails, and a later git commit of the user's
- * would then commit changes nobody reviewed.
+ * would then commit changes nobody reviewed. Without --no-overwrite-ignore the fast-forward replaces a file
+ * git ignores, such as the user's .env, with the one the job committed at that path.
  */
 export function mergeNoFf(repo: string, branch: string, message: string): MergeOutcome {
   const head = headCommit(repo)
@@ -751,7 +787,7 @@ export function mergeNoFf(repo: string, branch: string, message: string): MergeO
     '-c', 'user.name=ASIST', '-c', 'user.email=asist@localhost', 'commit-tree', merged.tree, '-p', head, '-p', incoming, '-m', message
   ]).trim()
   try {
-    git(repo, ['merge', '--ff-only', '-q', commit])
+    git(repo, ['merge', '--ff-only', '--no-overwrite-ignore', '-q', commit])
   } catch (error) {
     const failure = error as { message?: string; stderr?: string }
     return { ok: false, conflict: false, message: firstLines(failure.stderr || String(failure.message)) }
@@ -765,4 +801,62 @@ export function mergeNoFf(repo: string, branch: string, message: string): MergeO
  */
 export function isClean(repo: string): boolean {
   return onDisk(repo, ['status', '--porcelain']).trim() === ''
+}
+
+/** What is at file, without following a link at its end, or null when nothing is, as under a name that is a file. */
+export function lstatOrNull(file: string): fs.Stats | null {
+  try {
+    return fs.lstatSync(file, { throwIfNoEntry: false }) ?? null
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOTDIR') return null
+    throw error
+  }
+}
+
+/**
+ * The paths in repo's working tree that git does not track and that a merge of the changes from base to
+ * commit would write over, as `merge --no-overwrite-ignore` refuses them: whatever is at a path the changes
+ * leave a file at, a file where a folder of one of them goes, and a tracked folder the changes turn into a
+ * file while it also holds files git does not track. In a clean working tree they can only be files git
+ * ignores, such as a .env, which the merge would replace with one the job committed at that path.
+ *
+ * Names are compared as git compares them in repo: without regard to the letter case of ASCII letters when
+ * core.ignorecase is set, as on the disks of macOS and Windows, where a job that renames tracked.txt to
+ * TRACKED.txt finds the tracked file at the new name.
+ */
+export function untrackedInTheWay(repo: string, base: string, commit: string): string[] {
+  const found = new Map<string, fs.Stats | null>()
+  const at = (name: string): fs.Stats | null => {
+    if (!found.has(name)) found.set(name, lstatOrNull(path.join(repo, name)))
+    return found.get(name)!
+  }
+  const occupied = new Set<string>()
+  for (const entry of diffEntries(repo, base, commit)) {
+    if (entry.mode === '000000') continue
+    if (at(entry.path)) occupied.add(entry.path)
+    for (let folder = path.posix.dirname(entry.path); folder !== '.'; folder = path.posix.dirname(folder)) {
+      if (at(folder)?.isDirectory() === false) occupied.add(folder)
+    }
+  }
+  if (occupied.size === 0) return []
+  const ignoreCase = git(repo, ['config', '--type=bool', '--default=false', 'core.ignorecase']).trim() === 'true'
+  const key = (name: string): string => (ignoreCase ? name.replace(/[A-Z]/g, (letter) => letter.toLowerCase()) : name)
+  // Every file of the index and every folder above one. A folder already in the set has those above it there too.
+  const tracked = new Set<string>()
+  for (const file of git(repo, ['ls-files', '-z'], WHOLE).split('\0')) {
+    for (let name = file; name !== '' && name !== '.' && !tracked.has(key(name)); name = path.posix.dirname(name)) tracked.add(key(name))
+  }
+  const inTheWay = [...occupied].filter((name) => !tracked.has(key(name)))
+  const replacedFolders = [...occupied].filter((name) => tracked.has(key(name)) && at(name)?.isDirectory())
+  if (replacedFolders.length > 0) {
+    // Without an exclude option, --others lists the ignored files as well.
+    const holding = new Set(replacedFolders.map(key))
+    const untracked = git(repo, ['ls-files', '-z', '--others', '--directory', '--', ...replacedFolders.map(literal)], WHOLE)
+    for (const entry of untracked.split('\0').filter(Boolean)) {
+      let folder = path.posix.dirname(entry.replace(/\/$/, ''))
+      while (folder !== '.' && !holding.has(key(folder))) folder = path.posix.dirname(folder)
+      if (folder !== '.' && !inTheWay.includes(folder)) inTheWay.push(folder)
+    }
+  }
+  return inTheWay.sort()
 }

@@ -76,7 +76,9 @@ export function ensureRepo(dir = memoryDir()): void {
   if (!fs.existsSync(gitignore) || fs.readFileSync(gitignore, 'utf8') !== MEMORY_GITIGNORE) {
     fs.writeFileSync(gitignore, MEMORY_GITIGNORE, { mode: 0o600 })
   }
-  if (git.toplevel(dir) !== git.resolvedAsFarAsExists(dir)) git.init(dir)
+  // The folder is a repository of its own once it holds one. Asking git instead would climb to a repository
+  // above it, which git may refuse to open, such as one an administrator made at the top of a drive.
+  if (!fs.existsSync(path.join(dir, '.git'))) git.init(dir)
   git.commitAll(dir, written(git.hasHead(dir) ? 'prepared' : 'created'))
 }
 

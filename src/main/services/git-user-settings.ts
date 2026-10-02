@@ -9,16 +9,20 @@ import { windowsPathFolders } from './windows-search-path'
 
 /**
  * The settings of the user's own git that ASIST's git takes over: those that decide how a file of a
- * repository is written into a working tree and read back from it, and nothing else. With a different
- * core.autocrlf, a checkout of the user's reads as changed in every line, and a job's CRLF enters the
- * user's history without the normalisation the user's git applies; with a different core.symlinks, a link
- * is checked out into a job's worktree as a plain file.
+ * repository is written into a working tree and read back from it, and which files of a working tree git
+ * leaves alone, and nothing else. With a different core.autocrlf, a checkout of the user's reads as changed
+ * in every line, and a job's CRLF enters the user's history without the normalisation the user's git
+ * applies; with a different core.symlinks, a link is checked out into a job's worktree as a plain file.
+ * Without core.excludesFile, a .DS_Store the user ignores in every repository is a new file to ASIST's git,
+ * which then refuses every merge into that repository as uncommitted and commits the file with a job. git
+ * names the key in lower case.
  */
-const WORKING_TREE_SETTINGS = ['autocrlf', 'eol', 'symlinks']
+const WORKING_TREE_SETTINGS = ['autocrlf', 'eol', 'symlinks', 'excludesfile']
 
 /**
  * The user's values of the working-tree settings in the core section, by name. A null value is a key
- * written without `=`, which git reads as true.
+ * written without `=`, which git reads as true. A value is kept as written, so that the `~` of
+ * core.excludesFile is expanded by ASIST's git as by the user's, from the same HOME.
  */
 export type WorkingTreeSettings = ReadonlyMap<string, string | null>
 

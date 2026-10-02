@@ -25,8 +25,11 @@ import {
   assertWorktreeReview,
   captureWorktree,
   discardStat,
+  leftOutAtDiscard,
+  mergedArtifacts,
   readWorktreeDiff,
-  submodulesAtRisk
+  submodulesAtRisk,
+  unsettled
 } from './job-worktree'
 import * as projectIndex from './project-index'
 import { installSkill } from './memory-curation-skill'
@@ -317,28 +320,48 @@ export function note(id: string, text: string): void {
   pushLog(id, 'system', text)
 }
 
-/** Whether cwd is inside a git repository, which decides whether the job can be isolated in a worktree. */
+/**
+ * Whether cwd is inside a git repository, which decides whether the job can be isolated in a worktree. A
+ * folder that is gone is refused by name, since git cannot even start in it.
+ */
 export function isGitRepo(cwd: string): boolean {
+  if (!fs.existsSync(cwd)) throw new Error(errorText('jobs.start.cwdMissing', { path: cwd }))
   return git.toplevel(cwd) !== null
 }
 
 /**
+ * The files the job and every job it continues reported writing. A continuation works on in the worktree its
+ * parent left, so what the parent reported there is in it as well.
+ */
+function reportedFiles(job: AgentJob): string[] {
+  const files: string[] = []
+  for (let current: AgentJob | undefined = job; current; current = current.parentId ? jobs.get(current.parentId)?.job : undefined) {
+    files.push(...(current.artifacts ?? []))
+  }
+  return files
+}
+
+/**
  * Tidies the worktree once a job ends. Uncommitted changes are committed and left waiting to be merged, or,
- * when the job touched a submodule, left for the user to merge or discard; a worktree with no change is
- * removed. A failure is recorded as `error` so that the work survives.
+ * when the job touched a submodule or the agent switched the worktree to another branch, left for the user to
+ * merge or discard; a worktree with no change and no reported file outside the commit is removed. A failure
+ * is recorded as `error` so that the work survives.
  */
 function settleWorktree(job: AgentJob): Partial<AgentJob> {
   assertWriterStopped(job)
   try {
-    const settled = captureWorktree(job)
+    const { settled, leftOut } = captureWorktree(job, reportedFiles(job))
     const worktree = settled.worktree!
-    pushLog(job.id, 'system', worktree.submodules
-      ? t('jobs.merging.submodules', { paths: worktree.submodules.join(', '), branch: worktree.branch, dir: worktree.dir })
-      : t(settled.mergeState === 'unchanged' ? 'jobs.worktree.unchanged' : 'jobs.worktree.committed'))
+    pushLog(job.id, 'system', worktree.movedTo
+      ? t('jobs.merging.movedTo', { branch: worktree.movedTo, dir: worktree.dir })
+      : worktree.submodules
+        ? t('jobs.merging.submodules', { paths: worktree.submodules.join(', '), branch: worktree.branch, dir: worktree.dir })
+        : t(settled.mergeState === 'unchanged' ? 'jobs.worktree.unchanged' : 'jobs.worktree.committed'))
+    if (leftOut.length > 0) pushLog(job.id, 'system', t('jobs.merging.leftOut', { paths: leftOut.join(', ') }))
     return settled
   } catch (err) {
     pushLog(job.id, 'stderr', t('jobs.worktree.settleFailed', { detail: errorMessage(err) }))
-    return { worktree: { ...job.worktree!, commit: undefined, submodules: undefined }, mergeState: 'error' }
+    return { worktree: unsettled(job.worktree!), mergeState: 'error' }
   }
 }
 
@@ -390,9 +413,13 @@ function createJob(prompt: string, options: StartOptions, isolate = false): Agen
   const title = options.title || prompt.slice(0, 40)
   const cwd = options.cwd || createWorkspace(title)
   if (!fs.existsSync(cwd)) throw new Error(errorText('jobs.start.cwdMissing', { path: cwd }))
+  // Only a job isolated in a worktree asks git about its folder: a read-only job runs in a repository that
+  // ASIST's git refuses to open as it runs in any folder.
+  const repo = isolate ? git.toplevel(cwd) : null
+  if (isolate && !repo) throw new Error(errorText('jobs.start.notGitRepo', { path: cwd }))
   // An explicit location is recorded in the index, so that the more a place is used the more places
   // the user can name by voice.
-  if (options.cwd && options.noteProject !== false) projectIndex.noteUsed(git.toplevel(cwd) ?? cwd)
+  if (options.cwd && options.noteProject !== false) projectIndex.noteUsed(repo ?? cwd)
   // An isolated workspace is always writable, because the job has to write its output somewhere, and
   // the writes stay inside that throwaway directory.
   const { readonly } = resolveJobAccess({
@@ -412,9 +439,7 @@ function createJob(prompt: string, options: StartOptions, isolate = false): Agen
     startedAt: Date.now(),
     ...(options.memoryCuration ? { memoryCuration: { ...options.memoryCuration, applied: false } } : {})
   }
-  if (isolate) {
-    const repo = git.toplevel(cwd)
-    if (!repo) throw new Error(errorText('jobs.start.notGitRepo', { path: cwd }))
+  if (repo) {
     const folder = git.pathInRepo(cwd)
     const dir = worktreePath(title, options.worktreeRoot)
     const branch = worktreeBranchName(path.basename(dir))
@@ -499,13 +524,6 @@ export function startIsolated(prompt: string, options: StartOptions & { cwd: str
   return { ...job }
 }
 
-/** Moves a path inside the worktree to the same relative place in the merge target. Paths outside it stay. */
-export function relocateArtifacts(artifacts: string[] | undefined, worktreeDir: string, repo: string): string[] | undefined {
-  if (!artifacts) return undefined
-  const prefix = worktreeDir.endsWith(path.sep) ? worktreeDir : worktreeDir + path.sep
-  return artifacts.map((p) => (p.startsWith(prefix) ? path.join(repo, p.slice(prefix.length)) : p))
-}
-
 /**
  * Merges the worktree's changes into the user's repository. A conflict aborts the merge and keeps the
  * worktree. It asks nobody: the caller has shown the review and had it approved, or, for the memory
@@ -525,7 +543,7 @@ export function merge(id: string, reviewed: ReviewedMerge): AgentJob {
     // The worktree is about to be removed, so artifact paths inside it are moved to the merge target
     // and stay openable from the completion card and from show_files. The paths are saved before the
     // removal, because the merge is already done even if the removal fails.
-    update(id, { mergeState: 'merged', artifacts: relocateArtifacts(entry.job.artifacts, wt.dir, wt.repo) })
+    update(id, { mergeState: 'merged', artifacts: mergedArtifacts(entry.job, reportedFiles(entry.job)) })
     try {
       git.worktreeRemove(wt.repo, wt.dir, wt.branch)
     } catch (error) {
@@ -572,7 +590,8 @@ export function discardPreview(id: string): DiscardPreview {
     dir: worktree.dir,
     branch: worktree.branch,
     stat: discardStat(worktree),
-    submodules: submodulesAtRisk(worktree)
+    submodules: submodulesAtRisk(worktree),
+    leftOut: leftOutAtDiscard(worktree, reportedFiles(jobs.get(id)!.job))
   }
 }
 
@@ -596,7 +615,7 @@ export function diff(id: string): JobDiff {
     assertWorktreePresent(entry.job.worktree)
     update(id, settleWorktree(entry.job))
   }
-  return readWorktreeDiff(entry.job)
+  return readWorktreeDiff(entry.job, reportedFiles(entry.job))
 }
 
 /**
@@ -642,7 +661,7 @@ export async function continueJob(parentId: string, prompt: string, signal?: Abo
     sessionId: parent.sessionId,
     parentId,
     ...(parent.memoryCuration ? { memoryCuration: { through: parent.memoryCuration.through, applied: false } } : {}),
-    ...(transferWorktree ? { worktree: { ...parent.worktree!, commit: undefined, submodules: undefined } } : {})
+    ...(transferWorktree ? { worktree: unsettled(parent.worktree!) } : {})
   }
   // A worktree job whose changes are already merged or cleaned up continues in a fresh worktree cut
   // from the repository, in the same folder inside it.
@@ -755,8 +774,10 @@ function handleEvent(id: string, event: AgentStreamEvent): void {
 }
 
 /**
- * The roots the files card (show_files) and the Finder view are allowed to read: every job's cwd, the
- * workspace, the memory directory, and the folders named in the settings.
+ * The roots the files card (show_files) and the Finder view are allowed to read: every job's folder, the
+ * workspace, the memory directory, and the folders named in the settings. A job in a worktree may write
+ * anywhere in it, as under dist/ at its top while it works in packages/web, so its folder is the whole
+ * worktree, and once merged, the repository, where the merge moved its artifacts as well.
  */
 export function allowedFileRoots(): string[] {
   ensureLoaded()
@@ -766,7 +787,10 @@ export function allowedFileRoots(): string[] {
   // Once a curation job is merged, its output lives in the memory directory.
   roots.add(memoryDir())
   for (const root of settings.fileRoots) if (root.trim()) roots.add(root.trim())
-  for (const { job } of jobs.values()) roots.add(job.cwd)
+  for (const { job } of jobs.values()) {
+    const { worktree } = job
+    roots.add(!worktree ? job.cwd : job.mergeState === 'merged' ? worktree.repo : worktree.dir)
+  }
   return [...roots]
 }
 

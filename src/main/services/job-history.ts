@@ -32,7 +32,8 @@ const jobSchema: z.ZodType<AgentJob> = z.object({
   parentId: z.string().optional(),
   worktree: z.object({
     repo: z.string().min(1), dir: z.string().min(1), branch: z.string().min(1), base: z.string().min(1), commit: z.string().optional(),
-    submodules: z.array(z.string().min(1)).optional()
+    submodules: z.array(z.string().min(1)).optional(), movedTo: z.string().min(1).optional(),
+    keptFor: z.array(z.string().min(1)).optional()
   }).passthrough().optional(),
   mergeState: z.enum(['pending', 'merged', 'discarded', 'unchanged', 'conflict', 'error']).optional(),
   memoryCuration: z.object({ through: z.iso.date().nullable(), applied: z.boolean() }).optional()
@@ -49,7 +50,7 @@ const historySchema = z.array(jobSchema).superRefine((jobs, context) => {
 
 export const JOBS_FORMAT: StoredFormat<AgentJob[]> = {
   name: JOBS_FILE,
-  version: 4,
+  version: 5,
   upgrades: {
     // Version 1 was the bare list of jobs; version 2 is an object, which is what can carry the version.
     1: (content) => ({ jobs: content }),
@@ -79,7 +80,12 @@ export const JOBS_FORMAT: StoredFormat<AgentJob[]> = {
           return unsettled
         })
       }
-    }
+    },
+    // Version 5 records the branch an agent left its worktree on instead of the job's own, which ASIST does
+    // not merge, and the files git ignores that alone keep a job with nothing to merge. No job of version 4
+    // has either recorded: a review of the first looks at the worktree itself and refuses it all the same, and
+    // version 4 removed the worktree of the second when it settled.
+    4: (content) => content
   },
   parse: (content) => historySchema.parse((content as { jobs?: unknown } | null)?.jobs),
   serialize: (jobs) => ({ jobs })

@@ -1175,6 +1175,19 @@ export const jobs = defineMessages({
       'pt-BR': 'O ASIST não consegue iniciar o {engine} enquanto a sandbox do Windows dele não estiver configurada. Inicie o {engine} uma vez em um terminal e configure a sandbox do Windows.',
       'es-419': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en una terminal y configura el sandbox de Windows.',
       'es-ES': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en un terminal y configura el sandbox de Windows.'
+    },
+    repoRefused: {
+      'ja-JP': 'ASIST の git は {path} をリポジトリとして開けませんでした: {detail}',
+      'en-US': "ASIST's git could not open {path} as a repository: {detail}",
+      'fr-FR': "Le git d'ASIST n'a pas pu ouvrir {path} comme dépôt : {detail}",
+      'de-DE': 'Das git von ASIST konnte {path} nicht als Repository öffnen: {detail}',
+      'hi-IN': 'ASIST का git {path} को रिपॉज़िटरी के रूप में नहीं खोल सका: {detail}',
+      'id-ID': 'git milik ASIST tidak bisa membuka {path} sebagai repositori: {detail}',
+      'it-IT': 'Il git di ASIST non è riuscito ad aprire {path} come repository: {detail}',
+      'ko-KR': 'ASIST의 git이 {path}을(를) 저장소로 열지 못했습니다: {detail}',
+      'pt-BR': 'O git do ASIST não conseguiu abrir {path} como repositório: {detail}',
+      'es-419': 'El git de ASIST no pudo abrir {path} como repositorio: {detail}',
+      'es-ES': 'El git de ASIST no ha podido abrir {path} como repositorio: {detail}'
     }
   },
   worktree: {
@@ -1735,6 +1748,45 @@ export const jobs = defineMessages({
       'pt-BR': 'O HEAD do repositório não está em um branch, então nada pode ser mesclado. Faça checkout do branch onde mesclar e depois mescle.',
       'es-419': 'El HEAD del repositorio no está en una rama, así que no se puede fusionar nada. Haz checkout de la rama donde fusionar y luego fusiona.',
       'es-ES': 'El HEAD del repositorio no está en una rama, así que no se puede fusionar nada. Haz checkout de la rama donde fusionar y luego fusiona.'
+    },
+    leftOut: {
+      'ja-JP': 'ジョブが書いた次のファイルは git が無視する場所にあるので取り込まれず、worktree と一緒に消えます: {paths}',
+      'en-US': 'These files the job wrote lie where git ignores them, so they are not merged and are deleted with the worktree: {paths}',
+      'fr-FR': 'Ces fichiers écrits par le job se trouvent là où git les ignore, donc ils ne sont pas fusionnés et sont supprimés avec le worktree : {paths}',
+      'de-DE': 'Diese Dateien des Jobs liegen dort, wo git sie ignoriert. Sie werden deshalb nicht übernommen und mit dem worktree gelöscht: {paths}',
+      'hi-IN': 'जॉब की लिखी ये फ़ाइलें ऐसी जगह हैं जिसे git अनदेखा करता है, इसलिए ये मर्ज नहीं होंगी और worktree के साथ मिट जाएँगी: {paths}',
+      'id-ID': 'File yang ditulis pekerjaan ini berada di tempat yang diabaikan git, jadi tidak ikut digabungkan dan terhapus bersama worktree: {paths}',
+      'it-IT': "Questi file scritti dall'incarico si trovano dove git li ignora, quindi non vengono integrati e vengono eliminati con il worktree: {paths}",
+      'ko-KR': '작업이 쓴 다음 파일은 git이 무시하는 위치에 있어서 병합되지 않고 worktree와 함께 삭제됩니다: {paths}',
+      'pt-BR': 'Estes arquivos que o job gravou estão onde o git os ignora, então não são mesclados e são apagados junto com o worktree: {paths}',
+      'es-419': 'Estos archivos que escribió el trabajo están donde git los ignora, así que no se fusionan y se borran junto con el worktree: {paths}',
+      'es-ES': 'Estos archivos que ha escrito el trabajo están donde git los ignora, así que no se fusionan y se borran junto con el worktree: {paths}'
+    },
+    untrackedInTheWay: {
+      'ja-JP': '取り込むと、git が追跡していないあなたのファイルが上書きされます: {paths}。別の場所へ移してから取り込んでください。',
+      'en-US': 'Merging would overwrite files of yours that git does not track: {paths}. Move them elsewhere first, then merge.',
+      'fr-FR': "La fusion écraserait des fichiers à vous que git ne suit pas : {paths}. Déplacez-les d'abord ailleurs, puis fusionnez.",
+      'de-DE': 'Das Übernehmen würde Dateien von Ihnen überschreiben, die git nicht verfolgt: {paths}. Verschieben Sie sie zuerst an einen anderen Ort, und übernehmen Sie dann.',
+      'hi-IN': 'मर्ज करने से आपकी वे फ़ाइलें बदल जाएँगी जिन्हें git ट्रैक नहीं करता: {paths}। पहले उन्हें कहीं और ले जाएँ, फिर मर्ज करें।',
+      'id-ID': 'Penggabungan akan menimpa file Anda yang tidak dilacak git: {paths}. Pindahkan dulu ke tempat lain, lalu gabungkan.',
+      'it-IT': "L'integrazione sovrascriverebbe file tuoi che git non traccia: {paths}. Spostali prima altrove, poi integra.",
+      'ko-KR': '병합하면 git이 추적하지 않는 파일이 덮어써집니다: {paths}. 먼저 다른 곳으로 옮긴 뒤에 병합하십시오.',
+      'pt-BR': 'A mesclagem sobrescreveria arquivos seus que o git não rastreia: {paths}. Mova-os para outro lugar antes e depois mescle.',
+      'es-419': 'La fusión sobrescribiría archivos tuyos que git no rastrea: {paths}. Muévelos a otro lugar primero y luego fusiona.',
+      'es-ES': 'La fusión sobrescribiría archivos tuyos que git no rastrea: {paths}. Muévelos antes a otro sitio y luego fusiona.'
+    },
+    movedTo: {
+      'ja-JP': 'エージェントが worktree({dir})を ASIST のブランチから {branch} に切り替えて作業したので、ASIST では取り込みません。{branch} にある作業を自分で取り込むか、ジョブを捨ててください。捨てると worktree と、そこにしかない変更も消えます。',
+      'en-US': "The agent switched the worktree ({dir}) from ASIST's branch to {branch} and worked there, so ASIST does not merge it. Take in the work on {branch} yourself, or discard the job. Discarding deletes the worktree and any change that exists only there.",
+      'fr-FR': "L'agent a fait passer le worktree ({dir}) de la branche d'ASIST à {branch} et y a travaillé : ASIST ne le fusionne donc pas. Récupérez vous-même le travail de {branch}, ou abandonnez le job. L'abandon supprime le worktree et toute modification qui n'existe que là.",
+      'de-DE': 'Der Agent hat den worktree ({dir}) vom Branch von ASIST auf {branch} umgestellt und dort gearbeitet, deshalb übernimmt ASIST ihn nicht. Übernehmen Sie die Arbeit auf {branch} selbst, oder verwerfen Sie den Job. Beim Verwerfen werden der worktree und alle Änderungen gelöscht, die es nur dort gibt.',
+      'hi-IN': 'एजेंट ने worktree ({dir}) को ASIST की ब्रांच से {branch} पर बदलकर वहीं काम किया, इसलिए ASIST इसे मर्ज नहीं करता। {branch} पर किया काम खुद मर्ज करें, या जॉब छोड़ दें। छोड़ने पर worktree और सिर्फ़ वहीं मौजूद बदलाव भी मिट जाएँगे।',
+      'id-ID': 'Agen memindahkan worktree ({dir}) dari branch ASIST ke {branch} dan bekerja di sana, jadi ASIST tidak menggabungkannya. Gabungkan sendiri pekerjaan di {branch}, atau buang pekerjaan ini. Membuangnya menghapus worktree dan perubahan yang hanya ada di sana.',
+      'it-IT': "L'agente ha spostato il worktree ({dir}) dal branch di ASIST a {branch} e ha lavorato lì, quindi ASIST non lo integra. Integra tu il lavoro su {branch}, oppure scarta l'incarico. Scartandolo si eliminano il worktree e le modifiche che esistono solo lì.",
+      'ko-KR': '에이전트가 worktree({dir})를 ASIST의 브랜치에서 {branch}(으)로 바꾸어 작업했기 때문에 ASIST는 병합하지 않습니다. {branch}에 있는 작업을 직접 병합하거나 작업을 버리십시오. 버리면 worktree와 그곳에만 있는 변경도 삭제됩니다.',
+      'pt-BR': 'O agente trocou o worktree ({dir}) do branch do ASIST para {branch} e trabalhou ali, então o ASIST não o mescla. Mescle você mesmo o trabalho em {branch}, ou descarte o job. Descartar apaga o worktree e qualquer alteração que só exista ali.',
+      'es-419': 'El agente cambió el worktree ({dir}) de la rama de ASIST a {branch} y trabajó ahí, así que ASIST no lo fusiona. Fusiona tú lo que hay en {branch} o descarta el trabajo. Al descartarlo se borran el worktree y los cambios que solo existen ahí.',
+      'es-ES': 'El agente ha cambiado el worktree ({dir}) de la rama de ASIST a {branch} y ha trabajado ahí, así que ASIST no lo fusiona. Fusiona tú lo que hay en {branch} o descarta el trabajo. Al descartarlo se borran el worktree y los cambios que solo existen ahí.'
     }
   },
   confirm: {
