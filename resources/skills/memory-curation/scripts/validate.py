@@ -9,7 +9,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.stdout.reconfigure(encoding='utf-8')
+# UTF-8 and \n whatever the code page and the line ending of the system, as the Agent and the tests read them.
+sys.stdout.reconfigure(encoding='utf-8', newline='\n')
 
 from memory_format import SECTION_MAX_CHARS, directory_problems  # noqa: E402
 

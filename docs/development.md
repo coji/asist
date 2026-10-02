@@ -8,7 +8,9 @@ npm test
 npm run build
 ```
 
-`npm test` は、最初に同梱用の git を用意し(macOS ではコンパイルし、Windows では MinGit を取得します)、テストが使う Electron を取得します。
+`npm test` は、最初に同梱用の git を用意し(macOS ではコンパイルし、Windows では MinGit を取得します)、同梱用の uv とテストが使う Electron を取得します。
+
+記憶の整理の確認のスクリプト(`resources/skills/` の Python)のテストは、整理の Agent と同じく同梱の uv で `uv run --no-project` として動かし、そのコンピュータにある Python を使います。uv に Python を取得させないので、Python が見つからなければテストは失敗します。CI の `test` と `test-windows` は、下の Python 3.12 を使います。
 
 `tests/vap-worker.test.ts` は MaAI のワーカー(`resources/vap_worker.py`)を実際に動かすので、numpy の入った Python を使います。環境変数 `ASIST_VAP_PYTHON` があればその Python を、なければ PATH の `python3` か `python` を使います。手元で見つからないときはこのテストを飛ばし、CI で見つからないときは失敗にします。CI の `test` と `test-windows` は、アプリの環境と同じ Python 3.12 と numpy 2.5.2 を入れてから `npm test` を実行します。
 

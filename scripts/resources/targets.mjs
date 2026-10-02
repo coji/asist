@@ -26,13 +26,13 @@ function preparePermissionTexts({ root }) {
  */
 export const TARGETS = {
   'darwin-arm64': {
-    test: [prepareGitMacos, prepareElectron],
+    test: [prepareGitMacos, prepareUv, prepareElectron],
     dev: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeMacos, prepareElectron],
     build: [prepareGitMacos, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeMacos, preparePermissionTexts],
     check: [prepareUv, prepareLlamaCpp, prepareSpeechWorker]
   },
   'win32-x64': {
-    test: [prepareGitWindows, prepareNativeWindows, prepareElectron],
+    test: [prepareGitWindows, prepareUv, prepareNativeWindows, prepareElectron],
     dev: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeWindows, prepareElectron],
     build: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker, prepareNativeWindows],
     check: [prepareGitWindows, prepareUv, prepareLlamaCpp, prepareSpeechWorker]

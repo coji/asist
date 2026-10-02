@@ -8,7 +8,8 @@ the Python rules answer as ASIST's TypeScript ones do.
 import json
 import sys
 
-sys.stdout.reconfigure(encoding='utf-8')
+# UTF-8 and \n whatever the code page and the line ending of the system, as the Agent and the tests read them.
+sys.stdout.reconfigure(encoding='utf-8', newline='\n')
 sys.path.insert(0, sys.argv[2])
 
 from memory_format import document_issues, page_name_issue, prompt_size, token_estimate  # noqa: E402

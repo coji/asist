@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { PROMPT_DOCUMENT_MAX_TOKENS, SECTION_MAX_CHARS, tokenEstimate } from '@shared/memory-format'
 
@@ -18,14 +18,15 @@ export const BUNDLED_UV = path.join(process.cwd(), 'resources', 'uv', process.pl
 
 /**
  * Runs a Python script through the bundled uv, as the curation Agent runs its checks, and returns whether it
- * exited 0 and what it printed. The Python is whichever uv finds on the machine running the tests; the user's
- * uv configuration is left out, and no bytecode is written beside the scripts.
+ * exited 0 and what it printed. The Python is one the machine running the tests has, such as the one CI sets
+ * up; uv is not let download one, and the user's uv configuration is left out. The scripts print only to
+ * standard output and exit 1 for a finding, so anything else (no uv, no Python, a traceback) throws with what
+ * uv or Python said, rather than reading as a finding with no lines.
  */
 export function runPython(script: string, args: string[]): { ok: boolean; output: string } {
-  const env = { ...process.env, UV_NO_CONFIG: '1', PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' }
-  try {
-    return { ok: true, output: execFileSync(BUNDLED_UV, ['run', '--no-project', script, ...args], { encoding: 'utf8', env, windowsHide: true }) }
-  } catch (error) {
-    return { ok: false, output: String((error as { stdout?: string }).stdout ?? '') }
-  }
+  const env = { ...process.env, UV_NO_CONFIG: '1', UV_PYTHON_DOWNLOADS: 'never', PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' }
+  const run = spawnSync(BUNDLED_UV, ['run', '--no-project', script, ...args], { encoding: 'utf8', env, windowsHide: true })
+  if (run.error) throw run.error
+  if (run.status === 0 || (run.status === 1 && !run.stderr)) return { ok: run.status === 0, output: run.stdout }
+  throw new Error(`${path.basename(script)} exited with ${run.status}: ${run.stderr}`)
 }

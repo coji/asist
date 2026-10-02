@@ -12,7 +12,7 @@ vi.mock('../src/main/services/platform', async () => {
   return { platformCapabilities: () => (mocks.os ? { macos: MACOS, windows: WINDOWS }[mocks.os] : HOST) }
 })
 
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { PYTHON_VERSION, installPython, runUv, uvEnv, uvPath, uvRunEnv, venvPython } from '../src/main/services/uv'
 
 afterEach(() => {
@@ -111,16 +111,11 @@ describe('running a script with uv run, as the curation Agent runs its checks', 
     try {
       // Only the bundled uv is on PATH; the command is the one the curation Agent runs.
       const env = uvRunEnv({ PATH: '', HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, SYSTEMROOT: process.env.SYSTEMROOT }, userData)
-      let output = ''
-      let failed = false
-      try {
-        output = execFileSync('uv', ['run', '--no-project', script], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
-      } catch (error) {
-        failed = true
-        output = String((error as { stdout?: string }).stdout ?? '')
-      }
-      expect(failed).toBe(true)
-      expect(output).not.toContain('ran')
+      const run = spawnSync('uv', ['run', '--no-project', script], { env, encoding: 'utf8', windowsHide: true })
+      // uv itself ran, found on that PATH, and refused rather than running the script on another Python.
+      expect(run.error).toBeUndefined()
+      expect([typeof run.status, run.status === 0]).toEqual(['number', false])
+      expect(run.stdout).not.toContain('ran')
       expect(fs.readdirSync(userData)).toEqual(['hello.py'])
     } finally {
       fs.rmSync(userData, { recursive: true, force: true })

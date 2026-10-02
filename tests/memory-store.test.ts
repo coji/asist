@@ -423,7 +423,7 @@ describe('the memory store', () => {
     const user = '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 好み\nコーヒーは砂糖なし。\n'
     fs.writeFileSync(path.join(dir, 'user.md'), user)
     git(dir, ['add', '-A'])
-    git(dir, ['commit', '-qm', 'user'])
+    git(dir, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'user'])
     const long = user.replace('## 好み\nコーヒーは砂糖なし。', sectionsOverTheLimit('麺類が好きで、辛さは控えめを選ぶ。'))
     let refused: unknown = null
     try {
