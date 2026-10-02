@@ -545,25 +545,25 @@ describe('the Google calendar through CalendarService', () => {
     const google = fakeGoogle(refreshes, calendarList, getsEvent, getsCalendar)
     const { service, confirm } = serviceWith(google, false)
     await expect(
-      service.change({ operation: 'create', event: { ...fields, allDay: true, start: '2026-09-15T00:00:00+09:00', end: '2026-09-16T00:00:00+09:00' } }, new AbortController().signal)
+      service.change({ operation: 'create', event: { ...fields, allDay: true, start: '2026-09-15', end: '2026-09-15' } }, new AbortController().signal)
     ).resolves.toEqual({ cancelled: true, saved: false })
     await service.change({ operation: 'delete', eventId: googleEventKey('me@example.com', 'ev1') }, new AbortController().signal)
     expect(confirm).toHaveBeenCalledTimes(2)
     expect(google.api().filter((call) => call.method !== 'GET')).toHaveLength(0)
   })
 
-  it('creates an all-day event as Google dates in the event time zone', async () => {
+  it('creates an all-day event as Google dates, which end on the day after its last', async () => {
     const google = fakeGoogle(refreshes, calendarList, (call) =>
       call.method === 'POST' && call.url.href.startsWith(API)
-        ? json({ ...timed, id: 'new', summary: '休暇', start: { date: '2026-09-15' }, end: { date: '2026-09-16' } })
+        ? json({ ...timed, id: 'new', summary: '休暇', start: { date: '2026-09-29' }, end: { date: '2026-10-01' } })
         : undefined
     )
     const { service } = serviceWith(google)
-    const allDay = { ...fields, title: '休暇', allDay: true, start: '2026-09-14T15:00:00Z', end: '2026-09-15T15:00:00Z' }
+    const allDay = { ...fields, title: '休暇', allDay: true, start: '2026-09-29', end: '2026-09-30' }
     await service.change({ operation: 'create', event: allDay }, new AbortController().signal)
     const post = google.api().find((call) => call.method === 'POST')!
     expect(decodeURIComponent(post.url.pathname)).toBe('/calendar/v3/calendars/me@example.com/events')
-    expect(JSON.parse(post.body)).toMatchObject({ summary: '休暇', start: { date: '2026-09-15' }, end: { date: '2026-09-16' } })
+    expect(JSON.parse(post.body)).toEqual({ summary: '休暇', location: '', description: '', start: { date: '2026-09-29' }, end: { date: '2026-10-01' } })
   })
 
   it('reports a write whose access token could not be renewed as refused, since nothing was sent', async () => {

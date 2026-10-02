@@ -1,5 +1,5 @@
 import type { JsonSchema } from '@shared/conversation'
-import { calendarChangeSchema } from '@shared/calendar'
+import { calendarChangeSchema, detailCalendarEvent } from '@shared/calendar'
 import type { ConversationLocale, PromptText } from '@shared/conversation-locale'
 import { ToolError, inputJsonSchema, type ToolDefinition } from '@shared/tool-registry'
 import { changeCalendar } from '../calendar'
@@ -8,7 +8,8 @@ import type { ToolContext } from './tools'
 
 /**
  * The calendar tools. The wording of the dates and of the range comes from shared/calendar, which
- * writes them in the language of the conversation.
+ * writes them in the language of the conversation, and an event saved is returned in the form
+ * show_calendar gives its events.
  */
 
 /** What this file says to the model, in both prompt languages. */
@@ -24,8 +25,8 @@ export function calendarTools(locale: ConversationLocale): ToolDefinition<ToolCo
     {
       name: 'change_calendar',
       description: {
-        ja: '通常の予定を追加・変更・削除する。実行前に必ず確認画面を表示し、ユーザーが承認してから保存する。createは設定の保存先、update/deleteは show_calendar で得た events[].id の元カレンダーを使う。updateは変更後の全フィールドを指定し、未変更の値は show_calendar の結果(start/end/timeZone/allDay/location/notes)から写す。繰り返しと招待付き予定の変更・削除には未対応。日時・タイムゾーンが不明なら聞き返す。終日は終了日の翌日0時をendに指定。失敗や時間切れ時は自動再実行しない。',
-        en: 'Adds, changes or deletes an ordinary event. A confirmation window always comes up first and nothing is saved until the user approves it. create writes to the calendar chosen in the settings; update and delete act on the calendar the event came from, found through events[].id in show_calendar. update takes every field as it should end up, so copy the unchanged values (start, end, timeZone, allDay, location, notes) from the result of show_calendar. Changing or deleting a repeating event, or one with invitees, is not supported. Ask again when the date, the time or the time zone is unclear. For an all-day event, end is midnight of the day after the last day. Never retry by yourself after a failure or a timeout.'
+        ja: '通常の予定を追加・変更・削除する。実行前に必ず確認画面を表示し、ユーザーが承認してから保存する。createは設定の保存先、update/deleteは show_calendar で得た events[].id の元カレンダーを使う。updateは変更後の全フィールドを指定し、未変更の値は show_calendar か change_calendar の結果(start/end/timeZone/allDay/location/notes)から写す。繰り返しと招待付き予定の変更・削除には未対応。日時・タイムゾーンが不明なら聞き返す。終日の予定は start に初日、end に最終日の日付(YYYY-MM-DD)を指定。失敗や時間切れ時は自動再実行しない。',
+        en: 'Adds, changes or deletes an ordinary event. A confirmation window always comes up first and nothing is saved until the user approves it. create writes to the calendar chosen in the settings; update and delete act on the calendar the event came from, found through events[].id in show_calendar. update takes every field as it should end up, so copy the unchanged values (start, end, timeZone, allDay, location, notes) from the result of show_calendar or of change_calendar. Changing or deleting a repeating event, or one with invitees, is not supported. Ask again when the date, the time or the time zone is unclear. For an all-day event, start is its first day and end its last, written YYYY-MM-DD. Never retry by yourself after a failure or a timeout.'
       },
       usage: {
         ja: '予定の追加・変更・削除を明示的に頼まれたとき。変更・削除は先に show_calendar で対象の id を得て、候補が複数ならユーザーに聞く。「確認画面の内容を確認してください」と伝えてから呼ぶ。保存済みかキャンセルかは結果に従う。',
@@ -46,11 +47,13 @@ export function calendarTools(locale: ConversationLocale): ToolDefinition<ToolCo
       timeoutMs: 300_000,
       maxResultChars: 3000,
       run: async (input, _ctx, signal) => {
+        let result: Awaited<ReturnType<typeof changeCalendar>>
         try {
-          return await changeCalendar(input, signal)
+          result = await changeCalendar(input, signal)
         } catch (err) {
           throw new ToolError(TEXTS.changeFailed(detail(err, locale)))
         }
+        return result.saved ? { ...result, event: detailCalendarEvent(locale, result.event) } : result
       }
     }
   ]

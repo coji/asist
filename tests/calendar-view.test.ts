@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '../src/shared/i18n'
 import { errorText } from '../src/shared/i18n/error-text'
-import { calendarChangeSchema, isoWithOffset, type CalendarEvent } from '../src/shared/calendar'
+import { calendarChangeSchema, type CalendarEvent } from '../src/shared/calendar'
 import type { AppSettings } from '../src/shared/settings'
 import { CalendarView } from '../src/renderer/src/ui/calendar/CalendarView'
 import { EditorCard, changeFromDraft, draftFromEvent, moveStart, newDraft, setEndTime, type Draft } from '../src/renderer/src/ui/calendar/cards'
@@ -205,12 +205,13 @@ describe('a repeating event, each of whose occurrences Google gives an id of its
 
 describe('the draft of the event editor', () => {
   it('saves a multi-day all-day event and an event with times over several days without changing their length', () => {
-    const trip = event({ allDay: true, start: day(15), end: day(18) })
-    const tour = event({ start: day(15, 10), end: day(17, 12) })
-    for (const original of [trip, tour]) {
+    const bounds = (original: CalendarEvent): string[] | false => {
       const change = changeFromDraft(draftFromEvent(original))
-      expect(change?.operation === 'update' && [Date.parse(change.event.start), Date.parse(change.event.end)]).toEqual([original.start, original.end])
+      return change?.operation === 'update' && [change.event.start, change.event.end]
     }
+    expect(bounds(event({ allDay: true, start: day(15), end: day(18) }))).toEqual(['2026-09-15', '2026-09-17'])
+    const tour = event({ start: day(15, 10), end: day(17, 12) })
+    expect(bounds(tour) && bounds(tour).map(Date.parse)).toEqual([tour.start, tour.end])
   })
 
   describe('in the editor', () => {
@@ -227,12 +228,13 @@ describe('the draft of the event editor', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }))
       })
     }
-    const saved = async (): Promise<[number, number]> => {
+    const savedBounds = async (): Promise<string[]> => {
       await act(async () => container.querySelector<HTMLFormElement>('.cal-create-form')!.requestSubmit())
       const change = changeFromDraft(onSubmit.mock.calls[0][0])
       if (change?.operation === 'delete' || !change) throw new Error('the draft was not saved')
-      return [Date.parse(change.event.start), Date.parse(change.event.end)]
+      return [change.event.start, change.event.end]
     }
+    const saved = async (): Promise<number[]> => (await savedBounds()).map(Date.parse)
 
     it('saves a new event from 22:00 to 01:00 as one that ends the next morning', async () => {
       // As the first hour of the week view creates it, with the end already at 01:00.
@@ -256,7 +258,7 @@ describe('the draft of the event editor', () => {
     it('extends a one-day all-day event to several days through its end day', async () => {
       await open(draftFromEvent(event({ title: '出張', allDay: true, start: day(15), end: day(16) })))
       await type(dates()[1], '2026-09-17')
-      expect(await saved()).toEqual([day(15), day(18)])
+      expect(await savedBounds()).toEqual(['2026-09-15', '2026-09-17'])
     })
 
     it('extends a one-day event with times to several days once its end reaches the next day', async () => {
@@ -294,8 +296,7 @@ describe('the draft of the event editor', () => {
       const draft = { ...draftFromEvent(event({ start: day(15, 10), end: day(15, 11), timeZone: 'Asia/Tokyo' })), allDay: true }
       const change = calendarChangeSchema.parse(changeFromDraft(draft))
       if (change.operation === 'delete') throw new Error('the draft was not saved as an event')
-      const dayOf = (iso: string): string => isoWithOffset(Date.parse(iso), change.event.timeZone).slice(0, 10)
-      expect([dayOf(change.event.start), dayOf(change.event.end)]).toEqual(['2026-09-15', '2026-09-16'])
+      expect([change.event.start, change.event.end]).toEqual(['2026-09-15', '2026-09-15'])
     })
 
     it('keeps the time zone of an event with times that stays one', () => {
@@ -318,13 +319,13 @@ describe('the draft of the event editor', () => {
     const savedDays = (draft: Draft): string[] => {
       const change = calendarChangeSchema.parse(changeFromDraft(draft))
       if (change.operation === 'delete') throw new Error('the draft was not saved as an event')
-      return [change.event.start, change.event.end].map((iso) => isoWithOffset(Date.parse(iso), change.event.timeZone).slice(0, 10))
+      return [change.event.start, change.event.end]
     }
 
-    it('saves a new all-day event on that day and an existing one that ends as it begins', () => {
-      expect(savedDays(newDraft('2026-09-06', { title: '休み', allDay: true }))).toEqual(['2026-09-06', '2026-09-07'])
+    it('saves a new all-day event on that day and an existing one that ends as it begins, as their days', () => {
+      expect(savedDays(newDraft('2026-09-06', { title: '休み', allDay: true }))).toEqual(['2026-09-06', '2026-09-06'])
       const before = event({ allDay: true, start: day(5), end: day(6), timeZone: 'America/Santiago' })
-      expect(savedDays(draftFromEvent(before))).toEqual(['2026-09-05', '2026-09-06'])
+      expect(savedDays(draftFromEvent(before))).toEqual(['2026-09-05', '2026-09-05'])
     })
   })
 
@@ -333,6 +334,10 @@ describe('the draft of the event editor', () => {
     expect(changeFromDraft(draft)).not.toBeNull()
     expect(changeFromDraft(moveStart(draft, { startDate: '' }))).toBeNull()
     expect(changeFromDraft({ ...draft, endTime: '' })).toBeNull()
+    const trip = draftFromEvent(event({ allDay: true, start: day(15), end: day(17) }))
+    expect(changeFromDraft(trip)).not.toBeNull()
+    expect(changeFromDraft({ ...trip, endDate: '' })).toBeNull()
+    expect(changeFromDraft({ ...trip, endDate: '2026-09-14' })).toBeNull()
   })
 })
 

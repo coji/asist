@@ -133,25 +133,19 @@ export function toCalendarEvent(item: GoogleEvent, calendar: CalendarInfo): Cale
   }
 }
 
-/** The day an instant falls on in a time zone, as Google writes an all-day date. */
-function dayIn(iso: string, timeZone: string): string {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
-      .formatToParts(new Date(iso))
-      .map((part) => [part.type, part.value])
-  )
-  return `${parts.year}-${parts.month}-${parts.day}`
-}
+/** The date after one written "2026-09-06", counted in UTC, where every day is 24 hours long. */
+const dayAfter = (date: string): string => new Date(Date.parse(date) + 86_400_000).toISOString().slice(0, 10)
 
 /**
- * The fields ASIST edits, as Google's API takes them. A patch sends the other kind of time as null so that
- * an event that turns from timed to all-day, or back, loses the one it had.
+ * The fields ASIST edits, as Google's API takes them. Google ends an all-day event on the day after its
+ * last. A patch sends the other kind of time as null so that an event that turns from timed to all-day,
+ * or back, loses the one it had.
  */
 export function googleEventBody(event: CalendarEventInput, patch: boolean): Record<string, unknown> {
-  const none = patch ? { dateTime: null, timeZone: null } : {}
-  const time = (iso: string): Record<string, unknown> =>
-    event.allDay ? { date: dayIn(iso, event.timeZone), ...none } : { dateTime: iso, timeZone: event.timeZone, ...(patch ? { date: null } : {}) }
-  return { summary: event.title, location: event.location, description: event.notes, start: time(event.start), end: time(event.end) }
+  const day = (date: string): Record<string, unknown> => ({ date, ...(patch ? { dateTime: null, timeZone: null } : {}) })
+  const time = (iso: string): Record<string, unknown> => ({ dateTime: iso, timeZone: event.timeZone, ...(patch ? { date: null } : {}) })
+  const [start, end] = event.allDay ? [day(event.start), day(dayAfter(event.end))] : [time(event.start), time(event.end)]
+  return { summary: event.title, location: event.location, description: event.notes, start, end }
 }
 
 /** The reasons Google gives in a 403 for a request over a quota, which waiting fixes. */

@@ -1289,19 +1289,6 @@ export const calendar = defineMessages({
       'es-419': 'El final tiene que ir después del inicio.',
       'es-ES': 'El final tiene que ir después del inicio.'
     },
-    allDayNotMidnight: {
-      'ja-JP': '終日の開始と終了は指定タイムゾーンの0時にしてください。',
-      'en-US': 'An all-day event starts and ends at midnight in the time zone you gave.',
-      'fr-FR': "Un événement d'une journée entière commence et se termine à minuit dans le fuseau indiqué.",
-      'de-DE': 'Ein ganztägiger Termin beginnt und endet um Mitternacht in der angegebenen Zeitzone.',
-      'hi-IN': 'पूरे दिन का इवेंट दी गई टाइम ज़ोन में आधी रात को शुरू और खत्म होता है।',
-      'id-ID': 'Acara sehari penuh mulai dan selesai pada tengah malam di zona waktu yang disebutkan.',
-      'it-IT': "Un evento di un'intera giornata inizia e finisce a mezzanotte nel fuso indicato.",
-      'ko-KR': '종일 일정은 지정한 시간대의 자정에 시작하고 끝나야 합니다.',
-      'pt-BR': 'Um evento de dia inteiro começa e termina à meia-noite no fuso informado.',
-      'es-419': 'Un evento de todo el día empieza y termina a medianoche en la zona horaria indicada.',
-      'es-ES': 'Un evento de todo el día empieza y termina a medianoche en la zona horaria indicada.'
-    },
     confirmInProgress: {
       'ja-JP': '別の予定の確認画面が開いています。先にその確認を終えてください。',
       'en-US': 'The confirmation window for another event is open. Finish it first.',
@@ -1588,18 +1575,18 @@ export const calendar = defineMessages({
       'es-419': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.',
       'es-ES': 'Esta compilación no tiene cliente OAuth de Google. Pon ASIST_GOOGLE_CLIENT_ID y ASIST_GOOGLE_CLIENT_SECRET en .env o en el entorno de la compilación y vuelve a compilar.'
     },
-    allDayEmpty: {
-      'ja-JP': '終日の予定は1日以上にしてください。終了は最終日の翌日0時です。',
-      'en-US': 'An all-day event covers at least one day, so it ends at midnight after its last day.',
-      'fr-FR': "Un événement d'une journée entière dure au moins un jour et se termine à minuit après son dernier jour.",
-      'de-DE': 'Ein ganztägiger Termin umfasst mindestens einen Tag und endet um Mitternacht nach seinem letzten Tag.',
-      'hi-IN': 'पूरे दिन का इवेंट कम से कम एक दिन का होता है, इसलिए वह अपने आख़िरी दिन के बाद की आधी रात को खत्म होता है।',
-      'id-ID': 'Acara sehari penuh mencakup setidaknya satu hari, jadi selesai pada tengah malam setelah hari terakhirnya.',
-      'it-IT': "Un evento di un'intera giornata dura almeno un giorno, quindi finisce a mezzanotte dopo il suo ultimo giorno.",
-      'ko-KR': '종일 일정은 하루 이상이어야 하므로 마지막 날 다음 날 자정에 끝나야 합니다.',
-      'pt-BR': 'Um evento de dia inteiro abrange pelo menos um dia, então termina à meia-noite depois do último dia.',
-      'es-419': 'Un evento de todo el día abarca al menos un día, así que termina a medianoche después de su último día.',
-      'es-ES': 'Un evento de todo el día abarca al menos un día, así que termina a medianoche después de su último día.'
+    boundsFormat: {
+      'ja-JP': '開始と終了は、UTCオフセット付きの日時か、終日の予定なら日付(YYYY-MM-DD)で指定してください。',
+      'en-US': 'The start and the end are times with their offset from UTC, or dates (YYYY-MM-DD) for an all-day event.',
+      'fr-FR': "Le début et la fin sont des heures avec leur décalage par rapport à UTC, ou des dates (YYYY-MM-DD) pour un événement d'une journée entière.",
+      'de-DE': 'Beginn und Ende sind Uhrzeiten mit ihrem Versatz zu UTC oder bei einem ganztägigen Termin Daten (YYYY-MM-DD).',
+      'hi-IN': 'शुरू और खत्म होने का समय UTC से अपने अंतर के साथ दिया जाता है, या पूरे दिन के इवेंट के लिए तारीख (YYYY-MM-DD) के रूप में।',
+      'id-ID': 'Waktu mulai dan selesai berupa waktu dengan selisihnya dari UTC, atau tanggal (YYYY-MM-DD) untuk acara sehari penuh.',
+      'it-IT': "L'inizio e la fine sono orari con il loro scostamento da UTC, oppure date (YYYY-MM-DD) per un evento di un'intera giornata.",
+      'ko-KR': '시작과 종료는 UTC와의 시차가 붙은 시각으로, 종일 일정은 날짜(YYYY-MM-DD)로 지정해야 합니다.',
+      'pt-BR': 'O início e o fim são horários com a diferença em relação ao UTC, ou datas (YYYY-MM-DD) para um evento de dia inteiro.',
+      'es-419': 'El inicio y el final son horas con su diferencia respecto de UTC, o fechas (YYYY-MM-DD) para un evento de todo el día.',
+      'es-ES': 'El inicio y el final son horas con su diferencia respecto a UTC, o fechas (YYYY-MM-DD) para un evento de todo el día.'
     }
   },
   google: {

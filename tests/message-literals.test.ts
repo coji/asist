@@ -31,7 +31,7 @@ const NOT_MESSAGES: Array<{ file: RegExp; text: string; reason: string }> = [
     text: '東京',
     reason: 'a place name: the default city of panel-catalog.ts, a name the municipality table does not resolve, and the station name in the JMA data'
   },
-  ...['今週', '終日', '期間'].map((text) => ({ file: /^tests\/calendar-service\.test\.ts$/, text, reason: 'the words src/shared/calendar.ts writes for the model' })),
+  ...['今週', '終日', '期間'].map((text) => ({ file: /^tests\/calendar-(service|tools)\.test\.ts$/, text, reason: 'the words src/shared/calendar.ts writes for the model' })),
   { file: /^tests\/llm-(openai|cerebras)\.test\.ts$/, text: 'エラー: HTTP 503', reason: 'a failed tool result, which conversation-markers.ts prefixes with its own `エラー:` for the model' },
   { file: /^tests\/brain-turn\.test\.ts$/, text: '相槌', reason: 'a word the request to the model must not contain' },
   ...['サポートの応答時間', '料金', 'メモ'].map((text) => ({ file: /^tests\/viewer-(docx|xlsx)\.test\.tsx$/, text, reason: 'text inside the demo docx and xlsx files the viewer renders' })),

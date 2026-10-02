@@ -1,5 +1,6 @@
 import {
   calendarChangeSchema,
+  calendarEventInput,
   calendarListSchema,
   calendarSearchSchema,
   describeCalendarEvent,
@@ -108,18 +109,10 @@ export class CalendarService {
       // Google keeps events on a writable calendar that its API does not let anyone change, such as a
       // birthday or an out-of-office block.
       if (before && !before.writable) throw new Error(errorText('calendar.errors.locked'))
-      const after =
-        input.operation === 'delete'
-          ? undefined
-          : {
-              ...input.event,
-              start: Date.parse(input.event.start),
-              end: Date.parse(input.event.end)
-            }
       const detail = [
         t(`calendar.confirm.${input.operation}`, { calendar: calendar.title }),
-        before ? `${t('calendar.confirm.before')}\n${describe(before)}` : '',
-        after ? `${t('calendar.confirm.after')}\n${describe(after)}` : ''
+        before ? `${t('calendar.confirm.before')}\n${describe(calendarEventInput(before))}` : '',
+        input.operation === 'delete' ? '' : `${t('calendar.confirm.after')}\n${describe(input.event)}`
       ]
         .filter(Boolean)
         .join('\n\n')

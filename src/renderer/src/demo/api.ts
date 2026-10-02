@@ -23,7 +23,7 @@ import {
   type Task
 } from '@shared/tasks'
 import { describeCalendarEvent, type CalendarChange, type CalendarChangeResult, type CalendarEvent, type CalendarEventInput } from '@shared/calendar'
-import { overlaps } from '@shared/calendar-layout'
+import { addDays, overlaps, parseDayKey } from '@shared/calendar-layout'
 import { demoUsageDays } from './fixtures/usage'
 import { DEFAULT_DOCK_ORDER } from '@shared/dock'
 import {
@@ -176,10 +176,14 @@ function demoConfirm(title: string, message: string, detail: string, confirmLabe
 }
 
 async function demoCalendarChange(change: CalendarChange): Promise<CalendarChangeResult> {
-  const fieldsOf = (event: CalendarEventInput) => ({ ...event, start: Date.parse(event.start), end: Date.parse(event.end) })
+  // An all-day event runs, as main reads one from Google, from the beginning of its first day to the beginning of the day after its last.
+  const fieldsOf = (event: CalendarEventInput) =>
+    event.allDay
+      ? { ...event, start: parseDayKey(event.start).getTime(), end: addDays(parseDayKey(event.end), 1).getTime() }
+      : { ...event, start: Date.parse(event.start), end: Date.parse(event.end) }
   const detail = [
     translate(`calendar.confirm.${change.operation}`, { calendar: '仕事' }),
-    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${describeCalendarEvent(translate, formatLocale(), fieldsOf(change.event))}`
+    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${describeCalendarEvent(translate, formatLocale(), change.event)}`
   ]
     .filter(Boolean)
     .join('\n\n')

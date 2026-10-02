@@ -160,24 +160,19 @@ describe('CalendarService', () => {
       process.env.TZ = 'America/Santiago'
       const f = fixture()
       Object.assign(f.current, { allDay: true, timeZone: 'America/Santiago', start: new Date(2026, 8, 6).getTime(), end: new Date(2026, 8, 7).getTime() })
-      const twoDays = { ...fields, allDay: true, timeZone: 'America/Santiago', start: '2026-09-06T01:00:00-03:00', end: '2026-09-08T00:00:00-03:00' }
+      const twoDays = { ...fields, allDay: true, timeZone: 'America/Santiago', start: '2026-09-06', end: '2026-09-07' }
       await f.service.change({ operation: 'update', eventId: event.id, event: twoDays }, f.signal.signal)
-      // The Azores turn their clock back from 01:00 to 00:00 on 2026-10-25, and either midnight ends the day before.
-      const azores = { ...fields, allDay: true, timeZone: 'Atlantic/Azores', start: '2026-10-24T00:00:00+00:00', end: '2026-10-25T00:00:00-01:00' }
-      await f.service.change({ operation: 'create', event: azores }, f.signal.signal)
       // An all-day event without length, which Google refuses to save but may still hold, covers the day it starts on.
       Object.assign(f.current, { end: f.current.start })
       await f.service.change({ operation: 'delete', eventId: event.id }, f.signal.signal)
-      const [update, create, remove] = f.confirm.mock.calls.map((call: unknown[]) => String(call[0]))
+      const [update, remove] = f.confirm.mock.calls.map((call: unknown[]) => String(call[0]))
       const locale = formatLocaleOf(getSettings().uiLocale, getSettings().region)
       const date = (month: number, day: number): string =>
         new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeZone: 'UTC' }).format(Date.UTC(2026, month - 1, day))
       const clocks = [1, 0].map((hour) => new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, 0, 1, hour)))
-      for (const clock of clocks) expect([update, create].filter((detail) => detail.includes(clock))).toEqual([])
+      for (const clock of clocks) expect(update).not.toContain(clock)
       expect([date(9, 6), date(9, 7)].every((day) => update.includes(day))).toBe(true)
       expect(update).not.toContain(date(9, 8))
-      expect(create).toContain(date(10, 24))
-      expect(create).not.toContain(date(10, 25))
       expect(remove).toContain(date(9, 6))
       expect(remove).not.toContain(date(9, 5))
     } finally {
@@ -371,18 +366,16 @@ describe('calendar dates', () => {
     }
   })
 
-  it('requires all-day boundaries in the specified time zone', () => {
-    expect(
-      calendarEventInputSchema.safeParse({ ...fields, allDay: true }).success
-    ).toBe(false)
-    expect(
-      calendarEventInputSchema.safeParse({
-        ...fields,
-        allDay: true,
-        start: '2026-09-15T00:00:00+09:00',
-        end: '2026-09-16T00:00:00+09:00'
-      }).success
-    ).toBe(true)
+  it('takes an all-day event as its first and last days and an event with times as instants, and says why it refuses either', () => {
+    const reasons = (patch: Partial<typeof fields>): string[] => {
+      const result = calendarEventInputSchema.safeParse({ ...fields, ...patch })
+      return result.success ? [] : result.error.issues.map((issue) => issue.message)
+    }
+    expect(reasons({ allDay: true, start: '2026-09-15', end: '2026-09-15' })).toEqual([])
+    expect(reasons({ allDay: true, start: '2026-09-15', end: '2026-09-17' })).toEqual([])
+    expect(reasons({ allDay: true })).toEqual([errorText('calendar.errors.boundsFormat')])
+    expect(reasons({ start: '2026-09-15', end: '2026-09-16' })).toEqual([errorText('calendar.errors.boundsFormat')])
+    expect(reasons({ allDay: true, start: '2026-09-15', end: '2026-09-14' })).toEqual([errorText('calendar.errors.endBeforeStart')])
   })
   it('resolves "week" to the Monday-start week containing today, and adds next week only on a weekend', () => {
     const previous = process.env.TZ
@@ -448,7 +441,7 @@ describe('calendar dates', () => {
       else process.env.TZ = previous
     }
   })
-  it('gives each show_calendar event an ISO time with offset that an edit can take as is', () => {
+  it('gives each show_calendar event an ISO time with the offset of this computer, which an edit can take as is', () => {
     expect(isoWithOffset(Date.parse('2026-09-15T10:00:00+09:00'), 'Asia/Tokyo')).toBe('2026-09-15T10:00:00+09:00')
     expect(isoWithOffset(Date.parse('2026-03-07T12:30:00-05:00'), 'America/New_York')).toBe('2026-03-07T12:30:00-05:00')
     expect(isoWithOffset(Date.parse('2026-03-08T12:30:00Z'), 'UTC')).toBe('2026-03-08T12:30:00+00:00')
@@ -466,6 +459,14 @@ describe('calendar dates', () => {
         writable: true
       })
       expect(calendarEventInputSchema.safeParse({ ...fields, start: detailCalendarEvent('ja-JP', event).start, end: detailCalendarEvent('ja-JP', event).end }).success).toBe(true)
+      // A call at 9:00 in New York is at 22:00 here, which is where the user is and what the model is to say.
+      const call = { ...event, timeZone: 'America/New_York', start: Date.parse('2026-09-15T09:00:00-04:00'), end: Date.parse('2026-09-15T10:00:00-04:00') }
+      expect(detailCalendarEvent('ja-JP', call)).toMatchObject({
+        time: '22:00–23:00',
+        start: '2026-09-15T22:00:00+09:00',
+        end: '2026-09-15T23:00:00+09:00',
+        timeZone: 'America/New_York'
+      })
     } finally {
       if (previous === undefined) delete process.env.TZ
       else process.env.TZ = previous
@@ -519,44 +520,38 @@ describe('calendar dates', () => {
       else process.env.TZ = previous
     }
   })
-  it('takes back an all-day event in a time zone whose clock skips or repeats midnight, as show_calendar shows it', () => {
+  it('gives the model an all-day event as its days, which an update takes back, wherever its days begin at another instant than midnight', () => {
     const previous = process.env.TZ
     try {
       // Chile moves its clock from 00:00 to 01:00 on 2026-09-06, so that day begins at 01:00.
       process.env.TZ = 'America/Santiago'
       const holiday = { ...event, allDay: true, timeZone: 'America/Santiago', start: new Date(2026, 8, 6).getTime(), end: new Date(2026, 8, 7).getTime() }
-      for (const shown of [detailCalendarEvent('en-US', holiday), detailCalendarEvent('en-US', { ...holiday, start: new Date(2026, 8, 5).getTime(), end: holiday.start })]) {
-        const update = { title: 'Holiday', start: shown.start, end: shown.end, allDay: true, timeZone: shown.timeZone, location: '', notes: '' }
-        expect(calendarEventInputSchema.safeParse(update).success).toBe(true)
-        expect(calendarEventInputSchema.safeParse({ ...update, end: '2026-09-07T01:00:00-03:00' }).success).toBe(false)
-      }
-      // The Azores turn their clock back from 01:00 to 00:00 on 2026-10-25, so midnight comes twice and both name that day.
-      const azores = { title: 'Holiday', allDay: true, timeZone: 'Atlantic/Azores', location: '', notes: '' }
-      for (const end of ['2026-10-25T00:00:00+00:00', '2026-10-25T00:00:00-01:00'])
-        expect(calendarEventInputSchema.safeParse({ ...azores, start: '2026-10-24T00:00:00+00:00', end }).success).toBe(true)
+      const dayBefore = { ...holiday, start: new Date(2026, 8, 5).getTime(), end: holiday.start }
+      const shown = [holiday, dayBefore].map((allDay) => detailCalendarEvent('en-US', allDay))
+      expect(shown.map(({ date, time, start, end }) => ({ date, time, start, end }))).toEqual([
+        { date: '2026-09-06 (Sun)', time: 'All day', start: '2026-09-06', end: '2026-09-06' },
+        { date: '2026-09-05 (Sat)', time: 'All day', start: '2026-09-05', end: '2026-09-05' }
+      ])
+      for (const { start, end, timeZone } of shown)
+        expect(calendarEventInputSchema.safeParse({ title: 'Holiday', start, end, allDay: true, timeZone, location: '', notes: '' }).success).toBe(true)
+      // The Azores turn their clock back from 01:00 to 00:00 on 2026-10-25, so midnight comes twice.
+      process.env.TZ = 'Atlantic/Azores'
+      const azores = detailCalendarEvent('en-US', { ...holiday, timeZone: 'Atlantic/Azores', start: new Date(2026, 9, 24).getTime(), end: new Date(2026, 9, 25).getTime() })
+      expect([azores.start, azores.end]).toEqual(['2026-10-24', '2026-10-24'])
     } finally {
       if (previous === undefined) delete process.env.TZ
       else process.env.TZ = previous
     }
   })
-  it('refuses an all-day event that starts where the clock turns back into the day before, or that covers no day', () => {
-    const reasons = (start: string, end: string, timeZone: string): string[] => {
-      const result = calendarEventInputSchema.safeParse({ title: 'Holiday', allDay: true, start, end, timeZone, location: '', notes: '' })
-      return result.success ? [] : result.error.issues.map((issue) => issue.message)
-    }
-    // St. John's turned its clock back from 00:01 on 2010-11-07 to 23:01 on 2010-11-06.
-    expect(reasons('2010-11-06T23:01:00-03:30', '2010-11-08T00:00:00-03:30', 'America/St_Johns')).toEqual([errorText('calendar.errors.allDayNotMidnight')])
-    // The two midnights of 2026-10-25 in the Azores are an hour apart and name the same day.
-    expect(reasons('2026-10-25T00:00:00+00:00', '2026-10-25T00:00:00-01:00', 'Atlantic/Azores')).toEqual([errorText('calendar.errors.allDayEmpty')])
-  })
-  it('gives an all-day event a time zone or a time it cannot read as its reason rather than throwing', () => {
-    const allDay = { ...fields, allDay: true, start: '2026-09-15T00:00:00+09:00', end: '2026-09-16T00:00:00+09:00' }
+  it('gives an event a time zone or bounds it cannot read as its reason rather than throwing', () => {
+    const allDay = { ...fields, allDay: true, start: '2026-09-15', end: '2026-09-15' }
     const reasons = (patch: Partial<typeof allDay>): string[] => {
       const result = calendarEventInputSchema.safeParse({ ...allDay, ...patch })
       return result.success ? [] : result.error.issues.map((issue) => issue.message)
     }
     expect(reasons({ timeZone: 'Mars/Olympus' })).toEqual([errorText('calendar.errors.timeZoneUnknown')])
-    expect(calendarEventInputSchema.safeParse({ ...allDay, start: 'the fifteenth' }).success).toBe(false)
+    expect(reasons({ start: 'the fifteenth' })).toEqual([errorText('calendar.errors.boundsFormat')])
+    expect(reasons({ allDay: false, start: '2026-09-15T25:00:00+09:00', end: '2026-09-15T26:00:00+09:00' })).toEqual([errorText('calendar.errors.boundsFormat')])
   })
   it('tells the model that an event ending at midnight is on the day it starts', () => {
     const previous = process.env.TZ

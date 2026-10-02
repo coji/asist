@@ -244,8 +244,8 @@ export interface Draft {
   notes: string
   /**
    * The time zone an event with times is saved in: the event's own when it is edited, this computer's when
-   * it is new. Its start and end are instants, so any zone holds them. An all-day event is saved in this
-   * computer's zone instead, because its days are midnights in the zone the inputs are written in.
+   * it is new. Its start and end are instants, so any zone holds them, and an all-day event is saved as its
+   * days, which no zone moves.
    */
   timeZone: string
 }
@@ -336,23 +336,27 @@ function localDate(date: string, time: string): Date {
   return new Date(y, m - 1, d, hh, mm)
 }
 
+/** The first and last days of an all-day draft, or null while they do not make a range. */
+function daysOf(draft: Draft): { start: string; end: string } | null {
+  // A date input that is cleared gives an empty value, which comes before every day.
+  return draft.startDate && draft.endDate >= draft.startDate ? { start: draft.startDate, end: draft.endDate } : null
+}
+
+/** The instants a draft with times starts and ends at, or null while they do not make a range. */
+function instantsOf(draft: Draft): { start: string; end: string } | null {
+  const start = localDate(draft.startDate, draft.startTime)
+  const end = localDate(draft.endDate, draft.endTime)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null
+  return { start: start.toISOString(), end: end.toISOString() }
+}
+
 /** What saving the draft asks main to do, or null while the draft cannot be saved. */
 export function changeFromDraft(draft: Draft): CalendarChange | null {
   const title = draft.title.trim()
   if (!title) return null
-  const { start, end, timeZone } = draft.allDay
-    ? { start: localDate(draft.startDate, '00:00'), end: addDays(localDate(draft.endDate, '00:00'), 1), timeZone: localZone() }
-    : { start: localDate(draft.startDate, draft.startTime), end: localDate(draft.endDate, draft.endTime), timeZone: draft.timeZone }
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null
-  const event = {
-    title,
-    start: start.toISOString(),
-    end: end.toISOString(),
-    allDay: draft.allDay,
-    timeZone,
-    location: draft.location.trim(),
-    notes: draft.notes
-  }
+  const bounds = draft.allDay ? daysOf(draft) : instantsOf(draft)
+  if (!bounds) return null
+  const event = { title, ...bounds, allDay: draft.allDay, timeZone: draft.timeZone, location: draft.location.trim(), notes: draft.notes }
   return draft.eventId ? { operation: 'update', eventId: draft.eventId, event } : { operation: 'create', event }
 }
 
