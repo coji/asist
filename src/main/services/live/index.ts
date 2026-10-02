@@ -35,7 +35,7 @@ let runs = 0
 
 export const connection = (): LiveConnection => engine?.state ?? 'off'
 
-function geminiSystemInstruction(startedAt: Date): string {
+function geminiSystemInstruction(): string {
   history.ensureLoaded()
   const locale = conversationLocale()
   return buildLiveSystemInstruction({
@@ -43,9 +43,7 @@ function geminiSystemInstruction(startedAt: Date): string {
     persona: personaText(getSettings()),
     toolGuide: toolGuide(locale, { webSearch: false }),
     memoryBlock: memory.promptBlock(),
-    historySummary: history.summary,
-    jobContext: agentRunner.contextBlock(),
-    startedAt
+    historySummary: history.summary
   })
 }
 
@@ -55,6 +53,7 @@ function createEngine(): GeminiLiveEngine {
     apiKey: () => providerKey('google'),
     connect: (params) => connectGemini(providerKey('google') ?? '', params),
     systemInstruction: geminiSystemInstruction,
+    jobContext: () => agentRunner.contextBlock(),
     functionDeclarations: () => toGeminiFunctionDeclarations(tools(conversationLocale())),
     executeTool: (name, input, ctx) => executeClientTool(name, input, ctx, conversationLocale()),
     isParallel: (name) => toolRegistry(conversationLocale()).find(name)?.parallel ?? false,
