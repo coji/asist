@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import mitt from 'mitt'
 import type { AppStatus, LiveAudio } from '@shared/ipc'
+import { createTranslator } from '@shared/i18n'
 
 /**
  * The conversation driven by the events of the voice pipeline: the voice controller and the speech
@@ -1041,6 +1042,65 @@ describe('a barge-in while a confirmation holds the conversation', () => {
     confirmEvent({ type: 'close', id: 'c1' })
     expect(player().beginTurn).not.toHaveBeenCalled()
     answer(43)
+  })
+})
+
+describe("the assistant's line in the conversation view", () => {
+  /** The filler main plays while a search or a tool takes a while. */
+  const filler = (turnId: number): Record<string, unknown> => ({ turnId, index: 998, text: 'ちょっと見てみますね。', audio: 'eA==', phonemes: null })
+  const sentence = (turnId: number, index: number, text: string): Record<string, unknown> => ({ turnId, index, text, audio: 'eA==', phonemes: null })
+  const aiLines = (): string[] => mocks.feed.lines.filter((line) => line.role === 'ai').map((line) => line.text)
+  type Conversation = Awaited<ReturnType<typeof start>>
+  const event = (conversation: Conversation, turnEvent: Record<string, unknown>): void =>
+    conversation.handleTurnEvent(turnEvent as Parameters<Conversation['handleTurnEvent']>[0])
+
+  it('holds the reply alone when the filler of a slow tool is queued before any of its text', async () => {
+    const conversation = await start({ turnStart: vi.fn(async () => 42) })
+    await conversation.sendTypedMessage('明日の天気は?')
+    event(conversation, { type: 'segment', turnId: 42, segment: filler(42) })
+    event(conversation, { type: 'delta', turnId: 42, text: '晴れです。' })
+    event(conversation, { type: 'segment', turnId: 42, segment: sentence(42, 0, '晴れです。') })
+    event(conversation, { type: 'done', turnId: 42, fullText: '晴れです。' })
+
+    expect(aiLines()).toEqual(['晴れです。'])
+  })
+
+  it('hands the look-ahead and the classifier the last reply, not the filler of a turn stopped before its text', async () => {
+    const bridgePlan = vi.fn(async () => ({ bridge: null }))
+    const aizuchiClassify = vi.fn(async () => ({ cls: 'understand', prob: 0.9, complete: 0.9 }))
+    const conversation = await start({ turnStart: vi.fn().mockResolvedValueOnce(42).mockResolvedValueOnce(43), bridgePlan, aizuchiClassify })
+    await conversation.sendTypedMessage('明日の天気は?')
+    event(conversation, { type: 'delta', turnId: 42, text: '晴れです。' })
+    event(conversation, { type: 'done', turnId: 42, fullText: '晴れです。' })
+    await conversation.sendTypedMessage('じゃあ明後日は?')
+    event(conversation, { type: 'segment', turnId: 43, segment: filler(43) })
+    // The user talks over the filler, and brain ends the turn having said nothing.
+    event(conversation, { type: 'done', turnId: 43, fullText: '' })
+
+    voice().events.emit('state', 'capturing')
+    await flush()
+    voice().events.emit('partial', '傘はいるかな')
+    await flush()
+
+    expect(bridgePlan).toHaveBeenCalledWith(expect.objectContaining({ lastAssistantText: '晴れです。' }))
+    expect(aizuchiClassify).toHaveBeenCalledWith(expect.objectContaining({ prev: '晴れです。' }))
+  })
+
+  it('shows the sentence said in place of a reply once when the turn fails before any text, as it does with speech off', async () => {
+    const cannotAnswer = createTranslator('ja-JP')('spoken.cannotAnswer')
+    const shown = (): number =>
+      mocks.feed.lines.filter((line) =>
+        line.text === cannotAnswer ||
+        (line as { message?: { values?: { message?: string } } }).message?.values?.message === cannotAnswer
+      ).length
+    const conversation = await start({ turnStart: vi.fn(async () => 42) })
+    await conversation.sendTypedMessage('明日の天気は?')
+    // With speech on, brain reads the prepared sentence aloud before it reports the failure with it.
+    event(conversation, { type: 'segment', turnId: 42, segment: sentence(42, 0, cannotAnswer) })
+    event(conversation, { type: 'error', turnId: 42, message: cannotAnswer })
+    event(conversation, { type: 'done', turnId: 42, fullText: cannotAnswer })
+
+    expect(shown()).toBe(1)
   })
 })
 

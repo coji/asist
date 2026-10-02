@@ -741,14 +741,9 @@ export function handleTurnEvent(event: TurnEvent): void {
       break
     }
     case 'segment': {
-      if (aiLineId === null && event.segment.text) {
-        aiLineId = feed.append({
-          role: 'ai',
-          text: event.segment.text,
-          turnId: event.turnId,
-          streaming: true
-        })
-      }
+      // The line holds the reply as its deltas write it, which is what the conversation log keeps, and a
+      // sentence of the reply is spoken only after its delta. A segment is speech alone: it can also be the
+      // filler of a slow tool, or the sentence said in place of a failed reply, which the error line shows.
       interjectPlayback.markSegmentQueued(event.segment)
       speechPlayer.enqueue(event.segment)
       break
