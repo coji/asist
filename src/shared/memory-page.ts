@@ -16,6 +16,14 @@ import {
   type PageNameIssue,
   type ParsedPage
 } from '../../resources/skills/memory-format.mjs'
+import journalTemplateJa from '../../resources/skills/memory-curation/assets/templates/journal.md?raw'
+import meTemplateJa from '../../resources/skills/memory-curation/assets/templates/me.md?raw'
+import pageTemplateJa from '../../resources/skills/memory-curation/assets/templates/page.md?raw'
+import userTemplateJa from '../../resources/skills/memory-curation/assets/templates/user.md?raw'
+import journalTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/journal.md?raw'
+import meTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/me.md?raw'
+import pageTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/page.md?raw'
+import userTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/user.md?raw'
 
 export { instructionBody, parsePage }
 
@@ -95,6 +103,41 @@ export function classifyFile(file: string): { kind: FileKind; title: string } {
   return { kind: null, title: name }
 }
 
+const templateHeadings = (fixed: readonly PromptText[], ...templates: string[]): ReadonlySet<string> =>
+  new Set([
+    ...[FIXED.summary, ...fixed].flatMap((text) => [text.ja, text.en]),
+    ...templates.flatMap((template) => parsePage(template, '').sections.map((section) => section.heading))
+  ])
+
+/**
+ * The headings the templates of the curation skills write into each kind of document that is searched, in the
+ * two forms the templates exist in, with the fixed headings ASIST reads: the summary, which the text above a
+ * document's first heading is read under, the impression of a page and the close of a journal day.
+ */
+const TEMPLATE_HEADINGS: Record<'user' | 'me' | 'page' | 'journal', ReadonlySet<string>> = {
+  user: templateHeadings([], userTemplateJa, userTemplateEn),
+  me: templateHeadings([], meTemplateJa, meTemplateEn),
+  page: templateHeadings([FIXED.impression], pageTemplateJa, pageTemplateEn),
+  journal: templateHeadings([FIXED.journalSelf], journalTemplateJa, journalTemplateEn)
+}
+
+/**
+ * Whether the heading of a section of the file is one its template writes, rather than one the curation or the
+ * user chose for what the section says. Such a heading is the same in every memory and in ordinary words, so it
+ * is no reason to put the section beside an utterance. Measured on 2026-10-02 over memories of 26 units written
+ * from the templates in each language: as a search word, "who am I kidding" injected me.md's "Who I am" at bm25
+ * -5.2 against the bar of -5 and 「気になっていることがあるんだけど」 me.md's 「好きなもの、気になっていること」 at
+ * -11.4 against -2.5; in the embedded text, "I did not like myself today" brought the close of a journal day to a
+ * cosine of 0.868 against the bar of 0.84, and 0.835 without the heading. A heading anyone else writes says what
+ * the section holds: over 53 units, "Ken bought a bonsai yesterday" injects a "Bonsai" the curation added to
+ * me.md at -8.3, and nothing once that heading is no search word. A curation held in a language other than
+ * Japanese or English writes me.md's example headings in that language, and those are not in this set.
+ */
+export function headingFromTemplate(file: string, heading: string): boolean {
+  const { kind } = classifyFile(file)
+  return kind !== null && kind !== 'instruction' && TEMPLATE_HEADINGS[kind].has(heading)
+}
+
 /** Turns the headings of a page, meaning user, me or pages, into units. */
 export function unitsOfPage(file: string, page: ParsedPage, pageName: string): MemoryUnit[] {
   const date = page.frontmatter.updated ?? ''
@@ -133,12 +176,14 @@ export function unitsOfJournal(file: string, page: ParsedPage, date: string): Me
  * also makes the other headings of the same page reachable. Aliases are not appended in parentheses,
  * because that lowers the scores; they are carried on the bigram side only. A journal unit is prefixed
  * with the date and the heading, in the language the entry is written in, so that changing the language
- * of the conversation does not send every entry written so far back through the embedding worker.
+ * of the conversation does not send every entry written so far back through the embedding worker. A heading
+ * its template wrote is left out (headingFromTemplate).
  */
-export function embeddingTextOf(unit: Pick<MemoryUnit, 'kind' | 'page' | 'heading' | 'text' | 'date'>): string {
-  if (unit.kind !== 'journal') return `${unit.page} ${unit.heading}: ${unit.text}`
+export function embeddingTextOf(unit: Pick<MemoryUnit, 'file' | 'kind' | 'page' | 'heading' | 'text' | 'date'>): string {
+  const heading = headingFromTemplate(unit.file, unit.heading) ? '' : ` ${unit.heading}`
+  if (unit.kind !== 'journal') return `${unit.page}${heading}: ${unit.text}`
   const label = fixedFor(FIXED.journalOf, `${unit.heading}\n${unit.text}`).replace('{date}', unit.date)
-  return `${label} ${unit.heading}: ${unit.text}`
+  return `${label}${heading}: ${unit.text}`
 }
 
 

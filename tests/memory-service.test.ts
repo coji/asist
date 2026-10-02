@@ -138,7 +138,7 @@ describe('memory service', () => {
     fs.writeFileSync(memoryFile('pages', 'ムギ.md'), MUGI)
     service.reindex()
     await service.embedMissing()
-    expect(calls.some((c) => c.kind === 'document' && c.texts.includes('松葉軒 要約: 本人の行きつけのラーメン屋。'))).toBe(true)
+    expect(calls.some((c) => c.kind === 'document' && c.texts.includes('松葉軒: 本人の行きつけのラーメン屋。'))).toBe(true)
     const hits = await service.search('お昼は麺類の気分', { mode: 'utterance' })
     expect(hits.map((h) => h.record.heading)).toEqual(['要約'])
     expect(hits[0].via).toBe('dense')
@@ -214,8 +214,8 @@ describe('memory service', () => {
     first.resolve([new Float32Array([1, 0])])
     expect(await pending).toBe(1)
     expect(mocks.embed.mock.calls).toEqual([
-      [['ムギ 要約: 本人の猫。キジトラで窓辺によくいる。'], 'document'],
-      [['ムギ 要約: チェスを楽しんでいる。'], 'document']
+      [['ムギ: 本人の猫。キジトラで窓辺によくいる。'], 'document'],
+      [['ムギ: チェスを楽しんでいる。'], 'document']
     ])
     mocks.embed.mockResolvedValue([new Float32Array([1, 0])])
     expect(await service.search('以前の話題', { mode: 'utterance' })).toEqual([])

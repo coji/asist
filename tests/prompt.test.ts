@@ -167,7 +167,7 @@ describe('the prompt of a conversation that is not held in Japanese', () => {
   it('heads an injected journal entry with the same words the index embedded it under', () => {
     for (const locale of ['ja-JP', 'en-US'] as const) {
       const heading = journalHeading(locale, '2026-09-07')
-      const embedded = embeddingTextOf({ kind: 'journal', page: '2026-09-07', heading: 'h', text: locale === 'ja-JP' ? 'あ' : 'a', date: '2026-09-07' })
+      const embedded = embeddingTextOf({ file: 'journal/2026-09-07.md', kind: 'journal', page: '2026-09-07', heading: 'h', text: locale === 'ja-JP' ? 'あ' : 'a', date: '2026-09-07' })
       expect(embedded.startsWith(heading.slice(2))).toBe(true)
     }
   })
