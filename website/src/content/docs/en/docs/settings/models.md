@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-Under "Conversation", choose the conversation model and the model for the bridge phrase. The bridge phrase is a short phrase that ASIST prepares while you are still talking and says before the main answer. When you turn off "Bridge phrase" on the "Voice" page, ASIST doesn't say it and doesn't use the bridge phrase model either. Backchannels in a Japanese conversation are turned on and off separately, with "Backchannels".
+Under "Conversation", choose the conversation model and the model for the bridge phrase. The bridge phrase is a short phrase that ASIST prepares while you are still talking and says before the main answer. When you turn off "Bridge phrase" on the "Voice" page, ASIST doesn't say it and doesn't use the bridge phrase model either. While it is off, ASIST also doesn't fill the wait with a short line such as "ちょっと見てみますね。" ("Let me have a look.") when a search or a tool takes a while in a Japanese conversation. Backchannels in a Japanese conversation are turned on and off separately, with "Backchannels".
 
 Save an API key for each provider on the "API keys" page. When the provider of a model in use has no key, it shows below the models in "Conversation" and on "Overview". Before saving a key, ASIST checks that it can get the list of models from that provider's API. You can't choose a model from a provider that has no key. Keys are stored encrypted, with a key from the keychain on a Mac and with a key tied to your Windows user account (DPAPI) on Windows.
 

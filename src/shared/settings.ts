@@ -56,7 +56,10 @@ const fields = {
   /** Whether a backchannel plays the moment the user stops speaking. Only a Japanese conversation has them. */
   aizuchi: z.boolean(),
   aizuchiRate: z.number().min(0).max(1),
-  /** Whether a short line, prepared while the user is still speaking, plays before the reply, in every conversation language. */
+  /**
+   * Whether a short line, prepared while the user is still speaking, plays before the reply, in every
+   * conversation language. It also decides the filler that covers a search or a tool that takes a while.
+   */
   bridgePhrase: z.boolean(),
   listeningAizuchi: z.boolean(),
   /** The VAD's silence duration, chosen in the settings screen. */

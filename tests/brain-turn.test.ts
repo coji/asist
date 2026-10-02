@@ -117,6 +117,8 @@ const mocks = vi.hoisted(() => ({
   conversationLocale: 'ja-JP' as 'ja-JP' | 'en-US',
   key: 'test-key' as string | undefined,
   ttsEngine: 'voicevox',
+  aizuchi: true,
+  bridgePhrase: true,
   /** Holds every synthesis until the turn is aborted, as a slow speech engine does. */
   holdSynthesis: false,
   /** The agent jobs as the agent service keeps them. */
@@ -178,6 +180,8 @@ vi.mock('../src/main/services/settings', () => ({
     region: 'JP',
     persona: '',
     ttsEngine: mocks.ttsEngine,
+    aizuchi: mocks.aizuchi,
+    bridgePhrase: mocks.bridgePhrase,
     conversationModel: mocks.conversationModel,
     bridgeModel: { provider: 'anthropic', id: 'claude-haiku-4-5-20251001' },
     conversationLogRetentionDays: 30,
@@ -331,6 +335,8 @@ describe('brain turn', () => {
     mocks.conversationLocale = 'ja-JP'
     mocks.key = 'test-key'
     mocks.ttsEngine = 'voicevox'
+    mocks.aizuchi = true
+    mocks.bridgePhrase = true
     mocks.holdSynthesis = false
     mocks.jobs = new Map()
     mocks.contextBlock = () => null
@@ -1648,18 +1654,18 @@ describe('brain turn', () => {
     }
   })
 
-  it.each([
-    ['ja-JP', 'en-US', true],
-    ['en-US', 'ja-JP', false]
-  ] as const)('covers a slow tool with the work clip only when the language the turn started in (%s) has backchannels, whatever it is switched to (%s)', async (start, switched, plays) => {
+  /**
+   * Runs a turn whose tool takes past the filler's limit, calling `during` while the response that calls
+   * the tool streams, and tells whether the work clip was played.
+   */
+  async function slowToolPlaysWorkClip(during: () => void = () => {}): Promise<boolean> {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true })
     try {
-      mocks.conversationLocale = start
       mocks.workClip = async () => ({ text: 'えーっと', category: 'work', weight: 1, audio: 'AAAA' })
       let finishFetch!: () => void
       mocks.fetchPanel.mockImplementation(() => new Promise((resolve) => { finishFetch = () => resolve(weatherPanel) }))
       mocks.rounds.push(async (round) => {
-        mocks.conversationLocale = switched
+        during()
         round.toolUse('t1', 'show_weather', { location: '東京都' })
         return { stop: 'tool_calls' }
       })
@@ -1671,10 +1677,32 @@ describe('brain turn', () => {
       finishFetch()
       await handle.completion
       await new Promise((resolve) => setImmediate(resolve))
-      expect(events.some((e) => e.type === 'segment' && e.segment.text === 'えーっと')).toBe(plays)
+      return events.some((e) => e.type === 'segment' && e.segment.text === 'えーっと')
     } finally {
       vi.useRealTimers()
     }
+  }
+
+  it.each([
+    ['ja-JP', 'en-US', true],
+    ['en-US', 'ja-JP', false]
+  ] as const)('covers a slow tool with the work clip only when the language the turn started in (%s) has backchannels, whatever it is switched to (%s)', async (start, switched, plays) => {
+    mocks.conversationLocale = start
+    expect(await slowToolPlaysWorkClip(() => { mocks.conversationLocale = switched })).toBe(plays)
+  })
+
+  it.each([
+    { bridgePhrase: false, aizuchi: true, plays: false },
+    { bridgePhrase: true, aizuchi: false, plays: true }
+  ])('covers a slow tool with the work clip by the bridge phrase switch alone (bridge phrase $bridgePhrase, aizuchi $aizuchi)', async ({ bridgePhrase, aizuchi, plays }) => {
+    mocks.bridgePhrase = bridgePhrase
+    mocks.aizuchi = aizuchi
+    expect(await slowToolPlaysWorkClip()).toBe(plays)
+  })
+
+  it('leaves a slow tool silent in a turn that started with speech off, even once speech is turned on and the clips have audio', async () => {
+    mocks.ttsEngine = 'none'
+    expect(await slowToolPlaysWorkClip(() => { mocks.ttsEngine = 'voicevox' })).toBe(false)
   })
 
   it('keeps a turn the user started open while its confirmation waits through the next words, and takes those up once the approved job has started', async () => {

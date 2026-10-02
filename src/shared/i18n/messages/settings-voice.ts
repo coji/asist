@@ -671,17 +671,17 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Frase de enlace'
     },
     bridgePhraseHint: {
-      'ja-JP': '返事の前に短い一言を挟んで間をつなぎます。オフにすると、つなぎの一言のモデルを使いません。',
-      'en-US': "Says a short phrase before the reply to fill the wait. When it's off, the bridge phrase model isn't used.",
-      'fr-FR': "Dit une courte phrase avant la réponse pour combler l'attente. Quand elle est désactivée, le modèle de la phrase de transition n'est pas utilisé.",
-      'de-DE': 'Sagt vor der Antwort einen kurzen Satz, der die Wartezeit überbrückt. Ist er ausgeschaltet, wird das Modell für den Überbrückungssatz nicht verwendet.',
-      'hi-IN': 'जवाब से पहले एक छोटा वाक्य कहकर इंतज़ार का समय भरता है। बंद होने पर शुरुआती वाक्य का मॉडल इस्तेमाल नहीं होता।',
-      'id-ID': 'Mengucapkan kalimat pendek sebelum jawaban untuk mengisi jeda. Kalau dimatikan, model kalimat penyambung tidak dipakai.',
-      'it-IT': "Dice una frase breve prima della risposta per riempire l'attesa. Se è disattivata, il modello della frase di raccordo non viene usato.",
-      'ko-KR': '대답하기 전에 짧은 한마디로 기다리는 틈을 잇습니다. 끄면 연결 멘트 모델을 사용하지 않습니다.',
-      'pt-BR': 'Diz uma frase curta antes da resposta para preencher a espera. Quando desativada, o modelo da frase de transição não é usado.',
-      'es-419': 'Dice una frase corta antes de la respuesta para llenar la espera. Si la desactivas, no se usa el modelo de las frases de enlace.',
-      'es-ES': 'Dice una frase corta antes de la respuesta para llenar la espera. Si la desactivas, no se usa el modelo de las frases de enlace.'
+      'ja-JP': '返事の前に短い一言を挟んで間をつなぎます。日本語の会話では、検索やツールに時間がかかるときにも挟みます。オフにすると、つなぎの一言のモデルを使いません。',
+      'en-US': "Says a short phrase to fill the wait before the reply, and in a Japanese conversation also while a search or a tool takes a while. When it's off, the bridge phrase model isn't used.",
+      'fr-FR': "Dit une courte phrase pour combler l'attente avant la réponse et, dans une conversation en japonais, aussi quand une recherche ou un outil prend du temps. Quand elle est désactivée, le modèle de la phrase de transition n'est pas utilisé.",
+      'de-DE': 'Sagt vor der Antwort einen kurzen Satz, der die Wartezeit überbrückt. In einem Gespräch auf Japanisch geschieht das auch, wenn eine Suche oder ein Werkzeug länger dauert. Ist er ausgeschaltet, wird das Modell für den Überbrückungssatz nicht verwendet.',
+      'hi-IN': 'जवाब से पहले एक छोटा वाक्य कहकर इंतज़ार का समय भरता है। जापानी बातचीत में, खोज या टूल में देर लगने पर भी ऐसा करता है। बंद होने पर शुरुआती वाक्य का मॉडल इस्तेमाल नहीं होता।',
+      'id-ID': 'Mengucapkan kalimat pendek sebelum jawaban untuk mengisi jeda. Dalam percakapan bahasa Jepang, juga saat pencarian atau tool butuh waktu lama. Kalau dimatikan, model kalimat penyambung tidak dipakai.',
+      'it-IT': "Dice una frase breve prima della risposta per riempire l'attesa. In una conversazione in giapponese lo fa anche quando una ricerca o uno strumento richiede tempo. Se è disattivata, il modello della frase di raccordo non viene usato.",
+      'ko-KR': '대답하기 전에 짧은 한마디로 기다리는 틈을 잇습니다. 일본어 대화에서는 검색이나 도구에 시간이 걸릴 때도 잇습니다. 끄면 연결 멘트 모델을 사용하지 않습니다.',
+      'pt-BR': 'Diz uma frase curta antes da resposta para preencher a espera. Em uma conversa em japonês, faz o mesmo quando uma pesquisa ou ferramenta demora. Quando desativada, o modelo da frase de transição não é usado.',
+      'es-419': 'Dice una frase corta antes de la respuesta para llenar la espera. En una conversación en japonés, también lo hace cuando una búsqueda o una herramienta tarda. Si la desactivas, no se usa el modelo de las frases de enlace.',
+      'es-ES': 'Dice una frase corta antes de la respuesta para llenar la espera. En una conversación en japonés, también lo hace cuando una búsqueda o una herramienta tarda. Si la desactivas, no se usa el modelo de las frases de enlace.'
     }
   },
   mic: {
