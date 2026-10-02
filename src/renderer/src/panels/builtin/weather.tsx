@@ -1,8 +1,8 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { PanelSpec } from '@shared/ipc'
 import type { Translate } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
-import type { WeatherCondition, WeatherData, WeatherUnits } from '@shared/weather'
+import { zonedDate, type WeatherCondition, type WeatherData, type WeatherUnits } from '@shared/weather'
 import { useT, useFormatLocale } from '@/i18n'
 import { usePanelStore } from '@/state/stores'
 import type { CardContext, CardDefinition } from '../shell/card'
@@ -50,6 +50,31 @@ const time = (at: string, locale: string, timeZone: string): string =>
   new Date(at).toLocaleTimeString(locale, { ...timeFields(locale), timeZone })
 const dayOf = (date: string, locale: string, fields: Intl.DateTimeFormatOptions): string =>
   new Date(`${date}T00:00:00`).toLocaleDateString(locale, fields)
+const dayAfter = (date: string): string =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
+
+/**
+ * Today's date at the place, which moves on at the place's midnight while the card stands. The card names
+ * its day from it when drawn, rather than keeping the today or tomorrow of the fetch, which would name the
+ * wrong day after midnight. It is read once a minute, so the word changes within a minute of midnight.
+ */
+function usePlaceToday(timeZone: string): string {
+  const [today, setToday] = useState(() => zonedDate(Date.now(), timeZone))
+  useEffect(() => {
+    const read = (): void => setToday(zonedDate(Date.now(), timeZone))
+    read()
+    const timer = setInterval(read, 60_000)
+    return () => clearInterval(timer)
+  }, [timeZone])
+  return today
+}
+
+/** The word for the forecast's day as the place counts days now, or none once that day has passed. */
+function dayWord(targetDate: string, today: string): 'cardsWeather.today' | 'cardsWeather.tomorrow' | null {
+  if (targetDate === today) return 'cardsWeather.today'
+  if (targetDate === dayAfter(today)) return 'cardsWeather.tomorrow'
+  return null
+}
 /** What the card calls a sky: the source's own words, or the interface's word for the code it published. */
 const conditionName = (value: WeatherCondition, t: Translate): string =>
   value.word ? t(`cardsWeather.words.${value.word}`) : (value.label ?? '')
@@ -144,6 +169,8 @@ function WeatherBody({ spec, size }: CardContext): React.JSX.Element {
   const locale = useFormatLocale()
   const w = weatherOf(spec)
   const zone = w.location.timeZone
+  const word = dayWord(w.targetDate, usePlaceToday(zone))
+  const date = dayOf(w.targetDate, locale, { month: 'long', day: 'numeric', weekday: 'short' })
   const unit = degree(w.units)
   const setFocused = usePanelStore((s) => s.setFocused)
   const hourly = w.hourly
@@ -167,12 +194,7 @@ function WeatherBody({ spec, size }: CardContext): React.JSX.Element {
     <div className="card wx" data-size={size}>
       <div className="wx-hero ui-on-scene">
         <h3>{w.location.requested}</h3>
-        <p>
-          {t('cardsWeather.heroDate', {
-            day: t(w.date === 'tomorrow' ? 'cardsWeather.tomorrow' : 'cardsWeather.today'),
-            date: dayOf(w.targetDate, locale, { month: 'long', day: 'numeric', weekday: 'short' })
-          })}
-        </p>
+        <p>{word ? t('cardsWeather.heroDate', { day: t(word), date }) : date}</p>
         <div className="wx-current">
           <strong>
             {number(headline)}
@@ -292,6 +314,6 @@ export const weatherCard: CardDefinition = {
   Body: WeatherBody,
   kicker: 'WEATHER',
   className: 'wx-card',
-  meta: (context) => <Issued {...context} />,
-  backdrop: (context) => <Scene {...context} />
+  meta: Issued,
+  backdrop: Scene
 }

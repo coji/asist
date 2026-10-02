@@ -80,7 +80,12 @@ export const PANEL_CATALOG: PanelCatalogEntry[] = [
       city: z
         .string()
         .default(bilingual({ ja: '東京', en: 'Tokyo' }))
-        .describe(bilingual({ ja: '都市名。例: ニューヨーク, ロンドン', en: 'The city, for example New York or London.' }))
+        .describe(
+          bilingual({
+            ja: '都市名。例: ニューヨーク, ロンドン。同じ名前の都市がほかの国にもあり、どちらか分かっているときは「パリ, フランス」のように国名をカンマのあとに添える',
+            en: 'The city, for example New York or London. When cities in other countries share the name and you know which one is meant, add its country after a comma, as in "Paris, France".'
+          })
+        )
     }),
     key: (p) => `clock:${s(p.city)}`
   },

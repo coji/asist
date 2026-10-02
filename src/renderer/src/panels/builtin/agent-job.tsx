@@ -346,5 +346,5 @@ export const agentJobCard: CardDefinition = {
   Body: AgentJobBody,
   kicker: 'AGENT',
   className: 'aj-card',
-  meta: (context) => <StartedAt {...context} />
+  meta: StartedAt
 }

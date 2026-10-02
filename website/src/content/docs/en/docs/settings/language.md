@@ -13,6 +13,8 @@ Choose the interface language, the conversation language and the region on the "
 | Conversation language | The language ASIST speaks and listens for |
 | Region | Where weather and news come from, the default currency, and how dates and numbers are written |
 
+When cities in several countries share a name, the weather and the world clock usually take the largest. If the region's country has one with at least a tenth of its population, they take that one instead. Naming the country, as in "Paris, France", gives the city in that country.
+
 The text in the nine languages other than Japanese and English has not been checked by native speakers.
 
 ## Talking in a language other than Japanese

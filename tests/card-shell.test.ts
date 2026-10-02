@@ -12,7 +12,7 @@ import { Dock } from '@/ui/Dock'
 import { FocusOverlay } from '@/ui/FocusOverlay'
 import { CARD_SIZE_MIN_HEIGHT, cardSizeFor } from '@/panels/shell/card'
 import { OVERFLOW_SETTLE_MS } from '@/panels/shell/PanelContent'
-import { DEMO_WEATHER_NAGANO } from '@/demo/fixtures/weather'
+import { DEMO_WEATHER_NAGANO, DEMO_WEATHER_TOKYO } from '@/demo/fixtures/weather'
 
 const t = createTranslator('ja-JP')
 
@@ -220,6 +220,30 @@ describe('content that does not fit', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('the day a weather card names', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('names its day by the date at the place, so a card still up after midnight calls neither yesterday nor today wrongly', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
+    const hero = (dock: HTMLElement, key: string): string =>
+      dock.querySelector(`[data-panel-type="weather"] .wx-hero > p`)?.textContent ?? `${key} is not shown`
+    // Both forecasts were fetched in Tokyo on 2026-09-15: Nagano's for that day, Tokyo's for the next.
+    vi.setSystemTime(new Date('2026-09-15T23:59:30+09:00'))
+    const today = await render([weather()])
+    expect(hero(today, 'nagano')).toContain(t('cardsWeather.today'))
+    await act(async () => vi.advanceTimersByTime(60_000))
+    expect(hero(today, 'nagano')).not.toContain(t('cardsWeather.today'))
+
+    vi.setSystemTime(new Date('2026-09-15T23:59:30+09:00'))
+    const tomorrow = await render([weather({ key: 'weather:13101:2026-09-16', props: { location: '東京都', date: 'tomorrow', weather: DEMO_WEATHER_TOKYO } })])
+    expect(hero(tomorrow, 'tokyo')).toContain(t('cardsWeather.tomorrow'))
+    await act(async () => vi.advanceTimersByTime(60_000))
+    expect(hero(tomorrow, 'tokyo')).toContain(t('cardsWeather.today'))
   })
 })
 

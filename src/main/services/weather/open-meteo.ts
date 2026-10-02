@@ -39,7 +39,7 @@ const json = (text: string): Record<string, unknown> => {
   return data as Record<string, unknown>
 }
 
-interface GeocodedPlace {
+interface GeocodingResult {
   name?: unknown
   latitude?: unknown
   longitude?: unknown
@@ -47,44 +47,60 @@ interface GeocodedPlace {
   country?: unknown
   country_code?: unknown
   admin1?: unknown
+  population?: unknown
 }
-const text = (value: unknown): string | null => (typeof value === 'string' && value ? value : null)
+const text =(value: unknown): string | null => (typeof value === 'string' && value ? value : null)
 const number = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
-/**
- * The place a name stands for. The geocoding answers with the best match first, and a name that exists
- * in several countries (Munich in Germany and in North Dakota) is read as the one in the user's own
- * region when there is one there, because that is the one the user is most likely asking about.
- */
 /** Open-Meteo writes miles per hour as "mp/h" (seen on 2026-09-22); everyone else writes mph. The other units are passed on as they are. */
 const windUnit = (unit: string | null): string | null => (unit === 'mp/h' ? 'mph' : unit)
 
-export async function geocodePlace(
-  requested: string,
-  language: string,
-  region: string,
-  signal: AbortSignal
-): Promise<GlobalWeatherLocation> {
-  const url = `${GEOCODING}?name=${encodeURIComponent(requested.trim())}&count=10&language=${encodeURIComponent(language)}&format=json`
-  const results = await cache.read(url, 24 * 3600_000, signal, (body) => {
-    const found = json(body).results
-    return Array.isArray(found) ? (found as GeocodedPlace[]) : []
-  })
-  const usable = results.filter(
+/** A place as Open-Meteo's geocoding knows it, with the zone its clock keeps. */
+export type GeocodedPlace = Omit<GlobalWeatherLocation, 'source' | 'requested' | 'cardId'>
+
+/** The request for the places a name may stand for, named in the language given. */
+export const geocodingUrl = (name: string, language: string): string =>
+  `${GEOCODING}?name=${encodeURIComponent(name.trim())}&count=10&language=${encodeURIComponent(language)}&format=json`
+
+/**
+ * How many times smaller than the first result a place in the user's region may be and still be taken
+ * instead of it. In the geocoding's answers of 2026-10-02, the places a user of the region most likely
+ * means were at most 7.1 times smaller (Kingston, Ontario beside Kingston, Jamaica; Córdoba in Spain beside
+ * the one in Argentina; Birmingham, Alabama beside the English one), and the namesakes of world cities at
+ * least 14.8 times (Guadalajara in Spain beside the Mexican one; London, Ontario 21 times; Paris, Texas 86).
+ */
+const REGION_PLACE_MAX_SHORTFALL = 10
+
+/**
+ * The place a name stands for, from the `results` of the geocoding's answer, or null when none of them
+ * will do. A result without a zone is passed over, because neither a clock nor a forecast can be read
+ * for it, and the geocoding gives such results (Coral Sea Marine Park came first and without one on
+ * 2026-10-02). The geocoding answers with the best match first. A place in the user's own region is
+ * taken instead only when it is about as large, because a namesake in the region is what the user means
+ * when the two are comparable (Cambridge for an American), but a small town named after a world city is
+ * not what anyone asks the time or the weather of. A place without a population counts as empty, so a
+ * hill called Tokyo never stands beside Tokyo. A name with its country after a comma ("Paris, France")
+ * is resolved by the geocoding itself.
+ */
+export function chooseGeocoded(results: unknown, region: string): GeocodedPlace | null {
+  const usable = (Array.isArray(results) ? (results as GeocodingResult[]) : []).filter(
     (place) =>
       text(place.name) !== null &&
       number(place.latitude) !== null &&
       number(place.longitude) !== null &&
       text(place.timezone) !== null
   )
-  if (usable.length === 0)
-    throw new WeatherIssueError({ status: 'location_not_found', requestedLocation: requested, hint: NOT_FOUND_HINT })
-  const chosen = usable.find((place) => place.country_code === region) ?? usable[0]
+  const first = usable[0]
+  if (!first) return null
+  const population = (place: GeocodingResult): number => number(place.population) ?? 0
+  const chosen =
+    usable.find(
+      (place) =>
+        place.country_code === region &&
+        population(place) * REGION_PLACE_MAX_SHORTFALL >= population(first)
+    ) ?? first
   return {
-    source: 'open-meteo',
-    requested,
-    cardId: placeCardId(requested),
     timeZone: text(chosen.timezone)!,
     name: text(chosen.name)!,
     admin: text(chosen.admin1),
@@ -93,6 +109,19 @@ export async function geocodePlace(
     latitude: number(chosen.latitude)!,
     longitude: number(chosen.longitude)!
   }
+}
+
+export async function geocodePlace(
+  requested: string,
+  language: string,
+  region: string,
+  signal: AbortSignal
+): Promise<GlobalWeatherLocation> {
+  const results = await cache.read(geocodingUrl(requested, language), 24 * 3600_000, signal, (body) => json(body).results)
+  const place = chooseGeocoded(results, region)
+  if (!place)
+    throw new WeatherIssueError({ status: 'location_not_found', requestedLocation: requested, hint: NOT_FOUND_HINT })
+  return { source: 'open-meteo', requested, cardId: placeCardId(requested), ...place }
 }
 
 interface Series {

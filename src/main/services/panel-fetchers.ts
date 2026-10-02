@@ -2,6 +2,7 @@ import { errorText } from '@shared/i18n/error-text'
 import { languageOf, regionCurrency } from '@shared/conversation-locale'
 import { conversationLocale, region } from './conversation-locale'
 import { weatherPanelProps } from './weather'
+import { chooseGeocoded, geocodingUrl, type GeocodedPlace } from './weather/open-meteo'
 import { withTimeoutSignal } from '@shared/abort'
 import { includesNextWeek, resolveCalendarRange, summarizeCalendarEvents, type CalendarRange } from '@shared/calendar'
 import { addDays } from '@shared/calendar-layout'
@@ -36,15 +37,6 @@ const request = async (url: string, signal: AbortSignal): Promise<Response> => {
 
 const json = async <T>(url: string, signal: AbortSignal): Promise<T> => (await (await request(url, signal)).json()) as T
 
-interface GeoResult {
-  name: string
-  latitude: number
-  longitude: number
-  timezone: string
-  country?: string
-  admin1?: string
-}
-
 /**
  * Open-Meteo's geocoding only resolves English or local names, so a Japanese place name is translated
  * first. A Map, because the place name comes from the model and an object would also answer
@@ -64,23 +56,16 @@ const JP_PLACES = new Map(
   })
 )
 
-async function geocodeOnce(name: string, signal: AbortSignal): Promise<GeoResult | null> {
-  const data = await json<{ results?: GeoResult[] }>(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${languageOf(conversationLocale())}`,
-    signal
-  )
-  return data.results?.[0] ?? null
-}
-
-async function geocode(place: string, signal: AbortSignal): Promise<GeoResult> {
+async function geocode(place: string, signal: AbortSignal): Promise<GeocodedPlace> {
   const name = place.trim()
   // The suffix is dropped only after the name as given misses, both in the table and in the geocoding, because
   // the character may belong to the name itself: "京都" would be looked up as "京", and "成都" (Chengdu) as "成",
   // while "沖縄市" is a city of its own and not the Naha the table gives for "沖縄".
   const bare = name.replace(/(都|府|県|市)$/, '')
   for (const query of new Set([JP_PLACES.get(name) ?? name, JP_PLACES.get(bare) ?? bare])) {
-    const result = await geocodeOnce(query, signal)
-    if (result) return result
+    const data = await json<{ results?: unknown }>(geocodingUrl(query, languageOf(conversationLocale())), signal)
+    const found = chooseGeocoded(data.results, region())
+    if (found) return found
   }
   throw new Error(errorText('panels.errors.placeNotFound', { place }))
 }
@@ -92,8 +77,8 @@ const clock: Fetcher = async (props, signal) => {
   if (!city) throw new Error(errorText('panels.errors.cityMissing'))
   const geo = await geocode(city, signal)
   return {
-    props: { city: geo.name, timezone: geo.timezone, country: geo.country ?? '' },
-    source: geo.timezone
+    props: { city: geo.name, timezone: geo.timeZone, country: geo.country ?? '' },
+    source: geo.timeZone
   }
 }
 

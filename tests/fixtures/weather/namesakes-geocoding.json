@@ -1,0 +1,254 @@
+{
+ "en:Tokyo": {
+  "results": [
+   {"name": "Tokyo", "latitude": 35.6895, "longitude": 139.69171, "feature_code": "PPLC", "country_code": "JP", "timezone": "Asia/Tokyo", "population": 9733276, "country": "Japan", "admin1": "Tokyo"},
+   {"name": "Tokyo", "latitude": -8.4, "longitude": 147.15, "feature_code": "PPL", "country_code": "PG", "timezone": "Pacific/Port_Moresby", "country": "Papua New Guinea", "admin1": "Central Province"},
+   {"name": "Tokyo", "latitude": 29.16998, "longitude": 83.16319, "feature_code": "PPLL", "country_code": "NP", "timezone": "Asia/Kathmandu", "country": "Nepal", "admin1": "Karnali Pradesh"},
+   {"name": "Tonggŏch’ado-ri", "latitude": 34.23806, "longitude": 125.93944, "feature_code": "PPL", "country_code": "KR", "timezone": "Asia/Seoul", "country": "South Korea", "admin1": "Jeollanam-do"},
+   {"name": "Tōkyō Zan", "latitude": 37.94393, "longitude": 138.47507, "feature_code": "MT", "country_code": "JP", "timezone": "Asia/Tokyo", "country": "Japan", "admin1": "Niigata"},
+   {"name": "Tokyo Hill", "latitude": 26.92061, "longitude": -97.86361, "feature_code": "MT", "country_code": "US", "timezone": "America/Chicago", "country": "United States", "admin1": "Texas"},
+   {"name": "Tokyo Heliport", "latitude": 35.63333, "longitude": 139.85, "feature_code": "AIRH", "country_code": "JP", "timezone": "Asia/Tokyo", "country": "Japan", "admin1": "Chiba"},
+   {"name": "Tokyo Disney Land", "latitude": 35.63308, "longitude": 139.88057, "feature_code": "PRK", "country_code": "JP", "timezone": "Asia/Tokyo", "country": "Japan", "admin1": "Chiba"},
+   {"name": "Country Farm German Village", "latitude": 35.40516, "longitude": 140.06017, "feature_code": "PRK", "country_code": "JP", "timezone": "Asia/Tokyo", "country": "Japan", "admin1": "Chiba"},
+   {"name": "Tōkyōkō Yachō Kōen", "latitude": 35.58362, "longitude": 139.76283, "feature_code": "PRK", "country_code": "JP", "timezone": "Asia/Tokyo", "country": "Japan", "admin1": "Tokyo"}
+  ]
+ },
+ "en:London": {
+  "results": [
+   {"name": "London", "latitude": 51.50853, "longitude": -0.12574, "feature_code": "PPLC", "country_code": "GB", "timezone": "Europe/London", "population": 8961989, "country": "United Kingdom", "admin1": "England"},
+   {"name": "London", "latitude": 42.98339, "longitude": -81.23304, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "population": 422324, "country": "Canada", "admin1": "Ontario"},
+   {"name": "London", "latitude": 39.88645, "longitude": -83.44825, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 10060, "country": "United States", "admin1": "Ohio"},
+   {"name": "London", "latitude": 37.12898, "longitude": -84.08326, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 8126, "country": "United States", "admin1": "Kentucky"},
+   {"name": "London", "latitude": 35.32897, "longitude": -93.25296, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 1046, "country": "United States", "admin1": "Arkansas"},
+   {"name": "London", "latitude": 30.67685, "longitude": -99.57645, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 180, "country": "United States", "admin1": "Texas"},
+   {"name": "London", "latitude": 38.19455, "longitude": -81.36872, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "country": "United States", "admin1": "West Virginia"},
+   {"name": "London", "latitude": 36.47606, "longitude": -119.44318, "feature_code": "PPL", "country_code": "US", "timezone": "America/Los_Angeles", "population": 1869, "country": "United States", "admin1": "California"},
+   {"name": "London", "latitude": 1.98487, "longitude": -157.47502, "feature_code": "PPL", "country_code": "KI", "timezone": "Pacific/Kiritimati", "population": 1829, "country": "Kiribati", "admin1": "Line Islands"},
+   {"name": "London", "latitude": -24.76667, "longitude": 30.86667, "feature_code": "PPL", "country_code": "ZA", "timezone": "Africa/Johannesburg", "country": "South Africa", "admin1": "Mpumalanga"}
+  ]
+ },
+ "en:Paris": {
+  "results": [
+   {"name": "Paris", "latitude": 48.85341, "longitude": 2.3488, "feature_code": "PPLC", "country_code": "FR", "timezone": "Europe/Paris", "population": 2138551, "country": "France", "admin1": "Île-de-France Region"},
+   {"name": "Paris", "latitude": 33.66094, "longitude": -95.55551, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 24782, "country": "United States", "admin1": "Texas"},
+   {"name": "Paris", "latitude": 36.302, "longitude": -88.32671, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 10150, "country": "United States", "admin1": "Tennessee"},
+   {"name": "Paris", "latitude": 38.2098, "longitude": -84.25299, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 9870, "country": "United States", "admin1": "Kentucky"},
+   {"name": "Paris", "latitude": 39.61115, "longitude": -87.69614, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 8432, "country": "United States", "admin1": "Illinois"},
+   {"name": "Paris", "latitude": 44.25979, "longitude": -70.50062, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 5073, "country": "United States", "admin1": "Maine"},
+   {"name": "Paris", "latitude": 39.48087, "longitude": -92.00128, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 1176, "country": "United States", "admin1": "Missouri"},
+   {"name": "Paris", "latitude": 42.22715, "longitude": -111.40104, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Boise", "population": 506, "country": "United States", "admin1": "Idaho"},
+   {"name": "Paris", "latitude": 35.29203, "longitude": -93.72992, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 3443, "country": "United States", "admin1": "Arkansas"},
+   {"name": "Saint Paris", "latitude": 40.12839, "longitude": -83.95966, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 2089, "country": "United States", "admin1": "Ohio"}
+  ]
+ },
+ "en:Berlin": {
+  "results": [
+   {"name": "Berlin", "latitude": 52.52437, "longitude": 13.41053, "feature_code": "PPLC", "country_code": "DE", "timezone": "Europe/Berlin", "population": 3426354, "country": "Germany", "admin1": "State of Berlin"},
+   {"name": "Berlin", "latitude": 44.46867, "longitude": -71.18508, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 9367, "country": "United States", "admin1": "New Hampshire"},
+   {"name": "Berlin", "latitude": 39.79123, "longitude": -74.92905, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 7590, "country": "United States", "admin1": "New Jersey"},
+   {"name": "Brunswick", "latitude": 39.31427, "longitude": -77.62777, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 6116, "country": "United States", "admin1": "Maryland"},
+   {"name": "Berlin", "latitude": 43.96804, "longitude": -88.94345, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 5420, "country": "United States", "admin1": "Wisconsin"},
+   {"name": "Berlin", "latitude": 38.32262, "longitude": -75.21769, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 5065, "country": "United States", "admin1": "Maryland"},
+   {"name": "Berlin", "latitude": 42.3812, "longitude": -71.63701, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 2422, "country": "United States", "admin1": "Massachusetts"},
+   {"name": "Berlin", "latitude": 39.92064, "longitude": -78.9578, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 2019, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "East Berlin", "latitude": 39.9376, "longitude": -76.97859, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 1534, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "Berlin", "latitude": 40.56117, "longitude": -81.7943, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 898, "country": "United States", "admin1": "Ohio"}
+  ]
+ },
+ "en:Moscow": {
+  "results": [
+   {"name": "Moscow", "latitude": 55.75204, "longitude": 37.61781, "feature_code": "PPLC", "country_code": "RU", "timezone": "Europe/Moscow", "population": 10381222, "country": "Russia", "admin1": "Moscow"},
+   {"name": "Moscow", "latitude": 46.73239, "longitude": -117.00017, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Los_Angeles", "population": 25060, "country": "United States", "admin1": "Idaho"},
+   {"name": "Moscow Mills", "latitude": 38.94783, "longitude": -90.91819, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 2567, "country": "United States", "admin1": "Missouri"},
+   {"name": "Moscow", "latitude": 41.33675, "longitude": -75.51852, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 1960, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "Sulligent", "latitude": 33.90177, "longitude": -88.13448, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 1844, "country": "United States", "admin1": "Alabama"},
+   {"name": "Moscow", "latitude": 35.06203, "longitude": -89.40396, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 532, "country": "United States", "admin1": "Tennessee"},
+   {"name": "Leicester", "latitude": 42.77201, "longitude": -77.89667, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 455, "country": "United States", "admin1": "New York"},
+   {"name": "Moscow", "latitude": 37.32363, "longitude": -101.20572, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 319, "country": "United States", "admin1": "Kansas"},
+   {"name": "Moscow", "latitude": 41.57581, "longitude": -91.08348, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 290, "country": "United States", "admin1": "Iowa"},
+   {"name": "Moscow", "latitude": 38.85701, "longitude": -84.2291, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 186, "country": "United States", "admin1": "Ohio"}
+  ]
+ },
+ "en:Sydney": {
+  "results": [
+   {"name": "Sydney", "latitude": -33.86785, "longitude": 151.20732, "feature_code": "PPLA", "country_code": "AU", "timezone": "Australia/Sydney", "population": 5557233, "country": "Australia", "admin1": "New South Wales"},
+   {"name": "Sidney", "latitude": 40.28422, "longitude": -84.1555, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 20858, "country": "United States", "admin1": "Ohio"},
+   {"name": "Sydney", "latitude": 46.1351, "longitude": -60.1831, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Glace_Bay", "population": 105968, "country": "Canada", "admin1": "Nova Scotia"},
+   {"name": "Sydney", "latitude": 27.96336, "longitude": -82.20731, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "country": "United States", "admin1": "Florida"},
+   {"name": "Sydney", "latitude": -26.21554, "longitude": 23.11599, "feature_code": "PPL", "country_code": "ZA", "timezone": "Africa/Johannesburg", "country": "South Africa", "admin1": "North West"},
+   {"name": "Sydney", "latitude": -19.53333, "longitude": 169.26666, "feature_code": "PPL", "country_code": "VU", "timezone": "Pacific/Efate", "country": "Vanuatu", "admin1": "Tafea"},
+   {"name": "Sydney", "latitude": 46.73082, "longitude": -98.76983, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "country": "United States", "admin1": "North Dakota"},
+   {"name": "Sydney", "latitude": 46.15014, "longitude": -60.18175, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Glace_Bay", "country": "Canada", "admin1": "Nova Scotia"},
+   {"name": "Islotes Las Toscas", "latitude": -34.81667, "longitude": -55.55, "feature_code": "ISLS", "country_code": "UY", "timezone": "America/Montevideo", "country": "Uruguay", "admin1": "Canelones"},
+   {"name": "Sydney", "latitude": 53.10316, "longitude": -2.41996, "feature_code": "PPLX", "country_code": "GB", "timezone": "Europe/London", "country": "United Kingdom", "admin1": "England"}
+  ]
+ },
+ "en:Rome": {
+  "results": [
+   {"name": "Rome", "latitude": 41.89193, "longitude": 12.51133, "feature_code": "PPLC", "country_code": "IT", "timezone": "Europe/Rome", "population": 2318895, "country": "Italy", "admin1": "Lazio"},
+   {"name": "Rome", "latitude": 34.25704, "longitude": -85.16467, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 36323, "country": "United States", "admin1": "Georgia"},
+   {"name": "Rome", "latitude": 43.21285, "longitude": -75.45573, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 32573, "country": "United States", "admin1": "New York"},
+   {"name": "Alum Creek", "latitude": 38.28676, "longitude": -81.80513, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 1749, "country": "United States", "admin1": "West Virginia"},
+   {"name": "Rome", "latitude": 40.88309, "longitude": -89.50259, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 1738, "country": "United States", "admin1": "Illinois"},
+   {"name": "Commercial Point", "latitude": 39.7684, "longitude": -83.05713, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 1611, "country": "United States", "admin1": "Ohio"},
+   {"name": "Dix", "latitude": 38.44172, "longitude": -88.93756, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 457, "country": "United States", "admin1": "Illinois"},
+   {"name": "Rome", "latitude": 41.85841, "longitude": -76.34077, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 418, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "Rome", "latitude": 40.98141, "longitude": -91.68239, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 117, "country": "United States", "admin1": "Iowa"},
+   {"name": "Rome", "latitude": 37.92339, "longitude": -86.52359, "feature_code": "PPL", "country_code": "US", "timezone": "America/Indiana/Tell_City", "country": "United States", "admin1": "Indiana"}
+  ]
+ },
+ "en:Seoul": {
+  "results": [
+   {"name": "Seoul", "latitude": 37.566, "longitude": 126.9784, "feature_code": "PPLC", "country_code": "KR", "timezone": "Asia/Seoul", "population": 10349312, "country": "South Korea", "admin1": "Seoul"},
+   {"name": "Séouléo", "latitude": 10.85006, "longitude": 14.10217, "feature_code": "PPL", "country_code": "CM", "timezone": "Africa/Douala", "country": "Cameroon", "admin1": "Far North"},
+   {"name": "Séoulétié", "latitude": 7.76743, "longitude": -5.51053, "feature_code": "PPL", "country_code": "CI", "timezone": "Africa/Abidjan", "population": 882, "country": "Ivory Coast", "admin1": "Vallée du Bandama District"},
+   {"name": "Séoulgué", "latitude": 12.93333, "longitude": -0.81667, "feature_code": "PPL", "country_code": "BF", "timezone": "Africa/Ouagadougou", "country": "Burkina Faso", "admin1": "Centre-Nord Region"},
+   {"name": "Séoulasso", "latitude": 13.2392, "longitude": -4.6974, "feature_code": "PPL", "country_code": "ML", "timezone": "Africa/Bamako", "country": "Mali", "admin1": "Ségou"},
+   {"name": "Seoulnadeuri", "latitude": 36.60858, "longitude": 128.41583, "feature_code": "PPL", "country_code": "KR", "timezone": "Asia/Seoul", "country": "South Korea", "admin1": "Gyeongsangbuk-do"},
+   {"name": "Seouls Corners", "latitude": 44.78098, "longitude": -76.80085, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "country": "Canada", "admin1": "Ontario"},
+   {"name": "Seoullaendeu", "latitude": 37.43417, "longitude": 127.01972, "feature_code": "PRK", "country_code": "KR", "timezone": "Asia/Seoul", "country": "South Korea", "admin1": "Gyeonggi-do"},
+   {"name": "Seoul Forest", "latitude": 37.5443, "longitude": 127.0415, "feature_code": "PRK", "country_code": "KR", "timezone": "Asia/Seoul", "country": "South Korea", "admin1": "Seoul"},
+   {"name": "Seoul Air Base", "latitude": 37.44694, "longitude": 127.11317, "feature_code": "AIRP", "country_code": "KR", "timezone": "Asia/Seoul", "country": "South Korea", "admin1": "Gyeonggi-do"}
+  ]
+ },
+ "en:Perth": {
+  "results": [
+   {"name": "Perth", "latitude": -31.95224, "longitude": 115.8614, "feature_code": "PPLA", "country_code": "AU", "timezone": "Australia/Perth", "population": 2309338, "country": "Australia", "admin1": "Western Australia"},
+   {"name": "Perth", "latitude": 56.39522, "longitude": -3.43139, "feature_code": "PPLA2", "country_code": "GB", "timezone": "Europe/London", "population": 47350, "country": "United Kingdom", "admin1": "Scotland"},
+   {"name": "Perth", "latitude": 48.71639, "longitude": -99.45792, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 9, "country": "United States", "admin1": "North Dakota"},
+   {"name": "Perth", "latitude": 44.90011, "longitude": -76.24939, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "population": 5573, "country": "Canada", "admin1": "Ontario"},
+   {"name": "Perth", "latitude": 43.01757, "longitude": -74.19402, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 3646, "country": "United States", "admin1": "New York"},
+   {"name": "Perth", "latitude": -41.57231, "longitude": 147.17096, "feature_code": "PPL", "country_code": "AU", "timezone": "Australia/Hobart", "population": 2907, "country": "Australia", "admin1": "Tasmania"},
+   {"name": "Perth", "latitude": 6.55435, "longitude": -57.80143, "feature_code": "PPL", "country_code": "GY", "timezone": "America/Guyana", "population": 28, "country": "Guyana", "admin1": "Mahaica-Berbice"},
+   {"name": "Perth", "latitude": -26.46073, "longitude": 23.08361, "feature_code": "PPL", "country_code": "ZA", "timezone": "Africa/Johannesburg", "country": "South Africa", "admin1": "North West"},
+   {"name": "Perth", "latitude": 7.35618, "longitude": -58.49324, "feature_code": "PPL", "country_code": "GY", "timezone": "America/Guyana", "country": "Guyana", "admin1": "Pomeroon-Supenaam"},
+   {"name": "Perth", "latitude": 18.00454, "longitude": -77.50992, "feature_code": "PPL", "country_code": "JM", "timezone": "America/Jamaica", "country": "Jamaica", "admin1": "Manchester"}
+  ]
+ },
+ "en:Cambridge": {
+  "results": [
+   {"name": "Cambridge", "latitude": 52.2, "longitude": 0.11667, "feature_code": "PPLA2", "country_code": "GB", "timezone": "Europe/London", "population": 145674, "country": "United Kingdom", "admin1": "England"},
+   {"name": "Cambridge", "latitude": 42.3751, "longitude": -71.10561, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 110402, "country": "United States", "admin1": "Massachusetts"},
+   {"name": "Cambridge", "latitude": 43.3601, "longitude": -80.31269, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "population": 129920, "country": "Canada", "admin1": "Ontario"},
+   {"name": "Cambridge", "latitude": 38.56317, "longitude": -76.07883, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 12507, "country": "United States", "admin1": "Maryland"},
+   {"name": "Cambridge", "latitude": 40.03118, "longitude": -81.58846, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 10402, "country": "United States", "admin1": "Ohio"},
+   {"name": "Cambridge", "latitude": 45.57274, "longitude": -93.22439, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 8451, "country": "United States", "admin1": "Minnesota"},
+   {"name": "Cambridge", "latitude": 41.30365, "longitude": -90.1929, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 2113, "country": "United States", "admin1": "Illinois"},
+   {"name": "Cambridge Springs", "latitude": 41.80367, "longitude": -80.05644, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 2538, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "Cambridge", "latitude": 43.02813, "longitude": -73.38122, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 1830, "country": "United States", "admin1": "New York"},
+   {"name": "Cambridge", "latitude": 40.28195, "longitude": -100.16569, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 1051, "country": "United States", "admin1": "Nebraska"}
+  ]
+ },
+ "en:Hamilton": {
+  "results": [
+   {"name": "Hamilton", "latitude": 43.25011, "longitude": -79.84963, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "population": 569353, "country": "Canada", "admin1": "Ontario"},
+   {"name": "Hamilton", "latitude": -37.78333, "longitude": 175.28333, "feature_code": "PPLA", "country_code": "NZ", "timezone": "Pacific/Auckland", "population": 192100, "country": "New Zealand", "admin1": "Waikato Region"},
+   {"name": "Hamilton", "latitude": 39.3995, "longitude": -84.56134, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 62407, "country": "United States", "admin1": "Ohio"},
+   {"name": "Hamilton", "latitude": 34.14232, "longitude": -87.98864, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 6772, "country": "United States", "admin1": "Alabama"},
+   {"name": "Hamilton", "latitude": 46.24687, "longitude": -114.16037, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Denver", "population": 4602, "country": "United States", "admin1": "Montana"},
+   {"name": "Hamilton", "latitude": 31.70377, "longitude": -98.12392, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 2937, "country": "United States", "admin1": "Texas"},
+   {"name": "Mays Landing", "latitude": 39.45234, "longitude": -74.72766, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 2135, "country": "United States", "admin1": "New Jersey"},
+   {"name": "Hamilton", "latitude": 32.75791, "longitude": -84.87493, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 1158, "country": "United States", "admin1": "Georgia"},
+   {"name": "Hamilton", "latitude": 32.2949, "longitude": -64.78303, "feature_code": "PPLC", "country_code": "BM", "timezone": "Atlantic/Bermuda", "population": 902, "admin1": "Hamilton city"},
+   {"name": "Hamilton", "latitude": 55.76667, "longitude": -4.03333, "feature_code": "PPLA2", "country_code": "GB", "timezone": "Europe/London", "population": 54480, "country": "United Kingdom", "admin1": "Scotland"}
+  ]
+ },
+ "en:Richmond": {
+  "results": [
+   {"name": "Richmond", "latitude": 37.55376, "longitude": -77.46026, "feature_code": "PPLA", "country_code": "US", "timezone": "America/New_York", "population": 226610, "country": "United States", "admin1": "Virginia"},
+   {"name": "Richmond", "latitude": 49.17003, "longitude": -123.13683, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Vancouver", "population": 209937, "country": "Canada", "admin1": "British Columbia"},
+   {"name": "Richmond", "latitude": 37.93576, "longitude": -122.34775, "feature_code": "PPL", "country_code": "US", "timezone": "America/Los_Angeles", "population": 109708, "country": "United States", "admin1": "California"},
+   {"name": "Richmond", "latitude": 39.82894, "longitude": -84.89024, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Indiana/Indianapolis", "population": 35854, "country": "United States", "admin1": "Indiana"},
+   {"name": "Richmond", "latitude": 37.74786, "longitude": -84.29465, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 33533, "country": "United States", "admin1": "Kentucky"},
+   {"name": "Richmond", "latitude": 29.58218, "longitude": -95.76078, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 12138, "country": "United States", "admin1": "Texas"},
+   {"name": "Richmond", "latitude": 39.27862, "longitude": -93.97689, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 5595, "country": "United States", "admin1": "Missouri"},
+   {"name": "Richmond", "latitude": -41.33333, "longitude": 173.18333, "feature_code": "PPLA", "country_code": "NZ", "timezone": "Pacific/Auckland", "population": 19950, "country": "New Zealand", "admin1": "Tasman District"},
+   {"name": "Chateaubelair", "latitude": 13.29069, "longitude": -61.24043, "feature_code": "PPLA", "country_code": "VC", "timezone": "America/St_Vincent", "population": 735, "country": "Saint Vincent and the Grenadines", "admin1": "Saint David Parish"},
+   {"name": "Richmond", "latitude": -29.87196, "longitude": 30.27235, "feature_code": "PPLA3", "country_code": "ZA", "timezone": "Africa/Johannesburg", "population": 32445, "country": "South Africa", "admin1": "KwaZulu-Natal"}
+  ]
+ },
+ "fr:Saint-Denis": {
+  "results": [
+   {"name": "Saint-Denis", "latitude": -20.88231, "longitude": 55.4504, "feature_code": "PPLC", "country_code": "RE", "timezone": "Indian/Reunion", "population": 154765},
+   {"name": "Saint-Denis", "latitude": 48.93564, "longitude": 2.35387, "feature_code": "PPLA3", "country_code": "FR", "timezone": "Europe/Paris", "population": 96128, "country": "France", "admin1": "Île-de-France"},
+   {"name": "Saint-Denis-en-Val", "latitude": 47.87321, "longitude": 1.96601, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 7632, "country": "France", "admin1": "Centre-Val de Loire"},
+   {"name": "Saint-Denis-lès-Bourg", "latitude": 46.20217, "longitude": 5.18924, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 4917, "country": "France", "admin1": "Rhône-Alpes"},
+   {"name": "Saint-Denis-en-Bugey", "latitude": 45.94963, "longitude": 5.32773, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 2132, "country": "France", "admin1": "Rhône-Alpes"},
+   {"name": "Saint-Denis-la-Chevasse", "latitude": 46.82254, "longitude": -1.35877, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 1775, "country": "France", "admin1": "Pays de la Loire"},
+   {"name": "Saint-Denis-de-Gastines", "latitude": 48.34205, "longitude": -0.85763, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 1764, "country": "France", "admin1": "Pays de la Loire"},
+   {"name": "Saint-Denis-les-Ponts", "latitude": 48.06692, "longitude": 1.29764, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 1626, "country": "France", "admin1": "Centre-Val de Loire"},
+   {"name": "Saint-Denis", "latitude": 50.53567, "longitude": 4.78278, "feature_code": "PPL", "country_code": "BE", "timezone": "Europe/Brussels", "population": 1354, "country": "Belgique", "admin1": "Wallonie"},
+   {"name": "Saint-Denis-de-Cabanne", "latitude": 46.17249, "longitude": 4.21447, "feature_code": "PPL", "country_code": "FR", "timezone": "Europe/Paris", "population": 1323, "country": "France", "admin1": "Rhône-Alpes"}
+  ]
+ },
+ "en:Birmingham": {
+  "results": [
+   {"name": "Birmingham", "latitude": 52.48142, "longitude": -1.89983, "feature_code": "PPLA2", "country_code": "GB", "timezone": "Europe/London", "population": 1157603, "country": "United Kingdom", "admin1": "England"},
+   {"name": "Birmingham", "latitude": 33.52066, "longitude": -86.80249, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 196357, "country": "United States", "admin1": "Alabama"},
+   {"name": "Cartersville", "latitude": 34.16533, "longitude": -84.80231, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 20319, "country": "United States", "admin1": "Georgia"},
+   {"name": "Birmingham", "latitude": 42.5467, "longitude": -83.21132, "feature_code": "PPL", "country_code": "US", "timezone": "America/Detroit", "population": 20857, "country": "United States", "admin1": "Michigan"},
+   {"name": "Birmingham", "latitude": 40.87891, "longitude": -91.94712, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 433, "country": "United States", "admin1": "Iowa"},
+   {"name": "Princeton", "latitude": 34.84342, "longitude": -86.24304, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "country": "United States", "admin1": "Alabama"},
+   {"name": "Birmingham", "latitude": 39.97595, "longitude": -74.71016, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "country": "United States", "admin1": "New Jersey"},
+   {"name": "Birmingham", "latitude": 41.33005, "longitude": -82.36072, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "country": "United States", "admin1": "Ohio"},
+   {"name": "Warm Beach", "latitude": 48.17065, "longitude": -122.3646, "feature_code": "PPL", "country_code": "US", "timezone": "America/Los_Angeles", "population": 2437, "country": "United States", "admin1": "Washington"},
+   {"name": "Birmingham", "latitude": 39.16584, "longitude": -94.45134, "feature_code": "PPL", "country_code": "US", "timezone": "America/Chicago", "population": 193, "country": "United States", "admin1": "Missouri"}
+  ]
+ },
+ "es:Córdoba": {
+  "results": [
+   {"name": "Córdoba", "latitude": -31.40648, "longitude": -64.18853, "feature_code": "PPLA", "country_code": "AR", "timezone": "America/Argentina/Cordoba", "population": 2106734, "country": "Argentina", "admin1": "Provincia de Córdoba"},
+   {"name": "Córdoba", "latitude": 37.89155, "longitude": -4.77275, "feature_code": "PPLA2", "country_code": "ES", "timezone": "Europe/Madrid", "population": 325708, "country": "España", "admin1": "Andalucía"},
+   {"name": "Córdoba", "latitude": 18.8842, "longitude": -96.92559, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 204721, "country": "México", "admin1": "Estado de Veracruz-Llave"},
+   {"name": "Córdoba", "latitude": 9.58612, "longitude": -74.82705, "feature_code": "PPLA2", "country_code": "CO", "timezone": "America/Bogota", "population": 6597, "country": "Colombia", "admin1": "Departamento de Bolívar"},
+   {"name": "Córdoba", "latitude": 4.39158, "longitude": -75.68723, "feature_code": "PPLA2", "country_code": "CO", "timezone": "America/Bogota", "population": 4063, "country": "Colombia", "admin1": "Departamento del Quindío"},
+   {"name": "Córdoba", "latitude": 0.85362, "longitude": -77.51817, "feature_code": "PPLA2", "country_code": "CO", "timezone": "America/Bogota", "population": 3784, "country": "Colombia", "admin1": "Nariño"},
+   {"name": "Los Córdobas", "latitude": 8.89403, "longitude": -76.35455, "feature_code": "PPLA2", "country_code": "CO", "timezone": "America/Bogota", "population": 2007, "country": "Colombia", "admin1": "Departamento de Córdoba"},
+   {"name": "Córdova", "latitude": -14.03972, "longitude": -75.1843, "feature_code": "PPLA3", "country_code": "PE", "timezone": "America/Lima", "population": 379, "country": "Perú", "admin1": "Departamento de Huancavelica"},
+   {"name": "Cordova", "latitude": 10.73028, "longitude": 122.40139, "feature_code": "PPL", "country_code": "PH", "timezone": "Asia/Manila", "population": 2589, "country": "Filipinas", "admin1": "Bisayas Occidentales"},
+   {"name": "Córdoba", "latitude": 19.48669, "longitude": -99.32368, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 337, "country": "México", "admin1": "Estado de México"}
+  ]
+ },
+ "en:Kingston": {
+  "results": [
+   {"name": "Kingston", "latitude": 17.99702, "longitude": -76.79358, "feature_code": "PPLC", "country_code": "JM", "timezone": "America/Jamaica", "population": 937700, "country": "Jamaica", "admin1": "Kingston"},
+   {"name": "Kingston", "latitude": 44.22976, "longitude": -76.48098, "feature_code": "PPL", "country_code": "CA", "timezone": "America/Toronto", "population": 132485, "country": "Canada", "admin1": "Ontario"},
+   {"name": "Kingston", "latitude": -29.05459, "longitude": 167.96628, "feature_code": "PPLC", "country_code": "NF", "timezone": "Pacific/Norfolk", "population": 880},
+   {"name": "Kingston", "latitude": 41.92704, "longitude": -73.99736, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 23436, "country": "United States", "admin1": "New York"},
+   {"name": "Kingston", "latitude": 35.88091, "longitude": -84.50854, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/New_York", "population": 5846, "country": "United States", "admin1": "Tennessee"},
+   {"name": "Kingston", "latitude": 39.64417, "longitude": -94.03855, "feature_code": "PPLA2", "country_code": "US", "timezone": "America/Chicago", "population": 338, "country": "United States", "admin1": "Missouri"},
+   {"name": "Kingston", "latitude": 41.26175, "longitude": -75.89686, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 12941, "country": "United States", "admin1": "Pennsylvania"},
+   {"name": "Kingston", "latitude": 41.99455, "longitude": -70.72448, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 12208, "country": "United States", "admin1": "Massachusetts"},
+   {"name": "Kingston", "latitude": 41.48038, "longitude": -71.52256, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 6974, "country": "United States", "admin1": "Rhode Island"},
+   {"name": "Kingston", "latitude": 42.93648, "longitude": -71.05339, "feature_code": "PPL", "country_code": "US", "timezone": "America/New_York", "population": 6225, "country": "United States", "admin1": "New Hampshire"}
+  ]
+ },
+ "es:Guadalajara": {
+  "results": [
+   {"name": "Guadalajara", "latitude": 20.67738, "longitude": -103.34749, "feature_code": "PPLA", "country_code": "MX", "timezone": "America/Mexico_City", "population": 1385629, "country": "México", "admin1": "Estado de Jalisco"},
+   {"name": "Guadalajara", "latitude": 40.62862, "longitude": -3.16185, "feature_code": "PPLA2", "country_code": "ES", "timezone": "Europe/Madrid", "population": 93470, "country": "España", "admin1": "Comunidad Autónoma de Castilla-La Mancha"},
+   {"name": "Guadalajara", "latitude": 18.39293, "longitude": -90.99222, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Merida", "population": 80, "country": "México", "admin1": "Estado de Campeche"},
+   {"name": "Guadalajara", "latitude": 27.42298, "longitude": -107.99853, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Chihuahua", "population": 36, "country": "México", "admin1": "Estado de Chihuahua"},
+   {"name": "Guadalajara", "latitude": 27.59964, "longitude": -108.28604, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Chihuahua", "population": 13, "country": "México", "admin1": "Estado de Chihuahua"},
+   {"name": "Guadalajara", "latitude": 16.32556, "longitude": -93.3525, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 7, "country": "México", "admin1": "Estado de Chiapas"},
+   {"name": "Guadalajara", "latitude": 27.76825, "longitude": -107.5227, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Chihuahua", "population": 7, "country": "México", "admin1": "Estado de Chihuahua"},
+   {"name": "Guadalajara", "latitude": 27.60784, "longitude": -106.95381, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Chihuahua", "population": 5, "country": "México", "admin1": "Estado de Chihuahua"},
+   {"name": "Guadalajara", "latitude": 9.6102, "longitude": 123.3246, "feature_code": "PPL", "country_code": "PH", "timezone": "Asia/Manila", "country": "Filipinas", "admin1": "Bisayas Centrales"},
+   {"name": "Guadalajara", "latitude": 9.69706, "longitude": -64.54141, "feature_code": "PPL", "country_code": "VE", "timezone": "America/Caracas", "country": "Venezuela", "admin1": "Estado Anzoátegui"}
+  ]
+ },
+ "es:Mérida": {
+  "results": [
+   {"name": "Mérida", "latitude": 20.967, "longitude": -89.62318, "feature_code": "PPLA", "country_code": "MX", "timezone": "America/Merida", "population": 1201000, "country": "México", "admin1": "Estado de Yucatán"},
+   {"name": "Mérida", "latitude": 8.57899, "longitude": -71.16922, "feature_code": "PPLA", "country_code": "VE", "timezone": "America/Caracas", "population": 300000, "country": "Venezuela", "admin1": "Estado Mérida"},
+   {"name": "Mérida", "latitude": 38.91802, "longitude": -6.34292, "feature_code": "PPLA", "country_code": "ES", "timezone": "Europe/Madrid", "population": 59857, "country": "España", "admin1": "Comunidad Autónoma de Extremadura"},
+   {"name": "Merida", "latitude": 10.9098, "longitude": 124.5376, "feature_code": "PPLA3", "country_code": "PH", "timezone": "Asia/Manila", "population": 3570, "country": "Filipinas", "admin1": "Bisayas Orientales"},
+   {"name": "Mérida", "latitude": 16.5675, "longitude": -93.81722, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 1412, "country": "México", "admin1": "Estado de Chiapas"},
+   {"name": "Mérida", "latitude": 15.94694, "longitude": -92.95, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 5, "country": "México", "admin1": "Estado de Chiapas"},
+   {"name": "Mérida", "latitude": 16.13028, "longitude": -93.46778, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Mexico_City", "population": 4, "country": "México", "admin1": "Estado de Chiapas"},
+   {"name": "Mérida", "latitude": 24.54258, "longitude": -98.90999, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Monterrey", "population": 3, "country": "México", "admin1": "Estado de Tamaulipas"},
+   {"name": "Merida", "latitude": 12.3098, "longitude": 124.6747, "feature_code": "PPL", "country_code": "PH", "timezone": "Asia/Manila", "country": "Filipinas", "admin1": "Bisayas Orientales"},
+   {"name": "Mérida", "latitude": 18.15, "longitude": -90.85, "feature_code": "PPL", "country_code": "MX", "timezone": "America/Merida", "country": "México", "admin1": "Estado de Campeche"}
+  ]
+ }
+}

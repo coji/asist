@@ -3,17 +3,61 @@ import type { PanelSpec } from '@shared/ipc'
 import { cardDefinition } from '@/panels/registry'
 import { useT } from '@/i18n'
 import { displayError } from '@/display-error'
-import type { CardSurfaceSize } from './card'
+import { hasCardData, type CardSurfaceSize } from './card'
 import { PanelErrorBoundary } from './PanelErrorBoundary'
 
-/** Handles the fetch state, render errors and the source line the same way in the normal and the focus view. */
+/**
+ * Everything inside a card's frame, drawn the same way in the dock and in the focus view: the card's
+ * backdrop, the header with the kicker, the card's note and the frame's own buttons, and the body with its
+ * fetch state and source line. One error boundary holds every part a card draws, so an exception in its
+ * note or its backdrop leaves the header and the error in the frame, as one in its body does; outside the
+ * boundary it would empty the whole window, which has no boundary of its own.
+ */
 export function PanelContent({
   spec,
-  size
+  size,
+  actions
 }: {
   spec: PanelSpec
   size: CardSurfaceSize
+  actions: ReactNode
 }): React.JSX.Element {
+  const card = cardDefinition(spec.type)
+  const kicker = card?.kicker ?? spec.type.toUpperCase()
+  const ready = hasCardData(spec)
+  const Backdrop = ready ? card?.backdrop : undefined
+  const Meta = ready ? card?.meta : undefined
+  const head = (meta: ReactNode, onScene: boolean): React.JSX.Element => (
+    <header className={onScene ? 'panel-head ui-on-scene' : 'panel-head'}>
+      <span className="panel-kicker">{size === 'focus' ? `${kicker} · FOCUS` : kicker}</span>
+      <span className="panel-head-side">
+        {meta}
+        {actions}
+      </span>
+    </header>
+  )
+  return (
+    <PanelErrorBoundary key={spec.key} panelType={spec.type} revision={spec.updatedAt} head={head(null, false)}>
+      {Backdrop && (
+        <div className="panel-backdrop" aria-hidden>
+          <Backdrop spec={spec} size={size} />
+        </div>
+      )}
+      {head(
+        Meta && (
+          <span className="panel-meta">
+            <Meta spec={spec} size={size} />
+          </span>
+        ),
+        Backdrop !== undefined
+      )}
+      <PanelBody spec={spec} size={size} />
+    </PanelErrorBoundary>
+  )
+}
+
+/** The body box: the fetch state, or the card's Body between the stale note and the source line. */
+function PanelBody({ spec, size }: { spec: PanelSpec; size: CardSurfaceSize }): React.JSX.Element {
   const card = cardDefinition(spec.type)
   const t = useT()
   if (spec.state === 'skeleton' || spec.state === 'loading') {
@@ -40,15 +84,13 @@ export function PanelContent({
           {t('panels.stale')}
         </div>
       )}
-      <PanelErrorBoundary key={spec.key} panelType={spec.type} revision={spec.updatedAt}>
-        {card ? (
-          <card.Body spec={spec} size={size} />
-        ) : (
-          <pre className="max-h-40 overflow-auto font-mono text-[10px] text-holo-muted">
-            {JSON.stringify(spec.props, null, 2)}
-          </pre>
-        )}
-      </PanelErrorBoundary>
+      {card ? (
+        <card.Body spec={spec} size={size} />
+      ) : (
+        <pre className="max-h-40 overflow-auto font-mono text-[10px] text-holo-muted">
+          {JSON.stringify(spec.props, null, 2)}
+        </pre>
+      )}
       {spec.source && (
         <div className="font-mono text-[9px] tracking-wide text-holo-dim">{spec.source}</div>
       )}

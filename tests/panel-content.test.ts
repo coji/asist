@@ -100,6 +100,23 @@ describe('the content of the card and of the focus overlay', () => {
       expect(surface.textContent).toContain(event.title)
     }
   })
+
+  it('keeps an exception thrown by the note in a card header or by its backdrop inside its own panel, with the buttons to close it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    // The clock's header note and backdrop read the zone through Intl, which refuses one its time zone data
+    // lacks, as a zone added to tzdata after the build's would be.
+    const clock: PanelSpec = {
+      key: 'clock:x', type: 'clock', slot: 'right', state: 'ready',
+      props: { city: 'X', timezone: 'Mars/Olympus_Mons', country: '' }, createdAt: 1, updatedAt: 1
+    }
+    const other = panel('ready', { key: 'other', props: { events: [{ ...event, title: '歯医者の予約' }] } })
+    const surfaces = await renderPanels(clock, [other])
+    for (const surface of surfaces) {
+      expect(surface.querySelectorAll('[role="alert"]')).toHaveLength(1)
+      expect(surface.querySelector('[data-panel-type="clock"] .panel-head button')).not.toBeNull()
+    }
+    expect(surfaces[0].textContent).toContain('歯医者の予約')
+  })
 })
 
 describe('one card per side', () => {

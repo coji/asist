@@ -15,7 +15,7 @@ import { DEMO_MAIL_BODIES, DEMO_MAIL_CARD, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGE_C
 import { createDemoDraft } from './mail-state'
 import { DEMO_NEWS, DEMO_SEARCH } from './fixtures/reading'
 import { DEMO_TIMER, demoClock } from './fixtures/time'
-import { DEMO_WEATHER_MIYAGI, DEMO_WEATHER_MUNICH, DEMO_WEATHER_TOKYO, demoWeatherFor } from './fixtures/weather'
+import { DEMO_WEATHER_MIYAGI, DEMO_WEATHER_MUNICH, DEMO_WEATHER_TOKYO, demoWeatherFor, onDemoDay } from './fixtures/weather'
 import { translate } from '@/i18n'
 
 /**
@@ -104,7 +104,11 @@ export function respondTo(text: string): DemoResponse {
     const weather = demoWeatherFor(text)
     return {
       cards: [
-        card('weather', { location: weather.location.requested, date: weather.date, weather }, weatherCardKey(weather.location, weather.date))
+        card(
+          'weather',
+          { location: weather.location.requested, date: weather.date, weather: onDemoDay(weather) },
+          weatherCardKey(weather.location, weather.date)
+        )
       ],
       reply:
         weather === DEMO_WEATHER_TOKYO

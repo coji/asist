@@ -11,7 +11,7 @@ import { DEMO_DOCX_PATH, DEMO_PPTX_PATH, DEMO_XLSX_PATH } from './files-office'
 import { DEMO_MAIL_CARD, DEMO_MAIL_DRAFTS, DEMO_MAIL_MESSAGE_CARD } from './mail'
 import { DEMO_NEWS, DEMO_SEARCH, DEMO_SEARCH_GOOGLE } from './reading'
 import { DEMO_TIMER, demoClock } from './time'
-import { DEMO_WEATHER_MUNICH, DEMO_WEATHER_NAGANO } from './weather'
+import { DEMO_WEATHER_MUNICH, DEMO_WEATHER_NAGANO, onDemoDay } from './weather'
 import { translate } from '@/i18n'
 
 /**
@@ -39,8 +39,8 @@ export const CARD_GROUPS: Array<{ command: string; label: string; cards: CardFix
     command: '/g1',
     label: '天気・金融・時間',
     cards: [
-      { type: 'weather', props: { location: '長野県', date: 'today', weather: DEMO_WEATHER_NAGANO } },
-      { type: 'weather', variant: 'world', props: { location: 'Munich', date: 'today', weather: DEMO_WEATHER_MUNICH } },
+      { type: 'weather', props: { location: '長野県', date: 'today', weather: onDemoDay(DEMO_WEATHER_NAGANO) } },
+      { type: 'weather', variant: 'world', props: { location: 'Munich', date: 'today', weather: onDemoDay(DEMO_WEATHER_MUNICH) } },
       { type: 'fx', props: DEMO_FX, source: 'open.er-api.com' },
       { type: 'fx', variant: 'small-rate', props: demoFx('VND', 'USD', null), source: 'open.er-api.com' },
       { type: 'clock', props: demoClock('ニューヨーク'), source: 'America/New_York' },

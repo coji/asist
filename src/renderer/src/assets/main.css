@@ -780,7 +780,11 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+/* The focus view has no upper bound and scrolls as a whole, so its body keeps the height of its content
+   instead of shrinking into the 82vh, which would leave the content past the body and drop the padding
+   below it from the scrolled length. */
 .panel-focus .panel-body {
+  flex-shrink: 0;
   overflow: visible;
   contain: none;
 }

@@ -210,5 +210,5 @@ export const calendarCard: CardDefinition = {
   Body: CalendarBody,
   kicker: 'CALENDAR',
   className: 'ca-card',
-  meta: (context) => <FetchedAt {...context} />
+  meta: FetchedAt
 }

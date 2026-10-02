@@ -54,11 +54,11 @@ The type in `src/renderer/src/panels/shell/card.ts`. It is registered in `regist
 | `Body` | `React.FC<{ spec: PanelSpec; size: CardSurfaceSize }>` | The body. It draws only inside the box and the size the shell gave it. Put `data-size={size}` on the root element |
 | `kicker` | `string` | The heading at the top left. In the focus view it becomes "<kicker> · FOCUS" |
 | `className` | `string?` | The class put on the card's frame (`.panel-card` and `.panel-focus`). Override the CSS variables here |
-| `meta` | `(context) => ReactNode` | The note shown at the right of the header, to the left of the expand and close buttons. Called only when the data is there (ready / stale) |
-| `backdrop` | `(context) => ReactNode` | The background laid across the whole card. It extends under the header and is drawn behind the body. Called only for ready / stale |
+| `meta` | `React.FC<{ spec, size }>` | The note shown at the right of the header, to the left of the expand and close buttons. Drawn only when the data is there (ready / stale) |
+| `backdrop` | `React.FC<{ spec, size }>` | The background laid across the whole card. It extends under the header and is drawn behind the body. Drawn only for ready / stale |
 | `scroll` | `boolean?` | True for a card whose content has no fixed length. What does not fit scrolls inside, and the bottom edge is faded |
 
-`context` is `{ spec, size }`.
+`Body`, `meta` and `backdrop` are components, and `PanelContent` draws all three inside one error boundary. An exception in any of them leaves the header (without the note) and the error in the frame, and the rest of the window keeps working.
 
 ## 3. What the shell provides
 
@@ -85,7 +85,7 @@ Structure.
     .panel-body-inner         The body's natural height. The stale note, the Body and the source stacked with gap 10
 ```
 
-The focus view has the same structure, except that `.panel-body` drops the clip and the whole overlay scrolls.
+The focus view has the same structure, except that `.panel-body` drops the clip, keeps the height of its content instead of shrinking, and the whole overlay scrolls.
 
 ## 4. The body box and how overflow is handled
 

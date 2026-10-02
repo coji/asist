@@ -178,5 +178,5 @@ export const timerCard: CardDefinition = {
   Body: TimerBody,
   kicker: 'TIMER',
   className: 'tm-card',
-  meta: (context) => <EndsAt {...context} />
+  meta: EndsAt
 }

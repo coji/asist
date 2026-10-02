@@ -1,4 +1,4 @@
-import type { WeatherCondition, WeatherData, WeatherDay, WeatherWord } from '@shared/weather'
+import { zonedDate, type WeatherCondition, type WeatherData, type WeatherDay, type WeatherWord } from '@shared/weather'
 
 /**
  * The fixed weather used by the demo mode and by the display tests. It is invented data written as
@@ -305,3 +305,23 @@ export const demoWeatherFor = (text: string): WeatherData =>
       : /宮城|仙台/.test(text)
         ? DEMO_WEATHER_MIYAGI
         : DEMO_WEATHER_NAGANO
+
+/**
+ * The weather moved by whole days, so that the day it was fetched on is today at the place. The card names
+ * its day as today or tomorrow by the date at the place when it is drawn, so on any other day the demo
+ * would show the fixed days as days gone by; the tests keep the fixed days.
+ */
+export function onDemoDay(weather: WeatherData, now = Date.now()): WeatherData {
+  const zone = weather.location.timeZone
+  const days = Math.round(
+    (Date.parse(zonedDate(now, zone)) - Date.parse(zonedDate(Date.parse(weather.fetchedAt), zone))) / 86_400_000
+  )
+  const shift = (value: unknown): unknown => {
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))
+      return new Date(Date.parse(`${value.slice(0, 10)}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10) + value.slice(10)
+    if (Array.isArray(value)) return value.map(shift)
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, shift(entry)]))
+    return value
+  }
+  return shift(weather) as WeatherData
+}

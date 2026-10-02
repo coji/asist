@@ -257,8 +257,9 @@ export function advancePanelLifecycle(now = Date.now()): void {
 const fetching = (state: PanelSpec['state']): boolean => state === 'loading' || state === 'skeleton'
 
 /**
- * The panel after a patch, or after a create for a key already on screen, which merges its props into the old
- * ones like a patch. Props without a state make a patched panel ready.
+ * The panel after a patch, which merges its props into the old ones, or after a create for a key already on
+ * screen, whose props replace them: the call behind a create names the whole card, and a field it leaves out,
+ * such as how to travel a route, is meant to be left out. Props without a state make a patched panel ready.
  */
 function changed(
   panel: PanelSpec,
@@ -269,7 +270,7 @@ function changed(
   const state = event.state ?? (event.op === 'patch' && event.props ? 'ready' : panel.state)
   return {
     ...panel,
-    props: event.props ? { ...panel.props, ...event.props } : panel.props,
+    props: event.op === 'create' ? event.props : event.props ? { ...panel.props, ...event.props } : panel.props,
     state,
     source: event.source ?? panel.source,
     error: event.op === 'patch' ? event.error : panel.error,

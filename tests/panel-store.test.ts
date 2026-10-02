@@ -4,6 +4,7 @@ import {
   PANEL_STALE_GRACE_MS,
   usePanelStore
 } from '@/state/stores'
+import { mapCardKey } from '@shared/map-embed'
 
 const store = (): ReturnType<typeof usePanelStore.getState> => usePanelStore.getState()
 
@@ -31,20 +32,16 @@ describe('usePanelStore', () => {
     expect(store().focusedKey).toBeNull()
   })
 
-  it('adds a card on create and treats a second create for the same key as a patch, so that one card remains', () => {
-    create('weather:東京')
-    store().apply({
-      op: 'create',
-      key: 'weather:東京',
-      type: 'weather',
-      slot: 'right',
-      props: { extra: 1 },
-      state: 'ready'
-    })
+  it('keeps one card when a second create names its key, drawn from the second call alone, so a field that call left out is gone', () => {
+    // The key of a route leaves out how to travel, so asking for the same route again without one lets Google choose.
+    const route = { place: '東京駅', mode: 'directions', origin: '上野駅' }
+    const key = mapCardKey(route)
+    store().apply({ op: 'create', key, type: 'map', slot: 'right', props: { ...route, travel: 'walking' }, state: 'skeleton' })
+    store().apply({ op: 'create', key, type: 'map', slot: 'right', props: route, state: 'ready' })
     const panels = store().panels
     expect(panels).toHaveLength(1)
     expect(panels[0].state).toBe('ready')
-    expect(panels[0].props).toMatchObject({ location: 'weather:東京', extra: 1 })
+    expect(panels[0].props).toEqual(route)
   })
 
   it('merges props and state on a patch, and turns the card ready when props arrive without a state', () => {

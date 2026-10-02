@@ -4,11 +4,15 @@ import { readErrorText } from '@shared/i18n/error-text'
 import geocoding from './fixtures/weather/munich-geocoding.json'
 import forecast from './fixtures/weather/munich-forecast.json'
 import fahrenheit from './fixtures/weather/munich-forecast-fahrenheit.json'
+import namesakeAnswers from './fixtures/weather/namesakes-geocoding.json'
 
 /**
  * The recorded answers stand in for the network: the geocoding one holds the three places called Munich
  * that Open-Meteo returns, and the forecast ones hold two September days of Munich in each set of units.
+ * The namesakes are the geocoding's answers of 2026-10-02 for names that several countries share, keyed
+ * by the language asked in and the name.
  */
+const namesakes = namesakeAnswers as Record<string, { results: unknown[] }>
 
 const NOW = Date.parse('2026-09-15T18:20:00+02:00')
 const mocks = vi.hoisted(() => ({ settings: { region: 'DE', conversationLocale: 'de-DE' } }))
@@ -159,6 +163,34 @@ describe('the worldwide weather source', () => {
     expect(french.location).toMatchObject({ name: 'Munich', countryCode: 'US' })
     expect(urls(fetch)[0]).toContain('language=de')
     expect(urls(fetch).some((url) => url.includes('language=fr'))).toBe(true)
+  })
+
+  it.each([
+    ['en:Tokyo', 'US', 'JP'],
+    ['en:London', 'US', 'GB'],
+    ['en:London', 'CA', 'GB'],
+    ['en:Paris', 'US', 'FR'],
+    ['en:Berlin', 'US', 'DE'],
+    ['en:Moscow', 'US', 'RU'],
+    ['en:Rome', 'US', 'IT'],
+    ['en:Sydney', 'US', 'AU'],
+    ['en:Sydney', 'CA', 'AU'],
+    ['en:Sydney', 'GB', 'AU'],
+    ['en:Perth', 'GB', 'AU'],
+    ['en:Seoul', 'CA', 'KR']
+  ] as const)('reads %s as the world city for a user in %s, not as a small namesake of that country', async (answer, region, country) => {
+    const { chooseGeocoded } = await import('../src/main/services/weather/open-meteo')
+    expect(chooseGeocoded(namesakes[answer].results, region)?.countryCode).toBe(country)
+  })
+
+  it.each([
+    ['en:Cambridge', 'US'],
+    ['en:Hamilton', 'NZ'],
+    ['en:Richmond', 'CA'],
+    ['fr:Saint-Denis', 'FR']
+  ] as const)('reads %s as the place in the region of a user in %s when it stands beside the first', async (answer, region) => {
+    const { chooseGeocoded } = await import('../src/main/services/weather/open-meteo')
+    expect(chooseGeocoded(namesakes[answer].results, region)?.countryCode).toBe(region)
   })
 
   it('asks the United States for its own units and shows the ones the answer carries', async () => {

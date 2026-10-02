@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import type { PanelSpec } from '@shared/ipc'
 
 /**
@@ -43,17 +42,19 @@ export interface CardContext {
  * - Body: draws only inside the box and the size the shell gives it.
  * - className: the class put on the card frame. It is the place to set --card-hue, from which the theme draws
  *   the frame, and --card-focus-width.
- * - meta: extra text at the right of the header, such as an issue time. It is called only once the data is there.
- * - backdrop: a full-surface background reaching under the header. It is called only once the data is there.
+ * - meta: extra text at the right of the header, such as an issue time. It is drawn only once the data is there.
+ * - backdrop: a full-surface background reaching under the header. It is drawn only once the data is there.
  * - scroll: a card whose content has no fixed length scrolls the overflow inside itself. A card without it is
  *   reported as a defect when its content does not fit.
+ * Body, meta and backdrop are components rather than functions the shell calls, so that whatever a card does
+ * runs inside the error boundary that holds the card.
  */
 export interface CardDefinition {
   Body: React.FC<CardContext>
   kicker: string
   className?: string
-  meta?: (context: CardContext) => ReactNode
-  backdrop?: (context: CardContext) => ReactNode
+  meta?: React.FC<CardContext>
+  backdrop?: React.FC<CardContext>
   scroll?: boolean
 }
 

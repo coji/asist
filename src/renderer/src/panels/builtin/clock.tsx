@@ -200,6 +200,6 @@ export const clockCard: CardDefinition = {
   Body: ClockBody,
   kicker: 'WORLD CLOCK',
   className: 'ck-card',
-  meta: (context) => <Offset {...context} />,
-  backdrop: (context) => <Sky {...context} />
+  meta: Offset,
+  backdrop: Sky
 }

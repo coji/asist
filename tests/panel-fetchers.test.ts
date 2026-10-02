@@ -6,6 +6,8 @@ import { createTranslator } from '@shared/i18n'
 import { NEWS_TOP_TOPIC } from '@shared/panel-catalog'
 import { REGIONS, regionCurrency } from '@shared/conversation-locale'
 import { readErrorText } from '@shared/i18n/error-text'
+import munichGeocoding from './fixtures/weather/munich-geocoding.json'
+import namesakeAnswers from './fixtures/weather/namesakes-geocoding.json'
 
 const mocks = vi.hoisted(() => ({
   conversationLocale: 'ja-JP',
@@ -112,11 +114,41 @@ describe('the requests a card makes for the conversation language and the region
     expect(urls.map((url) => new URL(url).searchParams.get('name'))).toEqual(['constructor', 'toString'])
   })
 
-  it('keeps the Japanese request of the clock card unchanged', async () => {
+  it('keeps the Japanese request of the clock card in Japanese, under the English name the table gives', async () => {
     const urls: string[] = []
     respond({ results: [{ name: '大阪市', latitude: 34.69, longitude: 135.5, timezone: 'Asia/Tokyo', country: '日本' }] }, urls)
     await fetchPanel('clock', { city: '大阪' })
-    expect(urls).toEqual(['https://geocoding-api.open-meteo.com/v1/search?name=Osaka&count=1&language=ja'])
+    expect(urls.map((url) => [new URL(url).host, new URL(url).searchParams.get('name'), new URL(url).searchParams.get('language')])).toEqual([
+      ['geocoding-api.open-meteo.com', 'Osaka', 'ja']
+    ])
+  })
+
+  it('reads the clock of a place in the region when the name has several, as the weather card does', async () => {
+    respond(munichGeocoding, [])
+    mocks.conversationLocale = 'de-DE'
+    mocks.region = 'DE'
+    const { props } = await fetchPanel('clock', { city: 'Munich' })
+    expect(props).toMatchObject({ city: 'München', timezone: 'Europe/Berlin' })
+  })
+
+  it('reads the clock of a world city for a user whose region has a small place of that name, in English and in Japanese', async () => {
+    respond(namesakeAnswers['en:Rome'], [])
+    mocks.region = 'US'
+    for (const [locale, city] of [['en-US', 'Rome'], ['ja-JP', 'ローマ']]) {
+      mocks.conversationLocale = locale
+      expect((await fetchPanel('clock', { city })).props, city).toMatchObject({ timezone: 'Europe/Rome' })
+    }
+  })
+
+  it('passes over a place the geocoding gives no time zone, and shows no clock when no place of the name has one', async () => {
+    // Open-Meteo answered with this place first, and without a zone, on 2026-10-02.
+    const zoneless = { name: 'Coral Sea Marine Park', latitude: -17.67, longitude: 152.49, country_code: 'AU', country: 'Australia' }
+    const zoned = { name: 'Coral Sea', latitude: -16.9, longitude: 145.77, timezone: 'Australia/Brisbane', country_code: 'AU', country: 'Australia' }
+    respond({ results: [zoneless, zoned] }, [])
+    expect((await fetchPanel('clock', { city: 'Coral Sea' })).props).toMatchObject({ timezone: 'Australia/Brisbane' })
+
+    respond({ results: [zoneless] }, [])
+    await expect(fetchPanel('clock', { city: 'Coral Sea Marine Park' })).rejects.toThrow('[asist:panels.errors.placeNotFound')
   })
 
   it('takes the Google News edition from the language and the region', async () => {

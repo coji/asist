@@ -6,6 +6,8 @@ interface PanelErrorBoundaryProps {
   children: ReactNode
   panelType: string
   revision: number
+  /** The header the frame keeps above the error, drawn without anything of the card's own. */
+  head: ReactNode
 }
 
 export class PanelErrorBoundary extends Component<
@@ -29,12 +31,15 @@ export class PanelErrorBoundary extends Component<
   render(): ReactNode {
     if (this.state.error) {
       return (
-        <div className="py-1 text-xs leading-relaxed text-holo-red/90" role="alert">
-          {translate('panels.renderFailed')}
-          <div className="mt-1 font-mono text-[10px] text-holo-dim">
-            {this.state.error.slice(0, 90)}
+        <>
+          {this.props.head}
+          <div className="py-1 text-xs leading-relaxed text-holo-red/90" role="alert">
+            {translate('panels.renderFailed')}
+            <div className="mt-1 font-mono text-[10px] text-holo-dim">
+              {this.state.error.slice(0, 90)}
+            </div>
           </div>
-        </div>
+        </>
       )
     }
     return this.props.children

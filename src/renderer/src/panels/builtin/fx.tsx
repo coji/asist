@@ -167,5 +167,5 @@ export const fxCard: CardDefinition = {
   Body: FxBody,
   kicker: 'FX RATE',
   className: 'fx-card',
-  meta: (context) => <AsOf {...context} />
+  meta: AsOf
 }
