@@ -32,6 +32,7 @@ const account = (patch: Partial<MailAccount> = {}): MailAccount => ({
   id: 'a1',
   label: '仕事',
   email: 'me@example.com',
+  otherAddresses: [],
   name: '私',
   provider: 'gmail',
   imap: { host: 'imap.gmail.com', port: 993, secure: true },
@@ -318,6 +319,18 @@ describe('sending and replying', () => {
   it('answers a message the user sent to the people it went to, in a reply and in a reply-all', async () => {
     const f = await setup()
     const sent = f.imap.put('Sent', { subject: '日程のご相談', from: me, to: tanaka, cc: suzuki, date: new Date(NOW - 2 * HOUR), text: 'いかがでしょうか', flags: ['\\Seen'], messageId: '<ask@me>' })
+    await f.service.syncNow()
+    const id = messageIdOf('a1', 'sent', '1', sent.uid)
+    expect(await f.service.replySettle(id, false)).toMatchObject({ to: tanaka, cc: [] })
+    expect(await f.service.replySettle(id, true)).toMatchObject({ to: tanaka, cc: suzuki })
+    await f.service.stop()
+  })
+
+  it('answers a message the user sent from another address listed for the account to the people it went to, leaving that address out of a reply-all', async () => {
+    const f = await setup()
+    const company = { name: '私', address: 'me@company.example' }
+    f.saveSettings({ ...f.settings(), accounts: [account({ otherAddresses: ['Me@Company.example'] })] })
+    const sent = f.imap.put('Sent', { subject: '見積もりの件', from: [company], to: tanaka, cc: [...suzuki, company], date: new Date(NOW - 2 * HOUR), text: 'ご確認ください', flags: ['\\Seen'], messageId: '<quote@company>' })
     await f.service.syncNow()
     const id = messageIdOf('a1', 'sent', '1', sent.uid)
     expect(await f.service.replySettle(id, false)).toMatchObject({ to: tanaka, cc: [] })
@@ -856,6 +869,17 @@ describe('accounts', () => {
     expect(updated.label).toBe('会社')
     expect(f.secrets.data.get('a1')).toBe('new-password')
     expect(f.settings().accounts[0].label).toBe('会社')
+    await f.service.stop()
+  })
+
+  it('saves the other addresses the user sends from, and refuses the account’s own address among them before anything is saved', async () => {
+    const f = await setup()
+    await expect(f.service.updateAccount('a1', { otherAddresses: ['me@company.example', 'ME@example.com'] })).rejects.toThrow(
+      errorText('mail.errors.form.otherAddressIsAccount', { address: 'ME@example.com' })
+    )
+    expect(f.saveSettings).not.toHaveBeenCalled()
+    await f.service.updateAccount('a1', { otherAddresses: ['me@company.example'] })
+    expect(f.settings().accounts[0]).toMatchObject({ email: 'me@example.com', otherAddresses: ['me@company.example'] })
     await f.service.stop()
   })
 

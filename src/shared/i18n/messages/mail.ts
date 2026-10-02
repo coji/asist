@@ -1718,6 +1718,45 @@ export const mail = defineMessages({
         'pt-BR': 'Não é um endereço de e-mail: {text}',
         'es-419': 'No es una dirección de correo: {text}',
         'es-ES': 'No es una dirección de correo: {text}'
+      },
+      tooManyOtherAddresses: {
+        'ja-JP': { other: 'ほかに送信に使っているアドレスは{count}件までです。' },
+        'en-US': { one: 'You can list at most {count} other address you send from.', other: 'You can list at most {count} other addresses you send from.' },
+        'fr-FR': { one: "Vous pouvez indiquer {count} autre adresse d'envoi au maximum.", other: "Vous pouvez indiquer {count} autres adresses d'envoi au maximum." },
+        'de-DE': { one: 'Sie können höchstens {count} weitere Absenderadresse eintragen.', other: 'Sie können höchstens {count} weitere Absenderadressen eintragen.' },
+        'hi-IN': { one: 'आप ज़्यादा से ज़्यादा {count} दूसरा पता लिख सकते हैं जिससे आप भेजते हैं।', other: 'आप ज़्यादा से ज़्यादा {count} दूसरे पते लिख सकते हैं जिनसे आप भेजते हैं।' },
+        'id-ID': { other: 'Anda bisa menulis paling banyak {count} alamat lain untuk mengirim.' },
+        'it-IT': { one: 'Puoi indicare al massimo {count} altro indirizzo di invio.', other: 'Puoi indicare al massimo {count} altri indirizzi di invio.' },
+        'ko-KR': { other: '보낼 때 쓰는 다른 주소는 {count}개까지입니다.' },
+        'pt-BR': { one: 'Você pode informar no máximo {count} outro endereço de envio.', other: 'Você pode informar no máximo {count} outros endereços de envio.' },
+        'es-419': { one: 'Puedes escribir {count} dirección de envío adicional como máximo.', other: 'Puedes escribir {count} direcciones de envío adicionales como máximo.' },
+        'es-ES': { one: 'Puedes escribir como mucho {count} dirección de envío adicional.', other: 'Puedes escribir como mucho {count} direcciones de envío adicionales.' }
+      },
+      otherAddressIsAccount: {
+        'ja-JP': '{address} はこのアカウントのアドレスです。ほかに送信に使っているアドレスだけを書いてください。',
+        'en-US': "{address} is this account's own address. List only the other addresses you send from.",
+        'fr-FR': "{address} est l'adresse de ce compte. N'indiquez que les autres adresses depuis lesquelles vous envoyez.",
+        'de-DE': '{address} ist die Adresse dieses Accounts. Tragen Sie nur die anderen Adressen ein, von denen Sie senden.',
+        'hi-IN': '{address} इसी अकाउंट का पता है। सिर्फ़ वे दूसरे पते लिखें जिनसे आप भेजते हैं।',
+        'id-ID': '{address} adalah alamat akun ini. Tulis hanya alamat lain yang Anda pakai untuk mengirim.',
+        'it-IT': "{address} è l'indirizzo di questo account. Indica solo gli altri indirizzi da cui invii.",
+        'ko-KR': '이 계정의 주소입니다: {address}. 보낼 때 쓰는 다른 주소만 적으십시오.',
+        'pt-BR': '{address} é o endereço desta conta. Informe só os outros endereços dos quais você envia.',
+        'es-419': '{address} es la dirección de esta cuenta. Escribe solo las otras direcciones desde las que envías.',
+        'es-ES': '{address} es la dirección de esta cuenta. Escribe solo las otras direcciones desde las que envías.'
+      },
+      otherAddressTwice: {
+        'ja-JP': '同じアドレスが2回あります: {address}',
+        'en-US': 'The same address is listed twice: {address}',
+        'fr-FR': 'La même adresse figure deux fois : {address}',
+        'de-DE': 'Dieselbe Adresse steht zweimal in der Liste: {address}',
+        'hi-IN': 'एक ही पता दो बार लिखा है: {address}',
+        'id-ID': 'Alamat yang sama tertulis dua kali: {address}',
+        'it-IT': 'Lo stesso indirizzo compare due volte: {address}',
+        'ko-KR': '같은 주소가 두 번 있습니다: {address}',
+        'pt-BR': 'O mesmo endereço aparece duas vezes: {address}',
+        'es-419': 'La misma dirección aparece dos veces: {address}',
+        'es-ES': 'La misma dirección aparece dos veces: {address}'
       }
     },
     folder: {

@@ -3,6 +3,7 @@ import {
   formatAddress,
   mailAccountInputSchema,
   mailAccountPatchSchema,
+  mailAccountSchema,
   mailChangeSchema,
   mailDraftInputSchema,
   mailDraftPatchSchema,
@@ -197,6 +198,7 @@ export class MailService {
         id: account.id,
         label: account.label,
         email: account.email,
+        otherAddresses: account.otherAddresses,
         provider: account.provider,
         state: sync?.state ?? 'off',
         error: sync?.error ?? '',
@@ -262,7 +264,7 @@ export class MailService {
     const withAccount = (folders: MailFolders): MailSettings => ({
       ...settings,
       enabled: true,
-      accounts: [...settings.accounts, { id, ...fields, folders }],
+      accounts: [...settings.accounts, { id, ...fields, otherAddresses: [], folders }],
       defaultAccountId: settings.defaultAccountId ?? id
     })
     // An account the settings would refuse, one past the limit of accounts for one, is turned down before the server is asked.
@@ -286,7 +288,7 @@ export class MailService {
     const current = settings.accounts.find((account) => account.id === id)
     if (!current) throw new Error(errorText('mail.errors.account.notFound'))
     const patch = patchValue === undefined ? {} : parseMailInput(mailAccountPatchSchema, patchValue)
-    const next: MailAccount = { ...current, ...patch }
+    const next = parseMailInput(mailAccountSchema, { ...current, ...patch })
     if (password !== undefined) {
       if (!password) throw new Error(errorText('mail.errors.form.password'))
       // The new password is stored only after a real connection with it has succeeded.
@@ -525,7 +527,7 @@ export class MailService {
       if (!fetched) throw new Error(errorText('mail.errors.message.notFound'))
       return { inReplyTo: fetched.envelope?.inReplyTo ?? '', references: parseReferences(fetched.headers?.toString('latin1')) }
     })
-    const { to, cc } = replyRecipients(message, account.email, replyAll)
+    const { to, cc } = replyRecipients(message, account, replyAll)
     return {
       id: message.id,
       subject: message.subject,

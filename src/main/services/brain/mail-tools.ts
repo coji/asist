@@ -56,12 +56,12 @@ export function mailTools(locale: ConversationLocale): ToolDefinition<ToolContex
       description: {
         ja: [
           `取り込み済みのメールの一覧を返す。view は ${MAIL_VIEWS.join(' / ')}(省略で inbox)。query は件名・差出人・本文の部分一致、unreadOnly で未読だけ、accountId でアカウントを絞る(省略で全部)。`,
-          '結果は { count, total, accounts: [{ id, label, email, unread }], messages: [{ id, account, from, subject, date, unread, starred, attachments?, snippet }] }。accounts の email が自分のアドレス(「自分宛て」はこれ)。取り込むのは設定の日数(既定 30 日)の範囲だけで、それより古いメールは出ない。',
+          '結果は { count, total, accounts: [{ id, label, email, otherAddresses?, unread }], messages: [{ id, account, from, subject, date, unread, starred, attachments?, snippet }] }。accounts の email と otherAddresses(そのアカウントでほかに送信に使っているアドレス)が自分のアドレス(「自分宛て」はこれ)。取り込むのは設定の日数(既定 30 日)の範囲だけで、それより古いメールは出ない。',
           '本文は read_mail で読む。id は read_mail と change_mail に使う。'
         ].join('\n'),
         en: [
           `Returns the list of messages already fetched. view is one of ${MAIL_VIEWS.join(' / ')}, the inbox when left out. query matches part of a subject, a sender or a body, unreadOnly keeps only the unread ones, and accountId narrows it to one account, all of them when left out.`,
-          "The result is { count, total, accounts: [{ id, label, email, unread }], messages: [{ id, account, from, subject, date, unread, starred, attachments?, snippet }] }. The email in accounts is the user's own address, which is what \"addressed to me\" means. Only the last however many days the settings say, 30 by default, are fetched, so nothing older appears.",
+          "The result is { count, total, accounts: [{ id, label, email, otherAddresses?, unread }], messages: [{ id, account, from, subject, date, unread, starred, attachments?, snippet }] }. The email in accounts and its otherAddresses, the other addresses the user sends from with that account, are the user's own, which is what \"addressed to me\" means. Only the last however many days the settings say, 30 by default, are fetched, so nothing older appears.",
           'The body is read with read_mail. id is what read_mail and change_mail take.'
         ].join('\n')
       },
@@ -116,7 +116,15 @@ export function mailTools(locale: ConversationLocale): ToolDefinition<ToolContex
         return {
           count: result.messages.length,
           total: result.total,
-          accounts: status.accounts.map((account) => ({ id: account.id, label: account.label, email: account.email, unread: account.unread, state: account.state, ...(account.error ? { error: account.error } : {}) })),
+          accounts: status.accounts.map((account) => ({
+            id: account.id,
+            label: account.label,
+            email: account.email,
+            ...(account.otherAddresses.length ? { otherAddresses: account.otherAddresses } : {}),
+            unread: account.unread,
+            state: account.state,
+            ...(account.error ? { error: account.error } : {})
+          })),
           messages: result.messages.map((message) => mailSummary(message, labels.get(message.accountId) ?? message.accountId))
         }
       }
@@ -168,6 +176,7 @@ export function mailTools(locale: ConversationLocale): ToolDefinition<ToolContex
           'send / reply は送らない。下書きカードを画面に出して { drafted: true, draftId, summary } を返し、ユーザーがカードの「送信」を押すと送られる。文面を直してと言われたら update_mail_draft。',
           'archive / trash / markRead / star は実行前に確認画面を表示し、ユーザーのクリック承認後に行う。',
           'send: to/cc は「名前 <addr>」か「addr」の配列、subject と body は文字列、accountId を省くと既定の差出人。reply: id と body(引用は自動で付く)、replyAll で全員に返信。archive / trash / star(starred): id を指定。markRead(read): ids に複数まとめて渡せる(「全部既読にして」は list_mail の unreadOnly で集めた id を全部渡す)。',
+          'send も reply も、差出人は必ずそのアカウントの email になる。list_mail の otherAddresses からは送れないので、そのアドレスから送ってと頼まれたら、アカウントの email から送ることになると伝える。',
           '結果は { saved, operation, id, summary } か { cancelled: true } か { drafted: true, draftId, summary }。失敗や時間切れ時は自動で再実行しない。本文の内容はユーザーの言った通りにし、勝手に足さない。宛先や本文が曖昧なら聞き返す。'
         ].join('\n'),
         en: [
@@ -175,6 +184,7 @@ export function mailTools(locale: ConversationLocale): ToolDefinition<ToolContex
           'send and reply do not send anything. They put a draft card on screen and return { drafted: true, draftId, summary }, and the message goes out when the user presses send on that card. When asked to reword it, use update_mail_draft.',
           'archive, trash, markRead and star bring up a confirmation window first and act once the user has clicked it through.',
           'send: to and cc are arrays of either "Name <addr>" or "addr", subject and body are strings, and leaving accountId out uses the default sender. reply: id and body, with the quoted original added by itself, and replyAll to answer everyone. archive, trash and star (starred): give id. markRead (read): ids takes several at once, so marking everything read means passing every id collected with unreadOnly in list_mail.',
+          "Both send and reply always go out from the account's own email. Nothing can be sent from the otherAddresses in list_mail, so when asked to send from one of them, tell the user the mail will go out from the account's email instead.",
           'The result is { saved, operation, id, summary }, or { cancelled: true }, or { drafted: true, draftId, summary }. Never retry by yourself after a failure or a timeout. Write the body as the user said it and add nothing of your own. Ask again when the recipient or the body is unclear.'
         ].join('\n')
       },

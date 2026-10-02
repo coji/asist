@@ -216,7 +216,7 @@ You are curious, and genuinely interested in their life and their work. You reme
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 11,
+  version: 12,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -274,6 +274,16 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
     10: (content) => {
       const stored = content as Record<string, unknown>
       return typeof stored.persona === 'string' && V10_DEFAULT_PERSONAS.includes(stored.persona) ? { ...stored, persona: null } : stored
+    },
+    // Version 12 lists, for each mail account, the other addresses the user sends from. Version 11 knew only the
+    // account's own, so every account starts with none. A mail group or an account version 11 did not allow is
+    // kept, for the parse to refuse.
+    11: (content) => {
+      const stored = content as { mail?: { accounts?: unknown } }
+      const accounts = stored.mail?.accounts
+      if (!Array.isArray(accounts)) return stored
+      const upgraded = accounts.map((account: unknown) => (typeof account === 'object' && account !== null ? { ...account, otherAddresses: [] } : account))
+      return { ...stored, mail: { ...stored.mail, accounts: upgraded } }
     }
   },
   parse: parseAppSettings,

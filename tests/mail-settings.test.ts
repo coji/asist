@@ -52,8 +52,8 @@ async function render(): Promise<HTMLElement> {
   await act(async () => {})
   return container.querySelector<HTMLElement>(`[aria-label="${t('settingsMail.title')}"]`)!
 }
-const setValue = (input: HTMLInputElement | HTMLSelectElement, value: string): void => {
-  const proto = input instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+const setValue = (input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: string): void => {
+  const proto = input instanceof HTMLSelectElement ? HTMLSelectElement.prototype : input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
   Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(input, value)
   input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
 }
@@ -89,6 +89,35 @@ it('fills the host presets from the chosen provider and adds the account to main
   expect(api.mailAccountAdd).toHaveBeenCalledWith(expect.objectContaining({ email: 'me@example.com', smtp: { host: 'smtp.mail.me.com', port: 587, secure: false } }))
   expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'ok', title: t('settingsMail.added') })
   expect(group.querySelector(`[aria-label="${t('settingsMail.form.title')}"]`)).toBeNull()
+})
+
+it('shows the other addresses an account sends from and saves the ones typed, one per line or separated by commas', async () => {
+  const group = await render()
+  const row = group.querySelector('[data-account="demo-work"]')!
+  await act(async () => [...row.querySelectorAll<HTMLButtonElement>('button')].find((el) => el.textContent === t('settingsMail.account.otherAddresses'))!.click())
+  const field = group.querySelector<HTMLTextAreaElement>(`[aria-label="${t('settingsMail.account.otherAddressesLabel', { label: DEMO_MAIL_ACCOUNTS[0].label })}"]`)!
+  expect(field.value.split('\n')).toEqual(DEMO_MAIL_ACCOUNTS[0].otherAddresses)
+  await act(async () => setValue(field, 'press@example.co.jp\n\nsales@example.co.jp, info@example.co.jp \n'))
+  await act(async () => field.form!.requestSubmit())
+  expect(api.mailAccountUpdate).toHaveBeenCalledWith('demo-work', { otherAddresses: ['press@example.co.jp', 'sales@example.co.jp', 'info@example.co.jp'] })
+  expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'ok', title: t('settingsMail.account.otherAddressesSaved') })
+})
+
+it('reopens the other addresses on what is saved after a save that main refused', async () => {
+  api.mailAccountUpdate.mockRejectedValueOnce(new Error('refused'))
+  const group = await render()
+  const row = group.querySelector('[data-account="demo-work"]')!
+  const toggle = () => act(async () => [...row.querySelectorAll<HTMLButtonElement>('button')].find((el) => el.textContent === t('settingsMail.account.otherAddresses'))!.click())
+  const field = () => group.querySelector<HTMLTextAreaElement>(`[aria-label="${t('settingsMail.account.otherAddressesLabel', { label: DEMO_MAIL_ACCOUNTS[0].label })}"]`)
+  await toggle()
+  await act(async () => setValue(field()!, DEMO_MAIL_ACCOUNTS[0].email))
+  await act(async () => field()!.form!.requestSubmit())
+  expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'error', title: t('settingsMail.account.otherAddressesSaveFailed') })
+  expect(field()!.value).toBe(DEMO_MAIL_ACCOUNTS[0].email)
+  await toggle()
+  expect(field()).toBeNull()
+  await toggle()
+  expect(field()!.value.split('\n')).toEqual(DEMO_MAIL_ACCOUNTS[0].otherAddresses)
 })
 
 it('saves only the option that changed, and ignores a day count outside the allowed range', async () => {

@@ -172,9 +172,10 @@ function AccountRow({
 }): React.JSX.Element {
   const toast = useToastStore((s) => s.push)
   const t = useT()
-  const [open, setOpen] = useState<'password' | 'folders' | null>(null)
+  const [open, setOpen] = useState<'password' | 'folders' | 'otherAddresses' | null>(null)
   const [password, setPassword] = useState('')
   const [folders, setFolders] = useState({ sent: account.folders.sent ?? '', archive: account.folders.archive ?? '', trash: account.folders.trash ?? '' })
+  const [otherAddresses, setOtherAddresses] = useState('')
   const [busy, setBusy] = useState(false)
   const state = enabled ? (status?.state ?? 'off') : 'off'
   const hintParts = [account.email, providerLabel(t, account.provider)]
@@ -218,6 +219,15 @@ function AccountRow({
       () => setOpen(null)
     )
   }
+  const saveOtherAddresses = (event: FormEvent): void => {
+    event.preventDefault()
+    run(
+      t('settingsMail.account.otherAddressesSaved'),
+      t('settingsMail.account.otherAddressesSaveFailed'),
+      () => window.api.mailAccountUpdate(account.id, { otherAddresses: otherAddresses.split(/[\s,]+/).filter(Boolean) }),
+      () => setOpen(null)
+    )
+  }
 
   return (
     <Row label={account.label} hint={hintParts.join(' · ')} wide>
@@ -229,6 +239,17 @@ function AccountRow({
         </Btn>
         <Btn tone="quiet" disabled={busy} onClick={() => setOpen(open === 'folders' ? null : 'folders')}>
           {t('settingsMail.account.folders')}
+        </Btn>
+        <Btn
+          tone="quiet"
+          disabled={busy}
+          onClick={() => {
+            // Text typed before, whether its save was refused or saved in another spelling, would otherwise reopen as if it were what is saved.
+            setOtherAddresses(account.otherAddresses.join('\n'))
+            setOpen(open === 'otherAddresses' ? null : 'otherAddresses')
+          }}
+        >
+          {t('settingsMail.account.otherAddresses')}
         </Btn>
         <Btn tone="danger" disabled={busy} onClick={onRemove}>
           {t('common.delete')}
@@ -265,6 +286,24 @@ function AccountRow({
               />
             </label>
           ))}
+          <Btn tone="primary" type="submit" disabled={busy}>
+            {t('common.save')}
+          </Btn>
+        </form>
+      )}
+      {open === 'otherAddresses' && (
+        <form className="ml-account-form is-other-addresses" onSubmit={saveOtherAddresses}>
+          <label>
+            <span>{t('settingsMail.account.otherAddressesHint')}</span>
+            <textarea
+              className="st-input is-mono"
+              autoFocus
+              aria-label={t('settingsMail.account.otherAddressesLabel', { label: account.label })}
+              placeholder={t('settingsMail.account.otherAddressesPlaceholder')}
+              value={otherAddresses}
+              onChange={(event) => setOtherAddresses(event.target.value)}
+            />
+          </label>
           <Btn tone="primary" type="submit" disabled={busy}>
             {t('common.save')}
           </Btn>

@@ -237,7 +237,16 @@ function steps({ locale, name }) {
     until(`document.querySelector('.ml-probe')`, 'the probe result'),
     { op: 'eval', value: `document.querySelector('.ml-account-form').scrollIntoView({ block: 'center' }), 'scrolled'` },
     wait(500),
-    { op: 'shot', value: 'mail-add-account.webp', clip: '.ml-account-form' }
+    { op: 'shot', value: 'mail-add-account.webp', clip: '.ml-account-form' },
+
+    // The other addresses the user sends from, opened on the first sample account, which lists one.
+    view('settings/connections'),
+    settle,
+    press('settingsMail.account.otherAddresses'),
+    until(`document.querySelector('.ml-account-form.is-other-addresses')`, 'the other addresses'),
+    { op: 'eval', value: `document.querySelector('.ml-account-form.is-other-addresses').scrollIntoView({ block: 'center' }), 'scrolled'` },
+    wait(500),
+    { op: 'shot', value: 'mail-other-addresses.webp', clip: '.st-row:has(.ml-account-form.is-other-addresses)' }
   ]
 }
 

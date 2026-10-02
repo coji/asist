@@ -14,6 +14,7 @@ const account: MailAccount = {
   id: 'a1',
   label: '仕事',
   email: 'me@example.com',
+  otherAddresses: [],
   name: '私',
   provider: 'custom',
   imap: { host: 'imap.example.com', port: 993, secure: true },

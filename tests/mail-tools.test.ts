@@ -30,7 +30,7 @@ const message: MailMessage = {
 }
 const status: MailStatus = {
   enabled: true,
-  accounts: [{ id: 'a1', label: '仕事', email: 'me@example.com', provider: 'gmail', state: 'connected', error: '', lastSyncAt: 1, unread: 1, unreadRecent: 1 }],
+  accounts: [{ id: 'a1', label: '仕事', email: 'me@example.com', otherAddresses: [], provider: 'gmail', state: 'connected', error: '', lastSyncAt: 1, unread: 1, unreadRecent: 1 }],
   unread: 1,
   unreadRecent: 1
 }
@@ -129,6 +129,13 @@ describe('mail tools', () => {
     })
     const read = await executeClientTool('read_mail', { id: 'a1:inbox:5' }, ctx())
     expect(JSON.parse(read.content)).toMatchObject({ id: 'a1:inbox:5', account: '仕事', from: '田中 <t@example.com>', text: '本文です', attachments: ['a.pdf'] })
+  })
+
+  it('tells the model the other addresses the user sends from with an account, which are the user’s as much as its own', async () => {
+    mocks.service.status.mockReturnValue({ ...status, accounts: [{ ...status.accounts[0], otherAddresses: ['me@company.example'] }] })
+    const { executeClientTool } = await load()
+    const list = await executeClientTool('list_mail', {}, ctx())
+    expect(JSON.parse(list.content).accounts).toMatchObject([{ id: 'a1', email: 'me@example.com', otherAddresses: ['me@company.example'] }])
   })
 
   it('validates the input before handing a change to main as an agent operation, and returns the reason when it fails', async () => {

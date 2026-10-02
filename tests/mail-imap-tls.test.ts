@@ -74,6 +74,7 @@ describe('a connection given up during its TLS handshake', () => {
         id: 'a1',
         label: '仕事',
         email: 'me@example.com',
+        otherAddresses: [],
         name: '私',
         provider: 'custom',
         imap: { host: '127.0.0.1', port, secure: true },

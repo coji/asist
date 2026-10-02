@@ -95,6 +95,7 @@ describe('settings persistence', () => {
       id: 'a1',
       label: '仕事',
       email: 'me@example.com',
+      otherAddresses: [],
       name: '',
       provider: 'gmail' as const,
       imap: { host: 'imap.gmail.com', port: 993, secure: true },

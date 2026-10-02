@@ -682,6 +682,17 @@
   flex-direction: row;
   align-items: center;
 }
+.ml-account-form.is-other-addresses {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.ml-account-form.is-other-addresses label {
+  align-self: stretch;
+  line-height: 1.6;
+}
+.ml-account-form.is-other-addresses textarea.st-input {
+  min-height: 80px;
+}
 .ml-account-form .st-input,
 .ml-account-form .st-select {
   width: 100%;

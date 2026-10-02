@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MAIL_SETTINGS,
+  MAX_OTHER_ADDRESSES,
   formatAddress,
   isDuplicateCopy,
   mailAccountInputSchema,
@@ -30,6 +31,7 @@ const account = (patch: Partial<MailAccount> = {}): MailAccount => ({
   id: 'a1',
   label: '仕事',
   email: 'me@example.com',
+  otherAddresses: [],
   name: '私',
   provider: 'gmail',
   imap: { host: 'imap.gmail.com', port: 993, secure: true },
@@ -63,9 +65,9 @@ describe('replies', () => {
     expect(replySubject('RE: 打合せ ')).toBe('RE: 打合せ')
   })
   it('replies to the sender alone, or to Reply-To when it is set, while a reply-all adds the others without the account address or duplicates', () => {
-    expect(replyRecipients(message, 'me@example.com', false)).toEqual({ to: [message.from], cc: [] })
-    expect(replyRecipients({ ...message, replyTo: [{ name: '', address: 'list@example.com' }] }, 'me@example.com', false).to).toEqual([{ name: '', address: 'list@example.com' }])
-    expect(replyRecipients(message, 'ME@example.com', true)).toEqual({
+    expect(replyRecipients(message, account(), false)).toEqual({ to: [message.from], cc: [] })
+    expect(replyRecipients({ ...message, replyTo: [{ name: '', address: 'list@example.com' }] }, account(), false).to).toEqual([{ name: '', address: 'list@example.com' }])
+    expect(replyRecipients(message, account({ email: 'ME@example.com' }), true)).toEqual({
       to: [message.from],
       cc: [{ name: '鈴木', address: 's@example.com' }, { name: '', address: 'cc@example.com' }]
     })
@@ -75,12 +77,27 @@ describe('replies', () => {
     const tanaka = { name: '田中', address: 't@example.com' }
     const suzuki = { name: '鈴木', address: 's@example.com' }
     const sent = { from: me, to: [tanaka, { name: '', address: 'ME@example.com' }], cc: [suzuki, me], replyTo: [] }
-    expect(replyRecipients(sent, 'me@example.com', false)).toEqual({ to: [tanaka], cc: [] })
-    expect(replyRecipients(sent, 'me@example.com', true)).toEqual({ to: [tanaka], cc: [suzuki] })
+    expect(replyRecipients(sent, account(), false)).toEqual({ to: [tanaka], cc: [] })
+    expect(replyRecipients(sent, account(), true)).toEqual({ to: [tanaka], cc: [suzuki] })
     // A Reply-To that names the user along with a list answers the list alone.
-    expect(replyRecipients({ ...message, replyTo: [me, { name: '', address: 'list@example.com' }] }, 'me@example.com', false).to).toEqual([{ name: '', address: 'list@example.com' }])
+    expect(replyRecipients({ ...message, replyTo: [me, { name: '', address: 'list@example.com' }] }, account(), false).to).toEqual([{ name: '', address: 'list@example.com' }])
     // A message the user sent to themselves leaves nobody else to answer.
-    expect(replyRecipients({ ...sent, to: [me], cc: [] }, 'me@example.com', true)).toEqual({ to: [me], cc: [] })
+    expect(replyRecipients({ ...sent, to: [me], cc: [] }, account(), true)).toEqual({ to: [me], cc: [] })
+  })
+  it('takes the other addresses listed for the account as the user’s, and only those', () => {
+    const company = { name: '私', address: 'me@company.example' }
+    const boss = { name: '部長', address: 'boss@company.example' }
+    const tanaka = { name: '田中', address: 't@example.com' }
+    const withCompany = account({ otherAddresses: ['Me@Company.example'] })
+    const sentFromCompany = { from: company, to: [tanaka], cc: [boss, company, { name: '', address: 'me@example.com' }], replyTo: [] }
+    expect(replyRecipients(sentFromCompany, withCompany, false)).toEqual({ to: [tanaka], cc: [] })
+    expect(replyRecipients(sentFromCompany, withCompany, true)).toEqual({ to: [tanaka], cc: [boss] })
+    // A message the user sent for the boss, from the boss's address, still answers the boss.
+    const sentForBoss = { from: boss, to: [tanaka], cc: [company], replyTo: [] }
+    expect(replyRecipients(sentForBoss, withCompany, true)).toEqual({ to: [boss], cc: [tanaka] })
+    // Mail to the other address from someone else answers that person, not the user's other address.
+    const received = { from: tanaka, to: [company], cc: [boss], replyTo: [] }
+    expect(replyRecipients(received, withCompany, true)).toEqual({ to: [tanaka], cc: [boss] })
   })
   it('quotes the original below a line with its date and sender', () => {
     const quote = quotation({ date: Date.UTC(2026, 8, 15, 1, 0), from: message.from, text: '一行目\r\n\r\n二行目\n' }, 'Asia/Tokyo')
@@ -147,6 +164,16 @@ describe('settings validation', () => {
     expect(mailSettingsSchema.safeParse({ ...ok, defaultAccountId: 'zz' }).success).toBe(false)
     expect(mailSettingsSchema.safeParse({ ...ok, syncDays: 3 }).success).toBe(false)
     expect(mailSettingsSchema.safeParse({ ...ok, accounts: [account({ folders: { sent: null, archive: null, trash: null } })] }).success).toBe(true)
+  })
+  it('refuses another address that is not an address, is the account’s own, is listed twice, or is one too many, and names the address it refuses', () => {
+    const settings = (otherAddresses: string[]) => ({ ...DEFAULT_MAIL_SETTINGS, accounts: [account({ otherAddresses })], defaultAccountId: 'a1' })
+    expect(parseMailInput(mailSettingsSchema, settings(['me@company.example', 'sales@company.example'])).accounts[0].otherAddresses).toEqual(['me@company.example', 'sales@company.example'])
+    expect(() => parseMailInput(mailSettingsSchema, settings(['me@company.example', 'company.example']))).toThrow(errorText('mail.errors.form.badAddress', { text: 'company.example' }))
+    expect(() => parseMailInput(mailSettingsSchema, settings(['ME@example.com']))).toThrow(errorText('mail.errors.form.otherAddressIsAccount', { address: 'ME@example.com' }))
+    expect(() => parseMailInput(mailSettingsSchema, settings(['me@company.example', 'Me@Company.example']))).toThrow(errorText('mail.errors.form.otherAddressTwice', { address: 'Me@Company.example' }))
+    const many = Array.from({ length: MAX_OTHER_ADDRESSES + 1 }, (_, index) => `me${index}@company.example`)
+    expect(parseMailInput(mailSettingsSchema, settings(many.slice(1))).accounts[0].otherAddresses).toHaveLength(MAX_OTHER_ADDRESSES)
+    expect(() => parseMailInput(mailSettingsSchema, settings(many))).toThrow(errorText('mail.errors.form.tooManyOtherAddresses', { count: MAX_OTHER_ADDRESSES }))
   })
   it('requires a label, an address and a password when adding an account, and reports the failure in one sentence', () => {
     expect(() => parseMailInput(mailAccountInputSchema, { ...account(), id: undefined, folders: undefined, label: '', password: 'x' })).toThrow(errorText('mail.errors.form.label'))

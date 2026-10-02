@@ -38,6 +38,7 @@ export const MIN_SYNC_DAYS = 7
 export const MAX_SYNC_DAYS = 365
 export const DEFAULT_SYNC_DAYS = 30
 export const MAX_MAIL_ACCOUNTS = 8
+export const MAX_OTHER_ADDRESSES = 20
 const MAX_LABEL_LENGTH = 40
 export const MAX_SUBJECT_LENGTH = 500
 export const MAX_BODY_LENGTH = 50_000
@@ -71,21 +72,50 @@ export type MailFolders = z.infer<typeof mailFoldersSchema>
 const emailSchema = z.email({ error: errorText('mail.errors.form.email') }).trim().max(254)
 const labelSchema = z.string().trim().min(1, errorText('mail.errors.form.label')).max(MAX_LABEL_LENGTH, errorText('mail.errors.form.labelTooLong', { count: MAX_LABEL_LENGTH }))
 const nameSchema = z.string().trim().max(100)
+/** The screen takes several addresses at once, so the message names the one it refuses. */
+const otherAddressError = (issue: { input?: unknown }): string => errorText('mail.errors.form.badAddress', { text: String(issue.input) })
+const otherAddressesSchema = z
+  .array(z.email({ error: otherAddressError }).max(254, { error: otherAddressError }))
+  .max(MAX_OTHER_ADDRESSES, errorText('mail.errors.form.tooManyOtherAddresses', { count: MAX_OTHER_ADDRESSES }))
 
-export const mailAccountSchema = z.strictObject({
-  id: z.string().min(1).max(100),
-  /** The name the account goes by on screen and in conversation, such as "仕事". */
-  label: labelSchema,
-  /** Both the login name and the sender address. */
-  email: emailSchema,
-  /** The sender's display name. When it is empty, mail goes out with the address alone. */
-  name: nameSchema,
-  provider: z.enum(MAIL_PROVIDERS),
-  imap: endpointSchema,
-  smtp: endpointSchema,
-  folders: mailFoldersSchema
-})
+export const mailAccountSchema = z
+  .strictObject({
+    id: z.string().min(1).max(100),
+    /** The name the account goes by on screen and in conversation, such as "仕事". */
+    label: labelSchema,
+    /** Both the login name and the sender address. */
+    email: emailSchema,
+    /**
+     * The other addresses the user sends from with this account, such as Gmail's send-as addresses, which are the
+     * user's as much as `email` is. Nothing else is taken for the user's: a From in Sent can be someone the user
+     * sent the message for.
+     */
+    otherAddresses: otherAddressesSchema,
+    /** The sender's display name. When it is empty, mail goes out with the address alone. */
+    name: nameSchema,
+    provider: z.enum(MAIL_PROVIDERS),
+    imap: endpointSchema,
+    smtp: endpointSchema,
+    folders: mailFoldersSchema
+  })
+  .superRefine((account, context) => {
+    const listed = new Set([account.email.toLowerCase()])
+    account.otherAddresses.forEach((address, index) => {
+      const key = address.toLowerCase()
+      if (listed.has(key)) {
+        const refusal = key === account.email.toLowerCase() ? 'mail.errors.form.otherAddressIsAccount' : 'mail.errors.form.otherAddressTwice'
+        context.addIssue({ code: 'custom', path: ['otherAddresses', index], message: errorText(refusal, { address }) })
+      }
+      listed.add(key)
+    })
+  })
 export type MailAccount = z.infer<typeof mailAccountSchema>
+
+/** Whether an address is the user's in an account: its own address or one of the others the user sends from. */
+export function isOwnAddress(account: Pick<MailAccount, 'email' | 'otherAddresses'>, address: string): boolean {
+  const key = address.toLowerCase()
+  return [account.email, ...account.otherAddresses].some((own) => own.toLowerCase() === key)
+}
 
 /**
  * The input for adding an account and for testing the connection. It carries no id and no folders,
@@ -102,11 +132,15 @@ export const mailAccountInputSchema = z.strictObject({
 })
 export type MailAccountInput = z.infer<typeof mailAccountInputSchema>
 
-/** A change to the settings. Only the fields present change, and the password takes another path. */
+/**
+ * A change to the settings. Only the fields present change, and the password takes another path. The account as
+ * changed is checked as a whole, since the other addresses are checked against its own.
+ */
 export const mailAccountPatchSchema = z
   .strictObject({
     label: labelSchema.optional(),
     name: nameSchema.optional(),
+    otherAddresses: otherAddressesSchema.optional(),
     folders: mailFoldersSchema.optional()
   })
   .refine((patch) => Object.keys(patch).length > 0, errorText('mail.errors.form.noChanges'))
@@ -210,6 +244,7 @@ export interface MailAccountStatus {
   id: string
   label: string
   email: string
+  otherAddresses: string[]
   provider: MailProvider
   state: 'off' | 'connecting' | 'syncing' | 'connected' | 'error'
   /** The reason, when state is error. */
@@ -442,18 +477,21 @@ export function replySubject(subject: string): string {
 /**
  * The recipients of a reply. It goes to the original Reply-To, or to From when there is none, and a
  * reply-all adds the original recipients and Cc. A reply to the user's own message goes on to the people
- * that message went to, as mail programs do. The user's own address is left out of both, unless nobody
- * else is there to answer, as for a message the user sent to themselves.
+ * that message went to, as mail programs do. The user's addresses in the account are left out of both,
+ * unless nobody else is there to answer, as for a message the user sent to themselves.
  */
-export function replyRecipients(message: Pick<MailMessage, 'from' | 'to' | 'cc' | 'replyTo'>, self: string, replyAll: boolean): { to: MailAddress[]; cc: MailAddress[] } {
-  const others = (list: readonly MailAddress[]): MailAddress[] => list.filter((address) => address.address.toLowerCase() !== self.toLowerCase())
+export function replyRecipients(
+  message: Pick<MailMessage, 'from' | 'to' | 'cc' | 'replyTo'>,
+  account: Pick<MailAccount, 'email' | 'otherAddresses'>,
+  replyAll: boolean
+): { to: MailAddress[]; cc: MailAddress[] } {
+  const others = (list: readonly MailAddress[]): MailAddress[] => list.filter((address) => !isOwnAddress(account, address.address))
   const sender = message.replyTo.length ? message.replyTo : [message.from]
   const to = [others(sender), others(message.to), [...sender]].find((list) => list.length > 0)!
   if (!replyAll) return { to, cc: [] }
   const seen = new Set(to.map((address) => address.address.toLowerCase()))
-  seen.add(self.toLowerCase())
   const rest: MailAddress[] = []
-  for (const address of [...message.to, ...message.cc]) {
+  for (const address of others([...message.to, ...message.cc])) {
     const key = address.address.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)

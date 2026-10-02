@@ -47,6 +47,16 @@ Outlook.com and Microsoft 365 do not accept IMAP connections with a password, so
 
 </Steps>
 
+## If you also send from other addresses
+
+If you also send from other addresses, such as a work address added under "Send mail as" in Gmail, write them down in ASIST. In the settings, open "Calendar and mail", click "Other addresses you send from" for that account, write the addresses one per line and click "Save".
+
+![An account's "Other addresses you send from", opened](/screens/en/mail-other-addresses.webp)
+
+ASIST takes these addresses as yours, just like the account's own address. A reply to a message you sent from one of them goes to the people you sent it to, not to you. "Reply all" leaves your addresses out as well. The conversation takes them as yours too. Replies and new messages are always sent from the account's own address; ASIST cannot send from the addresses you list here.
+
+ASIST does not guess your addresses from the senders in your Sent folder, since you may have sent a message from your manager's address on their behalf.
+
 ## What ASIST fetches
 
 | Item | Details |
@@ -65,6 +75,6 @@ Outlook.com and Microsoft 365 do not accept IMAP connections with a password, so
 
 ## How ASIST handles your mail
 
-The password is encrypted before it is saved, with a key from the keychain on a Mac and with a key tied to your Windows user account (DPAPI) on Windows, and the settings file holds only the server details and folder names. Fetched mail is kept on your computer and can be rebuilt from the server. Removing an account removes that account's fetched mail and its password. The mail on the server stays as it is.
+The password is encrypted before it is saved, with a key from the keychain on a Mac and with a key tied to your Windows user account (DPAPI) on Windows. The settings file holds each account's display name, email addresses, sender name, server details and folder names, but not its password. Fetched mail is kept on your computer and can be rebuilt from the server. Removing an account removes that account's fetched mail and its password. The mail on the server stays as it is.
 
 Mail read in the conversation is sent to the provider of the conversation model you chose, so that it can write a reply. It may also stay in the conversation history and be used in memory curation.
