@@ -12,6 +12,18 @@ const H = 1080
 const BEAT = 0.56605
 const B = (n) => 0.1309 + n * BEAT
 
+/**
+ * The music skips 16 beats at beat 35 of the video, from the bar of beat 35 to the bar of beat 51, which
+ * have the same harmony (chroma similarity 0.99 before and 0.95 after). audio.py makes the cut, reading it
+ * from cues.json. The beat grid of the video runs on through the cut, so B(n) needs no change.
+ */
+const MUSIC = { splice: 35, skip: 16 }
+/**
+ * The time in the video of a time measured in the music after the cut. audio.py aligns the cut on the
+ * note onsets on both sides, which lie 5 ms further apart than 16 beats of the grid.
+ */
+const M = (t) => t - MUSIC.skip * BEAT
+
 const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } })
 const cues = []
 /** A sound cue for audio.py: `type` names what happens on screen, not the sound. */

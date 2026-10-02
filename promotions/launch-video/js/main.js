@@ -1,8 +1,10 @@
 // Builds the scenes once the fonts and images are ready and wires the timeline to render.mjs.
 // index.html#play plays it in real time; index.html#t=12.5 stops at 12.5 s.
-const DURATION = 57
+// The last chord of the music has died away 57 s into it.
+const DURATION = M(57)
 
 window.__duration = DURATION
+window.__music = MUSIC
 window.__seek = (t) => {
   tl.seek(t, false)
   for (const h of hooks) h(t)

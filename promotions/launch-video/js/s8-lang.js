@@ -1,7 +1,7 @@
-// Scene 8, beat 83 to 87: morning rises from the bottom, the count runs up to 11 and the names of the
+// Scene 8, beat 67 to 71: morning rises from the bottom, the count runs up to 11 and the names of the
 // eleven languages orbit a globe. It leaves under three coloured bands that sweep across the screen.
 scene(() => {
-  const S = 83
+  const S = 67
   const b = (k) => B(S + k)
   const s = $('#s8')
   const cam = camera(s)

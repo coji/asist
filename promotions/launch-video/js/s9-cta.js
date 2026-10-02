@@ -1,8 +1,11 @@
-// Scene 9, beat 87 to the end: the call to action over the landscape of the site, with the clouds and
+// Scene 9, beat 71 to the end: the call to action over the landscape of the site, with the clouds and
 // the land moving at different depths. From here the music slows down to its last chord, so the steps
 // follow note onsets measured in the music with tools/ending.py instead of the beat grid.
 scene(() => {
-  const T = { start: B(87), logo: 49.76, head: 50.085, sub: 50.77, url: 51.513, meta: 52.245, bubble: 52.628, flourish: 53.058, last: 54.729 }
+  const T = {
+    start: B(71), logo: M(49.76), head: M(50.085), sub: M(50.77), url: M(51.513), meta: M(52.245), bubble: M(52.628),
+    flourish: M(53.058), last: M(54.729),
+  }
   const s = $('#s9')
   const cam = camera(s)
   const fx = overlay($('#s9-front'), 0)

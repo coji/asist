@@ -82,8 +82,8 @@ export const es: LandingText = {
     body: 'Cada noche, a medianoche, escribe un diario a partir de las conversaciones del día: sobre ti y sobre su propio día. La conversación del día siguiente parte de lo que recuerda.',
     artAlt: 'Un diorama de plastilina: ASIST dormido de noche, abrazando su diario',
     diaryDate: 'Diario · miércoles 23 de septiembre',
-    diaryTitle: 'El día que corregimos juntos el borrador de la propuesta',
-    diaryBody: 'A primera hora de la tarde me pidieron que leyera en voz alta el borrador de la propuesta. Noté que la tercera sección decía lo mismo que la anterior, y se lo comenté.',
+    diaryTitle: 'No olvides el paraguas',
+    diaryBody: 'Parece que la semana que viene tiene un viaje de trabajo a Nagano. Me preguntó por el tiempo y le dije que va a llover. Seguro que para entonces se le habrá olvidado, así que se lo recordaré el día antes.',
     noteHtml: 'De verdad<br />se acuerda…'
   },
   start: {

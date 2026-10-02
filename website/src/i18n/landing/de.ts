@@ -82,8 +82,8 @@ export const de: LandingText = {
     body: 'Jede Nacht um Mitternacht schreibt er aus den Gesprächen des Tages ein Tagebuch: über Sie und über seinen eigenen Tag. Das Gespräch am nächsten Tag knüpft an das an, was er sich gemerkt hat.',
     artAlt: 'Ein Diorama aus Knete: ASIST schläft nachts, sein Tagebuch im Arm',
     diaryDate: 'Tagebuch · Mittwoch, 23. September',
-    diaryTitle: 'Der Tag, an dem wir gemeinsam den Angebotsentwurf überarbeitet haben',
-    diaryBody: 'Am frühen Nachmittag wurde ich gebeten, den Angebotsentwurf vorzulesen. Mir fiel auf, dass der dritte Abschnitt dasselbe sagte wie der davor, und ich habe darauf hingewiesen.',
+    diaryTitle: 'Schirm nicht vergessen',
+    diaryBody: 'Nächste Woche geht es wohl auf Dienstreise nach Nagano. Auf die Frage nach dem Wetter habe ich gesagt, dass es regnen wird. Bis dahin ist das bestimmt vergessen, also erinnere ich am Tag vorher noch einmal daran.',
     noteHtml: 'Er erinnert sich<br />wirklich …'
   },
   start: {

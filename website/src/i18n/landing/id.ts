@@ -82,8 +82,8 @@ export const id: LandingText = {
     body: 'Setiap tengah malam, ASIST menulis jurnal dari percakapan hari itu: tentang Anda, dan tentang harinya sendiri. Percakapan keesokan harinya berlanjut dari apa yang ia ingat.',
     artAlt: 'Diorama tanah liat: ASIST tertidur di malam hari sambil memeluk jurnalnya',
     diaryDate: 'Jurnal · Rabu, 23 September',
-    diaryTitle: 'Hari ketika kami memperbaiki draf proposal bersama',
-    diaryBody: 'Selepas tengah hari, aku diminta membacakan draf proposal. Aku sadar bagian ketiga mengatakan hal yang sama dengan bagian sebelumnya, lalu aku menyampaikannya.',
+    diaryTitle: 'Jangan lupa bawa payung',
+    diaryBody: 'Sepertinya minggu depan ada perjalanan dinas ke Nagano. Aku ditanya soal cuaca, jadi kubilang akan hujan. Nanti pasti lupa, jadi sehari sebelumnya akan kuingatkan lagi.',
     noteHtml: 'Ternyata dia<br />benar-benar ingat…'
   },
   start: {

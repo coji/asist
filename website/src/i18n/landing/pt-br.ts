@@ -82,8 +82,8 @@ export const ptBr: LandingText = {
     body: 'Toda noite, à meia-noite, ele escreve um diário com as conversas do dia: sobre você e sobre o próprio dia. A conversa do dia seguinte começa a partir do que ele lembra.',
     artAlt: 'Um diorama de argila: o ASIST dormindo à noite, abraçado ao diário',
     diaryDate: 'Diário · quarta-feira, 23 de setembro',
-    diaryTitle: 'O dia em que corrigimos juntos o rascunho da proposta',
-    diaryBody: 'No começo da tarde, me pediram para ler em voz alta o rascunho da proposta. Percebi que a terceira seção dizia o mesmo que a anterior e avisei.',
+    diaryTitle: 'Não esqueça o guarda-chuva',
+    diaryBody: 'Parece que semana que vem tem uma viagem de trabalho para Nagano. Me perguntou sobre o tempo e eu disse que vai chover. Até lá, com certeza vai ter esquecido, então vou lembrar de novo na véspera.',
     noteHtml: 'Ele lembra<br />mesmo…'
   },
   start: {

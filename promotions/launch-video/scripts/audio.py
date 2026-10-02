@@ -6,11 +6,9 @@
 The effects are placed at the cues that render.mjs wrote to out/cues.json. Each cue names what
 happens on screen; KIND below maps it to a kind of sound in sfx.py (clay pattern).
 
-The video is as long as the music (57 s), which plays through to its own last chord. For a shorter
-cut, --skip-beats makes the music jump that many beats ahead at --splice-beat, to the same place in
-its phrase; beat 55 with 16 beats matches the harmony on both sides best (chroma similarity 0.98
-before and 0.95 after, measured with tools/splice.py), and the jump is aligned on the note onsets
-found on both sides.
+The music plays through to its own last chord, but jumps ahead by whole beats at one beat of the
+video, to the same place in its phrase. The timeline (MUSIC in js/core.js) says where and how far,
+and render.mjs writes that into cues.json. The jump is aligned on the note onsets found on both sides.
 
   uv run scripts/audio.py
   uv run scripts/audio.py --sfx-db -12 --out out/audio-quiet.wav
@@ -32,8 +30,6 @@ T0 = 0.1309
 ap = argparse.ArgumentParser()
 ap.add_argument('--bgm', default='assets/bgm/musicbox.mp3')
 ap.add_argument('--sfx-db', type=float, default=-9, help='overall level of the effects in dB, added to the per-kind levels in sfx.py')
-ap.add_argument('--splice-beat', type=int, default=55)
-ap.add_argument('--skip-beats', type=int, default=0)
 ap.add_argument('--out', default='out/audio.wav')
 args = ap.parse_args()
 
@@ -55,6 +51,7 @@ KIND = {
 
 meta = json.loads((ROOT / 'out/cues.json').read_text())
 DUR = meta['duration']
+SPLICE, SKIP = meta['music']['splice'], meta['music']['skip']
 N = int(DUR * SR)
 fx = np.zeros((N, 2))
 pan_rng = np.random.default_rng(5)
@@ -98,11 +95,11 @@ def onset_near(x, t, window=0.09):
 
 
 music = np.zeros((N, 2))
-if args.skip_beats == 0:
+if SKIP == 0:
     music[: min(N, len(bgm))] = bgm[:N]
 else:
-    tv = onset_near(bgm, T0 + args.splice_beat * BEAT)
-    tm = onset_near(bgm, T0 + (args.splice_beat + args.skip_beats) * BEAT)
+    tv = onset_near(bgm, T0 + SPLICE * BEAT)
+    tm = onset_near(bgm, T0 + (SPLICE + SKIP) * BEAT)
     print(f'splice: video {tv:.3f} s <- music {tm:.3f} s (skips {tm - tv:.3f} s)')
     # An equal-power crossfade of 40 ms ends 15 ms before the onset, so the new note starts clean.
     xf0 = tv - 0.055

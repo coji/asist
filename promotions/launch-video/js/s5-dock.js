@@ -1,8 +1,8 @@
-// Scene 5, beat 43 to 55: the Dock of the app, blown up. Each mini app gets a handwritten label, then
+// Scene 5, beat 35 to 47: the Dock of the app, blown up. Each mini app gets a handwritten label, then
 // "カレンダーで来週を開いて" opens the real calendar out of its icon, and a tap on the Agent icon
 // opens scene 6 out of that icon.
 scene(() => {
-  const S = 43
+  const S = 35
   const b = (k) => B(S + k)
   const s = $('#s5')
   const cam = camera(s)

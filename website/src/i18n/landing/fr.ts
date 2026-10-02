@@ -82,8 +82,8 @@ export const fr: LandingText = {
     body: 'Chaque nuit à minuit, il écrit son journal à partir des conversations du jour : sur vous, et sur sa propre journée. Le lendemain, la conversation repart de ce dont il se souvient.',
     artAlt: 'Un diorama en pâte à modeler : ASIST endormi la nuit, son journal dans les bras',
     diaryDate: 'Journal · mercredi 23 septembre',
-    diaryTitle: 'Le jour où nous avons corrigé ensemble le brouillon de la proposition',
-    diaryBody: 'En début d’après-midi, on m’a demandé de lire à voix haute le brouillon de la proposition. J’ai remarqué que la troisième partie disait la même chose que la précédente, et je l’ai signalé.',
+    diaryTitle: 'N’oublie pas ton parapluie',
+    diaryBody: 'On dirait qu’il y a un déplacement à Nagano la semaine prochaine. On m’a demandé la météo, j’ai répondu qu’il allait pleuvoir. D’ici là, ce sera sûrement oublié, alors je le redirai la veille.',
     noteHtml: 'Il se souvient<br />vraiment…'
   },
   start: {

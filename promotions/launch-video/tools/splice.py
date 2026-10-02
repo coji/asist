@@ -34,7 +34,7 @@ def loud(b0, b1):
 
 
 for skip in (8, 16, 24):
-    for v in range(55, 76, 4):
+    for v in range(7, 88 - skip, 4):
         before = float(beat_chroma(v - 2, v) @ beat_chroma(v + skip - 2, v + skip))
         after = float(beat_chroma(v, v + 2) @ beat_chroma(v + skip, v + skip + 2))
         print(f'skip {skip:2d}  video beat {v} ({T0 + v * P:6.2f} s) -> music {T0 + (v + skip) * P:6.2f} s  '

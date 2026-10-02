@@ -82,8 +82,8 @@ export const en: LandingText = {
     body: 'Every night at midnight, it writes a diary from the day’s conversations: about you, and about its own day. The next day’s conversation starts from what it remembers.',
     artAlt: 'A clay diorama: ASIST asleep at night, holding its diary',
     diaryDate: 'Diary · Wednesday, September 23',
-    diaryTitle: 'The day we fixed the proposal draft together',
-    diaryBody: 'In the early afternoon I was asked to read the proposal draft aloud. I noticed the third section said the same thing as the one before it, and said so.',
+    diaryTitle: 'Don’t forget your umbrella',
+    diaryBody: 'Looks like there’s a business trip to Nagano next week. They asked about the weather, so I said it’s going to rain. They’ll probably have forgotten by then, so I’ll mention it again the day before.',
     noteHtml: 'It really does<br />remember…'
   },
   start: {

@@ -52,7 +52,8 @@ async function openPage() {
   // and the timeline is built.
   while (!(await page.evaluate('typeof window.__ready === "object"'))) await sleep(100)
   await page.evaluate('window.__ready.then(() => true)')
-  if (page.exceptions().length) throw new Error(page.exceptions().map((e) => e.text).join('\n'))
+  const { exceptions } = page.navigation()
+  if (exceptions.length) throw new Error(exceptions.map((e) => e.text).join('\n'))
   return page
 }
 
@@ -93,7 +94,9 @@ async function renderRun(index, f0, f1, dir, progress) {
 const page0 = await openPage()
 const duration = await page0.evaluate('window.__duration')
 mkdirSync(OUT, { recursive: true })
-writeFileSync(resolve(OUT, 'cues.json'), JSON.stringify({ duration, fps: FPS, cues: await page0.evaluate('window.__cues') }, null, 1))
+writeFileSync(resolve(OUT, 'cues.json'), JSON.stringify({
+  duration, fps: FPS, music: await page0.evaluate('window.__music'), cues: await page0.evaluate('window.__cues'),
+}, null, 1))
 
 if (opt.stills) {
   mkdirSync(resolve(OUT, 'stills'), { recursive: true })
