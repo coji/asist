@@ -14,10 +14,9 @@ function setup() {
         rejecters.push(reject)
       })
   )
-  const onPlan = vi.fn()
   const onFailure = vi.fn()
-  const planner = new BridgePlanner({ plan: request, onPlan, onFailure })
-  return { planner, request, resolvers, rejecters, onPlan, onFailure }
+  const planner = new BridgePlanner({ plan: request, onFailure })
+  return { planner, request, resolvers, rejecters, onFailure }
 }
 
 const flush = async (): Promise<void> => {
@@ -52,14 +51,13 @@ describe('BridgePlanner', () => {
   })
 
   it('drops a stale result that arrives after a reset and reports no failure for it', async () => {
-    const { planner, resolvers, rejecters, onPlan, onFailure } = setup()
+    const { planner, resolvers, rejecters, onFailure } = setup()
     planner.observe({ text: '昨日の会議で', lastAssistantText: '' })
     planner.observe({ text: '昨日の会議で予算の', lastAssistantText: '' })
     planner.reset()
     resolvers[0](plan('古い'))
     await flush()
     expect(planner.current()).toBeNull()
-    expect(onPlan).not.toHaveBeenCalled()
     // The reset also drops the held input, so nothing is sent again.
     expect(rejecters).toHaveLength(1)
     expect(onFailure).not.toHaveBeenCalled()
@@ -93,14 +91,13 @@ describe('BridgePlanner', () => {
   })
 
   it('still answers an end of utterance that waits when a new capture begins, without making that plan the latest', async () => {
-    const { planner, resolvers, onPlan } = setup()
+    const { planner, resolvers } = setup()
     planner.observe({ text: '昨日の会議で', lastAssistantText: '' })
     const settled = planner.finish({ text: '昨日の会議で', lastAssistantText: '' })
     planner.reset()
     resolvers[0](plan('会議の件ですね。'))
     await expect(settled).resolves.toEqual(plan('会議の件ですね。'))
     expect(planner.current()).toBeNull()
-    expect(onPlan).not.toHaveBeenCalled()
   })
 
   it('answers an end of utterance with the plan of its newest partial transcript, which still goes out after a new capture began', async () => {
@@ -118,7 +115,7 @@ describe('BridgePlanner', () => {
   })
 
   it('plans the next capture on its first partial transcript while a request of the previous capture is still in flight', async () => {
-    const { planner, request, resolvers, onPlan } = setup()
+    const { planner, request, resolvers } = setup()
     planner.observe({ text: '昨日の会議で', lastAssistantText: '' })
     planner.reset()
     planner.observe({ text: '明日の予定を教えて', lastAssistantText: '' })
@@ -131,7 +128,7 @@ describe('BridgePlanner', () => {
     expect(planner.current()).toBeNull()
     resolvers[1](plan('明日の予定ですね。'))
     await expect(settled).resolves.toEqual(plan('明日の予定ですね。'))
-    expect(onPlan).toHaveBeenCalledOnce()
+    expect(planner.current()).toEqual(plan('明日の予定ですね。'))
   })
 
   it('sends the last partial transcript at the end of an utterance whose capture has sent nothing, whatever the previous capture still runs', async () => {
@@ -142,6 +139,23 @@ describe('BridgePlanner', () => {
     expect(request).toHaveBeenLastCalledWith({ text: 'あの件', lastAssistantText: '' })
     resolvers[1](plan('あの件ですね。'))
     await expect(settled).resolves.toEqual(plan('あの件ですね。'))
+  })
+
+  it('fails the end of an utterance whose every request failed, and answers it with an earlier plan when only the last one failed', async () => {
+    const { planner, rejecters, resolvers } = setup()
+    planner.observe({ text: '昨日の会議で', lastAssistantText: '' })
+    const failed = planner.finish({ text: '昨日の会議で', lastAssistantText: '' })
+    rejecters[0](new Error('quota exceeded'))
+    await expect(failed).rejects.toThrow('quota exceeded')
+
+    planner.reset()
+    planner.observe({ text: '明日の予定を', lastAssistantText: '' })
+    planner.observe({ text: '明日の予定を教えて', lastAssistantText: '' })
+    const settled = planner.finish({ text: '明日の予定を教えて', lastAssistantText: '' })
+    resolvers[1](plan('明日の予定ですね。'))
+    await flush()
+    rejecters[2](new Error('timeout'))
+    await expect(settled).resolves.toEqual(plan('明日の予定ですね。'))
   })
 
   it('reports a failure and sends again on the next partial transcript', async () => {

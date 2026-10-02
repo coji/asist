@@ -7,7 +7,7 @@ afterEach(() => vi.useRealTimers())
 
 function setup(typed = false) {
   const save = vi.fn<(payload: TurnMetricLog) => Promise<void>>(async () => {})
-  const show = vi.fn<(timings: TurnTimings) => void>()
+  const show = vi.fn<(timings: TurnTimings, utterance: number | null) => void>()
   const metrics = new TurnMetrics(save, show, () => 1000, () => 5000)
   if (typed) {
     metrics.beginRequest('request', { typed: true })
@@ -141,16 +141,16 @@ describe('TurnMetrics', () => {
     expect(save.mock.calls[0][0]).toEqual({ id: 'request', revision: 1, occurredAt: 5000, vadMs: 350, aizuchiClipMs: 400, asrMs: 420, bridge: 'played' })
   })
 
-  it('shows the latest input in the HUD, and the one before again once the latest yields no turn', () => {
+  it('shows the latest input in the HUD with the utterance it is of, and the one before again once the latest yields no turn', () => {
     const { metrics, show } = setup()
-    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120 })
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120 }, 10)
     metrics.beginUtterance(20, 900, { vadMs: 500 })
     metrics.update(1, { ttsMs: 90 })
-    expect(show).toHaveBeenLastCalledWith({ vadMs: 500 })
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 500 }, 20)
     metrics.dropUtterance(20)
-    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120, ttsMs: 90 })
+    expect(show).toHaveBeenLastCalledWith({ vadMs: 350, ttftMs: 120, ttsMs: 90 }, 10)
     metrics.beginRequest('typed', { typed: true })
-    expect(show).toHaveBeenLastCalledWith({})
+    expect(show).toHaveBeenLastCalledWith({}, null)
   })
 
   it('retries a failed save without mixing in values from later turns or updates', async () => {

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CACHE_MISS_REASONS } from './cache-diagnosis'
-import type { TurnMetricLog } from './ipc'
+import { BRIDGE_OUTCOMES, type TurnMetricLog } from './ipc'
 
 /**
  * Validation of one line written to metrics.jsonl. It is the boundary at which the main process stops
@@ -30,7 +30,7 @@ export const turnMetricLogSchema = z.object({
   aizuchiClipMs: ms.optional(),
   bridgeMs: ms.optional(),
   bridgeClipMs: ms.optional(),
-  bridge: z.enum(['played', 'late', 'failed']).optional(),
+  bridge: z.enum(BRIDGE_OUTCOMES).optional(),
   ttftMs: ms.optional(),
   ttsMs: ms.optional(),
   e2eMs: ms.optional(),
