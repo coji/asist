@@ -1,4 +1,4 @@
-import { errorText } from '@shared/i18n/error-text'
+import { errorKey } from '@shared/i18n/error-key'
 
 /**
  * Turns a pptx into the form needed to draw it: the shapes of each slide and where they sit. There is no good
@@ -34,10 +34,6 @@ export interface PptxParagraph {
 export type PptxShape =
   | { kind: 'text'; frame: PptxFrame | null; placeholder: string | null; paragraphs: PptxParagraph[] }
   | { kind: 'picture'; frame: PptxFrame | null; target: string }
-export interface PptxSlide {
-  path: string
-  shapes: PptxShape[]
-}
 export interface PptxSize {
   cx: number
   cy: number
@@ -50,7 +46,7 @@ const DEFAULT_SIZE_PT = { title: 44, subTitle: 24, body: [28, 24, 20, 18, 18], o
 const parseXml = (xml: string): Document => {
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
   const error = doc.getElementsByTagName('parsererror')[0]
-  if (error) throw new Error(errorText('files.errors.xmlUnreadable', { detail: error.textContent?.slice(0, 80) ?? '' }))
+  if (error) throw new Error(errorKey('files.errors.xmlUnreadable', { detail: error.textContent?.slice(0, 80) ?? '' }))
   return doc
 }
 const childrenNS = (el: Element, ns: string, name: string): Element[] =>
@@ -104,7 +100,7 @@ export function parsePresentation(xml: string): { size: PptxSize; slideRelIds: s
   const sldSz = descendantNS(doc, NS.p, 'sldSz')
   const cx = Number(sldSz?.getAttribute('cx'))
   const cy = Number(sldSz?.getAttribute('cy'))
-  if (!(cx > 0 && cy > 0)) throw new Error(errorText('files.errors.slideSizeMissing'))
+  if (!(cx > 0 && cy > 0)) throw new Error(errorKey('files.errors.slideSizeMissing'))
   // A sldId carries both id and r:id, and happy-dom collapses attributes that share a localName and drops
   // r:id. Only the order is needed here, so these elements are picked out of the raw string; Office always
   // writes the prefixes p and r.
@@ -227,6 +223,3 @@ export function parseSlide(xml: string, size: PptxSize, rels: Map<string, string
   if (spTree) walk(spTree)
   return shapes
 }
-
-/** Turns a shape's font size from pt into a share of the slide width (cqw). The slide is cx EMU wide, which is cx / 12700 pt. */
-export const fontSizeCqw = (sizePt: number, size: PptxSize): number => (sizePt / (size.cx / 12700)) * 100

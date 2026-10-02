@@ -1257,19 +1257,6 @@ export const files = defineMessages({
       'es-419': 'El archivo de PowerPoint no tiene el tamaño de las diapositivas.',
       'es-ES': 'El archivo de PowerPoint no indica el tamaño de las diapositivas.'
     },
-    entryMissing: {
-      'ja-JP': 'PowerPoint に {path} がありません。',
-      'en-US': 'The PowerPoint file has no {path}.',
-      'fr-FR': 'Le fichier PowerPoint ne contient pas {path}.',
-      'de-DE': 'In der PowerPoint-Datei fehlt {path}.',
-      'hi-IN': 'PowerPoint फ़ाइल में {path} नहीं है।',
-      'id-ID': 'File PowerPoint ini tidak punya {path}.',
-      'it-IT': 'Nel file PowerPoint manca {path}.',
-      'ko-KR': 'PowerPoint 파일에서 {path} 항목을 찾을 수 없습니다.',
-      'pt-BR': 'O arquivo do PowerPoint não tem {path}.',
-      'es-419': 'El archivo de PowerPoint no tiene {path}.',
-      'es-ES': 'El archivo de PowerPoint no contiene {path}.'
-    },
     slideRefMissing: {
       'ja-JP': 'スライド {relId} の参照がありません。',
       'en-US': 'There is no reference for slide {relId}.',
