@@ -42,7 +42,8 @@ export const currentSpeechRoute = (): SpeechRoute => (getSettings().ttsEngine ==
 export interface ConversationOwner {
   /**
    * A notification from the app, such as a finished job, which the model reports in the flow of the
-   * conversation. The owner writes it to the conversation log when it sends it to the model.
+   * conversation. The owner writes it to the conversation log itself, after it has waited for the
+   * session that is to read it.
    */
   notify(notice: SystemNotice): Promise<void>
   /** Reads the given sentence verbatim, for example when a timer runs out. */

@@ -170,6 +170,19 @@ describe('ConversationHistory, derived from the conversation log', () => {
     expect(buildMemoryInjection([CAFE], { locale: 'ja-JP', excludeIds: replayed.shownMemoryIds() })).toBeNull()
   })
 
+  it('keeps a memory note on its utterance when a job report recorded meanwhile shares the turn id of the exchange', () => {
+    const { history } = makeHistory()
+    const note = buildMemoryInjection([CAFE], { locale: 'ja-JP' })!
+    // Gemini Live records a notice under the exchange of the utterance whose memory search is still running.
+    history.apply(user(1, 'いつもの店'))
+    history.apply(notice(1, '[システム通知] ジョブ「調査」が完了した。'))
+    history.apply(memoryNote(1, note))
+    expect(history.toMessages().map(textOf)).toEqual([
+      `[2026/9/8(火) 16:48] いつもの店\n\n${note.text}`,
+      '[2026/9/8(火) 16:48] [システム通知] ジョブ「調査」が完了した。'
+    ])
+  })
+
   it('injects a memory again once the turn that showed it is folded into the summary, and drops a note that comes for such a turn', async () => {
     const { history } = makeHistory({ recentTurns: 1 })
     const note = buildMemoryInjection([CAFE], { locale: 'ja-JP' })!

@@ -452,9 +452,11 @@ export class GeminiLiveEngine implements ConversationOwner {
   }
 
   /**
-   * The notice is written to the conversation log only once the session is open, as typed text is: a
-   * session that opens blank is seeded with the recent history, which would then already end with the
-   * notice, and the model would be given it twice.
+   * The notice is written to the conversation log only after the wait for the session to open, as typed
+   * text is: a session that opens blank is seeded with the recent history, which would then already end
+   * with the notice, and the model would be given it twice. The wait ends without an error when the
+   * session could not open or the engine has stopped, and the notice is then written but sent to no
+   * session.
    */
   async notify(notice: SystemNotice): Promise<void> {
     await this.lifecycle.ensureOpen()

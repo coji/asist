@@ -239,8 +239,10 @@ export class ConversationHistory {
     }
     if (record.kind === 'note') {
       // A live engine can finish a note after the next utterance was recorded, so the note looks for its
-      // own turn rather than taking the current one. A turn already folded into the summary takes nothing.
-      const turn = this.turns.findLast((candidate) => candidate.turnId === record.turnId && candidate.user !== undefined)
+      // own turn rather than taking the current one. A note shows the memories of an utterance, and a
+      // notice the engine recorded meanwhile can carry the same turn id. A turn already folded into the
+      // summary takes nothing.
+      const turn = this.turns.findLast((candidate) => candidate.turnId === record.turnId && candidate.user !== undefined && !candidate.notice)
       if (!turn) return
       turn.notes = turn.notes ? `${turn.notes}\n\n${record.text}` : record.text
       turn.memoryIds.push(...record.memoryIds)
