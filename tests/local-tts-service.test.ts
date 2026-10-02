@@ -3,11 +3,17 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, qwenTtsLanguage } from '@shared/tts-models'
+import type { TtsEngine } from '@shared/ipc'
+import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, localTtsModel, qwenTtsLanguage } from '@shared/tts-models'
 
-const mocks = vi.hoisted(() => ({ spawn: vi.fn(), settings: { qwenTtsSize: '0.6b' as '0.6b' | '1.7b' } }))
+const mocks = vi.hoisted(() => ({
+  spawn: vi.fn(),
+  downloadMissing: vi.fn(),
+  settings: { uiLocale: 'en-US', ttsEngine: 'qwen3tts' as TtsEngine, qwenTtsSize: '0.6b' as '0.6b' | '1.7b' }
+}))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
+vi.mock('../src/main/services/pinned-download', () => ({ downloadMissing: mocks.downloadMissing }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/app', getPath: () => '/user-data', on: vi.fn() } }))
 
@@ -40,6 +46,7 @@ const REQUEST = { text: 'こんにちは。', voice: 'ono_anna', language: 'ja' 
 
 beforeEach(async () => {
   vi.resetModules()
+  mocks.settings.ttsEngine = 'qwen3tts'
   mocks.settings.qwenTtsSize = '0.6b'
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
   children = []
@@ -253,6 +260,82 @@ describe('Irodori-TTS service', () => {
     say(child, { type: 'end', id, samples: 0 })
     expect(await reading / RATE).toBeGreaterThan(3.5)
     expect(child.input).not.toContainEqual({ type: 'cancel', id })
+  })
+})
+
+describe('preparing a local model', () => {
+  /** The model files that are there, by name. */
+  let installed: Set<string>
+  /** Ends the download of the prepared model's files, which takes minutes in the app. */
+  let finishDownload: () => void
+
+  const install = (files: ReadonlyArray<{ file: string }>): void => {
+    for (const { file } of files) installed.add(file)
+  }
+
+  beforeEach(() => {
+    installed = new Set()
+    vi.mocked(fs.existsSync).mockImplementation((file) => !String(file).endsWith('.gguf') || installed.has(path.basename(String(file))))
+    mocks.downloadMissing.mockReset().mockImplementation((files: Array<{ file: { file: string } }>, signal: AbortSignal) =>
+      new Promise<void>((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        finishDownload = () => {
+          install(files.map((entry) => entry.file))
+          resolve()
+        }
+      }))
+  })
+
+  it('starts the worker on the files it fetched while the settings still select that model', async () => {
+    const preparation = local.prepare('qwen3tts', () => {})
+    await settle()
+    expect(mocks.spawn).not.toHaveBeenCalled()
+    finishDownload()
+    expect((await preparation).ok).toBe(true)
+    expect(local.available('qwen3tts')).toBe(true)
+  })
+
+  it('leaves the worker of the engine chosen while the files downloaded running, and starts none of its own', async () => {
+    install(localTtsModel('irodori', '0.6b').files)
+    const preparation = local.prepare('qwen3tts', () => {})
+    await settle()
+    // The user picks Irodori-TTS on the voice page, and the change of the setting starts it.
+    mocks.settings.ttsEngine = 'irodori'
+    await expect(local.ensureWorker('irodori')).resolves.toBe(true)
+    finishDownload()
+    expect((await preparation).ok).toBe(true)
+    expect(children).toHaveLength(1)
+    expect(local.available('irodori')).toBe(true)
+  })
+
+  it('starts no worker when the user chose an engine that needs none while the files downloaded', async () => {
+    const preparation = local.prepare('qwen3tts', () => {})
+    await settle()
+    mocks.settings.ttsEngine = 'voicevox'
+    finishDownload()
+    expect((await preparation).ok).toBe(true)
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('reports the files of a size the user turned away from as prepared rather than as a model that failed to start', async () => {
+    const preparation = local.prepare('qwen3tts', () => {})
+    await settle()
+    mocks.settings.qwenTtsSize = '1.7b'
+    finishDownload()
+    expect((await preparation).ok).toBe(true)
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('keeps the worker of the engine chosen while the files downloaded when the preparation is cancelled', async () => {
+    install(localTtsModel('irodori', '0.6b').files)
+    const preparation = local.prepare('qwen3tts', () => {})
+    await settle()
+    mocks.settings.ttsEngine = 'irodori'
+    await local.ensureWorker('irodori')
+    expect(local.cancelPreparation()).toBe(true)
+    expect((await preparation).ok).toBe(false)
+    expect(children[0].kill).not.toHaveBeenCalled()
+    expect(local.available('irodori')).toBe(true)
   })
 })
 

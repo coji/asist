@@ -510,7 +510,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       }
       if (before.globalHotkey !== after.globalHotkey) refreshHotkey()
       if (before.uiLocale !== after.uiLocale) refreshTrayMenu()
-      if (before.asrModel !== after.asrModel) watchdog.checkAfter(asr.switchModel().catch((error) => console.error('speech recognition failed to start:', error)))
+      if (before.asrModel !== after.asrModel) watchdog.checkAfter(asr.switchModel(before.asrModel).catch((error) => console.error('speech recognition failed to start:', error)))
       if (before.memoryEmbeddingEnabled !== after.memoryEmbeddingEnabled) {
         if (after.memoryEmbeddingEnabled) {
           void memory.startEmbeddingIfEnabled().catch((err) => console.error('memory embedding:', err))

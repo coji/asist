@@ -328,10 +328,17 @@ export class GeminiLiveEngine implements ConversationOwner {
     this.lifecycle.ended()
   }
 
-  /** Lets go of the session, whether the engine or the provider closed it, and of the calls that still owe it a result. */
+  /**
+   * Lets go of the session, whether the engine or the provider closed it, and of the calls that still owe it
+   * a result. Gemini bills the audio sent to a session after its last turnComplete too, and no turnComplete
+   * reports it once the session is gone, so a session that opened reports the usage here as well. One that
+   * never opened was sent nothing.
+   */
   private disown(): void {
+    const opened = this.owned?.ready === true
     this.owned = null
     this.calls.abortAll()
+    if (opened) this.emitUsage()
   }
 
   private seedHistory(session: GeminiSession): void {
@@ -361,11 +368,13 @@ export class GeminiLiveEngine implements ConversationOwner {
         // other order the final text reaches the renderer after it closed the line, and the same sentence
         // appears twice.
         this.transcripts.flush('assistant')
+        // The renderer drops the rest of the reply on this event.
+        this.lifecycle.assistantInterrupted()
         this.events.emit('event', { type: 'interrupted' })
       }
       if (content.turnComplete) {
         this.transcripts.flush('assistant')
-        this.emitUsage({ sessionSeconds: Math.round(this.inputSeconds), costUsd: geminiLiveCost(this.inputSeconds, this.outputSeconds) })
+        this.emitUsage()
       }
     }
     for (const call of message.toolCall?.functionCalls ?? []) this.calls.submit(call, this.ensureTurnStarted())
@@ -437,7 +446,10 @@ export class GeminiLiveEngine implements ConversationOwner {
 
   /** Passes the model's audio to the renderer and measures the response latency. */
   private emitAudio(samples: Float32Array): void {
-    this.lifecycle.touch()
+    // Gemini sends a reply faster than it plays, and its turnComplete waits only for the playback it assumes,
+    // so a long reply can arrive more than the idle time before its turnComplete. The renderer plays the
+    // audio at its rate in the order it arrives.
+    this.lifecycle.assistantSpeaks((samples.length / OUTPUT_RATE) * 1000)
     if (this.awaitingFirstAudio) {
       this.awaitingFirstAudio = false
       const responseMs = Math.round(this.now() - this.lastUserDeltaAt)
@@ -446,7 +458,9 @@ export class GeminiLiveEngine implements ConversationOwner {
     this.events.emit('audio', samples)
   }
 
-  private emitUsage(usage: LiveUsage): void {
+  /** Reports the usage as a running total, of which the ledger records what it has not recorded yet. */
+  private emitUsage(): void {
+    const usage: LiveUsage = { sessionSeconds: Math.round(this.inputSeconds), costUsd: geminiLiveCost(this.inputSeconds, this.outputSeconds) }
     this.events.emit('event', { type: 'usage', usage })
   }
 

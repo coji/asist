@@ -58,8 +58,8 @@ interface Server {
 
 let server: Server | null = null
 const requests = new Map<string, AbortController>()
-let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
-let prepareController: AbortController | null = null
+/** The preparation under way, with the model whose files it fetches. */
+let preparation: { model: AsrModelSpec; controller: AbortController; operation: Promise<{ ok: boolean; message: string }> } | null = null
 
 /** Whether the files of the model are there. */
 export function installationStatus(model: AsrModelSpec): { modelInstalled: boolean } {
@@ -295,27 +295,35 @@ export function cancelTranscription(requestId: string): boolean {
 }
 
 export function cancelPreparation(): boolean {
-  if (!prepareController) return false
-  prepareController.abort()
-  stop()
+  if (!preparation) return false
+  preparation.controller.abort()
+  // A server on another model is the one the setting moved to while the files downloaded, which the preparation did not start.
+  if (server?.model === preparation.model) stop()
   return true
 }
 
-export function prepare(model: AsrModelSpec, onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
-  if (prepareInFlight) return prepareInFlight
+/**
+ * Downloads the files of the model, and starts its server on them if the setting still stands for the model
+ * once they are there, which only the caller can tell.
+ */
+export function prepare(
+  model: AsrModelSpec,
+  selected: () => boolean,
+  onProgress: (progress: SetupProgress) => void
+): Promise<{ ok: boolean; message: string }> {
+  if (preparation) return preparation.operation
   const controller = new AbortController()
-  prepareController = controller
   const operation = prepareModelFiles({
     files: asrModelFiles(model),
     label: model.label,
     feature: t('settingsModels.features.speechRecognition'),
     signal: controller.signal,
     onProgress,
+    selected,
     start: () => ensureServer(model)
   }).finally(() => {
-    if (prepareInFlight === operation) prepareInFlight = null
-    prepareController = null
+    if (preparation?.operation === operation) preparation = null
   })
-  prepareInFlight = operation
+  preparation = { model, controller, operation }
   return operation
 }

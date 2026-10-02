@@ -38,17 +38,20 @@ export interface PrepareOptions {
   feature: string
   signal: AbortSignal
   onProgress: (progress: SetupProgress) => void
+  /** Whether the settings select the model now, which the user can change while its files download. */
+  selected: () => boolean
   /** Starts the service on the downloaded files and resolves to whether it became ready. */
   start: () => Promise<boolean>
 }
 
 /**
- * Downloads the files that are missing, then starts the service on them, reporting each step as setup
- * progress. The download has no time limit, because the service's ready timeout would otherwise have to
- * cover 2.5 GB on a slow line.
+ * Downloads the files that are missing, then starts the service on them while the settings still select
+ * the model, reporting each step as setup progress. A change of the setting starts what it selects, so a
+ * model the user turned away from is left with its files in place and nothing of it running. The download
+ * has no time limit, because the service's ready timeout would otherwise have to cover 2.5 GB on a slow line.
  */
 export async function prepareModelFiles(options: PrepareOptions): Promise<{ ok: boolean; message: string }> {
-  const { files, label, feature, signal, onProgress, start } = options
+  const { files, label, feature, signal, onProgress, selected, start } = options
   if (platformCapabilities().localSpeech.backend === null) {
     return { ok: false, message: t('settingsModels.preparation.unsupported', { feature }) }
   }
@@ -60,8 +63,13 @@ export async function prepareModelFiles(options: PrepareOptions): Promise<{ ok: 
         onProgress({ status: 'downloading', pct: progress.pct, downloadedMb: progress.downloadedMb, totalMb: progress.totalMb, message }))
     }
     signal.throwIfAborted()
-    onProgress({ status: 'downloading', pct: 0, downloadedMb: 0, totalMb: 0, message: t('settingsModels.preparation.loading', { model: label }) })
-    if (!(await start())) throw new Error(errorText('settingsModels.preparation.startFailed', { model: label }))
+    if (selected()) {
+      onProgress({ status: 'downloading', pct: 0, downloadedMb: 0, totalMb: 0, message: t('settingsModels.preparation.loading', { model: label }) })
+      const ready = await start()
+      signal.throwIfAborted()
+      // Choosing another model while this one loads stops it, which is no failure of the preparation.
+      if (!ready && selected()) throw new Error(errorText('settingsModels.preparation.startFailed', { model: label }))
+    }
     onProgress({ status: 'done', pct: 100, downloadedMb: 0, totalMb: 0 })
     return { ok: true, message: t('settingsModels.preparation.done', { model: label }) }
   } catch (error) {

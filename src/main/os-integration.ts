@@ -12,6 +12,7 @@ import {
 } from 'electron'
 import { IpcChannel, type HotkeyStatus } from '@shared/ipc'
 import * as agent from './services/agent'
+import * as live from './services/live'
 import { errorText } from '@shared/i18n/error-text'
 import { errorMessage, t } from './services/i18n'
 import { platformCapabilities } from './services/platform'
@@ -69,7 +70,10 @@ export function quitAfterAgentsStop(quit: () => void): void {
   if (stoppingAgents) return
   stoppingAgents = true
   void agent.shutdown().then(
-    () => {
+    async () => {
+      // The live engine records the usage of its open session as it closes it. The session ends with the
+      // app either way, so a failure to close it does not hold the quit.
+      await live.stop().catch((error: unknown) => console.error('live stop failed:', error))
       quitApproved = true
       quit()
     },

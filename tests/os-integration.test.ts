@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   quit: vi.fn(),
   showErrorBox: vi.fn(),
   shutdown: vi.fn<() => Promise<void>>(),
+  liveStop: vi.fn<() => Promise<void>>(),
   register: vi.fn((_accelerator: string, _callback: () => void) => true),
   settings: { globalHotkey: false },
   windows: false
@@ -52,6 +53,7 @@ vi.mock('../src/main/services/agent', async () => {
   mocks.agentEvents = mitt()
   return { events: mocks.agentEvents, shutdown: mocks.shutdown }
 })
+vi.mock('../src/main/services/live', () => ({ stop: mocks.liveStop }))
 vi.mock('../src/main/services/i18n', () => ({ t: (key: string) => key, errorMessage: (error: unknown) => (error as Error).message }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 
@@ -96,6 +98,7 @@ beforeEach(async () => {
   mocks.quit.mockReset()
   mocks.showErrorBox.mockReset()
   mocks.shutdown.mockReset()
+  mocks.liveStop.mockReset().mockResolvedValue(undefined)
   mocks.register.mockReset().mockReturnValue(true)
   mocks.settings.globalHotkey = false
   mocks.windows = false
@@ -124,6 +127,27 @@ describe('quitting while agents run', () => {
     expect(mocks.shutdown).toHaveBeenCalledOnce()
     expect(quit()).toBe(true)
     expect(window.close()).toBe(true)
+  })
+
+  it('stops the live engine once the agents have stopped, so the usage of its open session is recorded before the app goes', async () => {
+    os.setupOsIntegration(hiddenWindow() as never)
+    mocks.shutdown.mockResolvedValue(undefined)
+    expect(quit()).toBe(false)
+    await vi.waitFor(() => expect(mocks.quit).toHaveBeenCalledOnce())
+    expect(mocks.liveStop).toHaveBeenCalledOnce()
+    expect(mocks.shutdown.mock.invocationCallOrder[0]).toBeLessThan(mocks.liveStop.mock.invocationCallOrder[0])
+    expect(mocks.liveStop.mock.invocationCallOrder[0]).toBeLessThan(mocks.quit.mock.invocationCallOrder[0])
+  })
+
+  it('quits even when the live engine fails to stop, since its session ends with the app', async () => {
+    os.setupOsIntegration(hiddenWindow() as never)
+    mocks.shutdown.mockResolvedValue(undefined)
+    mocks.liveStop.mockRejectedValue(new Error('the session did not close'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(quit()).toBe(false)
+    await vi.waitFor(() => expect(mocks.quit).toHaveBeenCalledOnce())
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
   })
 
   it('leaves the app as it was when an agent cannot be stopped, so the window still hides and a later quit tries again', async () => {

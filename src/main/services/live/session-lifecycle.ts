@@ -160,9 +160,19 @@ export class LiveSessionLifecycle {
     void this.ensureOpen()
   }
 
-  /** Marks the conversation as still going, such as model audio or a function call, and pushes back the idle close. */
+  /** Marks the conversation as still going, such as the user's speech or a function call's result, and pushes back the idle close. */
   touch(): void {
     this.policy.activity(this.deps.now())
+  }
+
+  /** The model's audio arrived, `ms` long, and the conversation goes on until it has played. */
+  assistantSpeaks(ms: number): void {
+    this.policy.assistantSpeaks(this.deps.now(), ms)
+  }
+
+  /** The renderer dropped the rest of the model's audio, so the conversation counts as going on only until now. */
+  assistantInterrupted(): void {
+    this.policy.assistantInterrupted(this.deps.now())
   }
 
   private transmit(frame: Float32Array): void {

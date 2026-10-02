@@ -110,6 +110,9 @@ function held(): { task: ToolExecutionTask; answer: (content: string) => void; f
   return { task: Object.assign(response, { completion, operationStarted: () => {} }), answer, finish }
 }
 
+/** Seconds of the model's voice as Gemini sends it, base64 PCM16 at 24 kHz. */
+const voice = (seconds: number): string => Buffer.from(new Int16Array(24_000 * seconds).buffer).toString('base64')
+
 const responseIds = (session: FakeSession): string[] =>
   session.toolResponses.map((response) => (response as { functionResponses: Array<{ id: string }> }).functionResponses[0].id)
 
@@ -471,6 +474,59 @@ describe('GeminiLiveEngine', () => {
     await engine.stop()
   })
 
+  it('keeps the session open while the reply that arrived is still playing, and closes it once the reply has played and the conversation is quiet', async () => {
+    const { engine, sessions } = await setup()
+    const session = await open(engine, sessions)
+    // Gemini sends a reply faster than it plays: a minute of it arrives at once.
+    session.message({ serverContent: { modelTurn: { parts: [{ inlineData: { data: voice(60), mimeType: 'audio/pcm;rate=24000' } }] } } })
+    await vi.advanceTimersByTimeAsync(55_000)
+    expect(session.closed).toBe(false)
+    await vi.advanceTimersByTimeAsync(5_000 + 31_000)
+    expect(session.closed).toBe(true)
+    await engine.stop()
+  })
+
+  it('counts the quiet from the end of a short reply that arrives late in the idle time', async () => {
+    const { engine, sessions } = await setup()
+    const session = await open(engine, sessions)
+    // The idle close is 30 seconds in this setup.
+    await vi.advanceTimersByTimeAsync(28_300)
+    session.message({ serverContent: { modelTurn: { parts: [{ inlineData: { data: voice(0.4), mimeType: 'audio/pcm;rate=24000' } }] } } })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(session.closed).toBe(false)
+    await vi.advanceTimersByTimeAsync(28_000)
+    expect(session.closed).toBe(true)
+    await engine.stop()
+  })
+
+  it('counts the quiet from an interruption, since the renderer drops the rest of the reply then', async () => {
+    const { engine, sessions } = await setup()
+    const session = await open(engine, sessions)
+    session.message({ serverContent: { modelTurn: { parts: [{ inlineData: { data: voice(60), mimeType: 'audio/pcm;rate=24000' } }] } } })
+    session.message({ serverContent: { interrupted: true } })
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(session.closed).toBe(true)
+    await engine.stop()
+  })
+
+  it('reports the usage of the audio sent after the last reply when the session closes and when the engine stops', async () => {
+    const { engine, sessions, events } = await setup()
+    const sessionSeconds = (): number | undefined => events.flatMap((event) => (event.type === 'usage' ? [event.usage.sessionSeconds] : [])).at(-1)
+    await open(engine, sessions)
+    for (let second = 0; second < 10; second++) engine.pushAudio(new Float32Array(16_000))
+    sessions[0].message({ serverContent: { turnComplete: true } })
+    expect(sessionSeconds()).toBe(10)
+    // The session stays open, and billed, until the conversation has been quiet for the idle time.
+    for (let second = 0; second < 5; second++) engine.pushAudio(new Float32Array(16_000))
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(sessions[0].closed).toBe(true)
+    expect(sessionSeconds()).toBe(15)
+    await open(engine, sessions)
+    for (let second = 0; second < 20; second++) engine.pushAudio(new Float32Array(16_000))
+    await engine.stop()
+    expect(sessionSeconds()).toBe(35)
+  })
+
   it('closes a session whose setup did not complete in time, and plays nothing it sends afterwards', async () => {
     const { engine, sessions } = await setup()
     const audio: Float32Array[] = []
@@ -552,6 +608,17 @@ describe('GeminiLiveEngine', () => {
     const session = await open(engine, sessions)
     session.params.callbacks.onerror(new Error('quota exceeded'))
     expect(errors().slice(1)).toEqual(['quota exceeded'])
+    await engine.stop()
+  })
+
+  it('reports no usage for a session that never opened, since it carried no audio', async () => {
+    const { engine, sessions, events } = await setup()
+    engine.activity(true)
+    await vi.advanceTimersByTimeAsync(0)
+    sessions[0].params.callbacks.onerror(new Error('quota exceeded'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(engine.state).toBe('error')
+    expect(events.filter((event) => event.type === 'usage')).toEqual([])
     await engine.stop()
   })
 

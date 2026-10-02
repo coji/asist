@@ -3,12 +3,17 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ASR_MODEL_SPECS } from '@shared/asr-models'
+import { ASR_MODEL_SPECS, type AsrModel } from '@shared/asr-models'
 import { errorText } from '@shared/i18n/error-text'
 
-const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  spawn: vi.fn(),
+  downloadMissing: vi.fn(),
+  settings: { uiLocale: 'en-US', conversationLocale: 'ja-JP', asrModel: 'auto' as AsrModel }
+}))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
-vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ uiLocale: 'en-US', conversationLocale: 'ja-JP' }) }))
+vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
+vi.mock('../src/main/services/pinned-download', () => ({ downloadMissing: mocks.downloadMissing }))
 vi.mock('../src/main/services/conversation-locale', () => ({ conversationLocale: () => 'ja-JP' }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/app', getPath: () => '/user-data', on: vi.fn() } }))
@@ -48,6 +53,7 @@ let asr: typeof import('../src/main/services/llama-asr')
 
 beforeEach(async () => {
   vi.resetModules()
+  mocks.settings.asrModel = 'auto'
   started = []
   healthy = true
   requests.length = 0
@@ -193,5 +199,98 @@ describe('speech recognition on llama-server', () => {
     vi.mocked(fs.existsSync).mockImplementation((file) => !/llama-server(\.exe)?$/.test(String(file)))
     await expect(asr.ensureServer(MODEL)).rejects.toThrow()
     expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+})
+
+describe('the model the setting stands for', () => {
+  let service: typeof import('../src/main/services/asr')
+  /** Ends the download of the prepared model's files, which takes minutes in the app. */
+  let finishDownload: () => void
+  const modelOf = (server: Started): string => path.basename(argAfter(server.args, '--model'))
+
+  beforeEach(async () => {
+    service = await import('../src/main/services/asr')
+    // Qwen3-ASR 0.6B is installed and 1.7B is not, until its download ends.
+    let largeInstalled = false
+    const large = [MODEL.model.file, MODEL.mmproj.file]
+    vi.mocked(fs.existsSync).mockImplementation((file) => largeInstalled || !large.includes(path.basename(String(file))))
+    mocks.downloadMissing.mockReset().mockImplementation((_files: unknown, signal: AbortSignal) =>
+      new Promise<void>((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        finishDownload = () => {
+          largeInstalled = true
+          resolve()
+        }
+      }))
+  })
+
+  /** A transcription the server answers only once the test releases it. */
+  async function transcriptionUnderWay(): Promise<{ transcription: Promise<string>; release: () => void }> {
+    let release!: () => void
+    answer = () => new Promise((resolve) => { release = () => resolve(chat('language Japanese<asr_text>はい。')) })
+    const transcription = service.transcribe(new Float32Array(1600), 'under-way')
+    await vi.waitFor(() => expect(requests).toHaveLength(1))
+    return { transcription, release }
+  }
+
+  it('keeps the server and the transcription under way when the setting moves from auto to the model auto stands for', async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true)
+    // Auto stands for 1.7B on the fixture's 32 GB Mac.
+    await expect(service.ensureServer()).resolves.toBe(true)
+    const { transcription, release } = await transcriptionUnderWay()
+
+    mocks.settings.asrModel = 'qwen3-asr-1.7b'
+    await expect(service.switchModel('auto')).resolves.toBe(true)
+    release()
+
+    await expect(transcription).resolves.toBe('はい。')
+    expect(started).toHaveLength(1)
+    expect(started[0].child.kill).not.toHaveBeenCalled()
+  })
+
+  it('stops the server, and the transcription under way with the reason the user sees, when the setting moves to another model', async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true)
+    await service.ensureServer()
+    const { transcription } = await transcriptionUnderWay()
+
+    mocks.settings.asrModel = 'qwen3-asr-0.6b'
+    await expect(service.switchModel('auto')).resolves.toBe(true)
+
+    await expect(transcription).rejects.toThrow(errorText('speechRecognition.errors.stopped'))
+    expect(started[0].child.kill).toHaveBeenCalled()
+    expect(started.map(modelOf)).toEqual([MODEL.model.file, SMALL.model.file])
+  })
+
+  it('keeps the server of the model the setting names when a preparation of another model ends after the user turned back', async () => {
+    mocks.settings.asrModel = 'qwen3-asr-0.6b'
+    await service.ensureServer()
+    mocks.settings.asrModel = 'qwen3-asr-1.7b'
+    await expect(service.switchModel('qwen3-asr-0.6b')).resolves.toBe(false)
+    const preparation = service.prepareModel('qwen3-asr-1.7b', () => {})
+    await vi.waitFor(() => expect(mocks.downloadMissing).toHaveBeenCalled())
+
+    // The download is slow, and the user goes back to 0.6B.
+    mocks.settings.asrModel = 'qwen3-asr-0.6b'
+    await expect(service.switchModel('qwen3-asr-1.7b')).resolves.toBe(true)
+    const selected = started.at(-1)!
+    finishDownload()
+
+    expect((await preparation).ok).toBe(true)
+    expect(started.map(modelOf)).toEqual([SMALL.model.file, SMALL.model.file])
+    expect(selected.child.kill).not.toHaveBeenCalled()
+    await expect(service.available()).resolves.toBe(true)
+  })
+
+  it('keeps the server of the model the setting names when the user cancels the preparation of a model they turned away from', async () => {
+    mocks.settings.asrModel = 'qwen3-asr-1.7b'
+    const preparation = service.prepareModel('qwen3-asr-1.7b', () => {})
+    await vi.waitFor(() => expect(mocks.downloadMissing).toHaveBeenCalled())
+    mocks.settings.asrModel = 'qwen3-asr-0.6b'
+    await expect(service.switchModel('qwen3-asr-1.7b')).resolves.toBe(true)
+
+    expect(service.cancelPreparation()).toBe(true)
+    expect((await preparation).ok).toBe(false)
+    expect(started[0].child.kill).not.toHaveBeenCalled()
+    await expect(service.available()).resolves.toBe(true)
   })
 })

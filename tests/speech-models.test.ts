@@ -35,7 +35,7 @@ describe('preparing the files of a local speech model', () => {
     vi.stubGlobal('fetch', fetch)
     const progress: SetupProgress[] = []
     const start = vi.fn(async () => true)
-    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: new AbortController().signal, onProgress: (p) => progress.push(p), start })
+    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: new AbortController().signal, onProgress: (p) => progress.push(p), selected: () => true, start })
     expect(result).toEqual({ ok: true, message: t('settingsModels.preparation.done', { model: 'Model' }) })
     expect(fetch).not.toHaveBeenCalled()
     expect(start).toHaveBeenCalledOnce()
@@ -45,9 +45,38 @@ describe('preparing the files of a local speech model', () => {
   it('reports a service that does not start on the files by the name of the model', async () => {
     install(FILE)
     const progress: SetupProgress[] = []
-    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: new AbortController().signal, onProgress: (p) => progress.push(p), start: async () => false })
+    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: new AbortController().signal, onProgress: (p) => progress.push(p), selected: () => true, start: async () => false })
     expect(result).toEqual({ ok: false, message: t('settingsModels.preparation.startFailed', { model: 'Model' }) })
     expect(progress.at(-1)?.status).toBe('error')
+  })
+
+  it('starts nothing and reports the files prepared when the settings no longer select the model once they are there', async () => {
+    install(FILE)
+    const progress: SetupProgress[] = []
+    const start = vi.fn(async () => true)
+    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: new AbortController().signal, onProgress: (p) => progress.push(p), selected: () => false, start })
+    expect(result.ok).toBe(true)
+    expect(start).not.toHaveBeenCalled()
+    expect(progress.at(-1)?.status).toBe('done')
+  })
+
+  it('does not count a start as failed when the settings turned away from the model while it loaded', async () => {
+    install(FILE)
+    let selected = true
+    const result = await prepareModelFiles({
+      files: [FILE],
+      label: 'Model',
+      feature: 'Speech',
+      signal: new AbortController().signal,
+      onProgress: () => {},
+      selected: () => selected,
+      // The change of the setting stops the model that was loading.
+      start: async () => {
+        selected = false
+        return false
+      }
+    })
+    expect(result.ok).toBe(true)
   })
 
   it('reports a preparation stopped during the download as cancelled and starts nothing', async () => {
@@ -58,7 +87,7 @@ describe('preparing the files of a local speech model', () => {
     }))
     const start = vi.fn(async () => true)
     const progress: SetupProgress[] = []
-    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: controller.signal, onProgress: (p) => progress.push(p), start })
+    const result = await prepareModelFiles({ files: [FILE], label: 'Model', feature: 'Speech', signal: controller.signal, onProgress: (p) => progress.push(p), selected: () => true, start })
     expect(result).toEqual({ ok: false, message: t('settingsModels.preparation.cancelled', { feature: 'Speech' }) })
     expect(progress.at(-1)?.status).toBe('cancelled')
     expect(start).not.toHaveBeenCalled()

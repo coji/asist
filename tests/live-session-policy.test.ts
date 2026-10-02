@@ -31,6 +31,32 @@ describe('LiveSessionPolicy', () => {
     expect(p.tick(66_000, false)).toBe('close')
   })
 
+  it('counts the quiet from when the assistant audio that arrived has played, however short it is', () => {
+    const p = policy()
+    p.opened(0)
+    // Ten seconds of a reply arrive at once.
+    p.assistantSpeaks(1000, 10_000)
+    expect(p.tick(15_999, false)).toBe('keep')
+    expect(p.tick(16_000, false)).toBe('close')
+
+    const q = policy()
+    q.opened(0)
+    // Under half a second of reply arrives late in the idle time and ends between two ticks.
+    q.assistantSpeaks(4300, 400)
+    expect(q.tick(5000, false)).toBe('keep')
+    expect(q.tick(9699, false)).toBe('keep')
+    expect(q.tick(9700, false)).toBe('close')
+  })
+
+  it('counts the quiet from an interruption, which drops the rest of the assistant audio', () => {
+    const p = policy()
+    p.opened(0)
+    p.assistantSpeaks(1000, 60_000)
+    p.assistantInterrupted(2000)
+    expect(p.tick(6999, false)).toBe('keep')
+    expect(p.tick(7000, false)).toBe('close')
+  })
+
   it('keeps preRollMs of audio while closed and hands it back in order once the session opens', () => {
     const p = policy()
     for (let i = 0; i < 10; i++) p.buffer(new Float32Array(4000).fill(i))

@@ -37,9 +37,9 @@ function modelOrThrow(): AsrModelSpec {
   return resolution.spec
 }
 
-/** The selected model, or null where there is none to start. */
-function startable(): AsrModelSpec | null {
-  const resolution = resolve()
+/** The model the setting stands for, or null where there is none to start. */
+function startable(selected?: AsrModel): AsrModelSpec | null {
+  const resolution = resolve(selected)
   return resolution.model === null ? null : resolution.spec
 }
 
@@ -91,8 +91,12 @@ export async function transcribePartial(samples: Float32Array): Promise<string> 
 
 export const cancelTranscription = local.cancelTranscription
 
-export function switchModel(): Promise<boolean> {
-  local.stop()
+/**
+ * Moves the server to the model the setting stands for now, from the one `previous` stood for. Auto and the
+ * model auto stands for are the same model, whose server and the transcription under way on it go on.
+ */
+export function switchModel(previous: AsrModel): Promise<boolean> {
+  if (startable(previous) !== startable()) local.stop()
   return ensureServer()
 }
 
@@ -103,7 +107,8 @@ export async function prepareModel(
   if (!isAsrModel(selected)) return { ok: false, message: t('speechRecognition.errors.unknownModel') }
   const resolution = resolve(selected)
   if (resolution.model === null) return { ok: false, message: t(LOCAL_SPEECH_UNAVAILABLE_TEXT[resolution.reason]) }
-  return local.prepare(resolution.spec, onProgress)
+  const { spec } = resolution
+  return local.prepare(spec, () => startable() === spec, onProgress)
 }
 
 export const cancelPreparation = local.cancelPreparation

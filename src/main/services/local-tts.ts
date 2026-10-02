@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
-import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, localTtsModel, type LocalTtsEngine, type LocalTtsModel } from '@shared/tts-models'
+import { IRODORI_TTS_MODEL, IRODORI_TTS_VOICE_IDS, QWEN_TTS_CODEC, QWEN_TTS_MODELS, isLocalTtsEngine, localTtsModel, type LocalTtsEngine, type LocalTtsModel } from '@shared/tts-models'
 import type { SetupProgress } from '@shared/ipc'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
@@ -278,33 +278,39 @@ export async function synthesizeWav(engine: LocalTtsEngine, request: LocalSpeech
   throw new Error(`${workerLabel} produced no plausible reading of "${request.text}" in ${CLIP_ATTEMPTS} attempts`)
 }
 
-let prepareInFlight: Promise<{ ok: boolean; message: string }> | null = null
-let prepareController: AbortController | null = null
+/** The preparation under way, with the key of the worker that runs the model whose files it fetches. */
+let preparation: { key: string; controller: AbortController; operation: Promise<{ ok: boolean; message: string }> } | null = null
 
-/** Downloads the files of the engine's model as the settings name it and starts the worker on them. Progress arrives through `onProgress`. */
+/**
+ * Downloads the files of the engine's model as the settings name it, and starts the worker on them if the
+ * settings still select that engine and size once the files are there. Progress arrives through `onProgress`.
+ */
 export function prepare(engine: LocalTtsEngine, onProgress: (progress: SetupProgress) => void): Promise<{ ok: boolean; message: string }> {
-  if (prepareInFlight) return prepareInFlight
+  if (preparation) return preparation.operation
   const controller = new AbortController()
-  prepareController = controller
-  const model = localTtsModel(engine, getSettings().qwenTtsSize)
+  const { key, model } = workerSpec(engine)
   const operation = prepareModelFiles({
     files: model.files,
     label: model.label,
     feature: model.label,
     signal: controller.signal,
     onProgress,
+    selected: () => {
+      const chosen = getSettings().ttsEngine
+      return isLocalTtsEngine(chosen) && workerSpec(chosen).key === key
+    },
     start: () => startWorker(engine)
   }).finally(() => {
-    if (prepareInFlight === operation) prepareInFlight = null
-    if (prepareController === controller) prepareController = null
+    if (preparation?.operation === operation) preparation = null
   })
-  prepareInFlight = operation
+  preparation = { key, controller, operation }
   return operation
 }
 
 export function cancelPreparation(): boolean {
-  if (!prepareController) return false
-  prepareController.abort()
-  stopWorker()
+  if (!preparation) return false
+  preparation.controller.abort()
+  // A worker on another model is the one the settings moved to while the files downloaded, which the preparation did not start.
+  if (workerKey === preparation.key) stopWorker()
   return true
 }

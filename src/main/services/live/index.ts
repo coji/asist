@@ -106,15 +106,20 @@ export function start(): Promise<LiveStartResult> {
     let reported = { seconds: 0, costUsd: 0 }
     created.events.on('audio', (samples) => events.emit('audio', samples))
     created.events.on('event', (event) => {
-      if (event.type === 'usage' && event.usage.costUsd > reported.costUsd) {
-        recordUsage({
-          kind: 'live',
-          engine: liveEngine,
-          model,
-          seconds: Math.max(event.usage.sessionSeconds - reported.seconds, 0),
-          costUsd: event.usage.costUsd - reported.costUsd
-        })
-        reported = { seconds: event.usage.sessionSeconds, costUsd: event.usage.costUsd }
+      if (event.type === 'usage') {
+        if (event.usage.costUsd > reported.costUsd) {
+          recordUsage({
+            kind: 'live',
+            engine: liveEngine,
+            model,
+            seconds: Math.max(event.usage.sessionSeconds - reported.seconds, 0),
+            costUsd: event.usage.costUsd - reported.costUsd
+          })
+          reported = { seconds: event.usage.sessionSeconds, costUsd: event.usage.costUsd }
+        }
+        // An engine that is stopping reports its last usage after the renderer cleared the live state of the
+        // microphone it turned off, which would then show a run that has ended. The ledger has it.
+        if (engine !== created) return
       }
       events.emit('event', event)
     })

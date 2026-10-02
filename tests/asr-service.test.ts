@@ -58,7 +58,7 @@ describe('ASR service routing', () => {
     mocks.settings.asrModel = 'qwen3-asr-0.6b'
     mocks.localEnsure.mockResolvedValue(true)
 
-    await expect(asr.switchModel()).resolves.toBe(true)
+    await expect(asr.switchModel('qwen3-asr-1.7b')).resolves.toBe(true)
     expect(mocks.localEnsure).toHaveBeenCalledWith(SMALL)
     expect(mocks.localStop.mock.invocationCallOrder[0]).toBeLessThan(mocks.localEnsure.mock.invocationCallOrder[0])
   })
@@ -100,7 +100,7 @@ describe('Windows with a discrete GPU', () => {
     mocks.localEnsure.mockResolvedValue(true)
     await asr.prepareModel('auto', vi.fn())
     await asr.ensureServer()
-    expect(mocks.localPrepare).toHaveBeenCalledWith(LARGE, expect.any(Function))
+    expect(mocks.localPrepare.mock.calls[0][0]).toBe(LARGE)
     expect(mocks.localEnsure).toHaveBeenCalledWith(LARGE)
   })
 

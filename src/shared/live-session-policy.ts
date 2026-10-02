@@ -39,6 +39,8 @@ export type LiveSessionDecision = 'open' | 'close' | 'keep'
 export class LiveSessionPolicy {
   private open = false
   private lastActivityAt = -Infinity
+  /** When the assistant's audio that has arrived ends playing, which can be well after it arrived. */
+  private speakingUntil = -Infinity
   private readonly preRoll: Float32Array[] = []
   private preRollSamples = 0
 
@@ -57,9 +59,19 @@ export class LiveSessionPolicy {
     this.open = false
   }
 
-  /** Called when the user spoke, the assistant spoke, or the brain did some work. */
+  /** Called when the user spoke or the brain did some work. */
   activity(now: number): void {
     this.lastActivityAt = now
+  }
+
+  /** Called when `ms` of the assistant's audio arrives, which plays once the audio before it has played. */
+  assistantSpeaks(now: number, ms: number): void {
+    this.speakingUntil = Math.max(this.speakingUntil, now) + ms
+  }
+
+  /** Called when the rest of the assistant's audio is dropped, as on an interruption. */
+  assistantInterrupted(now: number): void {
+    this.speakingUntil = now
   }
 
   /** Keeps audio recorded while the session is closed; takePreRoll hands it over to be sent first once it opens. */
@@ -86,8 +98,9 @@ export class LiveSessionPolicy {
   }
 
   /**
-   * Called periodically, and it closes the session once the conversation has been quiet for `idleMs`.
-   * While `working`, such as while a function call waits for approval, the quiet time does not start.
+   * Called periodically, and it closes the session once the conversation has been quiet for `idleMs`, counted
+   * from the later of the last activity and the end of the assistant's audio. While `working`, such as while
+   * a function call waits for approval, the quiet time does not start.
    */
   tick(now: number, working: boolean): LiveSessionDecision {
     if (!this.open) return 'keep'
@@ -95,6 +108,6 @@ export class LiveSessionPolicy {
       this.lastActivityAt = now
       return 'keep'
     }
-    return now - this.lastActivityAt >= this.options.idleMs ? 'close' : 'keep'
+    return now - Math.max(this.lastActivityAt, this.speakingUntil) >= this.options.idleMs ? 'close' : 'keep'
   }
 }
