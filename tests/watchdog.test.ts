@@ -6,12 +6,17 @@ import { EMBEDDING_MODEL } from '@shared/memory-embedding'
 
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
-  settings: { aizuchi: true, vapEnabled: true, conversationLocale: 'ja-JP', voiceEngine: 'cascade', uiLocale: 'en-US' },
+  settings: {
+    aizuchi: true, vapEnabled: true, conversationLocale: 'ja-JP', voiceEngine: 'cascade', uiLocale: 'en-US',
+    asrModel: 'qwen3-asr-1.7b', ttsEngine: 'qwen3tts', qwenTtsSize: '0.6b'
+  },
   startEmbedding: vi.fn(async () => false),
   ttsAnswered: vi.fn(),
   ttsUp: true,
   ttsStarting: false,
-  asrAvailable: async () => true
+  asrAvailable: async () => true,
+  asrRevive: async (): Promise<boolean> => true,
+  ensureEngine: vi.fn(async () => {})
 }))
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
@@ -19,8 +24,8 @@ vi.mock('electron', () => ({ app: {
   isPackaged: false, getAppPath: () => '/unused', getPath: () => '/unused', on: vi.fn()
 } }))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
-vi.mock('../src/main/services/asr', () => ({ available: () => mocks.asrAvailable(), revive: async () => true }))
-vi.mock('../src/main/services/tts', () => ({ available: async () => mocks.ttsUp, engineStarting: () => mocks.ttsStarting, ensureEngine: async () => true }))
+vi.mock('../src/main/services/asr', () => ({ available: () => mocks.asrAvailable(), revive: () => mocks.asrRevive() }))
+vi.mock('../src/main/services/tts', () => ({ available: async () => mocks.ttsUp, engineStarting: () => mocks.ttsStarting, ensureEngine: () => mocks.ensureEngine() }))
 vi.mock('../src/main/services/aizuchi', () => ({ ttsAnswered: mocks.ttsAnswered }))
 vi.mock('../src/main/services/memory', () => ({ startEmbeddingIfEnabled: mocks.startEmbedding }))
 
@@ -57,6 +62,9 @@ beforeEach(async () => {
   mocks.ttsUp = true
   mocks.ttsStarting = false
   mocks.asrAvailable = async () => true
+  mocks.asrRevive = async () => true
+  mocks.ensureEngine.mockReset().mockResolvedValue(undefined)
+  Object.assign(mocks.settings, { asrModel: 'qwen3-asr-1.7b', ttsEngine: 'qwen3tts', qwenTtsSize: '0.6b' })
   children = []
   mocks.spawn.mockReset().mockImplementation((_python: string, args: string[]) => {
     const child = fakeChild(args[0])
@@ -156,6 +164,18 @@ describe('the watchdog', () => {
     mocks.ttsStarting = false
     await watchdog.checkHealth()
     expect(onChange).toHaveBeenLastCalledWith({ asr: true, tts: true, ttsStarting: false })
+  })
+
+  it('reports speech recognition as down when starting it again fails, as in a build without llama-server, and logs why', async () => {
+    const failed = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const missing = new Error('llama-server is missing from /Applications/ASIST.app/Contents/Resources/llama.cpp/llama-server')
+    mocks.asrAvailable = async () => false
+    mocks.asrRevive = async () => { throw missing }
+    const onChange = vi.fn()
+    watchdog.start(onChange)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(onChange).toHaveBeenLastCalledWith({ asr: false, tts: true, ttsStarting: false })
+    expect(failed).toHaveBeenCalledWith(expect.any(String), missing)
   })
 
   it('checks again once a check that was under way when asked has ended, since that one may have read the old state', async () => {
@@ -290,5 +310,68 @@ describe('the watchdog', () => {
     await vi.advanceTimersByTimeAsync(120_000)
     expect(vapChildren()).toHaveLength(spawned)
     expect(spawned).toBeLessThan(7)
+  })
+})
+
+describe('the watchdog\'s starts of a speech engine that keeps failing to load', () => {
+  /** How each engine is made to fail, to answer, and to be chosen anew, with the times the watchdog asked for a start of it. */
+  const engines = {
+    'speech recognition': {
+      fail: (starts: number[]) => {
+        mocks.asrAvailable = async () => false
+        mocks.asrRevive = async () => { starts.push(Date.now()); return false }
+      },
+      answer: (up: boolean) => { mocks.asrAvailable = async () => up },
+      chooseAnother: () => { mocks.settings.asrModel = 'qwen3-asr-0.6b' }
+    },
+    'speech synthesis': {
+      fail: (starts: number[]) => {
+        mocks.ttsUp = false
+        mocks.ensureEngine.mockImplementation(async () => { starts.push(Date.now()) })
+      },
+      answer: (up: boolean) => { mocks.ttsUp = up },
+      chooseAnother: () => { mocks.settings.qwenTtsSize = '1.7b' }
+    }
+  }
+  beforeEach(() => {
+    // The other workers the watchdog keeps would only add starts of their own.
+    mocks.settings.aizuchi = false
+    mocks.settings.vapEnabled = false
+  })
+
+  it.each(Object.keys(engines) as Array<keyof typeof engines>)('waits longer and longer between its starts of %s, up to a limit, instead of loading it at every check', async (name) => {
+    const starts: number[] = []
+    engines[name].fail(starts)
+    watchdog.start(() => {})
+    await vi.advanceTimersByTimeAsync(2 * 60 * 60_000)
+    const gaps = starts.slice(1).map((at, index) => at - starts[index])
+    expect(gaps[0]).toBe(30_000)
+    for (let index = 1; index < gaps.length; index++) expect(gaps[index]).toBeGreaterThanOrEqual(gaps[index - 1])
+    expect(gaps.at(-1)).toBeGreaterThan(gaps[0] * 4)
+    expect(gaps.at(-1)).toBe(gaps.at(-2))
+  })
+
+  it.each(Object.keys(engines) as Array<keyof typeof engines>)('starts %s at the next check again once it has answered and gone down', async (name) => {
+    const starts: number[] = []
+    engines[name].fail(starts)
+    watchdog.start(() => {})
+    await vi.advanceTimersByTimeAsync(30 * 60_000)
+    engines[name].answer(true)
+    await vi.advanceTimersByTimeAsync(30_000)
+    engines[name].answer(false)
+    const before = starts.length
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(starts).toHaveLength(before + 1)
+  })
+
+  it.each(Object.keys(engines) as Array<keyof typeof engines>)('starts %s at the next check again once the settings choose another model', async (name) => {
+    const starts: number[] = []
+    engines[name].fail(starts)
+    watchdog.start(() => {})
+    await vi.advanceTimersByTimeAsync(30 * 60_000)
+    const before = starts.length
+    engines[name].chooseAnother()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(starts).toHaveLength(before + 1)
   })
 })

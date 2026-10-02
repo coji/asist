@@ -432,6 +432,7 @@ export const mockApi: RendererApi = {
   vapStatus: async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false }),
   vapPrepare: async () => ({ ok: false, message: 'demo' }),
   vapPrepareCancel: async () => false,
+  vapStop: async () => {},
   embeddingStatus: async () => ({
     runtimeInstalled: false,
     modelInstalled: false,

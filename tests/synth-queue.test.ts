@@ -160,6 +160,24 @@ describe('SynthQueue', () => {
     expect(segments.map((s) => s.text)).toEqual(['breaks', 'next'])
   })
 
+  it('ends a streamed sentence the engine stopped because the user chose another one without reporting a failure, and reads on', async () => {
+    const { queue, segments, audio, failures } = makeQueue({
+      synthesize: async (text) =>
+        text === 'cut'
+          ? streamed((async function* () {
+              yield new Float32Array([1])
+              throw new DOMException('stopped', 'AbortError')
+            })())
+          : { kind: 'whole', audio: 'wav', phonemes: null }
+    })
+    queue.push('cut')
+    queue.push('next')
+    await queue.drain()
+    expect(audio).toEqual([[0, [1], false], [0, [], true]])
+    expect(segments.map((s) => s.text)).toEqual(['cut', 'next'])
+    expect(failures).toEqual([])
+  })
+
   it('stops forwarding pieces and closes the segment when the turn is aborted during a streamed sentence', async () => {
     const controller = new AbortController()
     const { queue, audio } = makeQueue({

@@ -186,8 +186,13 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     }
   }
 
+  // A push has no caller to fail to. The screens read the status themselves too and show why it failed,
+  // as with an API key file that cannot be read, so a push that cannot compute it is only logged.
   const sendStatus = (): void => {
-    void computeStatus().then((status) => send(IpcChannel.StatusChanged, status))
+    computeStatus().then(
+      (status) => send(IpcChannel.StatusChanged, status),
+      (error: unknown) => console.error('the status could not be sent:', error)
+    )
   }
   watchdog.start(sendStatus)
   onCliSearched(sendStatus)
@@ -277,6 +282,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
     vap.prepare(reportProgress('vap'))
   )
   handle(IpcChannel.VapPrepareCancel, () => vap.cancelPreparation())
+  handle(IpcChannel.VapStop, () => vap.stop())
 
   handle(IpcChannel.EmbeddingStatus, () => memory.embeddingStatus())
   handle(IpcChannel.EmbeddingPrepare, async () => {

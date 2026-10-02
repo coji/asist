@@ -73,8 +73,9 @@ const RUNNERS: Record<
     },
     prepare: () => window.api.vapPrepare(),
     // MaAI runs on the CPU for the whole conversation, and on a 16 GB M2 it slowed Qwen3-TTS below real
-    // time so that replies stuttered (measured 2026-09-28). It is prepared here and turned on only by the user.
-    enable: async () => undefined
+    // time so that replies stuttered (measured 2026-09-28). It is prepared here and turned on only by the user,
+    // so the worker the preparation loaded to check is unloaded rather than left holding torch and its models.
+    enable: () => window.api.vapStop()
   }
 }
 

@@ -16,6 +16,7 @@ import { getSettings } from './settings'
 import * as localTts from './local-tts'
 import type { HttpTtsEngine, TtsVoice } from './tts-voice'
 import { childEnv } from './child-env'
+import { stopOnQuit } from './speech-worker'
 
 export type { TtsVoice } from './tts-voice'
 
@@ -86,6 +87,8 @@ export async function available(engine: TtsEngine = currentEngine()): Promise<bo
   if (engine === 'system') return true
   if (engine === 'none') return false
   if (isLocalTtsEngine(engine)) return localTts.available(engine)
+  // A process being stopped answers until it exits, and is not the engine chosen again.
+  if (processes.get(engine)?.stopping) return false
   try {
     const res = await fetch(`${ENGINES[engine].url}/version`, {
       signal: AbortSignal.timeout(1500)
@@ -96,27 +99,57 @@ export async function available(engine: TtsEngine = currentEngine()): Promise<bo
   }
 }
 
-const children = new Map<TtsEngine, ChildProcess>()
+/**
+ * A process this app started for an HTTP engine. One sent SIGTERM still answers until it exits, which took
+ * VOICEVOX 339 ms and AivisSpeech 437 ms on an Apple M5 (2026-10-02), and no longer counts as running.
+ */
+interface EngineProcess {
+  child: ChildProcess
+  /** Settles once the process has exited, or failed to start. */
+  exited: Promise<void>
+  stopping: boolean
+}
 
-/** Whether a process this app started for the engine is still alive, which is how a caller avoids waiting forever on an engine that is not installed. */
-export const engineStarting = (engine: TtsEngine = currentEngine()): boolean =>
-  isLocalTtsEngine(engine) ? localTts.isStarting() : children.has(engine)
-const starting = new Map<TtsEngine, Promise<void>>()
+/** The engines this app started itself. An engine the user started, or another app did, is never stopped here. */
+const processes = new Map<HttpTtsEngine, EngineProcess>()
+const starting = new Map<HttpTtsEngine, Promise<void>>()
+/** How long a process sent SIGTERM has before it is killed, since a start of its engine waits for it to end. */
+const STOP_GRACE_MS = 5_000
 
 /**
- * Starts the engine unless it is already running: an HTTP engine from the first executable that
- * exists, a local engine from its installed model. The speech worker holds about 2 GB, so it is
- * stopped as soon as an engine that does not use it is chosen.
+ * Whether this app is starting the engine or runs a process for it that is not being stopped, which is how a
+ * caller avoids waiting forever on an engine that is not installed.
  */
-export function ensureEngine(engine: TtsEngine = currentEngine()): Promise<void> {
+export function engineStarting(engine: TtsEngine = currentEngine()): boolean {
+  if (isLocalTtsEngine(engine)) return localTts.isStarting()
+  if (engine === 'system' || engine === 'none') return false
+  return starting.has(engine) || processes.get(engine)?.stopping === false
+}
+
+function stopProcess(owned: EngineProcess): void {
+  if (owned.stopping) return
+  owned.stopping = true
+  owned.child.kill('SIGTERM')
+  const kill = setTimeout(() => owned.child.kill('SIGKILL'), STOP_GRACE_MS)
+  kill.unref?.()
+  void owned.exited.then(() => clearTimeout(kill))
+}
+
+/**
+ * Starts the engine the settings choose unless it is already running: an HTTP engine from the first
+ * executable that exists, a local engine from its installed model. What this app runs for another engine is
+ * stopped as soon as this one is chosen: the speech worker holds about 2 GB, and an AivisSpeech Engine 1.2.0
+ * started here held 1.2 GB (Apple M5, 2026-10-02).
+ */
+export function ensureEngine(): Promise<void> {
+  const engine = currentEngine()
   // An engine this machine cannot run, such as Qwen3-TTS in settings brought from another machine, is
   // never started; reading with it fails with the reason instead.
-  if (!ttsEngineRuns(engine, platformCapabilities().localSpeech)) {
-    localTts.stop()
-    return Promise.resolve()
-  }
+  const runs = ttsEngineRuns(engine, platformCapabilities().localSpeech)
+  if (!runs || !isLocalTtsEngine(engine)) localTts.stop()
+  for (const [other, owned] of processes) if (other !== engine) stopProcess(owned)
+  if (!runs) return Promise.resolve()
   if (isLocalTtsEngine(engine)) return localTts.ensureWorker(engine).then(() => undefined)
-  localTts.stop()
   if (engine === 'system' || engine === 'none') return Promise.resolve()
   const pending = starting.get(engine)
   if (pending) return pending
@@ -128,19 +161,28 @@ export function ensureEngine(engine: TtsEngine = currentEngine()): Promise<void>
 }
 
 async function startEngine(engine: HttpTtsEngine): Promise<void> {
+  const previous = processes.get(engine)
   // While a process we own is alive, no second one is started, including the window after spawn in which
-  // its HTTP endpoint is not answering yet.
-  if (children.has(engine) || (await available(engine))) return
+  // its HTTP endpoint is not answering yet. One being stopped is waited for, and the engine started anew.
+  if (previous && !previous.stopping) return
+  if (previous) await previous.exited
+  if (await available(engine)) return
+  // Nothing stops a start the choice has moved on from while this waited: the watchdog asks for no start
+  // while the engine chosen now answers.
+  if (engine !== currentEngine()) return
   const binary = ENGINES[engine].binaries[platformCapabilities().os]().find((p): p is string => p !== undefined && fs.existsSync(p))
   if (!binary) return
   console.log(`starting ${ENGINES[engine].label} engine:`, binary)
-  const child = spawn(binary, [], { detached: true, stdio: 'ignore', cwd: path.dirname(binary), env: childEnv(), windowsHide: true })
-  children.set(engine, child)
+  const child = spawn(binary, [], { stdio: 'ignore', cwd: path.dirname(binary), env: childEnv(), windowsHide: true })
+  let settleExit!: () => void
+  const owned: EngineProcess = { child, exited: new Promise((resolve) => { settleExit = resolve }), stopping: false }
+  processes.set(engine, owned)
+  stopOnQuit(child)
   const clear = (): void => {
-    if (children.get(engine) === child) children.delete(engine)
+    if (processes.get(engine) === owned) processes.delete(engine)
+    settleExit()
   }
   child.once('exit', clear)
-  child.unref()
   await new Promise<void>((resolve, reject) => {
     child.once('spawn', resolve)
     child.once('error', (error) => {
@@ -382,7 +424,9 @@ export async function synthesizeSentence(text: string, locale: ConversationLocal
     }
     return { kind: 'stream', sampleRate: localTts.sampleRate(), pieces: rest() }
   } catch (err) {
-    if (signal?.aborted) throw err
+    // A sentence the worker was stopped for, because the user chose another engine, is no failure to read
+    // in the system voice: the sentences after it are read by the engine chosen now.
+    if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) throw err
     console.error('tts synthesize failed:', err instanceof Error ? err.message : err)
     return { kind: 'whole', audio: null, phonemes: null }
   }

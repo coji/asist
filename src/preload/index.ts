@@ -39,6 +39,7 @@ const api: RendererApi = {
   vapStatus: () => ipcRenderer.invoke(IpcChannel.VapStatus),
   vapPrepare: () => ipcRenderer.invoke(IpcChannel.VapPrepare),
   vapPrepareCancel: () => ipcRenderer.invoke(IpcChannel.VapPrepareCancel),
+  vapStop: () => ipcRenderer.invoke(IpcChannel.VapStop),
   embeddingStatus: () => ipcRenderer.invoke(IpcChannel.EmbeddingStatus),
   embeddingPrepare: () => ipcRenderer.invoke(IpcChannel.EmbeddingPrepare),
   embeddingPrepareCancel: () => ipcRenderer.invoke(IpcChannel.EmbeddingPrepareCancel),

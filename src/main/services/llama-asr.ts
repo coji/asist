@@ -16,8 +16,8 @@ import { stopOnQuit } from './speech-worker'
 
 /**
  * Speech recognition with Qwen3-ASR in llama.cpp's llama-server, on the GPU the capabilities chose. The
- * server listens on the loopback interface with a key made for each start, so that no other process on
- * the machine can use it, and transcribes one request at a time. A recording goes to it as a WAV in the
+ * server listens on the loopback interface with a key made for each start, so that neither a web page nor
+ * another user of the machine can use it, and transcribes one request at a time. A recording goes to it as a WAV in the
  * request body and is never written to disk.
  */
 
@@ -111,6 +111,10 @@ function logLevels(stderr: NodeJS.ReadableStream): void {
 async function launch(started: Server, device: string): Promise<boolean> {
   started.port = await freePort()
   if (started.stopped) return false
+  // The key goes in the environment, not on the command line: a Mac's ps is setuid root and shows every
+  // user the arguments of all processes, and the environment of their own processes alone (macOS 26.2,
+  // 2026-10-02). llama-server reads it from there as it would from --api-key.
+  const env = { ...llamaServerEnv(), LLAMA_API_KEY: started.key }
   const child = spawn(llamaServerPath(), [
     '--model', modelFilePath(started.model.model),
     '--mmproj', modelFilePath(started.model.mmproj),
@@ -120,7 +124,6 @@ async function launch(started: Server, device: string): Promise<boolean> {
     '--parallel', '1',
     '--host', '127.0.0.1',
     '--port', String(started.port),
-    '--api-key', started.key,
     '--no-webui',
     '--offline',
     // Warnings and errors only; the informational lines run to hundreds per start.
@@ -128,7 +131,7 @@ async function launch(started: Server, device: string): Promise<boolean> {
     // On Windows the automatic setting colours output that goes to a pipe, and the escape codes reach the log.
     '--log-colors', 'off',
     '--no-log-timestamps'
-  ], { stdio: ['ignore', 'ignore', 'pipe'], env: llamaServerEnv(), windowsHide: true })
+  ], { stdio: ['ignore', 'ignore', 'pipe'], env, windowsHide: true })
   started.child = child
   stopOnQuit(child)
   logLevels(child.stderr!)

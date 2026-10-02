@@ -19,6 +19,7 @@ export const rendererApiMethods = [
   'vapStatus',
   'vapPrepare',
   'vapPrepareCancel',
+  'vapStop',
   'embeddingStatus',
   'embeddingPrepare',
   'embeddingPrepareCancel',

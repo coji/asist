@@ -75,6 +75,8 @@ export class SynthQueue {
         }
       } catch (err) {
         if (signal.aborted) break
+        // The speech engine stopped this sentence because the user chose another one, which reads the rest.
+        if (err instanceof DOMException && err.name === 'AbortError') continue
         // The reply itself is already on screen and the sentences after this one may still be
         // spoken, so a failure skips the sentence instead of ending the turn. It does not pass in
         // silence either: the user is told once, because a setting that leaves the engine unable to

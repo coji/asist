@@ -808,6 +808,7 @@ export const IpcChannel = {
   VapStatus: 'vap-status',
   VapPrepare: 'vap-prepare',
   VapPrepareCancel: 'vap-prepare-cancel',
+  VapStop: 'vap-stop',
   EmbeddingStatus: 'embedding-status',
   EmbeddingPrepare: 'embedding-prepare',
   EmbeddingPrepareCancel: 'embedding-prepare-cancel',
@@ -962,6 +963,8 @@ export interface RendererApi {
   /** Prepares the Python environment and the models for VAP. Progress arrives through onSetupProgress. */
   vapPrepare(): Promise<{ ok: boolean; message: string }>
   vapPrepareCancel(): Promise<boolean>
+  /** Unloads the worker a preparation left loaded, which the first-run setup does since it leaves MaAI off. */
+  vapStop(): Promise<void>
   embeddingStatus(): Promise<EmbeddingStatus>
   /** Prepares the Python environment and the model for the memory embedding. Progress arrives through onSetupProgress. */
   embeddingPrepare(): Promise<{ ok: boolean; message: string }>

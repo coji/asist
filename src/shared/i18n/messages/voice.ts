@@ -219,6 +219,58 @@ export const voice = defineMessages({
       'pt-BR': '{engine} não funciona neste sistema operacional.',
       'es-419': '{engine} no funciona en este sistema operativo.',
       'es-ES': '{engine} no funciona en este sistema operativo.'
+    },
+    engineFailed: {
+      'ja-JP': '{engine} で読み上げられませんでした({detail})。',
+      'en-US': "{engine} couldn't read aloud ({detail}).",
+      'fr-FR': "{engine} n'a pas pu lire le texte à voix haute ({detail}).",
+      'de-DE': '{engine} konnte den Text nicht vorlesen ({detail}).',
+      'hi-IN': '{engine} से पढ़कर सुनाया नहीं जा सका ({detail})।',
+      'id-ID': '{engine} tidak bisa membacakan teksnya ({detail}).',
+      'it-IT': '{engine} non è riuscito a leggere il testo ad alta voce ({detail}).',
+      'ko-KR': '{engine}에서 읽어주지 못했습니다({detail}).',
+      'pt-BR': '{engine} não conseguiu ler o texto em voz alta ({detail}).',
+      'es-419': '{engine} no pudo leer el texto en voz alta ({detail}).',
+      'es-ES': '{engine} no ha podido leer el texto en voz alta ({detail}).'
+    },
+    engineStopped: {
+      'ja-JP': '{engine} の読み上げを止めました。',
+      'en-US': 'Stopped reading aloud with {engine}.',
+      'fr-FR': 'La lecture à voix haute avec {engine} a été arrêtée.',
+      'de-DE': 'Das Vorlesen mit {engine} wurde beendet.',
+      'hi-IN': '{engine} से पढ़कर सुनाना रोक दिया गया।',
+      'id-ID': 'Pembacaan dengan {engine} dihentikan.',
+      'it-IT': 'La lettura ad alta voce con {engine} è stata interrotta.',
+      'ko-KR': '{engine}의 읽어주기를 멈췄습니다.',
+      'pt-BR': 'A leitura em voz alta com {engine} foi interrompida.',
+      'es-419': 'Se detuvo la lectura en voz alta con {engine}.',
+      'es-ES': 'Se ha detenido la lectura en voz alta con {engine}.'
+    },
+    engineNoResponse: {
+      'ja-JP': '{engine} が読み上げの途中で応答しなくなりました。',
+      'en-US': '{engine} stopped responding while reading aloud.',
+      'fr-FR': '{engine} a cessé de répondre pendant la lecture à voix haute.',
+      'de-DE': '{engine} reagierte beim Vorlesen nicht mehr.',
+      'hi-IN': 'पढ़कर सुनाते समय {engine} ने जवाब देना बंद कर दिया।',
+      'id-ID': '{engine} berhenti merespons saat membacakan teks.',
+      'it-IT': '{engine} ha smesso di rispondere durante la lettura ad alta voce.',
+      'ko-KR': '읽어주는 도중에 {engine}의 응답이 끊겼습니다.',
+      'pt-BR': '{engine} parou de responder durante a leitura em voz alta.',
+      'es-419': '{engine} dejó de responder durante la lectura en voz alta.',
+      'es-ES': '{engine} ha dejado de responder durante la lectura en voz alta.'
+    },
+    engineFailedWithoutReason: {
+      'ja-JP': '{engine} で読み上げられませんでした。',
+      'en-US': "{engine} couldn't read aloud.",
+      'fr-FR': "{engine} n'a pas pu lire le texte à voix haute.",
+      'de-DE': '{engine} konnte den Text nicht vorlesen.',
+      'hi-IN': '{engine} से पढ़कर सुनाया नहीं जा सका।',
+      'id-ID': '{engine} tidak bisa membacakan teksnya.',
+      'it-IT': '{engine} non è riuscito a leggere il testo ad alta voce.',
+      'ko-KR': '{engine}에서 읽어주지 못했습니다.',
+      'pt-BR': '{engine} não conseguiu ler o texto em voz alta.',
+      'es-419': '{engine} no pudo leer el texto en voz alta.',
+      'es-ES': '{engine} no ha podido leer el texto en voz alta.'
     }
   },
   live: {

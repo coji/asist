@@ -55,6 +55,13 @@ describe('TTS service with Qwen3-TTS', () => {
     expect(await tts.synthesizeSentence('こんにちは。', 'ja-JP')).toEqual({ kind: 'whole', audio: null, phonemes: null })
   })
 
+  it('ends a sentence the engine was stopped for before its first piece as stopped, not by reading it in the system voice', async () => {
+    // The worker is stopped when the user chooses another engine, and the sentences after this one are read by that engine.
+    mocks.stream.mockReturnValue((async function* (): AsyncGenerator<Float32Array> { throw new DOMException('stopped', 'AbortError') })())
+    const tts = await import('../src/main/services/tts')
+    await expect(tts.synthesizeSentence('こんにちは。', 'ja-JP')).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('rejects instead of falling back when the turn was aborted', async () => {
     const controller = new AbortController()
     mocks.stream.mockReturnValue((async function* (): AsyncGenerator<Float32Array> {
@@ -75,10 +82,11 @@ describe('TTS service with Qwen3-TTS', () => {
 
   it('frees the worker\'s memory when another engine is chosen', async () => {
     const tts = await import('../src/main/services/tts')
-    await tts.ensureEngine('qwen3tts')
+    await tts.ensureEngine()
     expect(mocks.ensureWorker).toHaveBeenCalledOnce()
     expect(mocks.stop).not.toHaveBeenCalled()
-    await tts.ensureEngine('system')
+    mocks.settings.ttsEngine = 'system'
+    await tts.ensureEngine()
     expect(mocks.stop).toHaveBeenCalledOnce()
   })
 })
@@ -108,7 +116,7 @@ describe('TTS service with Irodori-TTS', () => {
 
   it('starts the worker on Irodori-TTS when it is chosen', async () => {
     const tts = await import('../src/main/services/tts')
-    await tts.ensureEngine('irodori')
+    await tts.ensureEngine()
     expect(mocks.ensureWorker).toHaveBeenCalledWith('irodori')
     expect(mocks.stop).not.toHaveBeenCalled()
   })

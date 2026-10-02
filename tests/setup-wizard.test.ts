@@ -97,6 +97,7 @@ const api = {
   aizuchiClassifierPrepare: vi.fn(async () => ({ ok: true, message: '' })),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: true, modelsInstalled: true, running: false })),
   vapPrepare: vi.fn(async () => ({ ok: true, message: '' })),
+  vapStop: vi.fn(async () => {}),
   ttsTest: vi.fn(async () => ({ audio: new ArrayBuffer(0), text: '' })),
   requestMicPermission: vi.fn(async () => true),
   openExternal: vi.fn(async () => {})
@@ -297,6 +298,27 @@ describe('first-run setup', () => {
     expect(api.vapStatus).toHaveBeenCalled()
     expect(api.saveSettings).toHaveBeenCalledWith({ memoryEmbeddingEnabled: true })
     expect(api.saveSettings.mock.calls.some(([patch]) => 'vapEnabled' in patch)).toBe(false)
+  })
+
+  it('unloads the MaAI worker its preparation loaded to check, since the setup leaves MaAI off', async () => {
+    status = { ...status, asr: true }
+    api.vapStatus.mockResolvedValueOnce({ runtimeInstalled: false, modelsInstalled: false, running: false })
+    await render()
+    const t = createTranslator('ja-JP')
+    await toModel(t)
+    await verifyKey(t)
+    await press(t('setup.next'))
+    await press(t('setup.speaking.voice.title'))
+    await press(t('setup.next'))
+    await press(t('setup.next'))
+    await press(t('settings.ttsEngine.system.macos'))
+    await press(t('setup.next'))
+    await press(t('setup.mic.check'))
+    await press(t('setup.next'))
+    await vi.waitFor(() => expect(button(t('setup.next')).disabled).toBe(false))
+    expect(api.vapPrepare).toHaveBeenCalled()
+    expect(api.vapStop).toHaveBeenCalled()
+    expect(api.vapStop.mock.invocationCallOrder[0]).toBeGreaterThan(api.vapPrepare.mock.invocationCallOrder[0])
   })
 
   it('offers Qwen3-TTS and the macOS voice and prepares only the search model when the conversation is not in Japanese', async () => {

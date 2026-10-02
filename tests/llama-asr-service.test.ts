@@ -40,6 +40,7 @@ function fakeChild() {
 interface Started {
   child: ReturnType<typeof fakeChild>
   args: string[]
+  env: NodeJS.ProcessEnv
 }
 let started: Started[] = []
 /** Whether /health answers, which is when a server has loaded its model. */
@@ -59,9 +60,9 @@ beforeEach(async () => {
   requests.length = 0
   answer = async () => chat('language Japanese<asr_text>こんにちは。')
   vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-  mocks.spawn.mockReset().mockImplementation((_command: string, args: string[]) => {
+  mocks.spawn.mockReset().mockImplementation((_command: string, args: string[], options: { env: NodeJS.ProcessEnv }) => {
     const child = fakeChild()
-    started.push({ child, args })
+    started.push({ child, args, env: options.env })
     return child
   })
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
@@ -91,15 +92,22 @@ describe('speech recognition on llama-server', () => {
     expect(path.basename(argAfter(args, '--mmproj'))).toBe(MODEL.mmproj.file)
     expect(argAfter(args, '--device')).toBe('MTL0')
     expect(argAfter(args, '--host')).toBe('127.0.0.1')
-    expect(argAfter(args, '--api-key')).toMatch(/^[0-9a-f]{48}$/)
+    expect(started[0].env.LLAMA_API_KEY).toMatch(/^[0-9a-f]{48}$/)
     expect(args).toContain('--offline')
+  })
+
+  it('keeps the key the requests carry off the server\'s command line, which any user of the machine can read', async () => {
+    await asr.transcribe(MODEL, new Float32Array(1600), 'r0')
+    const key = requests[0].headers.authorization.replace(/^Bearer /, '')
+    expect(key).toMatch(/^[0-9a-f]{48}$/)
+    expect(started[0].args.some((arg) => arg.includes(key))).toBe(false)
   })
 
   it('sends the recording as a 16 kHz mono WAV with the key, fixes the language by the start of the answer, and returns the text alone', async () => {
     const samples = new Float32Array(16_000).fill(0.25)
     await expect(asr.transcribe(MODEL, samples, 'r1')).resolves.toBe('こんにちは。')
     const [request] = requests
-    expect(request.headers.authorization).toBe(`Bearer ${argAfter(started[0].args, '--api-key')}`)
+    expect(request.headers.authorization).toBe(`Bearer ${started[0].env.LLAMA_API_KEY}`)
     const [user, assistant] = request.body.messages as Array<{ role: string; content: unknown }>
     expect(assistant).toEqual({ role: 'assistant', content: 'language Japanese<asr_text>' })
     const audio = (user.content as Array<{ type: string; input_audio: { data: string; format: string } }>)[0]
@@ -303,10 +311,13 @@ describe('the environment of llama-server', () => {
   it('starts the server without the user\'s llama.cpp settings, which would move it off the plain HTTP and /health it is reached at', async () => {
     vi.stubEnv('LLAMA_ARG_API_PREFIX', '/llama')
     vi.stubEnv('LLAMA_ARG_SSL_KEY_FILE', '/Users/someone/server.key')
+    vi.stubEnv('LLAMA_API_KEY', 'the-users-own-key')
     vi.stubEnv('GGML_VK_VISIBLE_DEVICES', '1')
     await expect(asr.ensureServer(MODEL)).resolves.toBe(true)
     const env = mocks.spawn.mock.calls[0][2].env as NodeJS.ProcessEnv
-    expect(Object.keys(env).filter((name) => name.startsWith('LLAMA_'))).toEqual([])
+    // The one llama.cpp variable left is the key ASIST made for this start.
+    expect(Object.keys(env).filter((name) => name.startsWith('LLAMA_'))).toEqual(['LLAMA_API_KEY'])
+    expect(env.LLAMA_API_KEY).not.toBe('the-users-own-key')
     // A GGML_ variable picks the GPU, which a user may set on purpose for every program that uses ggml.
     expect(env.GGML_VK_VISIBLE_DEVICES).toBe('1')
   })
