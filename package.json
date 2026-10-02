@@ -25,6 +25,7 @@
     "demo:setup": "node scripts/cdp/scenes/setup.mjs",
     "demo:docs-shots": "node scripts/cdp/scenes/docs-shots.mjs",
     "demo:fit": "node scripts/cdp/scenes/fit.mjs",
+    "demo:viewer-budgets": "node scripts/cdp/scenes/viewer-budgets.mjs",
     "gen:live-voices": "node scripts/gen-live-voices.mjs",
     "i18n": "node scripts/i18n.mjs",
     "website": "npm --prefix website run dev --",

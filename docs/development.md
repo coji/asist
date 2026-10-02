@@ -81,7 +81,7 @@ GitHub Actions(`.github/workflows/ci.yml`)が、main への push と pull reques
 
 | job | 確かめること |
 | --- | --- |
-| `test` | `npm run typecheck`、`npm run i18n -- check`、`npm test` |
+| `test` | `npm run typecheck`、`npm run i18n -- check`、`npm test`、そのあとに `npm run demo:viewer-budgets -- --time-factor 3`。最後のものは、ファイルのカードの各ビューアーが大きなファイルを決めた時間とメモリの中で表示できることを確かめます。共有の runner は遅いので、時間だけを 3 倍まで許します。macOS の runner をもう 1 台使わないように、この job の中で動かします |
 | `fit` | `npm run demo:fit`。11 の言語とすべてのテーマで、カードと画面の文字が収まっていること。テーマを 2 台に分けて(`--shard 1/2` と `2/2`)同時に調べます |
 | `build` | `npm run dist:mac:unsigned` でネイティブのヘルパー、git、uv を含めて署名なしのアプリまで作り、アプリの中の git と uv が動くこと |
 | `test-windows` | Windows で `npm run typecheck` と `npm test`。辞書は OS に依らないので、`test` だけで確かめます |
@@ -125,6 +125,7 @@ npm run demo
 | `npm run demo:setup` | 初回セットアップを最初から最後まで歩いて撮ります。 |
 | `npm run demo:docs-shots` | README とドキュメントに載せる画面を、日本語と英語で `website/public/screens/` に撮り直します。 |
 | `npm run demo:fit` | 全言語で、カードと画面の文言が収まるかを調べます。1 分ほどかかります。 |
+| `npm run demo:viewer-budgets` | 大きな PDF、Office のファイル、音声などを一時フォルダに作り、ファイルのカードとその拡大表示で開いて最後までスクロールし、表示までの時間、メイン スレッドが止まった最長の時間、レンダラーのメモリを測ります。`scripts/cdp/scenes/viewer-budgets/` の case に書いた上限を超えると終了コード 2 で終わります。ビューアーが中身の代わりにエラーや「大きすぎる」の表示を出したとき、拡大表示をスクロールした先の中身が出てこないとき、ページかその中のフレームが落ちたときも失敗です。`--measure all` は上限なしで全部のファイルを測ります。メモリは `ps` で読むので、Windows では測れずにエラーで止まります。MP3 を作るには `lame` が、m4a を作るには macOS の `afconvert` が要ります。 |
 
 実際のサービスを使うセルフテストは、API キーと音声のサービスを用意し、ビルドのあとに実行します。
 

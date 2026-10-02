@@ -1,10 +1,13 @@
 import type { Root } from 'react-dom/client'
 import { defaultRegion } from '@shared/conversation-locale'
+import { baseName } from '@shared/file-path'
+import { classifyFile, type FileItem } from '@shared/files'
 import type { UiLocale } from '@shared/i18n'
 import { osMessageKey, type OsMessageKey } from '@shared/i18n/os-message'
+import { catalogByType } from '@shared/panel-catalog'
 import { translate } from '@/i18n'
 import { loadPlatformCapabilities, platformCapabilities } from '@/platform'
-import { useSettingsStore } from '@/state/stores'
+import { usePanelStore, useSettingsStore } from '@/state/stores'
 import { applyTheme, DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
 import { PREVIEW_PAGE } from '@shared/preview-page'
 import { servePreviewFrom } from '@/panels/viewers/preview-client'
@@ -45,7 +48,8 @@ export async function bootDemo(root: Root): Promise<boolean> {
       await useSettingsStore.getState().load()
     },
     demoText,
-    demoOsText
+    demoOsText,
+    demoShowFile
   })
   console.info('ASIST: explicit development demo mode (no Electron preload)')
   const params = new URLSearchParams(location.search)
@@ -102,6 +106,19 @@ function demoText(key: string, values?: Record<string, string | number>): string
   } catch (cause) {
     throw new Error(`辞書に ${key} というキーはありません`, { cause })
   }
+}
+
+/**
+ * Shows one file on the files card, as show_files does once main has read it, and returns the card's key. The
+ * file is any file a capture script serves at `url`, such as the generated files of demo:viewer-budgets, so its
+ * item is built here the way main builds one (src/main/services/file-preview.ts) instead of from the fixtures.
+ */
+function demoShowFile({ path, url, sizeBytes }: { path: string; url: string; sizeBytes: number }): string {
+  const item: FileItem = { path, name: baseName(path), kind: classifyFile(path), sizeBytes, modifiedAt: Date.now(), url }
+  const key = `files:${path}`
+  const slot = catalogByType.get('files')!.slot
+  usePanelStore.getState().apply({ op: 'create', key, type: 'files', slot, props: { paths: [path], items: [item] }, state: 'ready' })
+  return key
 }
 
 /** The text of a message written once per OS, for the OS the demo's capabilities name, as the screens pick it. */

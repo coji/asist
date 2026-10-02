@@ -55,8 +55,9 @@ export function windowSize(value) {
 /**
  * Starts headless Chrome with a CDP port and a profile of its own in the temporary folder, and returns the
  * port and close(), which stops Chrome and removes the profile once Chrome has exited. Port 0 picks a free one.
+ * `args` are flags added to the usual ones.
  */
-export async function launchChrome({ port = 0, url = 'about:blank' } = {}) {
+export async function launchChrome({ port = 0, url = 'about:blank', args = [] } = {}) {
   const profile = await mkdtemp(path.join(os.tmpdir(), 'asist-chrome-'))
   const child = spawn(chromePath(), [
     '--headless=new',
@@ -65,6 +66,7 @@ export async function launchChrome({ port = 0, url = 'about:blank' } = {}) {
     '--no-first-run',
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profile}`,
+    ...args,
     url
   ])
   const exited = new Promise((resolve) => child.once('exit', resolve))
@@ -110,21 +112,14 @@ export async function connect(port) {
   }
   const page = targets.find((t) => t.type === 'page')
   if (!page) throw new Error('page target がありません')
-  const ws = new WebSocket(page.webSocketDebuggerUrl)
-  await new Promise((resolve, reject) => {
-    ws.addEventListener('open', resolve)
-    ws.addEventListener('error', () => reject(new Error('CDP に接続できません')))
-  })
-  let seq = 0
-  const pending = new Map()
+  const { send, onEvent, close } = await openSocket(page.webSocketDebuggerUrl)
   /**
    * The last navigation, or the page as it was when connected: its URL, when it began, and since then the
    * uncaught errors of the page and the errors the browser logged, such as a module it could not load.
    * waitForApp reports them when the page never renders.
    */
   let navigation = { url: page.url, at: Date.now(), exceptions: [], logged: [] }
-  ws.addEventListener('message', (event) => {
-    const msg = JSON.parse(event.data)
+  onEvent((msg) => {
     if (msg.method === 'Runtime.exceptionThrown') {
       const details = msg.params.exceptionDetails
       navigation.exceptions.push({ at: Date.now(), text: details.exception?.description ?? details.text })
@@ -133,22 +128,12 @@ export async function connect(port) {
       const { text, url } = msg.params.entry
       navigation.logged.push(url ? `${text} ${url}` : text)
     }
-    if (msg.id && pending.has(msg.id)) {
-      const { resolve, reject } = pending.get(msg.id)
-      pending.delete(msg.id)
-      msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result)
-    }
   })
-  const send = (method, params = {}) =>
-    new Promise((resolve, reject) => {
-      const id = ++seq
-      pending.set(id, { resolve, reject })
-      ws.send(JSON.stringify({ id, method, params }))
-    })
   await send('Runtime.enable')
   await send('Log.enable')
   return {
     send,
+    onEvent,
     async evaluate(expression) {
       const { result, exceptionDetails } = await send('Runtime.evaluate', {
         expression,
@@ -177,6 +162,52 @@ export async function connect(port) {
       if (clip) params.clip = { ...clip, scale: 1 }
       const { data } = await send('Page.captureScreenshot', params)
       return Buffer.from(data, 'base64')
+    },
+    close
+  }
+}
+
+/**
+ * Connects to the browser itself rather than to a page, for what only the browser answers, such as the
+ * processes it runs (SystemInfo.getProcessInfo) and the targets it holds. A command for a target the browser
+ * session attached to with `flatten: true` carries that target's session id as the third argument of send.
+ */
+export async function connectBrowser(port) {
+  const { webSocketDebuggerUrl } = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json()
+  return openSocket(webSocketDebuggerUrl)
+}
+
+/** Opens a CDP WebSocket and returns how to send a command on it and how to hear its events. */
+async function openSocket(url) {
+  const ws = new WebSocket(url)
+  await new Promise((resolve, reject) => {
+    ws.addEventListener('open', resolve)
+    ws.addEventListener('error', () => reject(new Error('CDP に接続できません')))
+  })
+  let seq = 0
+  const pending = new Map()
+  const listeners = new Set()
+  ws.addEventListener('message', (event) => {
+    const msg = JSON.parse(event.data)
+    if (msg.id && pending.has(msg.id)) {
+      const { resolve, reject } = pending.get(msg.id)
+      pending.delete(msg.id)
+      msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result)
+    } else if (msg.method) {
+      for (const listener of listeners) listener(msg)
+    }
+  })
+  return {
+    send: (method, params = {}, sessionId = undefined) =>
+      new Promise((resolve, reject) => {
+        const id = ++seq
+        pending.set(id, { resolve, reject })
+        ws.send(JSON.stringify({ id, method, params, sessionId }))
+      }),
+    /** Calls the listener with every event, until the function it returns is called. */
+    onEvent: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
     },
     close: () => ws.close()
   }

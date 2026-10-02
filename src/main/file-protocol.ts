@@ -3,6 +3,7 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { protocol, type CustomScheme } from 'electron'
+import { parseRange } from '@shared/byte-range'
 import { PREVIEW_ORIGIN } from '@shared/preview-page'
 import { allowedPath } from './services/file-preview'
 
@@ -194,19 +195,6 @@ export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
   } catch {
     return null
   }
-}
-
-/**
- * Turns a Range header of the form `bytes=a-b`, `bytes=a-` or `bytes=-n` (the last n bytes) into [start, end]
- * within the file, or null when no byte of the file is in it.
- */
-export function parseRange(header: string | null, size: number): { start: number; end: number } | null {
-  const m = header ? /^bytes=(\d*)-(\d*)$/.exec(header.trim()) : null
-  if (!m || (m[1] === '' && m[2] === '')) return null
-  const suffix = m[1] === ''
-  const start = suffix ? Math.max(0, size - Number(m[2])) : Number(m[1])
-  const end = suffix || m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1)
-  return start > end ? null : { start, end }
 }
 
 /**

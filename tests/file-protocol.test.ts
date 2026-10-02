@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { parseRange } from '../src/shared/byte-range'
 import { allowedPath, type PathSystem } from '../src/main/services/file-preview'
 import { PREVIEW_ORIGIN } from '../src/shared/preview-page'
 
@@ -153,16 +154,14 @@ describe('asist-file:// URLs and paths', () => {
 })
 
 describe('the Range header that video and audio use to seek', () => {
-  it('turns bytes=a-b, bytes=a- and bytes=-n into a start and an end', async () => {
-    const { parseRange } = await load()
+  it('turns bytes=a-b, bytes=a- and bytes=-n into a start and an end', () => {
     expect(parseRange('bytes=0-99', 1000)).toEqual({ start: 0, end: 99 })
     expect(parseRange('bytes=500-', 1000)).toEqual({ start: 500, end: 999 })
     expect(parseRange('bytes=-100', 1000)).toEqual({ start: 900, end: 999 })
     expect(parseRange('bytes=0-5000', 1000)).toEqual({ start: 0, end: 999 })
   })
 
-  it('returns null for an invalid range, so the whole file is served', async () => {
-    const { parseRange } = await load()
+  it('returns null for an invalid range, so the whole file is served', () => {
     expect(parseRange(null, 1000)).toBeNull()
     expect(parseRange('bytes=', 1000)).toBeNull()
     expect(parseRange('bytes=1000-', 1000)).toBeNull()
@@ -171,7 +170,7 @@ describe('the Range header that video and audio use to seek', () => {
   })
 
   it('finds no byte of an empty file, and serves the empty file whole when its last bytes are asked for', async () => {
-    const { fileUrl, parseRange } = await load()
+    const { fileUrl } = await load()
     expect(parseRange('bytes=-100', 0)).toBeNull()
     expect(parseRange('bytes=0-', 0)).toBeNull()
     const folder = mkdtempSync(path.join(tmpdir(), 'asist-file-protocol-'))
