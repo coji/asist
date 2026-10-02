@@ -1105,19 +1105,6 @@ export const calendar = defineMessages({
       'es-419': 'El evento que se va a guardar',
       'es-ES': 'El evento que se guarda'
     },
-    allDayZone: {
-      'ja-JP': '{zone}・終日(終了日は含みません)',
-      'en-US': '{zone} · All day (the end date is not included)',
-      'fr-FR': "{zone} · Journée entière (la date de fin n'est pas comprise)",
-      'de-DE': '{zone} · Ganztägig (der Endtag zählt nicht mit)',
-      'hi-IN': '{zone} · पूरे दिन (आखिरी तारीख़ शामिल नहीं)',
-      'id-ID': '{zone} · Sepanjang hari (tanggal akhirnya tidak termasuk)',
-      'it-IT': '{zone} · Tutto il giorno (la data di fine non è compresa)',
-      'ko-KR': '{zone} · 종일(종료일은 포함하지 않습니다)',
-      'pt-BR': '{zone} · Dia inteiro (a data final não entra)',
-      'es-419': '{zone} · Todo el día (la fecha de fin no se incluye)',
-      'es-ES': '{zone} · Todo el día (la fecha de fin no se incluye)'
-    },
     location: {
       'ja-JP': '場所: {location}',
       'en-US': 'Location: {location}',

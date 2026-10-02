@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { addDays, lastInstant, parseDayKey } from './calendar-layout'
 import { dateLabel, promptText, type ConversationLocale, type PromptText } from './conversation-locale'
+import type { Translate } from './i18n'
 import { errorText } from './i18n/error-text'
 import { bilingual } from './tool-registry'
 
@@ -275,6 +276,46 @@ function beginsDay(at: number, timeZone: string): boolean {
   const clock = clockIn(at, timeZone)
   const midnight = clock.hour === '00' && clock.minute === '00' && clock.second === '00' && new Date(at).getUTCMilliseconds() === 0
   return midnight || dateIn(at - 1, timeZone) < dateIn(at, timeZone)
+}
+
+/** The instant a date written "2026-09-06" begins in UTC, where every day is 24 hours long. */
+function utcDay(date: string): number {
+  const [year, month, day] = date.split('-').map(Number)
+  return Date.UTC(year, month - 1, day)
+}
+
+type DescribedEvent = Pick<CalendarEvent, 'title' | 'start' | 'end' | 'allDay' | 'timeZone' | 'location' | 'notes'>
+
+/**
+ * When an event happens, as the confirmation window writes it. An event with times shows its start and its
+ * end on the clock of its time zone. An all-day event shows the days it covers, the last one included, as
+ * the event card does: its bounds only mark where its days begin in its time zone, which on a day whose
+ * midnight is skipped is 01:00, and Google keeps nothing of it but the dates.
+ */
+function describeWhen(t: Translate, locale: string, event: DescribedEvent): string {
+  if (!event.allDay) {
+    const format = new Intl.DateTimeFormat(locale, { timeZone: event.timeZone, dateStyle: 'full', timeStyle: 'short' })
+    return `${format.format(event.start)} → ${format.format(event.end)}`
+  }
+  // The last day is the date before the end's, counted on the calendar: the instant before the end lies on
+  // the end's own date when the end is the second of the two midnights of a day whose clock turns back.
+  // An event without length covers the day it starts on, as lastInstant has it.
+  const first = utcDay(dateIn(event.start, event.timeZone))
+  const last = Math.max(first, utcDay(dateIn(event.end, event.timeZone)) - DAY_MS)
+  const format = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', dateStyle: 'full' })
+  return first === last ? format.format(first) : t('calendar.dateRange', { from: format.format(first), until: format.format(last) })
+}
+
+/** An event as the confirmation window of a change shows it, in the language of `t` and the formats of `locale`. */
+export function describeCalendarEvent(t: Translate, locale: string, event: DescribedEvent): string {
+  const none = t('calendar.confirm.none')
+  return [
+    event.title,
+    describeWhen(t, locale, event),
+    event.allDay ? t('calendar.allDay') : event.timeZone,
+    t('calendar.confirm.location', { location: event.location || none }),
+    t('calendar.confirm.notes', { notes: event.notes || none })
+  ].join('\n')
 }
 
 /**

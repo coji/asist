@@ -22,7 +22,7 @@ import {
   taskPatchSchema,
   type Task
 } from '@shared/tasks'
-import type { CalendarChange, CalendarChangeResult, CalendarEvent } from '@shared/calendar'
+import { describeCalendarEvent, type CalendarChange, type CalendarChangeResult, type CalendarEvent, type CalendarEventInput } from '@shared/calendar'
 import { overlaps } from '@shared/calendar-layout'
 import { demoUsageDays } from './fixtures/usage'
 import { DEFAULT_DOCK_ORDER } from '@shared/dock'
@@ -53,7 +53,7 @@ import { commitDrafts, createDemoDraft, demoDraft, demoDrafts, emitMail, mailLis
 import { DEMO_MEMORY, demoDocuments, demoPageTemplate } from './fixtures/memory'
 import { parseMemoryPageInput, validateDocument, documentOf } from '@shared/memory-page'
 import { errorText } from '@shared/i18n/error-text'
-import { translate, uiLocale } from '@/i18n'
+import { formatLocale, translate, uiLocale } from '@/i18n'
 import { demoPanelProps, respondTo } from './sayings'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { mergeSettings } from '@shared/settings'
@@ -176,10 +176,10 @@ function demoConfirm(title: string, message: string, detail: string, confirmLabe
 }
 
 async function demoCalendarChange(change: CalendarChange): Promise<CalendarChangeResult> {
-  const format = new Intl.DateTimeFormat(uiLocale(), { dateStyle: 'full', timeStyle: 'short' })
+  const fieldsOf = (event: CalendarEventInput) => ({ ...event, start: Date.parse(event.start), end: Date.parse(event.end) })
   const detail = [
     translate(`calendar.confirm.${change.operation}`, { calendar: '仕事' }),
-    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${change.event.title}\n${format.format(Date.parse(change.event.start))} → ${format.format(Date.parse(change.event.end))}`
+    change.operation === 'delete' ? '' : `${translate('calendar.confirm.after')}\n${describeCalendarEvent(translate, formatLocale(), fieldsOf(change.event))}`
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -190,7 +190,7 @@ async function demoCalendarChange(change: CalendarChange): Promise<CalendarChang
     const [event] = list.splice(index, 1)
     return { saved: true, operation: 'delete', event, sync: translate('calendar.saved.toGoogle') }
   }
-  const fields = { ...change.event, start: Date.parse(change.event.start), end: Date.parse(change.event.end) }
+  const fields = fieldsOf(change.event)
   if (change.operation === 'update') {
     const index = list.findIndex((e) => e.id === change.eventId)
     list[index] = { ...list[index], ...fields }

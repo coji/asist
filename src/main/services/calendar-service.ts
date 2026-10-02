@@ -2,6 +2,7 @@ import {
   calendarChangeSchema,
   calendarListSchema,
   calendarSearchSchema,
+  describeCalendarEvent,
   type CalendarChange,
   type CalendarChangeResult,
   type CalendarEvent,
@@ -21,26 +22,8 @@ interface Dependencies {
   confirm: (detail: string, signal: AbortSignal, destructive: boolean) => Promise<boolean>
 }
 
-function describe(
-  event: Pick<
-    CalendarEvent,
-    'title' | 'start' | 'end' | 'allDay' | 'timeZone' | 'location' | 'notes'
-  >
-): string {
-  const format = new Intl.DateTimeFormat(formatLocaleOf(getSettings().uiLocale, getSettings().region), {
-    timeZone: event.timeZone,
-    dateStyle: 'full',
-    timeStyle: 'short'
-  })
-  const none = t('calendar.confirm.none')
-  return [
-    event.title,
-    `${format.format(event.start)} → ${format.format(event.end)}`,
-    event.allDay ? t('calendar.confirm.allDayZone', { zone: event.timeZone }) : event.timeZone,
-    t('calendar.confirm.location', { location: event.location || none }),
-    t('calendar.confirm.notes', { notes: event.notes || none })
-  ].join('\n')
-}
+const describe = (event: Parameters<typeof describeCalendarEvent>[2]): string =>
+  describeCalendarEvent(t, formatLocaleOf(getSettings().uiLocale, getSettings().region), event)
 
 const SEARCH_EVENT_LIMIT = 200
 

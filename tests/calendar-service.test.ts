@@ -15,6 +15,8 @@ afterAll(() => rmSync(mocks.userData, { recursive: true, force: true }))
 
 import { openStoredContent } from '../src/shared/stored-format'
 import { SETTINGS_FORMAT } from '../src/shared/settings'
+import { formatLocaleOf } from '../src/shared/conversation-locale'
+import { getSettings } from '../src/main/services/settings'
 import { CalendarService } from '../src/main/services/calendar-service'
 import type { CalendarWrite } from '../src/main/services/google-calendar'
 import {
@@ -150,6 +152,38 @@ describe('CalendarService', () => {
       calendar: { id: 'work' },
       event: fields
     })
+  })
+  it('shows an all-day event in the confirmation as the days it covers, without a clock time, whatever instant its days begin at', async () => {
+    const previous = process.env.TZ
+    try {
+      // Chile moves its clock from 00:00 to 01:00 on 2026-09-06, so that day begins at 01:00.
+      process.env.TZ = 'America/Santiago'
+      const f = fixture()
+      Object.assign(f.current, { allDay: true, timeZone: 'America/Santiago', start: new Date(2026, 8, 6).getTime(), end: new Date(2026, 8, 7).getTime() })
+      const twoDays = { ...fields, allDay: true, timeZone: 'America/Santiago', start: '2026-09-06T01:00:00-03:00', end: '2026-09-08T00:00:00-03:00' }
+      await f.service.change({ operation: 'update', eventId: event.id, event: twoDays }, f.signal.signal)
+      // The Azores turn their clock back from 01:00 to 00:00 on 2026-10-25, and either midnight ends the day before.
+      const azores = { ...fields, allDay: true, timeZone: 'Atlantic/Azores', start: '2026-10-24T00:00:00+00:00', end: '2026-10-25T00:00:00-01:00' }
+      await f.service.change({ operation: 'create', event: azores }, f.signal.signal)
+      // An all-day event without length, which Google refuses to save but may still hold, covers the day it starts on.
+      Object.assign(f.current, { end: f.current.start })
+      await f.service.change({ operation: 'delete', eventId: event.id }, f.signal.signal)
+      const [update, create, remove] = f.confirm.mock.calls.map((call: unknown[]) => String(call[0]))
+      const locale = formatLocaleOf(getSettings().uiLocale, getSettings().region)
+      const date = (month: number, day: number): string =>
+        new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeZone: 'UTC' }).format(Date.UTC(2026, month - 1, day))
+      const clocks = [1, 0].map((hour) => new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, 0, 1, hour)))
+      for (const clock of clocks) expect([update, create].filter((detail) => detail.includes(clock))).toEqual([])
+      expect([date(9, 6), date(9, 7)].every((day) => update.includes(day))).toBe(true)
+      expect(update).not.toContain(date(9, 8))
+      expect(create).toContain(date(10, 24))
+      expect(create).not.toContain(date(10, 25))
+      expect(remove).toContain(date(9, 6))
+      expect(remove).not.toContain(date(9, 5))
+    } finally {
+      if (previous === undefined) delete process.env.TZ
+      else process.env.TZ = previous
+    }
   })
   it('marks only a delete as a destructive confirmation', async () => {
     const f = fixture()
