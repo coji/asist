@@ -12,3 +12,28 @@
 .nv-doc > h1:first-child + * {
   margin-top: 0;
 }
+/* Says that the note being edited changed or was deleted outside ASIST, above the editor. */
+.nv-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid rgb(from var(--color-holo-peach) r g b / 0.35);
+  border-radius: var(--ui-box-radius);
+  background: rgb(from var(--color-holo-peach) r g b / 0.06);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-holo-text);
+}
+.nv-notice p {
+  flex: 1 1 280px;
+  margin: 0;
+}
+.nv-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

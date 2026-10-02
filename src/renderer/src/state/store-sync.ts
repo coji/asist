@@ -16,7 +16,7 @@ export interface StoreSyncHooks {
 export async function startStoreSync(hooks: StoreSyncHooks): Promise<void> {
   window.api.onTasksChanged((tasks) => useTaskStore.getState().apply(tasks))
   void useTaskStore.getState().load()
-  window.api.onNotesChanged((change) => useNoteStore.getState().apply(change))
+  window.api.onNotesChanged((changes) => useNoteStore.getState().apply(changes))
   void useNoteStore.getState().load()
   // Mail status is copied into the store, while a fetch or a change bumps a generation so the views
   // and the cards load again. A draft that was sent or discarded has its card closed.

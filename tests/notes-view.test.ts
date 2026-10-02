@@ -21,8 +21,8 @@ let clock = 100
 
 const list = (): NoteSummary[] =>
   [...bodies.entries()].map(([id, note]) => summarizeNote(id, note.markdown, note.updatedAt)).sort((a, b) => b.updatedAt - a.updatedAt)
-/** Main tells the store each change once it is written; the fake does the same. */
-const tell = (change: NoteChange): void => useNoteStore.getState().apply(change)
+/** Main tells the store the changes of each save once they are written; the fake does the same. */
+const tell = (change: NoteChange): void => useNoteStore.getState().apply([change])
 const save = (id: string, markdown: string): NoteSummary => {
   bodies.set(id, { markdown, updatedAt: ++clock })
   const note = summarizeNote(id, markdown, clock)
@@ -98,6 +98,100 @@ describe('the notes screen', () => {
     save('20260923-100000-aaaa', '# 買い物\n\n牛乳\n')
     const view = await render()
     expect(titles(view)).toEqual(['買い物', '提案書の構成', '旅行の持ち物'])
+  })
+
+  it('shows the changes main saw outside ASIST: the open note read again, and a note deleted there gone from the list', async () => {
+    useViewStore.getState().openApp({ app: 'notes', noteId: TRIP })
+    const view = await render()
+    bodies.set(TRIP, { markdown: '# 旅行の持ち物\n\nパスポート\n', updatedAt: ++clock })
+    bodies.delete(PLAN)
+    const edited = summarizeNote(TRIP, bodies.get(TRIP)!.markdown, clock)
+    await act(async () => useNoteStore.getState().apply([{ type: 'saved', note: edited }, { type: 'removed', id: PLAN }]))
+    await settle()
+    expect(titles(view)).toEqual(['旅行の持ち物'])
+    expect(view.querySelector('.nv-doc p')?.textContent).toBe('パスポート')
+  })
+
+  describe('a note being edited that changes or is deleted outside ASIST', () => {
+    const changeOutside = async (id: string, markdown: string): Promise<void> => {
+      bodies.set(id, { markdown, updatedAt: ++clock })
+      await act(async () => tell({ type: 'saved', note: summarizeNote(id, markdown, clock) }))
+      await settle()
+    }
+    const deleteOutside = async (id: string): Promise<void> => {
+      bodies.delete(id)
+      await act(async () => tell({ type: 'removed', id }))
+      await settle()
+    }
+    const editTrip = async (): Promise<HTMLElement> => {
+      useViewStore.getState().openApp({ app: 'notes', noteId: TRIP })
+      const view = await render()
+      await act(async () => button(view, t('notes.edit')).click())
+      return view
+    }
+    const editor = (view: HTMLElement): HTMLTextAreaElement => view.querySelector<HTMLTextAreaElement>('textarea')!
+    const notice = (view: HTMLElement): string | null | undefined => view.querySelector('.nv-notice')?.textContent
+
+    it('takes the new text into the editor when nothing was typed, and has nothing to save', async () => {
+      const view = await editTrip()
+      await changeOutside(TRIP, '# 旅行の持ち物\n\n外で足したパスポート\n')
+      expect(editor(view).value).toBe('# 旅行の持ち物\n\n外で足したパスポート\n')
+      expect(notice(view)).toBeUndefined()
+      expect(button(view, t('common.save')).disabled).toBe(true)
+      await act(async () => editor(view).dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true })))
+      expect(api.noteWrite).not.toHaveBeenCalled()
+    })
+
+    it('keeps unsaved edits and writes them over the other change only when the user chooses to', async () => {
+      const view = await editTrip()
+      await act(async () => setValue(editor(view), '# 旅行の持ち物\n\n充電器と傘と地図\n'))
+      await changeOutside(TRIP, '# 旅行の持ち物\n\n外で足したパスポート\n')
+      expect(editor(view).value).toBe('# 旅行の持ち物\n\n充電器と傘と地図\n')
+      expect(notice(view)).toContain(t('notes.changedOutside.message'))
+      expect(button(view, t('common.save')).disabled).toBe(true)
+      await act(async () => editor(view).dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true })))
+      expect(api.noteWrite).not.toHaveBeenCalled()
+      await act(async () => button(view, t('notes.changedOutside.overwrite')).click())
+      await settle()
+      expect(api.noteWrite).toHaveBeenCalledWith(TRIP, '# 旅行の持ち物\n\n充電器と傘と地図\n')
+      expect(view.querySelector('textarea')).toBeNull()
+      expect(notice(view)).toBeUndefined()
+    })
+
+    it('loads the new version when the user chooses it, giving up the edits without asking again', async () => {
+      const view = await editTrip()
+      await act(async () => setValue(editor(view), '# 旅行の持ち物\n\n充電器と傘と地図\n'))
+      await changeOutside(TRIP, '# 旅行の持ち物\n\n外で足したパスポート\n')
+      await act(async () => button(view, t('notes.changedOutside.load')).click())
+      await settle()
+      expect(useConfirmStore.getState().queue).toEqual([])
+      expect(editor(view).value).toBe('# 旅行の持ち物\n\n外で足したパスポート\n')
+      expect(notice(view)).toBeUndefined()
+      expect(button(view, t('common.save')).disabled).toBe(true)
+    })
+
+    it('keeps unsaved edits of a note deleted outside as a new note, which saving creates, and asks before they are thrown away', async () => {
+      const view = await editTrip()
+      await act(async () => setValue(editor(view), '# 旅行の持ち物\n\n充電器と傘と地図\n'))
+      await deleteOutside(TRIP)
+      expect(editor(view).value).toBe('# 旅行の持ち物\n\n充電器と傘と地図\n')
+      expect(notice(view)).toBe(t('notes.deletedOutside'))
+      await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+      await answerConfirm(false)
+      expect(editor(view).value).toBe('# 旅行の持ち物\n\n充電器と傘と地図\n')
+      await act(async () => button(view, t('common.save')).click())
+      await settle()
+      expect(api.noteCreate).toHaveBeenCalledWith('# 旅行の持ち物\n\n充電器と傘と地図\n')
+      expect(view.querySelector('textarea')).toBeNull()
+      expect(titles(view)).toEqual(['旅行の持ち物', '提案書の構成'])
+    })
+
+    it('closes the editor and shows the newest note when the note is deleted outside with nothing typed', async () => {
+      const view = await editTrip()
+      await deleteOutside(TRIP)
+      expect(view.querySelector('textarea')).toBeNull()
+      expect(heading(view)).toBe('提案書の構成')
+    })
   })
 
   it('saves an edit through main, and writes a new note that it then shows', async () => {

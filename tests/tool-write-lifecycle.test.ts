@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LOCAL_TIMEOUT_MS } from '@shared/tool-registry'
 import { ToolRoundExecutor } from '@shared/tool-round'
 import { executeClientTool, toolRegistry } from '../src/main/services/brain/tools'
-import { createNoteService } from '../src/main/services/notes'
+import { createNoteService, type NoteService } from '../src/main/services/notes'
 import { createTaskService } from '../src/main/services/tasks'
 
 const mocks = vi.hoisted(() => ({ service: undefined as unknown, tasks: undefined as unknown }))
@@ -23,6 +23,8 @@ vi.mock('../src/main/services/user-tasks', () => ({ getTaskService: () => mocks.
 let directory: string
 beforeEach(() => { directory = fs.mkdtempSync(path.join(tmpdir(), 'asist-tool-write-')) })
 afterEach(() => {
+  const notes = mocks.service as NoteService | undefined
+  notes?.close()
   vi.restoreAllMocks()
   vi.useRealTimers()
   fs.rmSync(directory, { recursive: true, force: true })
@@ -150,16 +152,15 @@ describe('tool completion and committing a local save', () => {
 })
 
 describe('a write whose wait is cut off once it has begun', () => {
-  it.each<Cut>(['its time limit', 'the user cutting in'])('tells the model that add_note cut off by %s after the note reached the disk may have saved it, so that it does not save a second one', async (cut) => {
+  it.each<Cut>(['its time limit', 'the user cutting in'])('tells the model that add_note cut off by %s while its file was being renamed into place may have saved it, so that it does not save a second one', async (cut) => {
     const { saved, round } = await setup()
     const gate = deferred()
     const entered = deferred()
-    const stat = fsp.stat.bind(fsp)
-    // The note is in place, and its save goes on to read the whole folder back, which is slow when it holds many notes.
-    vi.spyOn(fsp, 'stat').mockImplementationOnce(async (file) => {
+    const rename = fsp.rename.bind(fsp)
+    vi.spyOn(fsp, 'rename').mockImplementationOnce(async (from, to) => {
       entered.resolve()
       await gate.promise
-      return stat(file)
+      await rename(from, to)
     })
     vi.useFakeTimers()
     const result = round.submit({ id: 'note', name: 'add_note', input: { markdown: '# 一度だけ残すメモ' } })

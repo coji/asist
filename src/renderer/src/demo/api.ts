@@ -70,7 +70,7 @@ import { isLiveEngine } from '@shared/voice-engine'
 const turnListeners = new Set<(e: TurnEvent) => void>()
 const jobListeners = new Set<(e: JobEvent) => void>()
 const timerListeners = new Set<(e: TimerEvent) => void>()
-const noteListeners = new Set<(change: NoteChange) => void>()
+const noteListeners = new Set<(changes: NoteChange[]) => void>()
 const demoTimers = new Map<string, Extract<TimerEvent, { type: 'updated' }>['timer']>()
 const taskListeners = new Set<(tasks: Task[]) => void>()
 let demoTasks: Task[] = DEMO_TASKS.map((task) => ({ ...task }))
@@ -290,7 +290,7 @@ const demoTask = (id: string): Task => {
   return { ...task }
 }
 const demoNoteList = (): NoteSummary[] => [...demoNotes].sort((a, b) => b.updatedAt - a.updatedAt).map(demoNoteSummary)
-const emitNoteChange = (change: NoteChange): void => noteListeners.forEach((listener) => listener(change))
+const emitNoteChange = (change: NoteChange): void => noteListeners.forEach((listener) => listener([change]))
 const demoNote = (id: string): DemoNote => {
   const note = demoNotes.find((candidate) => candidate.id === id)
   if (!note) throw new Error(errorText('notes.errors.notFound'))

@@ -1108,8 +1108,8 @@ export interface RendererApi {
   noteWrite(id: string, markdown: string): Promise<NoteSummary>
   /** Moves the note's file to the macOS Trash. */
   noteRemove(id: string): Promise<void>
-  /** Each note saved or removed, once the change has been written. */
-  onNotesChanged(callback: (change: NoteChange) => void): () => void
+  /** The notes saved or removed by one save, or seen changed in the folder outside ASIST, once they are written or seen. */
+  onNotesChanged(callback: (changes: NoteChange[]) => void): () => void
 
   /** A notification in Notification Center, for instance when a timer expires. */
   notify(title: string, body: string): Promise<void>
