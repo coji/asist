@@ -11,10 +11,14 @@ const mocks = vi.hoisted(() => ({
   params: [] as Array<Record<string, unknown>>,
   clients: [] as Array<{ baseURL?: string }>,
   /** The body of a request made without streaming. */
-  response: null as unknown
+  response: null as unknown,
+  /** A response body in server-sent events, read by the openai package's own parser instead of `chunks`. */
+  sse: null as string | null
 }))
 
-vi.mock('openai', () => ({
+vi.mock('openai', async () => ({
+  // The class the openai package raises a failure inside a stream with, as its own parser does below.
+  APIError: (await import('openai/core/error')).APIError,
   default: class FakeOpenAI {
     constructor(options: { baseURL?: string }) {
       mocks.clients.push(options)
@@ -24,6 +28,10 @@ vi.mock('openai', () => ({
         create: async (params: Record<string, unknown>, options: { signal: AbortSignal }) => {
           mocks.params.push(params)
           if (!params.stream) return mocks.response
+          if (mocks.sse !== null) {
+            const { Stream } = await import('openai/core/streaming')
+            return Stream.fromSSEResponse(new Response(mocks.sse), new AbortController(), undefined)
+          }
           return (async function* () {
             for (const chunk of mocks.chunks) {
               // The openai package ends a stream quietly once its request is aborted.
@@ -74,6 +82,7 @@ beforeEach(() => {
   mocks.params.length = 0
   mocks.clients.length = 0
   mocks.response = null
+  mocks.sse = null
 })
 
 describe('toChatMessages', () => {
@@ -181,6 +190,14 @@ describe('the Cerebras stream', () => {
     expect(isTransientApiError(error)).toBe(true)
   })
 
+  it('fails as a transient error on a server error sent inside the stream, which the openai package raises without a status', async () => {
+    const failure = { error: { message: 'The server had an error while processing your request.', type: 'server_error', param: null, code: null } }
+    mocks.sse = `data: ${JSON.stringify(delta({ content: '要約は' }))}\n\ndata: ${JSON.stringify(failure)}\n\n`
+    const error = await (await open()).stream.final().then(() => null, (reason: unknown) => reason)
+    expect(error).toBeInstanceOf(Error)
+    expect(isTransientApiError(error)).toBe(true)
+  })
+
   it('keeps an answer cut off between its finish reason and its usage, by the server or by the timeout of the round, and reports no usage for it', async () => {
     mocks.chunks = [delta({ content: '要約です。' }, 'stop')]
     const closed = await (await open()).stream.final()
@@ -212,7 +229,9 @@ describe('the Cerebras JSON call', () => {
         'key'
       )
     mocks.response = { choices: [{ message: { content: '{"bridge":"x"}' } }], usage: USAGE }
-    expect(await call()).toEqual({ value: { bridge: 'x' }, usage: { input: 100, cacheRead: 0, cacheCreation: 0, output: 5, webSearches: 0 } })
+    const response = await call()
+    expect(response.usage).toEqual({ input: 100, cacheRead: 0, cacheCreation: 0, output: 5, webSearches: 0 })
+    expect(response.value()).toEqual({ bridge: 'x' })
     mocks.response = { choices: [{ message: { content: '{"bridge":"x"}' } }] }
     await expect(call()).rejects.toThrow()
   })

@@ -32,10 +32,19 @@ export interface JsonRequest {
   signal: AbortSignal
 }
 
+/**
+ * A one-shot JSON response. Its usage is known once the response arrives, while reading its value can
+ * still fail, as on JSON that the output limit cut short. The provider bills such a response all the
+ * same, so the caller records the usage before it reads the value.
+ */
+export interface JsonResponse {
+  usage: RoundUsage
+  value(): unknown
+}
+
 export interface ProviderAdapter {
   stream(request: ConversationRequest, key: string): ConversationStream
-  /** The parsed JSON and the usage of the response, which the caller records. */
-  completeJson(request: JsonRequest, key: string): Promise<{ value: unknown; usage: RoundUsage }>
+  completeJson(request: JsonRequest, key: string): Promise<JsonResponse>
   /** Checks that the model exists and the key may use it. A failure carries the HTTP status, where 401 means the key is rejected. */
   retrieveModel(id: string, key: string, signal: AbortSignal): Promise<void>
   /** Checks only that the key authenticates. */

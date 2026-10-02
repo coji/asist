@@ -11,7 +11,8 @@ import type { ConversationMessage, ConversationRequest, ConversationResult, Sear
 import type { RoundUsage } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { effortFor } from '@shared/llm-catalog'
-import { AdapterStream, parseToolArguments, statusError, streamCutOff, toolResultText, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import { streamEvents, streamFailure } from './openai-stream'
 
 /**
  * OpenAI, through the Responses API, because chat completions does not accept function tools and a
@@ -38,12 +39,30 @@ function clientFor(key: string): OpenAI {
   return cached.client
 }
 
+/**
+ * The output items of a response that can go back to the model. The API refuses a reasoning item unless
+ * the item that followed it in its response comes right after it, recognized by that item's id (400,
+ * "provided without its required following item"). A response cut off by a broken stream or the output
+ * limit keeps reasoning whose item never completed, or the text cut off after it without an id, so such
+ * reasoning is left out however the response was stored.
+ */
+function withPairedReasoning(items: readonly ResponseInputItem[]): ResponseInputItem[] {
+  const kept: ResponseInputItem[] = []
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index]
+    const next = kept[0] as { id?: unknown } | undefined
+    if (item.type === 'reasoning' && typeof next?.id !== 'string') continue
+    kept.unshift(item)
+  }
+  return kept
+}
+
 export function toResponsesInput(messages: readonly ConversationMessage[], model: string, locale: ConversationLocale): ResponseInputItem[] {
   const input: ResponseInputItem[] = []
   for (const message of messages) {
     if (message.role === 'assistant') {
       if (message.native?.provider === PROVIDER && message.native.model === model) {
-        input.push(...(message.native.payload as ResponseInputItem[]))
+        input.push(...withPairedReasoning(message.native.payload as ResponseInputItem[]))
         continue
       }
       for (const part of message.parts) {
@@ -156,7 +175,7 @@ class OpenAIStream extends AdapterStream {
     const listed: SearchSource[] = []
     let refused = false
     let response: Response | null = null
-    for await (const event of stream) {
+    for await (const event of streamEvents('OpenAI', stream)) {
       switch (event.type) {
         case 'response.output_text.delta':
           this.emitText(citations ? citations.push(event.delta) : event.delta)
@@ -178,13 +197,19 @@ class OpenAIStream extends AdapterStream {
           // neither run nor sent back, since a call without its result is refused, and the response ends
           // on max_tokens.
           if (item.type === 'function_call' && item.status === 'incomplete') break
+          if (item.type === 'function_call') {
+            // The arguments are read before the call joins the output: one that fails to parse is never
+            // handed to the turn, which so has no result for it, and a call sent back without its result
+            // is refused.
+            const input = parseToolArguments(item.name, item.arguments)
+            this.items.push(item)
+            this.emitToolCall({ type: 'tool_call', id: item.call_id, name: item.name, input })
+            break
+          }
           this.items.push(item)
           if (item.type === 'message') {
             if (citations) this.emitText(citations.flush())
             this.closeText()
-          }
-          else if (item.type === 'function_call') {
-            this.emitToolCall({ type: 'tool_call', id: item.call_id, name: item.name, input: parseToolArguments(item.name, item.arguments) })
           } else if (item.type === 'web_search_call' && item.action.type === 'search') {
             const action = item.action as { query?: string; queries?: string[]; sources?: Array<{ url: string }> }
             queries.push(...(action.queries ?? (action.query ? [action.query] : [])))
@@ -196,14 +221,11 @@ class OpenAIStream extends AdapterStream {
         case 'response.incomplete':
           response = event.response
           break
-        case 'response.failed': {
+        case 'response.failed':
           // The stream closes normally on a failure, so the failure has to be raised here.
-          const error = event.response.error
-          const status = error?.code === 'rate_limit_exceeded' ? 429 : error?.code === 'server_error' ? 500 : 400
-          throw statusError(status, `OpenAI: ${error?.code ?? 'failed'}: ${error?.message ?? 'the response failed'}`)
-        }
+          throw streamFailure('OpenAI', event.response.error?.code, event.response.error?.message)
         case 'error':
-          throw new Error(`OpenAI: ${event.code ?? 'error'}: ${event.message}`)
+          throw streamFailure('OpenAI', event.code, event.message)
       }
     }
     if (!response) streamCutOff(request.signal, 'OpenAI')
@@ -257,10 +279,15 @@ export const openaiAdapter: ProviderAdapter = {
       },
       { signal: request.signal }
     )
-    if (response.status !== 'completed') {
-      throw new Error(`OpenAI: the JSON response did not complete (${response.incomplete_details?.reason ?? response.error?.message ?? response.status})`)
+    return {
+      usage: roundUsage(response.usage, response.output),
+      value: () => {
+        if (response.status !== 'completed') {
+          throw new Error(`OpenAI: the JSON response did not complete (${response.incomplete_details?.reason ?? response.error?.message ?? response.status})`)
+        }
+        return JSON.parse(response.output_text)
+      }
     }
-    return { value: JSON.parse(response.output_text), usage: roundUsage(response.usage, response.output) }
   },
 
   async retrieveModel(id, key, signal) {

@@ -6,6 +6,7 @@ import type { RoundUsage } from '@shared/ipc'
 import type { ConversationLocale } from '@shared/conversation-locale'
 import { effortFor } from '@shared/llm-catalog'
 import { AdapterStream, parseToolArguments, streamCutOff, toolResultText, withoutSchemaKeys, type JsonRequest, type ProviderAdapter } from './adapter'
+import { streamEvents } from './openai-stream'
 
 /**
  * Cerebras, called through the openai package: its API is OpenAI-compatible chat completions, and its
@@ -102,7 +103,7 @@ class CerebrasStream extends AdapterStream {
       if (!draft) return
       this.emitToolCall({ type: 'tool_call', id: draft.id || `call_${index}`, name: draft.name, input: parseToolArguments(draft.name, draft.args) })
     }
-    for await (const chunk of stream) {
+    for await (const chunk of streamEvents('Cerebras', stream)) {
       if (chunk.usage) usage = chunk.usage
       const choice = chunk.choices?.[0]
       if (!choice) continue
@@ -169,7 +170,8 @@ export const cerebrasAdapter: ProviderAdapter = {
       { signal: request.signal }
     )
     if (!response.usage) throw new Error('Cerebras: the response carried no usage')
-    return { value: JSON.parse(response.choices[0]?.message.content ?? ''), usage: roundUsage(response.usage) }
+    const text = response.choices[0]?.message.content ?? ''
+    return { usage: roundUsage(response.usage), value: () => JSON.parse(text) }
   },
 
   async retrieveModel(id, key, signal) {

@@ -25,19 +25,12 @@ import { AdapterStream, statusError, streamCutOff, withoutSchemaKeys, type JsonR
  */
 
 const PROVIDER = 'google'
-/**
- * Prefix of the ids made up locally for calls Gemini returned without one. An id Gemini did not issue
- * is rejected inside a functionResponse, so such an id is dropped again before sending.
- */
-const LOCAL_ID_PREFIX = 'asist_'
 
 let cached: { key: string; client: GoogleGenAI } | null = null
 function clientFor(key: string): GoogleGenAI {
   if (cached?.key !== key) cached = { key, client: new GoogleGenAI({ apiKey: key }) }
   return cached.client
 }
-
-const apiId = (id: string): { id: string } | Record<string, never> => (id.startsWith(LOCAL_ID_PREFIX) ? {} : { id })
 
 const THINKING_LEVEL: Partial<Record<Effort, ThinkingLevel>> = { low: ThinkingLevel.LOW, medium: ThinkingLevel.MEDIUM, high: ThinkingLevel.HIGH }
 
@@ -69,7 +62,7 @@ export function toContents(messages: readonly ConversationMessage[], model: stri
       for (const part of message.parts) {
         // An empty text part is rejected.
         if (part.type === 'text' && part.text) parts.push({ text: part.text })
-        else if (part.type === 'tool_call') parts.push({ functionCall: { ...apiId(part.id), name: part.name, args: part.input } })
+        else if (part.type === 'tool_call') parts.push({ functionCall: { id: part.id, name: part.name, args: part.input } })
       }
       push('model', parts)
       continue
@@ -78,7 +71,7 @@ export function toContents(messages: readonly ConversationMessage[], model: stri
     const parts: Part[] = []
     for (const part of message.parts) {
       if (part.type === 'tool_result') {
-        parts.push({ functionResponse: { ...apiId(part.callId), name: part.name, response: part.isError ? { error: part.content } : { output: part.content } } })
+        parts.push({ functionResponse: { id: part.callId, name: part.name, response: part.isError ? { error: part.content } : { output: part.content } } })
       }
     }
     for (const part of message.parts) if (part.type === 'text' && part.text) parts.push({ text: part.text })
@@ -192,10 +185,14 @@ class GoogleStream extends AdapterStream {
             this.emitSearch({ phase: 'start' })
           }
         } else if (part.functionCall) {
+          // Gemini 3.8 Flash and 3.5 Flash Lite gave every call an id, accepted an id they had not issued,
+          // and matched results that came in another order to their calls by id, pairing them wrongly when
+          // the ids were missing or differed (measured 2026-10-02). A call that comes without an id is given
+          // one on the part kept for Gemini as well, so that a call and its result always carry the same id.
           const call = part.functionCall
-          const name = call.name ?? ''
-          this.modelParts.push(part)
-          this.emitToolCall({ type: 'tool_call', id: call.id ?? `${LOCAL_ID_PREFIX}${randomUUID()}`, name, input: call.args ?? {} })
+          const id = call.id ?? randomUUID()
+          this.modelParts.push(call.id ? part : { ...part, functionCall: { ...call, id } })
+          this.emitToolCall({ type: 'tool_call', id, name: call.name ?? '', input: call.args ?? {} })
         } else if (part.text !== undefined) {
           this.addText(part)
           this.emitText(part.text)
@@ -256,7 +253,8 @@ export const googleAdapter: ProviderAdapter = {
           abortSignal: request.signal
         }
       })
-      return { value: JSON.parse(response.text ?? ''), usage: roundUsage(response.usageMetadata, undefined) }
+      const text = response.text ?? ''
+      return { usage: roundUsage(response.usageMetadata, undefined), value: () => JSON.parse(text) }
     } catch (error) {
       throw normalizeError(error)
     }

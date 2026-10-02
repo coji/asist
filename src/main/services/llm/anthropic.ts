@@ -127,19 +127,12 @@ class AnthropicStream extends AdapterStream {
       { signal: request.signal, maxRetries: 0 }
     )
 
-    let searchInput = ''
-    let inServerTool = false
     stream.on('streamEvent', (event) => {
       if (event.type === 'content_block_start') {
         this.releaseToolUse()
-        inServerTool = event.content_block.type === 'server_tool_use'
-        if (inServerTool) {
-          searchInput = ''
-          this.emitSearch({ phase: 'start' })
-        }
-      } else if (event.type === 'content_block_delta') {
-        if (event.delta.type === 'text_delta') this.emitText(event.delta.text)
-        else if (event.delta.type === 'input_json_delta' && inServerTool) searchInput += event.delta.partial_json
+        if (event.content_block.type === 'server_tool_use') this.emitSearch({ phase: 'start' })
+      } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        this.emitText(event.delta.text)
       }
     })
     stream.on('contentBlock', (block) => {
@@ -152,13 +145,7 @@ class AnthropicStream extends AdapterStream {
       if (block.type === 'text') this.closeText()
       else if (block.type === 'web_search_tool_result') {
         const results = Array.isArray(block.content) ? block.content : []
-        let query = ''
-        try {
-          query = String((JSON.parse(searchInput || '{}') as { query?: unknown }).query ?? '')
-        } catch {
-          // The query is only displayed, so truncated JSON leaves it empty.
-        }
-        this.emitSearch({ phase: 'done', query, sources: results.map((result) => ({ url: result.url, title: result.title || result.url })) })
+        this.emitSearch({ phase: 'done', query: this.searchQuery(block.tool_use_id), sources: results.map((result) => ({ url: result.url, title: result.title || result.url })) })
       }
     })
 
@@ -190,6 +177,20 @@ class AnthropicStream extends AdapterStream {
       usage: roundUsage(final.usage),
       ...(pendingServerTool ? { pendingServerTool } : {})
     }
+  }
+
+  /**
+   * The query of the search a result answers. A result pairs with its call by id, not by position: two
+   * calls can come before their results, and a call made together with a client tool runs only once the
+   * tool's result is sent, so its result opens the next response while the call is in the turn's history.
+   */
+  private searchQuery(callId: string): string {
+    const earlier = this.request.messages.flatMap((message) =>
+      message.role === 'assistant' && message.native?.provider === PROVIDER ? (message.native.payload as Anthropic.ContentBlock[]) : []
+    )
+    const call = [...earlier, ...this.blocks].find((block) => block.type === 'server_tool_use' && block.id === callId)
+    const query = call?.type === 'server_tool_use' ? (call.input as { query?: unknown }).query : undefined
+    return typeof query === 'string' ? query : ''
   }
 
   private releaseToolUse(): void {
@@ -227,7 +228,7 @@ export const anthropicAdapter: ProviderAdapter = {
       { signal: request.signal, maxRetries: 0 }
     )
     const text = message.content.map((block) => (block.type === 'text' ? block.text : '')).join('')
-    return { value: JSON.parse(text), usage: roundUsage(message.usage) }
+    return { usage: roundUsage(message.usage), value: () => JSON.parse(text) }
   },
 
   async retrieveModel(id, key, signal) {

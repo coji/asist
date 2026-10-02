@@ -773,6 +773,17 @@ describe('brain turn', () => {
     expect(notices.map((text) => text.includes('merge_agent_job'))).toEqual([true, false, false])
   })
 
+  it('writes a long summary of a job into its report without half a character', async () => {
+    await loadBrain()
+    const { reportNotice } = await import('../src/main/services/brain/job-reporting')
+    // Of these two alignments, a cut counted in UTF-16 units splits an emoji in one of them wherever it falls.
+    for (const summary of ['😀'.repeat(1_000), `あ${'😀'.repeat(1_000)}`]) {
+      for (const status of ['done', 'error'] as const) {
+        expect(reportNotice({ ...FINISHED_JOB, status, summary } as AgentJob).text.isWellFormed()).toBe(true)
+      }
+    }
+  })
+
   it('tells the model which worktree holds the commits of a job that touched a submodule, and offers only the discard', async () => {
     await loadBrain()
     const { reportNotice } = await import('../src/main/services/brain/job-reporting')

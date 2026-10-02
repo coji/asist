@@ -10,14 +10,25 @@ const mocks = vi.hoisted(() => ({
   failAfter: null as Error | null,
   /** Runs once every event has been read, before the stream ends. */
   atEnd: null as (() => void) | null,
+  /** A response body in server-sent events, read by the openai package's own parser instead of `events`. */
+  sse: null as string | null,
+  /** The response to a request that is not streamed. */
+  response: null as unknown,
   params: [] as Array<Record<string, unknown>>
 }))
 
-vi.mock('openai', () => ({
+vi.mock('openai', async () => ({
+  // The class the openai package raises a failure inside a stream with, as its own parser does below.
+  APIError: (await import('openai/core/error')).APIError,
   default: class FakeOpenAI {
     responses = {
       create: async (params: Record<string, unknown>, options: { signal: AbortSignal }) => {
         mocks.params.push(params)
+        if (params.stream !== true) return mocks.response
+        if (mocks.sse !== null) {
+          const { Stream } = await import('openai/core/streaming')
+          return Stream.fromSSEResponse(new Response(mocks.sse), new AbortController(), undefined)
+        }
         return (async function* () {
           for (const event of mocks.events) {
             // The openai package ends a stream quietly once its request is aborted.
@@ -52,6 +63,13 @@ const request = (over: Partial<ConversationRequest> = {}): ConversationRequest =
 const REASONING = { type: 'reasoning', id: 'rs_1', summary: [], encrypted_content: 'enc' }
 const CALL = { type: 'function_call', id: 'fc_1', call_id: 'call_1', name: 'show_weather', arguments: '{"location":"大阪"}', status: 'completed' }
 const SPOKEN = { type: 'message', id: 'msg_1', role: 'assistant', content: [{ type: 'output_text', text: '調べますね。' }] }
+/**
+ * The reasoning items of an input that the API refuses with a 400 ("provided without its required
+ * following item"): it pairs a reasoning item with the output item that followed it in its response,
+ * by that item's id, so the next item has to be one that carries an id.
+ */
+const unpairedReasoning = (input: unknown[]): unknown[] =>
+  input.filter((item, index) => (item as { type?: string }).type === 'reasoning' && typeof (input[index + 1] as { id?: unknown } | undefined)?.id !== 'string')
 const completed = (usage = { input_tokens: 1000, input_tokens_details: { cached_tokens: 900 }, output_tokens: 20 }): unknown => ({
   type: 'response.completed',
   response: { status: 'completed', usage }
@@ -72,6 +90,8 @@ beforeEach(() => {
   mocks.events = []
   mocks.failAfter = null
   mocks.atEnd = null
+  mocks.sse = null
+  mocks.response = null
   mocks.params.length = 0
 })
 
@@ -112,6 +132,24 @@ describe('toResponsesInput', () => {
     ]
     expect(toResponsesInput([assistant], 'gpt-5.5-mini', 'ja-JP')).toEqual(built)
     expect(toResponsesInput([{ ...assistant, native: { provider: 'google', model: 'gpt-5.5', payload: {} } }], 'gpt-5.5', 'ja-JP')).toEqual(built)
+  })
+
+  it('sends no reasoning item without the item that followed it, from a reply a broken stream or the output limit cut off', async () => {
+    const { toResponsesInput } = await import('../src/main/services/llm/openai')
+    const search = { type: 'web_search_call', id: 'ws_1', status: 'completed', action: { type: 'search', query: '大阪 天気' } }
+    const user = (text: string): ConversationMessage => ({ role: 'user', parts: [{ type: 'text', text }] })
+    // As the log keeps them: a broken stream leaves the text it cut off without an id, and the output
+    // limit can stop a response while it reasons again after a search.
+    const stored: ConversationMessage[] = [
+      user('大阪の天気'),
+      { role: 'assistant', parts: [{ type: 'text', text: '大阪は' }], native: { provider: 'openai', model: 'gpt-5.5', payload: [REASONING, { role: 'assistant', content: '大阪は' }] } },
+      user('続けて'),
+      { role: 'assistant', parts: [{ type: 'text', text: '調べますね。' }], native: { provider: 'openai', model: 'gpt-5.5', payload: [REASONING, SPOKEN, search, { ...REASONING, id: 'rs_2' }] } },
+      user('続けて')
+    ]
+    const input = toResponsesInput(stored, 'gpt-5.5', 'ja-JP')
+    expect(unpairedReasoning(input)).toEqual([])
+    for (const item of [{ role: 'assistant', content: '大阪は' }, REASONING, SPOKEN, search]) expect(input).toContainEqual(item)
   })
 })
 
@@ -284,10 +322,61 @@ describe('the OpenAI stream', () => {
     expect(summarizeTurnUsage([result.usage!]).contextTokens).toBe(60_000)
   })
 
+  it('treats an error event inside the stream as transient exactly when a failed response with the same code is', async () => {
+    const message = 'The server had an error while processing your request.'
+    const transient = async (code: string): Promise<boolean[]> => {
+      const failures: unknown[] = []
+      // The error event's fields as the SDK's types give them, then nested under `error` as the live API
+      // is reported to send them, where the code can be null beside the type.
+      for (const data of [
+        { type: 'error', code, message, param: null, sequence_number: 3 },
+        { type: 'error', sequence_number: 3, error: { type: code, code, message, param: null } },
+        { type: 'error', sequence_number: 3, error: { type: code, code: null, message, param: null } }
+      ]) {
+        mocks.sse = `event: error\ndata: ${JSON.stringify(data)}\n\n`
+        failures.push(await (await open()).stream.final().then(() => null, (reason: unknown) => reason))
+      }
+      mocks.sse = null
+      mocks.events = [{ type: 'response.failed', response: { status: 'failed', error: { code, message } } }]
+      failures.push(await (await open()).stream.final().then(() => null, (reason: unknown) => reason))
+      expect(failures.every((failure) => failure instanceof Error)).toBe(true)
+      return failures.map(isTransientApiError)
+    }
+    expect(await transient('server_error')).toEqual([true, true, true, true])
+    expect(await transient('invalid_prompt')).toEqual([false, false, false, false])
+  })
+
+  it('keeps in native only the calls it handed over, so a call whose arguments are broken never goes back without a result', async () => {
+    const broken = { ...CALL, id: 'fc_2', call_id: 'call_2', arguments: '{"location":' }
+    mocks.events = [{ type: 'response.output_item.done', item: CALL }, { type: 'response.output_item.done', item: broken }, completed()]
+    const { stream, seen } = await open()
+    await expect(stream.final()).rejects.toThrow('show_weather')
+    const payload = stream.snapshot()!.native!.payload as Array<{ type: string; call_id?: string }>
+    // The API refuses a function_call sent without its output, and the turn has a result only for a call it was handed.
+    expect(payload.filter((item) => item.type === 'function_call').map((item) => item.call_id)).toEqual(seen.calls.map((call) => call.id))
+  })
+
   it('fails instead of running a tool call whose arguments are broken', async () => {
     mocks.events = [{ type: 'response.output_item.done', item: { ...CALL, arguments: '{"location":' } }, completed()]
     const { stream, seen } = await open()
     await expect(stream.final()).rejects.toThrow('show_weather')
     expect(seen.calls).toEqual([])
+  })
+})
+
+describe('the OpenAI JSON call', () => {
+  it('hands back the usage of a response the output limit cut short, failing only when its value is read', async () => {
+    const { openaiAdapter } = await import('../src/main/services/llm/openai')
+    // The reasoning used up the output limit before any JSON was written.
+    mocks.response = {
+      status: 'incomplete',
+      incomplete_details: { reason: 'max_output_tokens' },
+      output_text: '',
+      output: [REASONING],
+      usage: { input_tokens: 300, input_tokens_details: { cached_tokens: 0 }, output_tokens: 1024 }
+    }
+    const response = await openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, 'key')
+    expect(response.usage).toEqual({ input: 300, cacheRead: 0, cacheCreation: 0, output: 1024, webSearches: 0 })
+    expect(() => response.value()).toThrow('max_output_tokens')
   })
 })

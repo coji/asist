@@ -9,6 +9,7 @@ import {
   type PromptLanguage,
   type PromptText
 } from '@shared/conversation-locale'
+import { sliceCodePoints } from '@shared/text-slice'
 import { CLIP_SILENCE } from './aizuchi'
 import { conversationLocale } from './conversation-locale'
 import { quickJson } from './llm'
@@ -92,6 +93,9 @@ const PLAN_USER: PromptText = {
 
 const PLAN_USER_NO_LAST: PromptText = { ja: `(なし)`, en: `(none)` }
 
+/** How much of the end of the previous line, which is what the user is answering, goes into the prompt. */
+const LAST_LINE_MAX = 300
+
 /**
  * The fast model's output. The line is cut short, because a long one overlaps the real answer. It is
  * measured without the brackets the model wraps it in, as the prompt's own examples do, since they
@@ -145,7 +149,7 @@ export async function plan(input: PlanInput): Promise<BridgePlan> {
     language: CONVERSATION_LANGUAGE_NAMES[locale]
   })
   const user = fillPrompt(promptText(locale, PLAN_USER), {
-    last: input.lastAssistantText || promptText(locale, PLAN_USER_NO_LAST),
+    last: sliceCodePoints(input.lastAssistantText, -LAST_LINE_MAX) || promptText(locale, PLAN_USER_NO_LAST),
     text: input.text
   })
   const raw = await quickJson(system, user, planJsonSchema(locale), AbortSignal.timeout(PLAN_TIMEOUT_MS))

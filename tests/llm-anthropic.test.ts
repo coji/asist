@@ -196,6 +196,41 @@ describe('the Anthropic stream', () => {
     expect((await (await open({ webSearch: true })).stream.final()).pendingServerTool).toBe(true)
   })
 
+  it('gives each search the query it was called with, also when two calls come before their results or a result comes in the next response', async () => {
+    const osaka = { type: 'server_tool_use', id: 's1', name: 'web_search', input: { query: '大阪 天気' } }
+    const kyoto = { type: 'server_tool_use', id: 's2', name: 'web_search', input: { query: '京都 天気' } }
+    const resultOf = (use: { id: string }) => ({ type: 'web_search_tool_result', tool_use_id: use.id, content: [{ type: 'web_search_result', url: `https://${use.id}.example`, title: use.id, encrypted_content: 'enc' }] })
+    const queries = (search: SearchEvent[]) => search.flatMap((event) => (event.phase === 'done' ? [event.query] : []))
+    mocks.script = ({ event, block }) => {
+      for (const use of [osaka, kyoto]) {
+        event({ type: 'content_block_start', content_block: { type: 'server_tool_use', id: use.id, name: 'web_search' } })
+        event({ type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: JSON.stringify(use.input) } })
+        block(use)
+      }
+      block(resultOf(osaka))
+      block(resultOf(kyoto))
+      return { content: [osaka, kyoto, resultOf(osaka), resultOf(kyoto)], stop_reason: 'end_turn' }
+    }
+    const parallel = await open({ webSearch: true })
+    await parallel.stream.final()
+    expect(queries(parallel.seen.search)).toEqual(['大阪 天気', '京都 天気'])
+
+    // A search called together with a client tool runs once the tool's result is sent, and its result opens the next response.
+    const called: ConversationMessage = {
+      role: 'assistant',
+      parts: [{ type: 'tool_call', id: 't1', name: 'show_weather', input: { location: '大阪' } }],
+      native: { provider: 'anthropic', model: MODEL.id, payload: [osaka, TOOL_USE] }
+    }
+    const results: ConversationMessage = { role: 'user', parts: [{ type: 'tool_result', callId: 't1', name: 'show_weather', content: '{"temp":28}' }] }
+    mocks.script = ({ block }) => {
+      block(resultOf(osaka))
+      return { content: [resultOf(osaka)], stop_reason: 'end_turn' }
+    }
+    const next = await open({ webSearch: true, messages: [...request().messages, called, results] })
+    await next.stream.final()
+    expect(queries(next.seen.search)).toEqual(['大阪 天気'])
+  })
+
   it('keeps a broken stream in the snapshot but leaves out the provider-side tool call whose result it cannot supply', async () => {
     mocks.script = ({ event, block }) => {
       block(THINKING)

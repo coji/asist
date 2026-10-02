@@ -90,7 +90,7 @@ export async function completeJson(
   signal: AbortSignal,
   purpose: LlmPurpose
 ): Promise<unknown> {
-  const { value, usage } = await ADAPTERS[model.provider].completeJson({ model, system, user, schema, maxTokens, signal }, requireKey(model.provider))
-  recordCall(purpose, model, usage)
-  return value
+  const response = await ADAPTERS[model.provider].completeJson({ model, system, user, schema, maxTokens, signal }, requireKey(model.provider))
+  recordCall(purpose, model, response.usage)
+  return response.value()
 }

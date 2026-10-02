@@ -29,6 +29,20 @@ describe('bridge-plan', () => {
     await expect(plan({ text: '京都の天気', lastAssistantText: '' })).rejects.toThrow()
   })
 
+  it('puts only the end of a long previous line in the prompt, never half a character', async () => {
+    const { plan } = await import('../src/main/services/bridge-plan')
+    // An emoji is two UTF-16 units. Of these two alignments, a cut counted in units splits one of them
+    // wherever it falls, and a strict JSON parser refuses the lone half (Anthropic answers 400).
+    for (const line of ['😀'.repeat(50_000), `${'😀'.repeat(50_000)}あ`]) {
+      mocks.quickJson.mockResolvedValueOnce({ bridge: '' })
+      await plan({ text: '明日の天気は', lastAssistantText: line })
+      const [, user] = mocks.quickJson.mock.calls.at(-1) as [string, string]
+      expect(user.isWellFormed()).toBe(true)
+      expect(user).toContain(line.slice(-5))
+      expect(user.length).toBeLessThan(line.length)
+    }
+  })
+
   it('strips quotation marks and whitespace from the bridge and rejects a bridge that is too long', async () => {
     const { parseBridgePlan } = await import('../src/main/services/bridge-plan')
     expect(parseBridgePlan('ja-JP', { bridge: '「徹夜か早起きか、ですよね。」' })).toEqual({ bridge: '徹夜か早起きか、ですよね。' })

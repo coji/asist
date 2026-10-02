@@ -135,23 +135,20 @@ describe('the Google stream', () => {
     ])
   })
 
-  it('gives a call without an id from Gemini a local id and keeps that id out of the result sent back to the API', async () => {
-    mocks.chunks = [chunk([{ functionCall: { name: 'show_weather', args: {} } }], { finishReason: 'STOP' })]
+  it('sends a call and its result with the same id, also for a call that came without one, to the same model and to another', async () => {
+    mocks.chunks = [chunk([{ functionCall: { name: 'show_weather', args: {} }, thoughtSignature: 'sig' }], { finishReason: 'STOP' })]
     const { stream, seen } = await open()
-    await stream.final()
+    const result = await stream.final()
     const id = seen.calls[0].id
     expect(id).not.toBe('')
     const { toContents } = await import('../src/main/services/llm/google')
-    const contents = toContents(
-      [
-        { role: 'assistant', parts: [seen.calls[0]] },
-        { role: 'user', parts: [{ type: 'tool_result', callId: id, name: 'show_weather', content: '{}' }] }
-      ],
-      'gemini-3.8-pro'
-    )
-    // A functionResponse carrying an id that Gemini never returned is rejected.
-    expect(JSON.stringify(contents)).not.toContain(id)
-    expect(contents[1]).toEqual({ role: 'user', parts: [{ functionResponse: { name: 'show_weather', response: { output: '{}' } } }] })
+    const results: ConversationMessage = { role: 'user', parts: [{ type: 'tool_result', callId: id, name: 'show_weather', content: '{}' }] }
+    // Gemini matches results to calls by id when they come in another order, and a missing or different id pairs them wrongly.
+    for (const model of [MODEL.id, 'gemini-3.8-pro']) {
+      const [call, response] = toContents([result.message, results], model)
+      expect(call.parts?.find((part) => part.functionCall)?.functionCall?.id).toBe(id)
+      expect(response.parts?.[0]?.functionResponse?.id).toBe(id)
+    }
   })
 
   it('reports the start of a Google search from its call part, keeps the call and result parts in native, and reads the sources from the last chunk', async () => {

@@ -6,7 +6,8 @@ import type { ConversationRequest } from '@shared/conversation'
 const mocks = vi.hoisted(() => ({
   recordUsage: vi.fn(),
   final: vi.fn(),
-  completeJson: vi.fn()
+  completeJson: vi.fn(),
+  generateContent: vi.fn()
 }))
 
 vi.mock('../src/main/services/usage-ledger', () => ({ recordUsage: mocks.recordUsage }))
@@ -19,8 +20,14 @@ const adapter = {
 }
 vi.mock('../src/main/services/llm/anthropic', () => ({ anthropicAdapter: adapter }))
 vi.mock('../src/main/services/llm/openai', () => ({ openaiAdapter: adapter }))
-vi.mock('../src/main/services/llm/google', () => ({ googleAdapter: adapter }))
 vi.mock('../src/main/services/llm/cerebras', () => ({ cerebrasAdapter: adapter }))
+// Google's adapter runs for real, on a fake SDK, to show what a response the adapter cannot read leaves behind.
+vi.mock('@google/genai', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@google/genai')>()),
+  GoogleGenAI: class FakeGoogle {
+    models = { generateContent: mocks.generateContent }
+  }
+}))
 
 const { completeJson, streamConversation } = await import('../src/main/services/llm/call')
 
@@ -64,9 +71,20 @@ describe('recording the use of a conversation model', () => {
   })
 
   it('records a JSON call under its purpose and hands back only the value', async () => {
-    mocks.completeJson.mockResolvedValueOnce({ value: { bridge: 'x' }, usage })
+    mocks.completeJson.mockResolvedValueOnce({ usage, value: () => ({ bridge: 'x' }) })
     const value = await completeJson({ provider: 'openai', id: 'unknown-model' }, 's', 'u', { type: 'object' }, 10, new AbortController().signal, 'bridge')
     expect(value).toEqual({ bridge: 'x' })
     expect(mocks.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'bridge', model: 'unknown-model', costUsd: null }))
+  })
+
+  it('records a JSON call whose JSON the output limit cut short, which is billed although it fails', async () => {
+    mocks.generateContent.mockResolvedValueOnce({
+      text: '{"bridge":"京都の',
+      candidates: [{ finishReason: 'MAX_TOKENS' }],
+      usageMetadata: { promptTokenCount: 300, candidatesTokenCount: 4, thoughtsTokenCount: 1020 }
+    })
+    const model = { provider: 'google' as const, id: 'gemini-3.5-flash-lite' }
+    await expect(completeJson(model, 's', 'u', { type: 'object' }, 1024, new AbortController().signal, 'bridge')).rejects.toThrow()
+    expect(mocks.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'bridge', provider: 'google', input: 300, output: 1024 }))
   })
 })

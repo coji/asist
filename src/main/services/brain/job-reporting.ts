@@ -5,6 +5,7 @@ import { PlaybackDeliveryTracker, type PlaybackDeliveryOutcome } from '@shared/p
 import { fillPrompt, promptText, type PromptText } from '@shared/conversation-locale'
 import { marker } from '@shared/conversation-markers'
 import type { TurnHandle } from '@shared/turn-scheduler'
+import { sliceCodePoints } from '@shared/text-slice'
 import { conversationLocale } from '../conversation-locale'
 import * as agentRunner from '../agent'
 import { beginTurn } from './index'
@@ -177,14 +178,14 @@ export function reportNotice(job: AgentJob): { notice: NoticeKind; text: string 
         notice: 'job-done',
         text: fillPrompt(promptText(locale, REPORT.done), {
           ...values,
-          summary: (job.summary ?? promptText(locale, REPORT.noSummary)).slice(0, 500)
+          summary: sliceCodePoints(job.summary ?? promptText(locale, REPORT.noSummary), 0, 500)
         })
       }
     : {
         notice: 'job-error',
         text: fillPrompt(promptText(locale, REPORT.error), {
           ...values,
-          summary: (job.summary ?? promptText(locale, REPORT.noReason)).slice(0, 200)
+          summary: sliceCodePoints(job.summary ?? promptText(locale, REPORT.noReason), 0, 200)
         })
       }
 }
