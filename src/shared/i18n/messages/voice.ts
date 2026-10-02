@@ -462,5 +462,33 @@ export const voice = defineMessages({
       'es-419': 'El final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.',
       'es-ES': 'El final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.'
     }
+  },
+  maaiBehind: {
+    title: {
+      'ja-JP': 'MaAI の処理が遅れています',
+      'en-US': 'MaAI is falling behind',
+      'fr-FR': 'MaAI prend du retard',
+      'de-DE': 'MaAI hängt hinterher',
+      'hi-IN': 'MaAI पीछे चल रहा है',
+      'id-ID': 'MaAI tertinggal',
+      'it-IT': 'MaAI è in ritardo',
+      'ko-KR': 'MaAI 처리가 늦어지고 있습니다',
+      'pt-BR': 'O MaAI está atrasado',
+      'es-419': 'MaAI se está atrasando',
+      'es-ES': 'MaAI se está retrasando'
+    },
+    body: {
+      'ja-JP': '追いつくまで、話し終わりは設定した無音の長さで判断します。会話はこのまま続けられます。',
+      'en-US': 'Until it catches up, the end of speech is judged by the silence length in your settings. You can keep talking.',
+      'fr-FR': "Tant qu'il n'a pas rattrapé son retard, la fin de la parole est déterminée par la durée de silence réglée. Vous pouvez continuer à parler.",
+      'de-DE': 'Bis MaAI aufgeholt hat, wird das Ende der Rede an der eingestellten Stille erkannt. Sie können weitersprechen.',
+      'hi-IN': 'जब तक MaAI बराबरी पर नहीं आ जाता, बोलना कब खत्म हुआ, यह सेटिंग में तय खामोशी की लंबाई से तय होगा। आप बात जारी रख सकते हैं।',
+      'id-ID': 'Sampai MaAI menyusul, akhir ucapan ditentukan dari lama jeda hening di pengaturan. Percakapan bisa terus berjalan.',
+      'it-IT': 'Finché non recupera, la fine del parlato viene decisa dalla durata del silenzio impostata. Puoi continuare a parlare.',
+      'ko-KR': '따라잡을 때까지 말이 끝났는지는 설정한 무음 길이로 판단합니다. 대화는 그대로 계속할 수 있습니다.',
+      'pt-BR': 'Até recuperar o atraso, o fim da fala é decidido pela duração do silêncio definida nas configurações. Você pode continuar falando.',
+      'es-419': 'Hasta que se ponga al día, el final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.',
+      'es-ES': 'Hasta que se ponga al día, el final del habla se decide por la duración del silencio configurada. Puedes seguir hablando.'
+    }
   }
 })

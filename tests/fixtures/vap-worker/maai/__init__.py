@@ -6,8 +6,9 @@ from the audio of the frame, so a test can tell which frame each value was made 
   - bc and nod: every probability is the last assistant sample of the frame.
 
 FAKE_MAAI_FIRST_FRAME_SEC delays the first result after the warm-up, so that a test can have all of its frames
-arrive before any result. FAKE_MAAI_UNNUMBERED takes the frames from the queue without going through the input's
-get_audio_data, as a MaAI that read its input another way would.
+arrive before any result. FAKE_MAAI_FRAME_SEC is the time every frame takes, as inference takes it in the app.
+FAKE_MAAI_UNNUMBERED takes the frames from the queue without going through the input's get_audio_data, as a MaAI
+that read its input another way would.
 """
 
 import os
@@ -103,6 +104,7 @@ class MaaiMultiple:
 
     def process(self, x1, x2):
         started = time.time()
+        time.sleep(float(os.environ.get("FAKE_MAAI_FRAME_SEC", "0")))
         # MaAI skips the Mimi encoder's first output after a start and makes no result for that frame.
         if self._skip_first_output:
             self._skip_first_output = False

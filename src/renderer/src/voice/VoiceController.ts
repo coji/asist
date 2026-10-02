@@ -68,6 +68,31 @@ const INPUT_STALL_MS = 1_000
  */
 const VAP_STALE_MS = 500
 
+/**
+ * How long the turn-taking values must keep arriving too old to use before the user hears that MaAI is behind, so
+ * that a burst of load the worker gets over within a few seconds says nothing. At the two thirds of real time that
+ * #187 measured a worker getting through on a loaded Mac (2026-10-02), a steady load takes the values past
+ * VAP_STALE_MS 1.5 s in, and the user hears of it about 6.5 s in.
+ */
+const MAAI_BEHIND_NOTICE_MS = 5_000
+
+/**
+ * How much older the turn-taking values must have grown since they began to arrive too old to use for MaAI to count
+ * as falling behind. A worker catching up after a stall sends values that grow younger however slowly it catches up,
+ * and the Core i9-9900K at its 90th percentile of 63.8 ms a frame (2026-09-27) comes back inside VAP_STALE_MS only
+ * 5.9 s after a 2 s stall ends, so the time alone would tell of a lag about to end. It exceeds the 400 ms by which one
+ * delivery of the native helper moves the lag.
+ */
+const MAAI_FALLING_BEHIND_MS = 500
+
+/**
+ * The longest a worker that keeps working goes between two estimates, one for each 80 ms frame it gets through: they
+ * came at most 401 ms apart on #187's loaded Mac, and 163 ms apart on an Apple M5 at a load average of 11 to 15
+ * (2026-10-02). After a longer gap the worker stopped sending, was stopped or is starting again, and how far behind
+ * it was before says nothing of how far behind it is now.
+ */
+const VAP_GAP_MS = 1_000
+
 type VoiceEvents = {
   state: VoiceState
   level: number
@@ -112,6 +137,11 @@ type VoiceEvents = {
    * once until MaAI is turned off and on again; the cause is in main's log.
    */
   maaiUnavailable: undefined
+  /**
+   * MaAI has kept falling behind the audio, so the fixed hangover decides the end of speech until it catches up. It
+   * comes once while the microphone stays on.
+   */
+  maaiBehind: undefined
   error: string
 }
 
@@ -196,6 +226,13 @@ export class VoiceController {
   private vapStateAt = 0
   /** The same for its bcReact, bcEmo and nods, which another of the worker's models makes at its own pace. */
   private backchannelStateAt = 0
+  /**
+   * The turn-taking values arriving too old to use, without a recent one, a gap or a new run of the microphone between
+   * them: when the first arrived and how old it was, when the newest arrived, and the run, by micGeneration.
+   */
+  private turnBehind: { since: number; firstLagMs: number; lastAt: number; run: number } | null = null
+  /** The run of the microphone, by micGeneration, that has said MaAI is behind. */
+  private maaiBehindSaidIn = 0
   private vapUnsubscribe: (() => void) | null = null
   private vapAudio = new VapAudio((user, assistant) => {
     void window.api.vapPush(user, assistant).catch(() => {})
@@ -432,6 +469,7 @@ export class VoiceController {
       this.vapState = state
       this.vapStateAt = now - state.turnLagMs
       this.backchannelStateAt = now - state.backchannelLagMs
+      this.watchTurnLag(now, state.turnLagMs)
       this.maybeNod()
     })
     void window.api.vapStart().then(
@@ -453,6 +491,30 @@ export class VoiceController {
     if (!this.usesMaai() || this.maaiUnavailableSaid) return
     this.maaiUnavailableSaid = true
     this.events.emit('maaiUnavailable')
+  }
+
+  /**
+   * Says once while the microphone stays on that MaAI is behind: its turn-taking values have kept arriving too old to
+   * use for MAAI_BEHIND_NOTICE_MS, and have grown MAAI_FALLING_BEHIND_MS older meanwhile. It is judged on the
+   * estimates alone, so a worker that sends none, or none for VAP_GAP_MS, is not behind by what it sent before, and
+   * nothing is judged while the microphone is off or MaAI takes no part.
+   */
+  private watchTurnLag(now: number, lagMs: number): void {
+    if (this.state === 'off' || !this.usesMaai() || this.recentVap(this.vapStateAt)) {
+      this.turnBehind = null
+      return
+    }
+    const stretch = this.turnBehind
+    if (!stretch || stretch.run !== this.micGeneration || now - stretch.lastAt > VAP_GAP_MS) {
+      this.turnBehind = { since: now, firstLagMs: lagMs, lastAt: now, run: this.micGeneration }
+      return
+    }
+    stretch.lastAt = now
+    const fallingBehind =
+      now - stretch.since >= MAAI_BEHIND_NOTICE_MS && lagMs - stretch.firstLagMs >= MAAI_FALLING_BEHIND_MS
+    if (!fallingBehind || this.maaiBehindSaidIn === this.micGeneration) return
+    this.maaiBehindSaidIn = this.micGeneration
+    this.events.emit('maaiBehind')
   }
 
   /**

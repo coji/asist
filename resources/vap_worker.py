@@ -197,6 +197,19 @@ def drain(pipeline) -> tuple | None:
             return latest
 
 
+def warm_up(pipeline, source, deadline: float) -> tuple | None:
+    """Waits until the pipeline has made a result from the last frame put into it, and returns that result, or the first
+    one numbered 0, or None at the deadline. A ready sent at the first result left the rest of the warm-up waiting in
+    MaAI's queue, so the first estimates after each start were about that silence and dated as old as it was."""
+    while time.time() < deadline:
+        result = drain(pipeline)
+        if result is None:
+            time.sleep(0.01)
+        elif result[0] == 0 or result[0] >= source.received:
+            return result
+    return None
+
+
 def lag_ms(source, frame: int, frame_rate: float) -> int:
     """How much newer audio had reached a pipeline than the frame its values were made from. MaAI queues its input
     without dropping any until more than 100 frames wait, so a pipeline slower than real time goes on sending
@@ -269,25 +282,22 @@ def main() -> None:
     feeder = StereoFeeder(sinks)
     (vap_source, _, _), (aux_source, _, _) = sinks
 
-    # Warm-up: silence is pushed through and the first result awaited, so that the kernels are initialized
-    # before ready.
+    # Warm-up: silence is pushed through both pipelines, and ready waits until each has made a result from the last of
+    # it, so that the kernels are initialized and none of it is left in front of the conversation's audio.
     zeros = np.zeros(int(WARMUP_SEC * SAMPLE_RATE), dtype=np.float32)
     feeder.push(zeros, zeros)
     deadline = time.time() + READY_TIMEOUT_SEC
-    warmup = None
-    while time.time() < deadline and warmup is None:
-        warmup = drain(vap)
+    for pipeline, source in ((vap, vap_source), (aux, aux_source)):
+        warmup = warm_up(pipeline, source, deadline)
         if warmup is None:
-            time.sleep(0.05)
-    if warmup is None:
-        fatal("warmup produced no output")
-        return
-    # A result numbered 0 was made from a frame MaAI did not take through NumberedInput, as after a change in how it
-    # reads its input. Every lag would then count from before the first frame, and no estimate would ever be used.
-    if warmup[0] == 0:
-        fatal("warmup result carries no frame number")
-        return
-    drain(aux)
+            fatal("warmup did not finish")
+            return
+        # A result numbered 0 was made from a frame MaAI did not take through NumberedInput, as after a change in how
+        # it reads its input. Every lag would then count from before the first frame, and no estimate would ever be
+        # used.
+        if warmup[0] == 0:
+            fatal("warmup result carries no frame number")
+            return
 
     threading.Thread(target=feeder.run, daemon=True).start()
     emit({"type": "ready", "device": "cpu", "frameHz": args.vap_frame_rate})
