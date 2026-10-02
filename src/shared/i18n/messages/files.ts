@@ -1071,45 +1071,6 @@ export const files = defineMessages({
       'es-419': 'Código fuente',
       'es-ES': 'Código fuente'
     },
-    htmlLinkBlocked: {
-      'ja-JP': 'リンク先はアプリの中では開きません: {url}',
-      'en-US': "Links don't open inside the app: {url}",
-      'fr-FR': "Les liens ne s'ouvrent pas dans l'app : {url}",
-      'de-DE': 'Links öffnen sich nicht in der App: {url}',
-      'hi-IN': 'लिंक ऐप के अंदर नहीं खुलते: {url}',
-      'id-ID': 'Tautan tidak dibuka di dalam aplikasi: {url}',
-      'it-IT': "I link non si aprono nell'app: {url}",
-      'ko-KR': '링크는 앱 안에서 열리지 않습니다: {url}',
-      'pt-BR': 'Links não abrem dentro do app: {url}',
-      'es-419': 'Los enlaces no se abren dentro de la app: {url}',
-      'es-ES': 'Los enlaces no se abren dentro de la app: {url}'
-    },
-    htmlOpenLink: {
-      'ja-JP': 'ブラウザで開く',
-      'en-US': 'Open in browser',
-      'fr-FR': 'Ouvrir dans le navigateur',
-      'de-DE': 'Im Browser öffnen',
-      'hi-IN': 'ब्राउज़र में खोलें',
-      'id-ID': 'Buka di browser',
-      'it-IT': 'Apri nel browser',
-      'ko-KR': '브라우저에서 열기',
-      'pt-BR': 'Abrir no navegador',
-      'es-419': 'Abrir en el navegador',
-      'es-ES': 'Abrir en el navegador'
-    },
-    htmlBack: {
-      'ja-JP': 'ページに戻る',
-      'en-US': 'Back to the page',
-      'fr-FR': 'Revenir à la page',
-      'de-DE': 'Zurück zur Seite',
-      'hi-IN': 'पेज पर वापस जाएँ',
-      'id-ID': 'Kembali ke halaman',
-      'it-IT': 'Torna alla pagina',
-      'ko-KR': '페이지로 돌아가기',
-      'pt-BR': 'Voltar à página',
-      'es-419': 'Volver a la página',
-      'es-ES': 'Volver a la página'
-    },
     moreColumns: {
       'ja-JP': { other: '他 {count} 列' },
       'en-US': { one: '{count} more column', other: '{count} more columns' },

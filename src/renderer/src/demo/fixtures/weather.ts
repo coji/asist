@@ -237,6 +237,19 @@ export const DEMO_WEATHER_MIYAGI: WeatherData = {
 }
 
 const BERLIN = '+02:00'
+/**
+ * The worldwide source works a day out from its hours, so the first day holds the light rain and the 60 per
+ * cent of its 21:00 step below.
+ */
+const MUNICH_WEEK = week('2026-09-15', [
+  [LIGHT_RAIN, 16, 12, 60],
+  [PARTLY_CLOUDY, 17, 9, 10],
+  [SHOWERS, 15, 8, 70],
+  [OVERCAST, 14, 7, 40],
+  [MAINLY_CLEAR, 18, 8, 5],
+  [PARTLY_CLOUDY, 19, 10, 15],
+  [LIGHT_RAIN, 16, 11, 55]
+])
 /** A place the worldwide source answers for: no landscape, no station, no issue time, and wind. */
 export const DEMO_WEATHER_MUNICH: WeatherData = {
   location: {
@@ -275,16 +288,8 @@ export const DEMO_WEATHER_MUNICH: WeatherData = {
     { from: at('2026-09-15', 18, BERLIN), to: at('2026-09-15', 21, BERLIN), percent: 35 },
     { from: at('2026-09-15', 21, BERLIN), to: at('2026-09-16', 0, BERLIN), percent: 60 }
   ],
-  day: day('2026-09-15', OVERCAST, 16, 12, 45),
-  daily: week('2026-09-15', [
-    [OVERCAST, 16, 12, 45],
-    [PARTLY_CLOUDY, 17, 9, 10],
-    [SHOWERS, 15, 8, 70],
-    [OVERCAST, 14, 7, 40],
-    [MAINLY_CLEAR, 18, 8, 5],
-    [PARTLY_CLOUDY, 19, 10, 15],
-    [LIGHT_RAIN, 16, 11, 55]
-  ]),
+  day: MUNICH_WEEK[0],
+  daily: MUNICH_WEEK,
   sources: [
     {
       product: 'forecast',

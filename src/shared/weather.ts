@@ -310,9 +310,9 @@ const ZONED_FORMS = {
 } as const satisfies Record<string, readonly [string, Intl.DateTimeFormatOptions]>
 const zonedFormats = new Map<string, Intl.DateTimeFormat>()
 /**
- * The formatter of a form in a zone, made once: a forecast reads the date and the hour of each of its 168
- * hours, and reading 168 dates with a new formatter each took 7 to 12 ms against 0.1 ms with one (Node 22
- * on an Apple M5, Sydney and Helsinki, 2026-10-02).
+ * The formatter of a form in a zone, made once: a forecast reads the date and the hour of each of its 216
+ * hours, and reading 216 dates with a new formatter each took 4.5 ms against 0.1 ms with one (Node 22 on
+ * an Apple M5, Sydney and Helsinki, 2026-10-02).
  */
 function zonedFormat(form: keyof typeof ZONED_FORMS, timeZone: string): Intl.DateTimeFormat {
   const key = `${form} ${timeZone}`

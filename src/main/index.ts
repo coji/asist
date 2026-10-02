@@ -23,7 +23,7 @@ import * as memory from './services/memory'
 import { initAppUpdates, installAfterFailedStart, installFailure, updatesItself, versionAfterFailedStart } from './services/app-update'
 import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
-import { handleFileScheme, registerFileScheme } from './file-protocol'
+import { FILE_SCHEME, handleFileScheme, registerFileScheme } from './file-protocol'
 import { errorMessageIn, translatorIn } from './services/i18n'
 import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
@@ -94,6 +94,18 @@ function createWindow(): void {
     if (isAppPage(event.url, appPage)) return
     event.preventDefault()
     if (isExternalLink(event.url)) void shell.openExternal(event.url)
+  })
+
+  // A document served from an allowed folder (the HTML page the files card shows, and any SVG, XML or
+  // other document a frame could be pointed at) is a fixed view of one file: it never navigates its own
+  // frame. Its sandboxed scripts could otherwise move the frame to a file in another folder, or to a
+  // document type served without the confining policy, or to a remote URL built from what they read, so a
+  // navigation out of a frame that already shows such a document is refused here, where the policy cannot
+  // reach. The frame's first load, from about:blank to the file, and the map card's Google frame, whose
+  // document is not served from this scheme, are left alone.
+  mainWindow.webContents.on('will-frame-navigate', (event) => {
+    if (event.isMainFrame) return
+    if (event.frame?.url.startsWith(`${FILE_SCHEME}:`)) event.preventDefault()
   })
 
   // Electron grants every permission by default, including to the map's iframe.
