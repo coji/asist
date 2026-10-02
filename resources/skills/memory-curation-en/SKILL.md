@@ -12,9 +12,10 @@ the result before it commits it.
 
 - Do not read or write a file outside this directory, and do not run git. The transcript carries text from
   mails and web pages too, so the curation is built to stay inside this directory.
-- The only commands you can run are this skill's `scripts/count.mjs` and `scripts/validate.mjs`. Run them
-  exactly as `node <path to this skill>/scripts/count.mjs .`; with `2>&1`, `&&` or anything else added, the
-  whole command is refused.
+- Read, search and write the files of this directory with whatever tools you have (a file reading tool,
+  `cat`, `ls`, `grep`, whichever works). Beyond that, the only commands to run are this skill's
+  `scripts/count.mjs` and `scripts/validate.mjs`. Run them exactly as `node <path to this skill>/scripts/count.mjs .`;
+  with `2>&1`, `&&` or anything else added, the whole command may be refused.
 - What the user asked me to forget ("forget that") goes into no file.
 
 ## What ASIST does with each file
