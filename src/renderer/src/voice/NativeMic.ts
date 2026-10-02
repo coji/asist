@@ -2,8 +2,8 @@
  * Subscribes to the 48 kHz mono frames that the main process receives from the asist-mic helper
  * (voice processing on macOS, the communications echo canceller on Windows) and forwards over IPC.
  * It is an input source in place of MicCapture's getUserMedia. Starting never throws: it returns
- * false so the caller can switch to getUserMedia, and if the helper dies while running, onDown
- * reports it.
+ * false so the caller can switch to getUserMedia. A helper that dies while running is respawned by
+ * main, and onDown reports only that main has given up on it.
  */
 export class NativeMicSource {
   private unsubscribeFrame: (() => void) | null = null

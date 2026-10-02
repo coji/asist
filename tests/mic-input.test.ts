@@ -68,6 +68,33 @@ describe('MicInput', () => {
     expect(microphone.native).toBe(false)
   })
 
+  it('opens getUserMedia once main has given up on the running helper, until the input is stopped', async () => {
+    let reportStatus: ((status: { running: boolean; reason?: string }) => void) | null = null
+    vi.mocked(window.api.onMicNativeStatus).mockImplementation((listener) => {
+      reportStatus = listener
+      return vi.fn()
+    })
+    const { microphone, mic } = input()
+    const lost = vi.fn()
+    const options = { native: true, noiseSuppression: false }
+    await microphone.start(options, () => {}, lost)
+
+    reportStatus!({ running: false, reason: 'audio configuration keeps changing' })
+    expect(lost).toHaveBeenCalledOnce()
+    // The owner builds capture again on the lost source.
+    await microphone.start(options, () => {}, lost)
+
+    expect(window.api.micNativeStart).toHaveBeenCalledOnce()
+    expect(mic.start).toHaveBeenCalledOnce()
+    expect(microphone.native).toBe(false)
+
+    microphone.stop()
+    await microphone.start(options, () => {}, lost)
+    expect(window.api.micNativeStart).toHaveBeenCalledTimes(2)
+    expect(microphone.native).toBe(true)
+    microphone.stop()
+  })
+
   it('goes straight to getUserMedia when the native helper is not wanted', async () => {
     const { microphone, mic } = input()
     await microphone.start({ native: false, noiseSuppression: true }, () => {}, () => {})

@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { VapState } from '@shared/ipc'
 import type { BackchannelDecision } from '@shared/listening-aizuchi'
 
 /**
@@ -34,7 +35,7 @@ class FakeAudio {
 
 interface VoiceInternals {
   state: 'off' | 'loading' | 'listening' | 'capturing' | 'transcribing'
-  captureGeneration: number
+  micGeneration: number
   captureStartedAt: number
   lastPartial: string
   lastBackchannelAt: number
@@ -121,6 +122,81 @@ describe('MaAI by conversation language', () => {
   })
 })
 
+describe('MaAI that starts taking part while the microphone is on', () => {
+  /** A pause inside a sentence: the EoT is low, so MaAI extends the wait past the fixed hangover. */
+  const midSentence: VapState = {
+    t: 0, pNowUser: 0.9, pNowAssistant: 0.1, pFutureUser: 0.9, pFutureAssistant: 0.1,
+    eotUser: 0.1, bcDetUser: 0, bcReact: 0, bcEmo: 0, nodShort: 0, nodLong: 0, inferMs: 1
+  }
+
+  async function listeningWithout(change: 'setting' | 'language'): Promise<InstanceType<typeof VoiceController>> {
+    const controller = new VoiceController()
+    controller.nativeMicPreferred = false
+    controller.partialIntervalMs = 0
+    controller.vapEnabled = change !== 'setting'
+    controller.conversationLocale = change === 'language' ? 'en-US' : 'ja-JP'
+    internals(controller).microphone.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    await controller.enable()
+    expect(window.api.vapStart).not.toHaveBeenCalled()
+    return controller
+  }
+
+  it('lets the estimates move the end of speech once MaAI is switched on', async () => {
+    const listeners: Array<(state: VapState) => void> = []
+    vi.mocked(window.api.onVapState).mockImplementation((listener: (state: VapState) => void) => {
+      listeners.push(listener)
+      return vi.fn()
+    })
+    const controller = await listeningWithout('setting')
+    controller.vapEnabled = true
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    const ends: number[] = []
+    controller.events.on('speechend', ({ vadMs }) => ends.push(vadMs))
+    const vad = internals(controller).vad as { push(frame: Float32Array): void }
+    const speak = (frames: number, level: number): void => {
+      for (let i = 0; i < frames; i++) {
+        for (const listener of listeners) listener(midSentence)
+        vad.push(new Float32Array(320).fill(level))
+      }
+    }
+
+    // A second of speech, a 500 ms pause in the middle of the sentence, then the rest of it.
+    speak(50, 0.1)
+    speak(25, 0)
+    speak(50, 0.1)
+
+    expect(ends).toEqual([])
+    controller.disable()
+  })
+
+  it('starts the worker when the conversation moves to Japanese', async () => {
+    const controller = await listeningWithout('language')
+    controller.conversationLocale = 'ja-JP'
+    expect(window.api.vapStart).toHaveBeenCalledOnce()
+    expect(window.api.onVapState).toHaveBeenCalledOnce()
+    controller.disable()
+  })
+
+  it('says once that the worker did not start, however often it is started again while MaAI stays on', async () => {
+    window.api.vapStart = vi.fn(async () => false)
+    const controller = await listeningWithout('setting')
+    const said = vi.fn()
+    controller.events.on('maaiUnavailable', said)
+    controller.vapEnabled = true
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // The conversation moves to another language and back, and the microphone is turned off and on.
+    controller.conversationLocale = 'en-US'
+    controller.conversationLocale = 'ja-JP'
+    controller.disable()
+    await controller.enable()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(window.api.vapStart).toHaveBeenCalledTimes(3)
+    expect(said).toHaveBeenCalledOnce()
+    controller.disable()
+  })
+})
+
 describe('MaAI that does not start', () => {
   function controllerWithMaai(): InstanceType<typeof VoiceController> {
     const controller = new VoiceController()
@@ -197,7 +273,7 @@ describe('the list of Whisper hallucinations by conversation language', () => {
     const state = internals(controller)
     controller.conversationLocale = locale
     state.state = 'listening'
-    state.captureGeneration = 1
+    state.micGeneration = 1
     state.recognition.transcribe = vi.fn(async () => text)
     const utterances: string[] = []
     controller.events.on('utterance', (event) => utterances.push(event.text))

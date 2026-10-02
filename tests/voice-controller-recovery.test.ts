@@ -44,10 +44,10 @@ type FakeAsr = {
 
 interface VoiceInternals {
   state: 'off' | 'loading' | 'listening' | 'capturing' | 'transcribing'
-  captureGeneration: number
+  micGeneration: number
   captureStartedAt: number
   lastPartial: string
-  captureIsBackchannel: boolean
+  overlap: { kind: string }
   recognition: {
     backend: 'server' | 'local'
     asr: FakeAsr
@@ -63,6 +63,7 @@ interface VoiceInternals {
     snapshot(maxMs?: number): Float32Array | null
     readonly isSpeaking: boolean
     reset(): void
+    push(frame: Float32Array): void
   }
   enqueueUtterance(samples: Float32Array, vadMs: number, vadMode: 'early' | 'extended' | 'fixed'): void
   endCapture(utterance: { samples: Float32Array; vadMs: number; mode: 'early' | 'extended' | 'fixed' } | null): void
@@ -156,36 +157,263 @@ describe('VoiceController ASR recovery', () => {
     controller.disable()
   })
 
-  it('shares concurrent recovery and rebuilds capture only when it was on', async () => {
+  it('shares concurrent recovery, rebuilds capture only when it was on, and moves recognition up to the server', async () => {
     const controller = new VoiceController()
+    controller.nativeMicPreferred = false
     const state = internals(controller)
-    const asr = fakeAsr()
-    state.recognition.asr = asr
+    state.recognition.asr = fakeAsr()
     state.recognition.backend = 'local'
-    state.state = 'listening'
     const mic = {
       start: vi.fn(async () => undefined),
       stop: vi.fn()
     }
     state.microphone.mic = mic
 
-    let allowPermission!: (allowed: boolean) => void
-    vi.mocked(window.api.requestMicPermission).mockImplementation(
-      () => new Promise((resolve) => (allowPermission = resolve))
-    )
+    await controller.recover()
+    expect(mic.start).not.toHaveBeenCalled()
 
+    state.state = 'listening'
     const first = controller.recover()
     const second = controller.recover()
     expect(second).toBe(first)
-    expect(mic.stop).toHaveBeenCalledTimes(1)
-    expect(asr.reset).toHaveBeenCalledTimes(1)
-
-    allowPermission(true)
     await first
 
     expect(mic.start).toHaveBeenCalledTimes(1)
     expect(controller.current).toBe('listening')
     expect(state.recognition.backend).toBe('server')
+  })
+
+  describe('with speech captured before a rebuild still being transcribed', () => {
+    /** Speaks, recovers while transcriber has the speech, and returns the events that follow, the transcript included once it is released. */
+    async function speakThenRecover(
+      controller: InstanceType<typeof VoiceController>,
+      transcriber: ReturnType<typeof vi.fn>,
+      release: () => void
+    ): Promise<string[]> {
+      const state = internals(controller)
+      controller.nativeMicPreferred = false
+      controller.partialIntervalMs = 0
+      state.microphone.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+      await controller.enable()
+      expect(controller.current).toBe('listening')
+      const events: string[] = []
+      controller.events.on('speechend', () => events.push('speechend'))
+      controller.events.on('utterance', ({ text }) => events.push(`utterance:${text}`))
+      controller.events.on('speechdropped', () => events.push('speechdropped'))
+
+      // One second of speech, then the hangover ends it and its transcription starts.
+      for (let i = 0; i < 50; i++) state.vad.push(new Float32Array(320).fill(0.1))
+      for (let i = 0; i < 20; i++) state.vad.push(new Float32Array(320))
+      await vi.waitFor(() => expect(transcriber).toHaveBeenCalledOnce())
+
+      // The window comes back after more than ten seconds hidden while the transcript is on its way.
+      await controller.recover()
+      expect(state.microphone.mic.start).toHaveBeenCalledTimes(2)
+      release()
+      return events
+    }
+
+    it('turns it into an utterance when the server transcribes it', async () => {
+      const controller = new VoiceController()
+      let finish!: (text: string) => void
+      vi.mocked(window.api.transcribe).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+
+      const events = await speakThenRecover(controller, vi.mocked(window.api.transcribe), () => finish('明日の予定を教えて'))
+
+      await vi.waitFor(() => expect(events).toEqual(['speechend', 'utterance:明日の予定を教えて']))
+      expect(controller.current).toBe('listening')
+      controller.disable()
+    })
+
+    it('turns it into an utterance when the in-browser Whisper transcribes it', async () => {
+      const controller = new VoiceController()
+      const state = internals(controller)
+      const asr = fakeAsr()
+      let finish!: (text: string) => void
+      asr.transcribe.mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+      state.recognition.asr = asr
+      controller.localFallbackEnabled = true
+      vi.mocked(window.api.getStatus).mockResolvedValue({ asr: false } as never)
+
+      const events = await speakThenRecover(controller, asr.transcribe, () => finish('明日の予定を教えて'))
+
+      await vi.waitFor(() => expect(events).toEqual(['speechend', 'utterance:明日の予定を教えて']))
+      controller.disable()
+    })
+  })
+
+  describe('with the user speaking when capture is to be rebuilt', () => {
+    const loud = (): Float32Array => new Float32Array(320).fill(0.1)
+    const quiet = (): Float32Array => new Float32Array(320)
+
+    interface Speaking {
+      controller: InstanceType<typeof VoiceController>
+      events: string[]
+      /** Delivers frames from the microphone opened last. */
+      deliver: (frames: number, make: () => Float32Array) => void
+      inputGone: () => void
+    }
+
+    async function speaking(): Promise<Speaking> {
+      const controller = new VoiceController()
+      controller.nativeMicPreferred = false
+      controller.partialIntervalMs = 0
+      vi.mocked(window.api.transcribe).mockResolvedValue('明日の予定を教えて')
+      let onFrame!: (frame: Float32Array) => void
+      let inputGone!: () => void
+      internals(controller).microphone.mic = {
+        start: vi.fn(async (frameHandler: (frame: Float32Array) => void, onEnded: () => void) => {
+          onFrame = frameHandler
+          inputGone = onEnded
+        }),
+        stop: vi.fn()
+      }
+      await controller.enable()
+      const events: string[] = []
+      controller.events.on('speechend', () => events.push('speechend'))
+      controller.events.on('utterance', ({ text }) => events.push(`utterance:${text}`))
+      controller.events.on('speechdropped', () => events.push('speechdropped'))
+      const deliver = (frames: number, make: () => Float32Array): void => {
+        for (let i = 0; i < frames; i++) onFrame(make())
+      }
+      // Half a second of 「明日の予定を教えて」 so far.
+      deliver(25, loud)
+      expect(controller.current).toBe('capturing')
+      return { controller, events, deliver, inputGone: () => inputGone() }
+    }
+
+    it('lets the speech end before rebuilding for a window shown again', async () => {
+      const { controller, events, deliver } = await speaking()
+      const mic = internals(controller).microphone.mic
+
+      const rebuilt = controller.recover()
+      for (let i = 0; i < 10; i++) await Promise.resolve()
+      expect(mic.start).toHaveBeenCalledOnce()
+      deliver(25, loud)
+      deliver(20, quiet)
+      await rebuilt
+
+      expect(mic.start).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => expect(events).toEqual(['speechend', 'utterance:明日の予定を教えて']))
+      controller.disable()
+    })
+
+    it('rebuilds at once when the input itself is gone, and reports the speech it cut off as dropped', async () => {
+      const { controller, events, inputGone } = await speaking()
+
+      inputGone()
+
+      await vi.waitFor(() => expect(internals(controller).microphone.mic.start).toHaveBeenCalledTimes(2))
+      expect(events).toEqual(['speechdropped'])
+      await vi.waitFor(() => expect(controller.current).toBe('listening'))
+      controller.disable()
+    })
+
+    it('rebuilds at once for a window shown again when the input has stopped delivering', async () => {
+      const { controller, events } = await speaking()
+      // The machine slept in the middle of the speech, and the input has delivered nothing since.
+      const asleep = performance.now() + 60_000
+      vi.spyOn(performance, 'now').mockImplementation(() => asleep)
+
+      await controller.recover()
+
+      expect(internals(controller).microphone.mic.start).toHaveBeenCalledTimes(2)
+      expect(events).toEqual(['speechdropped'])
+      vi.mocked(performance.now).mockRestore()
+      controller.disable()
+    })
+  })
+
+  it('does not rebuild before recognition is chosen when the microphone was turned off and on while it waited', async () => {
+    const controller = new VoiceController()
+    controller.nativeMicPreferred = false
+    const state = internals(controller)
+    state.microphone.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    const permissions: Array<(allowed: boolean) => void> = []
+    vi.mocked(window.api.requestMicPermission).mockImplementation(
+      () => new Promise((resolve) => permissions.push(resolve))
+    )
+    const states: string[] = []
+    controller.events.on('state', (next) => states.push(next))
+
+    const first = controller.enable()
+    const recovery = controller.recover()
+    controller.disable()
+    const second = controller.enable()
+    permissions[0](true)
+    await first
+    await recovery
+
+    expect(state.microphone.mic.start).not.toHaveBeenCalled()
+    expect(controller.current).toBe('loading')
+    permissions[1](true)
+    await second
+    expect(state.microphone.mic.start).toHaveBeenCalledOnce()
+    expect(states.at(-1)).toBe('listening')
+    controller.disable()
+  })
+
+  it('rebuilds capture on getUserMedia once main gives up on the running native helper', async () => {
+    const statusListeners: Array<(status: { running: boolean; reason?: string }) => void> = []
+    Object.assign(window.api, {
+      micNativeStart: vi.fn(async () => ({ ok: true, sampleRate: 48_000 })),
+      micNativeStop: vi.fn(async () => {}),
+      onMicNativeFrame: vi.fn(() => vi.fn()),
+      onMicNativeStatus: vi.fn((listener: (status: { running: boolean; reason?: string }) => void) => {
+        statusListeners.push(listener)
+        return vi.fn()
+      })
+    })
+    const controller = new VoiceController()
+    controller.noiseSuppression = false
+    const mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    internals(controller).microphone.mic = mic
+    await controller.enable()
+    expect(window.api.micNativeStart).toHaveBeenCalledOnce()
+
+    // Voice processing keeps reconfiguring; main has respawned the helper as far as it would and gives up.
+    statusListeners.at(-1)!({ running: false, reason: 'audio configuration keeps changing' })
+
+    await vi.waitFor(() => expect(mic.start).toHaveBeenCalledOnce())
+    expect(window.api.micNativeStart).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(controller.current).toBe('listening'))
+
+    // The window comes back after a long time hidden, which rebuilds capture again.
+    await controller.recover()
+    expect(mic.start).toHaveBeenCalledTimes(2)
+    expect(window.api.micNativeStart).toHaveBeenCalledOnce()
+
+    controller.disable()
+    await controller.enable()
+    expect(window.api.micNativeStart).toHaveBeenCalledTimes(2)
+    controller.disable()
+  })
+
+  it('reports the in-browser Whisper loading as the microphone\'s only while the microphone turns on', async () => {
+    const controller = new VoiceController()
+    controller.nativeMicPreferred = false
+    const state = internals(controller)
+    const asr = fakeAsr()
+    asr.init.mockImplementation(async (onProgress?: (info: { progress: number }) => void) => {
+      onProgress?.({ progress: 40 })
+      return 'wasm'
+    })
+    state.recognition.asr = asr
+    state.microphone.mic = { start: vi.fn(async () => undefined), stop: vi.fn() }
+    const microphoneLoading: number[] = []
+    controller.events.on('progress', (progress) => microphoneLoading.push(progress))
+
+    // The settings screen prepares the model while the microphone is off.
+    const shown: number[] = []
+    await controller.prepareLocalAsr(({ progress }) => shown.push(progress))
+    expect(shown).toEqual([40])
+    expect(microphoneLoading).toEqual([])
+
+    controller.localFallbackEnabled = true
+    vi.mocked(window.api.getStatus).mockResolvedValue({ asr: false } as never)
+    await controller.enable()
+    expect(microphoneLoading).toEqual([40])
+    controller.disable()
   })
 
   it('does not let an obsolete enable continue after the user turns the mic off', async () => {
@@ -300,7 +528,7 @@ describe('VoiceController ASR recovery', () => {
     const controller = new VoiceController()
     const state = internals(controller)
     state.state = 'listening'
-    state.captureGeneration = 1
+    state.micGeneration = 1
     state.captureStartedAt = 10
     state.lastPartial = 'first partial'
 
@@ -364,7 +592,7 @@ describe('VoiceController ASR recovery', () => {
     const controller = new VoiceController()
     const state = internals(controller)
     state.state = 'listening'
-    state.captureGeneration = 1
+    state.micGeneration = 1
     state.captureStartedAt = 10
     const transcribe = vi.fn(async () => 'うん')
     state.recognition.transcribe = transcribe
@@ -372,7 +600,7 @@ describe('VoiceController ASR recovery', () => {
     controller.events.on('speechend', () => events.push('speechend'))
     controller.events.on('utterance', () => events.push('utterance'))
 
-    state.captureIsBackchannel = true
+    state.overlap = { kind: 'backchannel' }
     state.endCapture({ samples: new Float32Array([0.1]), vadMs: 300, mode: 'fixed' })
     await Promise.resolve()
     expect(transcribe).not.toHaveBeenCalled()
@@ -416,7 +644,7 @@ describe('VoiceController ASR recovery', () => {
   it('drops a partial transcription that belongs to an obsolete capture', async () => {
     const controller = new VoiceController()
     const state = internals(controller)
-    state.captureGeneration = 1
+    state.micGeneration = 1
     state.captureStartedAt = 10
     state.vad = {
       snapshot: () => new Float32Array([0.1]),
@@ -432,7 +660,7 @@ describe('VoiceController ASR recovery', () => {
     controller.events.on('partial', (text) => partials.push(text))
 
     const pending = state.partialTick()
-    state.captureGeneration = 2
+    state.micGeneration = 2
     state.captureStartedAt = 20
     resolvePartial('stale partial')
     await pending

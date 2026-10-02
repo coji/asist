@@ -35,7 +35,7 @@ function fakeAsr(): FakeAsr {
 
 function backend(): { recognition: AsrBackend; state: Internals; asr: FakeAsr; serverLost: ReturnType<typeof vi.fn> } {
   const serverLost = vi.fn()
-  const recognition = new AsrBackend({ onProgress: () => {}, onServerLost: serverLost })
+  const recognition = new AsrBackend({ onServerLost: serverLost })
   const state = recognition as unknown as Internals
   const asr = fakeAsr()
   state.asr = asr

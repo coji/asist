@@ -46,7 +46,7 @@ it('prepares no real in-browser Whisper when the microphone turns on with local 
   voiceController.localFallbackEnabled = true
 
   vi.useFakeTimers()
-  const choosing = voiceController.recognition.choose(() => true)
+  const choosing = voiceController.recognition.choose(() => true, () => {})
   await vi.advanceTimersByTimeAsync(5_000)
 
   expect(await choosing).toBe(true)

@@ -28,6 +28,13 @@ export interface VadUtterance {
   mode: HangoverMode
 }
 
+/** How far a capture had gone at some point, so that what it captures afterwards can be judged on its own. */
+export interface CaptureMark {
+  spokenMs: number
+  voicedMs: number
+  speechMs: number
+}
+
 export interface VadEvents {
   onSpeechStart?: () => void
   /**
@@ -83,6 +90,16 @@ const VAP_EOT_PERSIST_MS = 200
 const VAP_EARLY_HANGOVER_MS = 300
 /** The longest hangover an extension can use. */
 const VAP_EXTENDED_HANGOVER_MS = 900
+
+/**
+ * Whether a capture holds an utterance. The lengths let a single 「はい」 through, so what keeps a noise, such
+ * as a run of keystrokes, from being transcribed into words is Silero's confirmation. The length is measured
+ * without the silence after the speech, so an early VAP end that shortens the hangover does not discard a
+ * short utterance.
+ */
+function holdsUtterance(spokenMs: number, voicedMs: number, speechMs: number): boolean {
+  return spokenMs >= MIN_UTTERANCE_MS && voicedMs >= MIN_VOICED_MS && speechMs >= MIN_SPEECH_MS
+}
 
 /** The levels a capture opened on, and the loudest frame it held. */
 interface CaptureLevels {
@@ -165,6 +182,17 @@ export class VadSegmenter {
   /** The milliseconds since speech started. */
   get utteranceDuration(): number {
     return this.speaking ? (this.utteranceSamples / SAMPLE_RATE) * 1000 : 0
+  }
+
+  /** How far the capture in progress has gone, up to the end of its last voice. */
+  mark(): CaptureMark {
+    return { spokenMs: this.utteranceDuration - this.silenceDuration, voicedMs: this.voicedMs, speechMs: this.speechMs }
+  }
+
+  /** Whether what the capture in progress took in after the mark would be kept as an utterance on its own. */
+  holdsUtteranceSince(mark: CaptureMark): boolean {
+    const now = this.mark()
+    return holdsUtterance(now.spokenMs - mark.spokenMs, now.voicedMs - mark.voicedMs, now.speechMs - mark.speechMs)
   }
 
   /**
@@ -264,13 +292,7 @@ export class VadSegmenter {
 
   private finalize(utteranceMs: number, mode: HangoverMode): void {
     const vadMs = Math.round(this.silenceMs)
-    // The lengths let a single 「はい」 through, so what keeps a noise, such as a run of keystrokes,
-    // from being transcribed into words is Silero's confirmation. The length is measured without the
-    // silence, so an early VAP end that shortens the hangover does not discard a short utterance.
-    const kept =
-      utteranceMs - vadMs >= MIN_UTTERANCE_MS &&
-      this.voicedMs >= MIN_VOICED_MS &&
-      this.speechMs >= MIN_SPEECH_MS
+    const kept = holdsUtterance(utteranceMs - vadMs, this.voicedMs, this.speechMs)
     // Every capture is logged with its levels, so that a voice that did nothing, or a noise that
     // started a turn, can be traced back to the thresholds.
     console.log(`vad: capture ${kept ? 'kept' : 'discarded'} ${this.describeCapture()}`)

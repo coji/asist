@@ -12,8 +12,6 @@ import { errorMessageOf } from '@/display-error'
  */
 
 export interface AsrBackendHooks {
-  /** The in-browser Whisper loading, from 0 to 1. */
-  onProgress(progress: number): void
   /** The server stopped and local takes over. The in-browser Whisper is too slow for partial transcriptions. */
   onServerLost(): void
 }
@@ -37,14 +35,11 @@ export class AsrBackend {
   }
 
   /**
-   * Prepares the in-browser Whisper on an explicit request. Because it may fetch the model, choose
-   * never calls it on its own while localFallbackEnabled is false.
+   * Prepares the in-browser Whisper on an explicit request, reporting its loading to the caller alone.
+   * Because it may fetch the model, choose never calls it on its own while localFallbackEnabled is false.
    */
   prepareLocal(onProgress?: (info: AsrProgress) => void): Promise<string> {
-    return this.asr.init((info) => {
-      this.hooks.onProgress(info.progress)
-      onProgress?.(info)
-    })
+    return this.asr.init(onProgress)
   }
 
   cancelLocalPreparation(): void {
@@ -52,10 +47,11 @@ export class AsrBackend {
   }
 
   /**
-   * Chooses the backend as the microphone turns on, and prepares local when it is chosen. It resolves
-   * false when isCurrent turns false on the way, and throws when neither backend can be used.
+   * Chooses the backend as the microphone turns on, and prepares local when it is chosen, reporting its
+   * loading to onProgress. It resolves false when isCurrent turns false on the way, and throws when
+   * neither backend can be used.
    */
-  async choose(isCurrent: () => boolean): Promise<boolean> {
+  async choose(isCurrent: () => boolean, onProgress: (info: AsrProgress) => void): Promise<boolean> {
     // With local ASR explicitly enabled, the UI must not sit for 15 seconds waiting for the server.
     // Local is chosen and prepared at once, and the move up to the server is attempted after the
     // microphone has started.
@@ -78,7 +74,7 @@ export class AsrBackend {
     this.backend = status.asr ? 'server' : 'local'
     console.log(`ASR backend: ${this.backend}`)
     if (this.backend === 'local') {
-      await this.prepareLocal()
+      await this.prepareLocal(onProgress)
       if (!isCurrent()) return false
     }
     return true

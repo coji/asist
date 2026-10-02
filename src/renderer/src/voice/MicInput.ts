@@ -6,8 +6,8 @@ import { DfnDenoiser } from './DfnDenoiser'
 /**
  * The microphone as 16 kHz mono frames, for the voice pipeline and for the live engine alike. The
  * native helper, which cancels the echo in the OS, is tried first when the caller asks for it, and
- * getUserMedia takes over when it cannot start. DeepFilterNet works on the helper's 48 kHz audio only;
- * getUserMedia brings Chromium's own noise suppression.
+ * getUserMedia takes over when it cannot start or when main has given up on it. DeepFilterNet works on the
+ * helper's 48 kHz audio only; getUserMedia brings Chromium's own noise suppression.
  */
 
 const NATIVE_SAMPLE_RATE = 48_000
@@ -26,6 +26,13 @@ export class MicInput {
   private dfn = new DfnDenoiser()
   private generation = 0
   private nativeRunning = false
+  /**
+   * main gave up on the native helper while it ran, which it does only after respawning a helper that keeps
+   * breaking. Starting the helper again would also clear the failures main counted, and the helper would be
+   * given up on and started over without end, so the input stays on getUserMedia until the microphone is
+   * turned off.
+   */
+  private nativeGivenUp = false
 
   /** Whether the frames come from the native helper, whose echo cancellation also attenuates the microphone during double talk. */
   get native(): boolean {
@@ -33,13 +40,22 @@ export class MicInput {
   }
 
   /**
-   * onLost is called when the source stops delivering, because the native helper died or the device
-   * went away; the caller builds capture again. A stop while this runs leaves nothing started. It
-   * throws only when getUserMedia fails.
+   * Opens the input, closing first whatever is open. onLost is called when the source stops delivering,
+   * because main gave up on the native helper or the device went away; the caller starts the input again.
+   * A stop while this runs leaves nothing started. It throws only when getUserMedia fails.
    */
   async start(options: MicInputOptions, onFrame: (frame: Float32Array) => void, onLost: () => void): Promise<void> {
+    this.close()
     const generation = this.generation
-    if (options.native && (await this.startNative(options.noiseSuppression, onFrame, onLost))) {
+    const helperGivenUp = (): void => {
+      this.nativeGivenUp = true
+      onLost()
+    }
+    if (
+      options.native &&
+      !this.nativeGivenUp &&
+      (await this.startNative(options.noiseSuppression, onFrame, helperGivenUp))
+    ) {
       this.nativeRunning = true
       return
     }
@@ -47,7 +63,14 @@ export class MicInput {
     await this.mic.start(onFrame, onLost)
   }
 
+  /** Closes the input as the microphone turns off. The next start tries the native helper again. */
   stop(): void {
+    this.close()
+    this.nativeGivenUp = false
+  }
+
+  /** Closes the input to build it again, which keeps a helper main gave up on out of the next start. */
+  close(): void {
     this.generation++
     this.nativeMic.stop()
     this.dfn.dispose()

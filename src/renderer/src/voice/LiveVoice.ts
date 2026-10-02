@@ -80,22 +80,31 @@ export class LiveVoice {
     }
   }
 
+  /** Turns the microphone off. The next time it turns on, the native helper is tried again. */
   disable(): void {
-    this.generation++
     this.microphone.stop()
+    this.shutDown()
+  }
+
+  /**
+   * Builds capture and the live session again after the machine sleeps and wakes or the input source goes
+   * away. A native helper main gave up on stays out until the microphone is turned off.
+   */
+  async recover(): Promise<void> {
+    if (this.state === 'off') return
+    this.microphone.close()
+    this.shutDown()
+    await this.enable()
+  }
+
+  private shutDown(): void {
+    this.generation++
     this.silero.dispose()
     this.speaking = false
     this.voicedMs = 0
     this.quietMs = 0
     if (this.state !== 'off') void window.api.liveStop().catch(() => {})
     this.setState('off')
-  }
-
-  /** Builds capture again after the machine sleeps and wakes or the input device changes. */
-  async recover(): Promise<void> {
-    if (this.state === 'off') return
-    this.disable()
-    await this.enable()
   }
 
   /** Tells the main process that speech started or stopped, from the level and how long a voice has held. */
