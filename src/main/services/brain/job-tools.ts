@@ -7,7 +7,7 @@ import {
   type PromptText
 } from '@shared/conversation-locale'
 import { errorText } from '@shared/i18n/error-text'
-import type { JobDiff } from '@shared/ipc'
+import type { AgentEngine, JobDiff } from '@shared/ipc'
 import { resolveJobAccess } from '@shared/job-workspace'
 import {
   LOCAL_TIMEOUT_MS,
@@ -18,6 +18,7 @@ import {
 import { getSettings } from '../settings'
 import { translatorIn } from '../i18n'
 import * as agentRunner from '../agent'
+import { requireCli } from '../agent-process/cli-locator'
 import * as memory from '../memory'
 import * as projectIndex from '../project-index'
 import type { ToolContext } from './tools'
@@ -48,6 +49,19 @@ function showJobCard(ctx: ToolContext, jobId: string): void {
     turnId: ctx.turnId,
     event: { op: 'create', key: `job:${jobId}`, type: 'agent-job', slot: 'right', props: { jobId }, state: 'ready' }
   })
+}
+
+/**
+ * Refuses a job whose CLI cannot be started before its confirmation opens. The job itself only finds that
+ * out after it is created, since on a Mac the search waits for the user's shell, and a job that fails right
+ * after its approval looks like an approval that did not work.
+ */
+async function assertCliStartable(engine: AgentEngine, locale: ConversationLocale): Promise<void> {
+  try {
+    await requireCli(engine)
+  } catch (err) {
+    throw new ToolError(TEXTS.startFailed(detail(err, locale)))
+  }
 }
 
 export function agentTool(locale: ConversationLocale): Def {
@@ -144,6 +158,7 @@ export function agentTool(locale: ConversationLocale): Def {
         }
       }
       const access = resolveJobAccess({ ...wanted, gitRepo })
+      await assertCliStartable(settings.agentEngine, locale)
       const approved = await confirmJob(
         {
           kind: 'start',
@@ -401,6 +416,7 @@ export function jobTools(locale: ConversationLocale): Def[] {
         const prompt = String(input.prompt ?? '').trim()
         if (!prompt) throw new ToolError(TEXTS.emptyFollowUp)
         const parent = requireJob(input)
+        await assertCliStartable(parent.engine, locale)
         const approved = await confirmJob(
           {
             kind: 'continue',

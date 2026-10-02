@@ -84,6 +84,15 @@ describe('starting an agent', () => {
     expect(agent.get(signalled.id)?.summary).toBeUndefined()
   })
 
+  it('asks the agent to stop again when a job of this run is stopped while it is still stopping, so that a stop that failed can be tried again', async () => {
+    const agent = await import('../src/main/services/agent')
+    const job = agent.start('調査する', options)
+    agent.cancel(job.id)
+    agent.cancel(job.id)
+    expect(mocks.kill).toHaveBeenCalledTimes(2)
+    expect(agent.get(job.id)?.status).toBe('stopping')
+  })
+
   it('leaves the exit code out of a cancelled job, so that the card says it was cancelled', async () => {
     const agent = await import('../src/main/services/agent')
     const job = agent.start('調査する', options)

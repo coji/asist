@@ -6,7 +6,7 @@ import readline from 'node:readline'
 import { asrLanguage, asrModelFiles, type AsrModelSpec } from '@shared/asr-models'
 import type { SetupProgress } from '@shared/ipc'
 import { errorText } from '@shared/i18n/error-text'
-import { childEnv } from './child-env'
+import { llamaServerEnv } from './child-env'
 import { conversationLocale } from './conversation-locale'
 import { t } from './i18n'
 import { platformCapabilities } from './platform'
@@ -128,7 +128,7 @@ async function launch(started: Server, device: string): Promise<boolean> {
     // On Windows the automatic setting colours output that goes to a pipe, and the escape codes reach the log.
     '--log-colors', 'off',
     '--no-log-timestamps'
-  ], { stdio: ['ignore', 'ignore', 'pipe'], env: childEnv(), windowsHide: true })
+  ], { stdio: ['ignore', 'ignore', 'pipe'], env: llamaServerEnv(), windowsHide: true })
   started.child = child
   stopOnQuit(child)
   logLevels(child.stderr!)

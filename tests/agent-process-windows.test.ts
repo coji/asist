@@ -7,7 +7,7 @@ vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ agentEngine: 'codex', uiLocale: 'ja-JP' }) }))
 // Node stands in for the CLI, so the launcher runs a real program with a real grandchild.
-vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: () => process.execPath }))
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: async () => ({ path: process.execPath, env: {} }) }))
 
 const { launchAgentProcess, recoverAgentProcess } = await import('../src/main/services/agent-process')
 

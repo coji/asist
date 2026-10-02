@@ -1176,6 +1176,48 @@ export const jobs = defineMessages({
       'es-419': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en una terminal y configura el sandbox de Windows.',
       'es-ES': 'ASIST no puede iniciar {engine} hasta que su sandbox de Windows esté configurado. Inicia {engine} una vez en un terminal y configura el sandbox de Windows.'
     },
+    /** macOS: the login shell did not give the PATH the CLI is looked for on and runs with. The settings screen shows it too. */
+    cliShellUnreadable: {
+      'ja-JP': 'シェルから PATH を読めなかったため、{engine} を起動できません。新しいターミナルで、シェルがエラーなくすぐに起動するか確かめてください。',
+      'en-US': 'ASIST could not read PATH from your shell, so it cannot start {engine}. In a new terminal window, check that your shell starts quickly and without errors.',
+      'fr-FR': "ASIST n'a pas pu lire le PATH de votre shell et ne peut donc pas lancer {engine}. Dans une nouvelle fenêtre de terminal, vérifiez que votre shell démarre rapidement et sans erreur.",
+      'de-DE': 'ASIST konnte PATH nicht aus Ihrer Shell lesen und kann {engine} deshalb nicht starten. Prüfen Sie in einem neuen Terminalfenster, ob Ihre Shell schnell und ohne Fehler startet.',
+      'hi-IN': 'ASIST आपके शेल से PATH नहीं पढ़ सका, इसलिए {engine} शुरू नहीं हो सकता। नई टर्मिनल विंडो में देखें कि आपका शेल बिना त्रुटि के जल्दी शुरू होता है या नहीं।',
+      'id-ID': 'ASIST tidak dapat membaca PATH dari shell Anda, jadi {engine} tidak dapat dijalankan. Di jendela terminal baru, pastikan shell Anda mulai dengan cepat dan tanpa galat.',
+      'it-IT': 'ASIST non è riuscito a leggere il PATH dalla tua shell, quindi non può avviare {engine}. In una nuova finestra del terminale, verifica che la shell si avvii rapidamente e senza errori.',
+      'ko-KR': '셸에서 PATH를 읽지 못해 {engine}을(를) 실행할 수 없습니다. 새 터미널 창에서 셸이 오류 없이 바로 시작되는지 확인하십시오.',
+      'pt-BR': 'O ASIST não conseguiu ler o PATH do seu shell, então não consegue iniciar o {engine}. Em uma nova janela do terminal, verifique se o shell inicia rápido e sem erros.',
+      'es-419': 'ASIST no pudo leer el PATH de tu shell, así que no puede iniciar {engine}. En una nueva ventana de la terminal, comprueba que tu shell se inicie rápido y sin errores.',
+      'es-ES': 'ASIST no ha podido leer el PATH de tu shell, así que no puede iniciar {engine}. En una nueva ventana del terminal, comprueba que tu shell se inicia rápido y sin errores.'
+    },
+    /** macOS: the log's account of which shell did not answer; the screens show cliShellUnreadable. */
+    shellPathUnread: {
+      'ja-JP': 'ログインシェル(SHELL={shell})から PATH を読めませんでした。',
+      'en-US': 'Could not read PATH from the login shell (SHELL={shell}).',
+      'fr-FR': 'Impossible de lire le PATH du shell de connexion (SHELL={shell}).',
+      'de-DE': 'PATH konnte nicht aus der Login-Shell gelesen werden (SHELL={shell}).',
+      'hi-IN': 'लॉगिन शेल (SHELL={shell}) से PATH नहीं पढ़ा जा सका।',
+      'id-ID': 'PATH tidak dapat dibaca dari shell login (SHELL={shell}).',
+      'it-IT': 'Impossibile leggere il PATH dalla shell di login (SHELL={shell}).',
+      'ko-KR': '로그인 셸(SHELL={shell})에서 PATH를 읽지 못했습니다.',
+      'pt-BR': 'Não foi possível ler o PATH do shell de login (SHELL={shell}).',
+      'es-419': 'No se pudo leer el PATH del shell de inicio de sesión (SHELL={shell}).',
+      'es-ES': 'No se ha podido leer el PATH del shell de inicio de sesión (SHELL={shell}).'
+    },
+    /** The status while the CLI is still being looked for, which on a Mac waits for the login shell. The settings screens show it. */
+    cliChecking: {
+      'ja-JP': '{engine} の CLI を探しています。',
+      'en-US': 'Looking for the {engine} CLI.',
+      'fr-FR': 'Recherche du CLI {engine} en cours.',
+      'de-DE': 'Die CLI von {engine} wird gesucht.',
+      'hi-IN': '{engine} का CLI खोजा जा रहा है।',
+      'id-ID': 'Sedang mencari CLI {engine}.',
+      'it-IT': 'Ricerca della CLI di {engine} in corso.',
+      'ko-KR': '{engine} CLI를 찾고 있습니다.',
+      'pt-BR': 'Procurando o CLI do {engine}.',
+      'es-419': 'Buscando el CLI de {engine}.',
+      'es-ES': 'Buscando la CLI de {engine}.'
+    },
     repoRefused: {
       'ja-JP': 'ASIST の git は {path} をリポジトリとして開けませんでした: {detail}',
       'en-US': "ASIST's git could not open {path} as a repository: {detail}",

@@ -16,7 +16,6 @@ import { conversationLocale } from './conversation-locale'
 import { errorMessage, t } from './i18n'
 import { memoryDir } from './memory-store'
 import { launchAgentProcess, recoverAgentProcess } from './agent-process'
-import { requireCli } from './agent-process/cli-locator'
 import { platformCapabilities } from './platform'
 import type { AgentProcess } from './agent-process/owner'
 import {
@@ -128,7 +127,7 @@ function startRecovery(entry: JobEntry): void {
       console.error('failed to save the agent recovery error:', saveError)
     }
   })
-  process.stop()
+  void process.stop()
 }
 
 function assertWriterStopped(job: AgentJob): void {
@@ -409,7 +408,6 @@ function createJob(prompt: string, options: StartOptions, isolate = false): Agen
   if (shuttingDown) throw new Error(errorText('jobs.start.shuttingDown'))
   const settings = getSettings()
   const engine = settings.agentEngine
-  requireCli(engine)
   const title = options.title || prompt.slice(0, 40)
   const cwd = options.cwd || createWorkspace(title)
   if (!fs.existsSync(cwd)) throw new Error(errorText('jobs.start.cwdMissing', { path: cwd }))
@@ -495,7 +493,8 @@ function launch(job: AgentJob, args: string[] = buildStartArgs(cliJob(job))): vo
           summary: entry.processError ?? entry.job.summary ??
             (failed && code !== null ? t('jobs.log.exitCode', { code }) : undefined)
         })
-      }
+      },
+      onStopFailed: (error) => pushLog(id, 'stderr', errorMessage(error))
     })
     void entry.process.completion.catch((error) => pushLog(id, 'stderr', errorMessage(error)))
   } catch (err) {
@@ -639,11 +638,7 @@ export async function continueJob(parentId: string, prompt: string, signal?: Abo
   assertNoContinuation()
   if (!parent.sessionId) throw new Error(errorText('jobs.continue.noSession'))
   if (parent.status === 'stopping') throw new Error(errorText('jobs.continue.stopping'))
-  if (parent.status === 'running') {
-    const process = jobs.get(parentId)!.process
-    cancel(parentId)
-    await process?.completion
-  }
+  if (parent.status === 'running') await stopJob(parentId)
   if (shuttingDown) throw new Error(errorText('jobs.start.shuttingDown'))
   assertNoContinuation()
   const transferWorktree = Boolean(parent.worktree &&
@@ -794,18 +789,29 @@ export function allowedFileRoots(): string[] {
   return [...roots]
 }
 
+/** Asks the job's agent to stop. A stop that fails is written to the job's log where the agent's owner reports it. */
 export function cancel(id: string): void {
+  void stopJob(id).catch(() => {})
+}
+
+/**
+ * Asks the job's agent to stop and settles once it is gone, or rejects when the stop does not see it gone by
+ * its deadline. A job of this run that is still stopping is asked again, which sends the stop again once an
+ * earlier one failed; a job restored after a restart has its agent checked again.
+ */
+function stopJob(id: string): Promise<void> {
   ensureLoaded()
   const entry = jobs.get(id)
-  if (!entry) return
+  if (!entry) return Promise.resolve()
   if (entry.recovering) {
     startRecovery(entry)
-    return
+  } else if (isJobExecuting(entry.job.status)) {
+    if (entry.job.status === 'running') update(id, { status: 'stopping' })
+    pushLog(id, 'system', t('jobs.log.stopRequested'))
   }
-  if (entry.job.status !== 'running') return
-  update(id, { status: 'stopping' })
-  pushLog(id, 'system', t('jobs.log.stopRequested'))
-  entry.process?.stop()
+  const process = entry.process
+  if (!process || !isJobExecuting(entry.job.status)) return Promise.resolve()
+  return Promise.all([process.stop(), process.completion]).then(() => {})
 }
 
 /**
@@ -815,13 +821,11 @@ export function cancel(id: string): void {
 export async function shutdown(): Promise<void> {
   shuttingDown = true
   try {
-    const completions: Promise<void>[] = []
+    const stops: Promise<void>[] = []
     for (const { job, process } of jobs.values()) {
-      if (!process) continue
-      completions.push(process.completion)
-      cancel(job.id)
+      if (process) stops.push(stopJob(job.id))
     }
-    await Promise.all(completions)
+    await Promise.all(stops)
   } catch (error) {
     shuttingDown = false
     throw error

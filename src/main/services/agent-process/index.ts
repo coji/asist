@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import type { AgentEngine, AgentJob, AgentProcessIdentity } from '@shared/ipc'
 import type { OsFamily } from '@shared/platform'
 import { createClaudeStreamParser, createCodexStreamParser, type AgentStreamEvent, type AgentStreamParser } from '@shared/agent-stream'
+import { errorText } from '@shared/i18n/error-text'
 import { t } from '../i18n'
-import { requireCli } from './cli-locator'
+import { requireCli, type FoundCli } from './cli-locator'
 import { platformCapabilities } from '../platform'
 import { childEnv } from '../child-env'
-import type { AgentOwner, AgentProcess } from './owner'
+import { STOP_DEADLINE_MS, type AgentOwner, type AgentProcess } from './owner'
 import { posixOwner } from './posix'
 import { windowsOwner } from './windows'
 
@@ -37,6 +38,7 @@ interface ProcessHandlers {
   onStderr: (text: string) => void
   onError: (error: Error) => void
   onExit: (code: number | null) => void
+  onStopFailed: (error: Error) => void
 }
 
 const OWNERS: Record<OsFamily, AgentOwner> = { macos: posixOwner, windows: windowsOwner }
@@ -47,13 +49,65 @@ const owner = (): AgentOwner => OWNERS[platformCapabilities().os]
 export const recoverAgentProcess = (identity: AgentProcessIdentity, onStopped: () => void): AgentProcess =>
   owner().recover(identity, onStopped)
 
+/**
+ * Starts the job's CLI once it is located and returns at once, since on macOS the search waits for the
+ * user's shell. A CLI that cannot be located or started is reported through onError and onExit, like one
+ * that failed, and a stop asked before it started keeps it from starting.
+ */
 export function launchAgentProcess(job: AgentJob, args: string[], handlers: ProcessHandlers): AgentProcess {
-  const cli = requireCli(job.engine)
+  let stopped = false
+  let running: AgentProcess | undefined
+  const notStarted = (error: unknown): void => {
+    handlers.onError(error instanceof Error ? error : new Error(String(error)))
+    handlers.onExit(null)
+  }
+  const completion = requireCli(job.engine).then((cli) => {
+    if (stopped) return handlers.onExit(null)
+    try {
+      running = startCli(job, cli, args, handlers)
+    } catch (error) {
+      return notStarted(error)
+    }
+    return running.completion
+  }, notStarted)
+  // A rejection that happens before anyone awaits must not become an unhandled rejection. The caller
+  // still receives the original promise.
+  void completion.catch(() => {})
+  // A stop asked before the CLI started ends with the search, which can wait for the user's shell, and fails
+  // by the same deadline as a stop of a running CLI.
+  let stopping: Promise<void> | undefined
+  const stopBeforeStart = (): Promise<void> => {
+    stopping ??= new Promise<void>((resolve, reject) => {
+      const deadline = setTimeout(() => {
+        stopping = undefined
+        const error = new Error(errorText('jobs.process.stopTimedOut'))
+        handlers.onStopFailed(error)
+        reject(error)
+      }, STOP_DEADLINE_MS)
+      completion.then(resolve, reject).finally(() => clearTimeout(deadline))
+    })
+    void stopping.catch(() => {})
+    return stopping
+  }
+  return {
+    completion,
+    stop: () => {
+      stopped = true
+      return running ? running.stop() : stopBeforeStart()
+    }
+  }
+}
+
+function startCli(job: AgentJob, cli: FoundCli, args: string[], handlers: ProcessHandlers): AgentProcess {
   const spec = ENGINES[job.engine]
   const parse = spec.createParser()
   // The CLI must not start writing before the job is persisted, so it runs only once "start" is written
   // to its standard input, after onSpawn. The prompt follows on the same input.
-  const { child, identity, lifetime } = owner().start(cli, args, { cwd: job.cwd, env: childEnv(spec.env), token: randomUUID() }, handlers.onExit)
+  const env = childEnv({ ...cli.env, ...spec.env })
+  const { child, identity, lifetime } = owner().start(cli.path, args, { cwd: job.cwd, env, token: randomUUID() }, {
+    onClose: handlers.onExit,
+    onStopFailed: handlers.onStopFailed
+  })
 
   // A chunk split in the middle of a UTF-8 sequence is reassembled before the JSONL lines are split out.
   child.stdout!.setEncoding('utf8')
@@ -109,9 +163,8 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
     } catch (error) {
       child.stdin!.end()
       handlers.onError(error instanceof Error ? error : new Error(String(error)))
-      try { lifetime.stop() } catch (stopError) {
-        handlers.onError(stopError instanceof Error ? stopError : new Error(String(stopError)))
-      }
+      // A stop that fails is reported through onStopFailed, and an error that leaves the end unconfirmed through the completion.
+      void lifetime.stop()
     }
   }
   return lifetime

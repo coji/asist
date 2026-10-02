@@ -1,4 +1,4 @@
-import type { AgentCliState, AgentEngine } from './ipc'
+import type { AgentCliStatus, AgentEngine } from './ipc'
 import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
 import type { OsFamily } from './platform'
@@ -36,14 +36,17 @@ export const AGENT_MODE_NAME: Record<AgentEngine, Record<'readonly' | 'auto', st
 }
 
 /**
- * Why an engine's CLI cannot be launched, as a job's start error and the settings screens say it. The
- * screens word a missing CLI their own way, with where to install it.
+ * Why an engine's CLI cannot be launched, as a job's start error and the settings screens say it, and on
+ * the screens that it is still being looked for. The screens word a missing CLI their own way, with where
+ * to install it.
  */
 export const AGENT_CLI_UNAVAILABLE_TEXT = {
   missing: 'jobs.start.cliMissing',
   'script-only': 'jobs.start.cliScriptOnly',
-  'sandbox-not-set-up': 'jobs.start.cliSandboxNotSetUp'
-} as const satisfies Record<Exclude<AgentCliState, 'found'>, MessageKey>
+  'sandbox-not-set-up': 'jobs.start.cliSandboxNotSetUp',
+  'shell-unreadable': 'jobs.start.cliShellUnreadable',
+  checking: 'jobs.start.cliChecking'
+} as const satisfies Record<Exclude<AgentCliStatus, 'found'>, MessageKey>
 
 export interface AgentCliJob {
   engine: AgentEngine

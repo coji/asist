@@ -574,6 +574,7 @@ export const mockApi: RendererApi = {
   notify: async () => {},
   reportMiniAppView: async () => {},
   onHotkeyMic: () => () => {},
+  recheckAgentCli: async () => {},
   getSetupStatus: async () => ({
     services: await mockApi.getStatus(),
     asr: demoAsrStatus()

@@ -117,6 +117,7 @@ const api = {
       modelInstalled: false
     }
   })),
+  recheckAgentCli: vi.fn(async () => {}),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: false, modelsInstalled: false, running: false })),
   embeddingStatus: vi.fn(async (): Promise<EmbeddingStatus> => embeddingReady),
   aizuchiClassifierStatus: vi.fn(async () => ({ runtimeInstalled: true, modelInstalled: false, running: false })),
@@ -1077,6 +1078,21 @@ describe('the state of the speech models while the settings are open', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
     expect(api.getSetupStatus.mock.calls.length).toBe(reads + 1)
+  })
+
+  it('asks main to look for the agent CLI again when the settings open, and not when a speech model changes', async () => {
+    useSettingsStore.setState({ settings: { ...settings, ttsEngine: 'qwen3tts' } })
+    const view = await render()
+    expect(api.recheckAgentCli).toHaveBeenCalledOnce()
+    await act(async () => nav(view, 'voice').click())
+    const reads = api.getSetupStatus.mock.calls.length
+    const select = view.querySelector<HTMLSelectElement>(`[aria-label="${t('settingsVoice.speech.model')}"]`)!
+    await act(async () => {
+      select.value = '1.7b'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(api.getSetupStatus.mock.calls.length).toBe(reads + 1)
+    expect(api.recheckAgentCli).toHaveBeenCalledOnce()
   })
 
   it('shows a prepared local engine that is still loading as starting, without offering to download its model', async () => {

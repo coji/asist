@@ -490,9 +490,13 @@ export type AgentEngine = 'codex' | 'claude'
  * Whether an engine's CLI was found. 'script-only' is a Windows install that left only a .cmd or .bat
  * script, as npm does, which ASIST does not start: cmd.exe would parse the quotes and parentheses in
  * the arguments again. 'sandbox-not-set-up' is a Windows codex whose own sandbox has not been set up,
- * without which ASIST does not run it: codex there would not confine a job at all.
+ * without which ASIST does not run it: codex there would not confine a job at all. 'shell-unreadable' is a
+ * Mac whose login shell did not give its PATH, on which the CLI is looked for and run.
  */
-export type AgentCliState = 'found' | 'missing' | 'script-only' | 'sandbox-not-set-up'
+export type AgentCliState = 'found' | 'missing' | 'script-only' | 'sandbox-not-set-up' | 'shell-unreadable'
+
+/** The agent CLI as the status reports it: 'checking' until the search, which on a Mac waits for the user's shell, has ended. */
+export type AgentCliStatus = AgentCliState | 'checking'
 
 export interface AgentProcessIdentity {
   pid: number
@@ -706,7 +710,7 @@ export interface AppStatus {
    */
   asrInstalled: boolean
   /** Whether the CLI of the selected agent engine was found. */
-  agent: AgentCliState
+  agent: AgentCliStatus
   agentEngine: AgentEngine
   /** The voice engine from the settings. With `live` the ASR and TTS states are not used. */
   voiceEngine: VoiceEngine
@@ -854,6 +858,7 @@ export const IpcChannel = {
   Notify: 'notify',
   HotkeyMic: 'hotkey-mic',
   GetSetupStatus: 'get-setup-status',
+  RecheckAgentCli: 'recheck-agent-cli',
   CompleteSetup: 'complete-setup',
   AsrPrepare: 'asr-prepare',
   AsrPrepareCancel: 'asr-prepare-cancel',
@@ -1062,6 +1067,8 @@ export interface RendererApi {
   onHotkeyMic(callback: () => void): () => void
 
   getSetupStatus(): Promise<SetupStatus>
+  /** Looks for the agent CLI again, on the PATH the user's shell gives now; a new status follows once the search ends. */
+  recheckAgentCli(): Promise<void>
   /** Validates the chosen API, ASR and TTS again, and marks onboarding complete only when they all pass. */
   completeSetup(request: CompleteSetupRequest): Promise<AppSettings>
   prepareAsrModel(model?: AsrModel): Promise<{ ok: boolean; message: string }>

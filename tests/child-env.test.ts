@@ -62,4 +62,17 @@ describe('pythonEnv', () => {
     const env = pythonEnv({ HF_HUB_OFFLINE: '1' }, { Path: 'C:\\Windows', PYTHONUTF8: '0', Anthropic_Api_Key: 'secret' })
     expect(env).toEqual({ Path: 'C:\\Windows', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' })
   })
+
+  it.each(['darwin', 'win32'] as const)('leaves out the Python settings of the user\'s own Python, which would change what the worker imports (%s)', (platform) => {
+    simulate(platform)
+    const env = pythonEnv({}, {
+      PATH: '/usr/bin',
+      PYTHONPATH: '/opt/other-python/lib/python3.9/site-packages',
+      PythonHome: '/opt/other-python',
+      PYTHONIOENCODING: 'cp932',
+      PYTHONINSPECT: '1'
+    })
+    // macOS keeps a name written in another case apart, and Python there reads only the upper-case one.
+    expect(env).toEqual({ PATH: '/usr/bin', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', ...(platform === 'darwin' ? { PythonHome: '/opt/other-python' } : {}) })
+  })
 })

@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
     discardPreview: vi.fn(() => ({ repo: '/repo', dir: '/ws/wt', branch: 'asist/x', stat: 'README.md | 2 +-', submodules: [] as string[], leftOut: [] as string[] }))
   },
   requestConfirm: vi.fn(async () => true),
+  requireCli: vi.fn(async () => ({ path: '/opt/homebrew/bin/claude', env: {} })),
   fetchPanel: vi.fn(),
   timers: { create: vi.fn() },
   projects: {
@@ -52,6 +53,7 @@ vi.mock('../src/main/services/platform', async () => {
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => mocks.settings }))
 vi.mock('../src/main/services/memory', () => mocks.memory)
 vi.mock('../src/main/services/agent', () => mocks.agent)
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: mocks.requireCli }))
 vi.mock('../src/main/services/confirm', () => ({ requestConfirm: mocks.requestConfirm, askingFrom: (_asker: unknown, run: () => unknown) => run() }))
 vi.mock('../src/main/services/panel-fetchers', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/main/services/panel-fetchers')>()),
@@ -499,6 +501,22 @@ describe('brain tools registry', () => {
     const failed = await executeClientTool('continue_agent_job', { jobId: 'j1', prompt: 'x' }, ctx)
     expect(failed.isError).toBe(true)
     expect(failed.content).toContain('run_agent_task')
+  })
+
+  it.each(['run_agent_task', 'continue_agent_job'])('refuses %s whose CLI cannot be started before any confirmation opens', async (name) => {
+    mocks.requireCli.mockRejectedValueOnce(new Error(errorText('jobs.start.cliMissing', { engine: 'claude' })))
+    if (name === 'continue_agent_job') {
+      mocks.agent.userJob.mockReturnValueOnce({ id: 'j1', title: '調査', status: 'done', engine: 'claude', readonly: true, cwd: '/w/j1' } as never)
+    }
+    const { executeClientTool } = await load()
+    const { ctx, events } = makeCtx()
+    const result = await executeClientTool(name, { jobId: 'j1', prompt: '調べて' }, ctx)
+    expect(mocks.requestConfirm).not.toHaveBeenCalled()
+    expect(result.isError).toBe(true)
+    expect(mocks.requireCli).toHaveBeenCalledWith('claude')
+    expect(mocks.agent.start).not.toHaveBeenCalled()
+    expect(mocks.agent.continueJob).not.toHaveBeenCalled()
+    expect(events).toEqual([])
   })
 
   it('does not continue a job the user declines in the confirmation window', async () => {

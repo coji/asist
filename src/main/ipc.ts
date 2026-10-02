@@ -38,7 +38,7 @@ import { interject } from './services/brain/interject'
 import { acknowledgePlayback } from './services/brain/job-reporting'
 import * as agent from './services/agent'
 import { usageDays } from './services/usage-ledger'
-import { forgetCliSearches, locateCli } from './services/agent-process/cli-locator'
+import { cliStatus, forgetCliSearches, locateCli, onCliSearched } from './services/agent-process/cli-locator'
 import { appUpdateState, events as appUpdateEvents, readyUpdateInstall } from './services/app-update'
 import { fetchPanel } from './services/panel-fetchers'
 import {
@@ -174,24 +174,32 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       ttsLabel: tts.engineLabel(),
       asr: asrUp,
       asrInstalled: asr.installed(),
-      agent: locateCli(settings.agentEngine).state,
+      // The conversation and the microphone wait for the status, so it does not wait for the user's shell.
+      agent: cliStatus(settings.agentEngine),
       agentEngine: settings.agentEngine,
       voiceEngine: settings.voiceEngine,
       live: live.connection()
     }
   }
 
-  watchdog.start(() => {
+  const sendStatus = (): void => {
     void computeStatus().then((status) => send(IpcChannel.StatusChanged, status))
-  })
+  }
+  watchdog.start(sendStatus)
+  onCliSearched(sendStatus)
 
   handle(IpcChannel.Status, computeStatus)
   handle(IpcChannel.GetSetupStatus, async (): Promise<SetupStatus> => {
-    // The settings screen and the first-run setup ask for this when they open, which is when the user
-    // may just have installed or removed an agent CLI.
-    forgetCliSearches()
     const [services, asrStatus] = await Promise.all([computeStatus(), asr.installationStatus()])
     return { services, asr: asrStatus }
+  })
+
+  // The settings ask for this when they open, which is when the user may just have installed or removed an
+  // agent CLI; a search runs the user's shell, so the other reads of the status do not ask for one.
+  handle(IpcChannel.RecheckAgentCli, () => {
+    forgetCliSearches()
+    // Its end sends the status again; a failure is reported where a job needs the CLI.
+    void locateCli(getSettings().agentEngine).catch(() => {})
   })
 
   handle(IpcChannel.CompleteSetup, (_e, request: unknown) =>

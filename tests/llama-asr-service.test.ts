@@ -294,3 +294,20 @@ describe('the model the setting stands for', () => {
     await expect(service.available()).resolves.toBe(true)
   })
 })
+
+describe('the environment of llama-server', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('starts the server without the user\'s llama.cpp settings, which would move it off the plain HTTP and /health it is reached at', async () => {
+    vi.stubEnv('LLAMA_ARG_API_PREFIX', '/llama')
+    vi.stubEnv('LLAMA_ARG_SSL_KEY_FILE', '/Users/someone/server.key')
+    vi.stubEnv('GGML_VK_VISIBLE_DEVICES', '1')
+    await expect(asr.ensureServer(MODEL)).resolves.toBe(true)
+    const env = mocks.spawn.mock.calls[0][2].env as NodeJS.ProcessEnv
+    expect(Object.keys(env).filter((name) => name.startsWith('LLAMA_'))).toEqual([])
+    // A GGML_ variable picks the GPU, which a user may set on purpose for every program that uses ggml.
+    expect(env.GGML_VK_VISIBLE_DEVICES).toBe('1')
+  })
+})

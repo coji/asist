@@ -32,6 +32,12 @@ ASIST does not touch the CLI's credentials. It does not pass any API key saved i
 
 Terms change. Check the pages above before you use ASIST for work.
 
+## On a Mac
+
+On a Mac, ASIST looks for the CLI on the same PATH as your terminal and starts it with that PATH. To read the PATH, ASIST starts your login shell (`$SHELL`) the way a terminal does, so your shell settings such as `~/.zshrc` are read too. A CLI installed with npm, nvm, bun or pnpm works as long as it works in your terminal. If you install a CLI after ASIST has started, ASIST looks for it again when you open the settings.
+
+If the shell does not return its PATH within 10 seconds, the "Agent" settings say that the PATH could not be read from your shell, and no job starts. Open a new terminal and check that your shell settings don't stop with an error or do something slow.
+
 ## On Windows
 
 On Windows, install each CLI with its official installer. A CLI installed with npm has only a `.cmd` file, which ASIST cannot start. If you start a job with a CLI installed with npm, ASIST tells you to reinstall it with the official installer.

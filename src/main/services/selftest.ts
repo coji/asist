@@ -175,13 +175,14 @@ export async function runSelfTest(): Promise<number> {
   )
   results.push(
     await test('agent: CLI検出', async () => {
-      const engines = availableEngines()
+      const engines = await availableEngines()
       if (engines.length === 0) throw new Error('no agent CLI found (codex/claude)')
-      return engines.map((e) => `${e}=${requireCli(e)}`).join(', ')
+      const found = await Promise.all(engines.map(async (e) => `${e}=${(await requireCli(e)).path}`))
+      return found.join(', ')
     })
   )
 
-  if (locateCli('codex').state === 'found') {
+  if ((await locateCli('codex')).state === 'found') {
     results.push(
       await test('agent: codex実行 + 成果物追跡', async () => {
         const job = agent.start(

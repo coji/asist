@@ -76,6 +76,7 @@ export const rendererApiMethods = [
   'reportMiniAppView',
   'onHotkeyMic',
   'getSetupStatus',
+  'recheckAgentCli',
   'completeSetup',
   'prepareAsrModel',
   'cancelAsrPreparation',

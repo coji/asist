@@ -183,6 +183,7 @@ vi.mock('../src/main/services/agent', () => ({
   merge: vi.fn(),
   discard: vi.fn()
 }))
+vi.mock('../src/main/services/agent-process/cli-locator', () => ({ requireCli: async () => ({ path: '/opt/homebrew/bin/codex', env: {} }) }))
 vi.mock('../src/main/services/aizuchi', () => ({ randomClip: () => mocks.workClip() }))
 vi.mock('../src/main/services/memory', () => ({
   promptBlock: () => null,

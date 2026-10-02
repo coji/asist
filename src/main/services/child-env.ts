@@ -39,12 +39,29 @@ export function childEnv(extra: NodeJS.ProcessEnv = {}, parent: NodeJS.ProcessEn
 }
 
 /**
- * The environment a Python process starts with. Python on Windows reads and writes its pipes in the
- * locale's code page (cp932, cp1252) and would misread the Japanese in the JSON lines, so UTF-8 mode is
- * turned on, on every OS. Output is unbuffered so that each line reaches the app when it is printed.
+ * The environment a Python worker starts with. It runs in an environment uv built for ASIST, so the
+ * PYTHON variables the user set for their own Python are left out: PYTHONPATH would import another
+ * Python's packages first and PYTHONHOME would load another standard library. Python on Windows reads and
+ * writes its pipes in the locale's code page (cp932, cp1252) and would misread the Japanese in the JSON
+ * lines, so UTF-8 mode is turned on, on every OS. Output is unbuffered so that each line reaches the app
+ * when it is printed.
  */
 export function pythonEnv(extra: NodeJS.ProcessEnv = {}, parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  return childEnv({ PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', ...extra }, parent)
+  const env = { ...parent }
+  removeVariables(env, (key) => key.startsWith('PYTHON'))
+  return childEnv({ PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', ...extra }, env)
+}
+
+/**
+ * The environment the bundled llama-server starts with. It reads every option it is not given on its
+ * command line from a LLAMA_ variable, so one the user set for their own llama.cpp would, for example,
+ * move its endpoints under a prefix or serve HTTPS, and ASIST would never see it answer. The GGML_
+ * variables stay: they pick the GPU for every program built on ggml, which a user may set on purpose.
+ */
+export function llamaServerEnv(parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env = childEnv({}, parent)
+  removeVariables(env, (key) => key.startsWith('LLAMA_'))
+  return env
 }
 
 /** Deletes every variable whose name, as the OS compares it, matches. */
