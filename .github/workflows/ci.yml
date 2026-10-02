@@ -64,7 +64,8 @@ jobs:
       - run: npm test
         env:
           ASIST_VAP_PYTHON: ${{ steps.python.outputs.python-path }}
-      # The budget scene below writes its two-hour MP3 with lame, which the runner does not have.
+      # The budget scene below writes its two-hour MP3 with lame, which the runner does not have. Homebrew installed
+      # it with mpg123 in 3.5 s on macos-latest (2026-10-02).
       - run: brew install lame
         env:
           HOMEBREW_NO_AUTO_UPDATE: '1'

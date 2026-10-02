@@ -80,7 +80,10 @@ export async function launchChrome({ port = 0, url = 'about:blank', args = [] } 
   const close = async () => {
     child.kill()
     await exited
-    await rm(profile, { recursive: true, force: true })
+    // Chrome's helper processes can still write into the profile for a moment after the browser has exited: on a
+    // CI runner the removal met a folder filled again while it was emptied (ENOTEMPTY, 2026-10-02). rm retries
+    // such a folder, waiting a little longer each time.
+    await rm(profile, { recursive: true, force: true, maxRetries: 5 })
     process.off('exit', leave)
   }
   try {
