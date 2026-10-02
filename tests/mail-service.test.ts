@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { messageIdOf, threadIdOf, type MailAccount, type MailEvent, type MailSettings } from '@shared/mail'
+import { MAX_MAIL_ACCOUNTS, messageIdOf, threadIdOf, type MailAccount, type MailEvent, type MailSettings } from '@shared/mail'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import fs from 'node:fs'
@@ -94,7 +94,7 @@ async function setup(options: { provider?: MailAccount['provider']; enabled?: bo
   }
   const signal = new AbortController()
   const outgoing = (): OutgoingMail => smtp.send.mock.calls[0][2] as OutgoingMail
-  return { imap, cache, drafts, draftsFile, service, secrets, smtp, confirm, events, saveSettings, settings: () => settings, ids, signal, outgoing, question, other }
+  return { imap, server, cache, drafts, draftsFile, service, secrets, smtp, confirm, events, saveSettings, settings: () => settings, ids, signal, outgoing, question, other }
 }
 
 /** What the reader's reply form does: main settles the reply the form shows, and the same reply is sent. */
@@ -279,6 +279,16 @@ describe('sending and replying', () => {
       to: [{ name: '田中', address: 't@example.com' }],
       cc: [{ name: '鈴木', address: 's@example.com' }, { name: '', address: 'cc@example.com' }]
     })
+    await f.service.stop()
+  })
+
+  it('answers a message the user sent to the people it went to, in a reply and in a reply-all', async () => {
+    const f = await setup()
+    const sent = f.imap.put('Sent', { subject: '日程のご相談', from: me, to: tanaka, cc: suzuki, date: new Date(NOW - 2 * HOUR), text: 'いかがでしょうか', flags: ['\\Seen'], messageId: '<ask@me>' })
+    await f.service.syncNow()
+    const id = messageIdOf('a1', 'sent', sent.uid)
+    expect(await f.service.replySettle(id, false)).toMatchObject({ to: tanaka, cc: [] })
+    expect(await f.service.replySettle(id, true)).toMatchObject({ to: tanaka, cc: suzuki })
     await f.service.stop()
   })
 
@@ -579,6 +589,59 @@ describe('reading', () => {
   })
 })
 
+describe('a UIDVALIDITY the server renewed', () => {
+  /** The server recreates INBOX: a new UIDVALIDITY, and another message under the UID of the cached question. */
+  function recreateInbox(f: Awaited<ReturnType<typeof setup>>) {
+    const inbox = f.imap.folders.get('INBOX')!
+    inbox.uidValidity += 1n
+    inbox.messages.clear()
+    return f.imap.put('INBOX', { uid: f.question.uid, subject: '別のメール', from: suzuki, to: me, date: new Date(NOW - HOUR), text: '別の本文', messageId: '<other@x>' })
+  }
+
+  it('lets no operation by UID reach the message of the new generation before the next fetch', async () => {
+    const operations: Array<(f: Awaited<ReturnType<typeof setup>>) => Promise<unknown>> = [
+      (f) => f.service.change({ operation: 'trash', id: f.ids.question }, f.signal.signal, 'screen'),
+      (f) => f.service.change({ operation: 'archive', id: f.ids.question }, f.signal.signal, 'screen'),
+      (f) => f.service.change({ operation: 'star', id: f.ids.question, starred: true }, f.signal.signal, 'screen'),
+      (f) => f.service.change({ operation: 'markRead', ids: [f.ids.question], read: true }, f.signal.signal, 'screen'),
+      (f) => f.service.read(f.ids.question),
+      (f) => f.service.replySettle(f.ids.question, false)
+    ]
+    for (const operation of operations) {
+      const f = await setup()
+      const other = recreateInbox(f)
+      await expect(operation(f)).rejects.toThrow(errorText('mail.errors.message.notFound'))
+      expect(f.imap.folders.get('INBOX')!.messages.get(other.uid)).toMatchObject({ subject: '別のメール', flags: [] })
+      expect(f.imap.folders.get('Trash')!.messages.size + f.imap.folders.get('Archive')!.messages.size).toBe(0)
+      expect(f.imap.calls.filter((call) => call.startsWith('download:') || call.startsWith('flags'))).toEqual([])
+      await f.service.stop()
+    }
+  })
+
+  it('drops the folder from the cache at once and fetches the new generation without announcing it as new mail', async () => {
+    const f = await setup()
+    recreateInbox(f)
+    await expect(f.service.change({ operation: 'star', id: f.ids.question, starred: true }, f.signal.signal, 'screen')).rejects.toThrow()
+    expect(f.service.list({ view: 'inbox' }).total).toBe(0)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(f.service.list({ view: 'inbox' }).messages.map((m) => m.subject)).toEqual(['別のメール'])
+    expect(f.events.filter((event) => event.type === 'arrived')).toEqual([])
+    await f.service.stop()
+  })
+
+  it('stops an operation whose message a fetch replaced while its confirmation was open', async () => {
+    const f = await setup()
+    f.confirm.mockImplementationOnce(async () => {
+      recreateInbox(f)
+      await f.service.syncNow()
+      return true
+    })
+    await expect(f.service.change({ operation: 'trash', id: f.ids.question }, f.signal.signal, 'screen')).rejects.toThrow(errorText('mail.errors.message.notFound'))
+    expect(f.imap.folders.get('Trash')!.messages.size).toBe(0)
+    await f.service.stop()
+  })
+})
+
 describe('accounts', () => {
   it('finds the folders by their role when probing, leaves a missing one null, and reports why a connection failed', async () => {
     const f = await setup({ provider: 'icloud' })
@@ -608,6 +671,74 @@ describe('accounts', () => {
     expect(f.cache.counts('a1', NOW)).toEqual({ unread: 0, unreadRecent: 0 })
     expect(f.service.list({ view: 'inbox', accountId: 'a1' }).total).toBe(0)
     await expect(f.service.removeAccount('a1')).rejects.toThrow(errorText('mail.errors.account.notFound'))
+    await f.service.stop()
+  })
+
+  it('reports a connection the probe lost after the login by the reason the client emitted, and lets no error event escape', async () => {
+    /**
+     * imapflow emits 'error' from the socket's handler, where an EventEmitter with no listener throws it as an
+     * uncaught exception of the main process, and rejects the command waiting on the socket only with
+     * "Connection not available".
+     */
+    class LostAfterLogin extends FakeImap {
+      escaped: unknown = null
+      override async list(): ReturnType<FakeImap['list']> {
+        try {
+          this.emit('error', new Error('read ECONNRESET'))
+        } catch (error) {
+          this.escaped = error
+        }
+        throw new Error('Connection not available')
+      }
+    }
+    const imap = new LostAfterLogin()
+    const service = new MailService({
+      settings: () => ({ enabled: true, accounts: [], defaultAccountId: null, syncDays: 30, notifyNewMail: true }),
+      saveSettings: vi.fn(),
+      secrets: memorySecrets(),
+      cache: new MailCache(':memory:'),
+      drafts: new MailDraftStore({ filePath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'asist-drafts-')), 'mail-drafts.json') }),
+      createClient: () => imap.asClient(),
+      smtp: { send: vi.fn() },
+      confirm: vi.fn(async () => true),
+      emit: () => undefined
+    })
+    const input = { label: '個人', email: 'other@example.com', name: '', provider: 'custom' as const, imap: account().imap, smtp: account().smtp, password: 'pw' }
+    const failure = await service.probe(input).then(
+      () => null,
+      (error: unknown) => error
+    )
+    expect(imap.escaped).toBeNull()
+    expect(failure).toEqual(new Error(errorText('mail.errors.account.connectFailed', { reason: 'read ECONNRESET' })))
+  })
+
+  it('refuses an account past the limit before connecting, and leaves neither its password nor the account when one of the two writes fails', async () => {
+    const f = await setup({ provider: 'icloud' })
+    const input = { label: '個人', email: 'other@example.com', name: '', provider: 'icloud' as const, imap: account().imap, smtp: account().smtp, password: 'pw2' }
+    const full = Array.from({ length: MAX_MAIL_ACCOUNTS - 1 }, (_, index) => account({ id: `more-${index}`, email: `more${index}@example.com` }))
+    f.saveSettings({ ...f.settings(), accounts: [...f.settings().accounts, ...full] })
+    f.saveSettings.mockClear()
+    const connects = (): number => f.server.instances.flatMap((instance) => instance.calls).filter((call) => call === 'connect').length
+    const before = connects()
+    await expect(f.service.addAccount(input)).rejects.toThrow(errorText('mail.errors.form.tooManyAccounts', { count: MAX_MAIL_ACCOUNTS }))
+    expect(connects()).toBe(before)
+    expect(f.saveSettings).not.toHaveBeenCalled()
+    expect(f.secrets.data.has('new-id')).toBe(false)
+    // A settings file that cannot be written keeps the password out as well.
+    f.saveSettings({ ...f.settings(), accounts: f.settings().accounts.slice(0, 1) })
+    f.saveSettings.mockImplementationOnce(() => {
+      throw new Error('EACCES: permission denied')
+    })
+    await expect(f.service.addAccount(input)).rejects.toThrow('EACCES')
+    expect(f.secrets.data.has('new-id')).toBe(false)
+    // A password that cannot be stored keeps the account out of the settings, so it can be added again.
+    vi.spyOn(f.secrets, 'set').mockImplementationOnce(() => {
+      throw new Error(errorText('mail.errors.account.encryptionUnavailable'))
+    })
+    await expect(f.service.addAccount(input)).rejects.toThrow(errorText('mail.errors.account.encryptionUnavailable'))
+    expect(f.settings()).toMatchObject({ accounts: [{ id: 'a1' }], defaultAccountId: 'a1' })
+    await expect(f.service.addAccount(input)).resolves.toMatchObject({ id: 'new-id' })
+    expect(f.secrets.data.get('new-id')).toBe('pw2')
     await f.service.stop()
   })
 

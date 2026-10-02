@@ -70,6 +70,18 @@ describe('replies', () => {
       cc: [{ name: '鈴木', address: 's@example.com' }, { name: '', address: 'cc@example.com' }]
     })
   })
+  it('answers the user’s own message to the people it went to, and leaves the user out of both To and Cc', () => {
+    const me = { name: '私', address: 'me@example.com' }
+    const tanaka = { name: '田中', address: 't@example.com' }
+    const suzuki = { name: '鈴木', address: 's@example.com' }
+    const sent = { from: me, to: [tanaka, { name: '', address: 'ME@example.com' }], cc: [suzuki, me], replyTo: [] }
+    expect(replyRecipients(sent, 'me@example.com', false)).toEqual({ to: [tanaka], cc: [] })
+    expect(replyRecipients(sent, 'me@example.com', true)).toEqual({ to: [tanaka], cc: [suzuki] })
+    // A Reply-To that names the user along with a list answers the list alone.
+    expect(replyRecipients({ ...message, replyTo: [me, { name: '', address: 'list@example.com' }] }, 'me@example.com', false).to).toEqual([{ name: '', address: 'list@example.com' }])
+    // A message the user sent to themselves leaves nobody else to answer.
+    expect(replyRecipients({ ...sent, to: [me], cc: [] }, 'me@example.com', true)).toEqual({ to: [me], cc: [] })
+  })
   it('quotes the original below a line with its date and sender', () => {
     const quote = quotation({ date: Date.UTC(2026, 8, 15, 1, 0), from: message.from, text: '一行目\r\n\r\n二行目\n' }, 'Asia/Tokyo')
     expect(quote).toBe('2026/09/15 10:00 田中 <t@example.com>:\n> 一行目\n>\n> 二行目\n')

@@ -7,6 +7,7 @@ import {
   mailDraftInputSchema,
   mailDraftPatchSchema,
   mailReplySendSchema,
+  mailSettingsSchema,
   parseAddress,
   parseMailInput,
   parseMessageId,
@@ -22,6 +23,7 @@ import {
   type MailChangeResult,
   type MailDraft,
   type MailEvent,
+  type MailFolder,
   type MailFolders,
   type MailListResult,
   type MailMessage,
@@ -202,6 +204,13 @@ export class MailService {
   async probe(value: unknown): Promise<MailProbeResult> {
     const input = parseMailInput(mailAccountInputSchema, value)
     const client = this.deps.createClient({ email: input.email, imap: input.imap }, input.password)
+    // imapflow reports a connection lost after the login by emitting 'error', which an EventEmitter with no
+    // listener throws as an uncaught exception of the main process, and rejects the command waiting on it
+    // only with "Connection not available". The emitted error is the reason the probe reports.
+    let lost: unknown = null
+    client.on('error', (error: unknown) => {
+      lost ??= error
+    })
     try {
       await client.connect()
     } catch (error) {
@@ -222,6 +231,8 @@ export class MailService {
         gmail: supportsGmail(client),
         mailboxes: folders.map((folder) => folder.path)
       }
+    } catch (error) {
+      throw new Error(errorText('mail.errors.account.connectFailed', { reason: errMessage(lost ?? error) }))
     } finally {
       await disconnect(client)
     }
@@ -233,26 +244,28 @@ export class MailService {
     if (settings.accounts.some((account) => account.email.toLowerCase() === input.email.toLowerCase())) {
       throw new Error(errorText('mail.errors.account.duplicate'))
     }
-    const probe = await this.probe(input)
-    const account: MailAccount = {
-      id: this.deps.createId?.() ?? globalThis.crypto.randomUUID(),
-      label: input.label,
-      email: input.email,
-      name: input.name,
-      provider: input.provider,
-      imap: input.imap,
-      smtp: input.smtp,
-      folders: probe.folders
-    }
-    this.deps.secrets.set(account.id, input.password)
-    this.deps.saveSettings({
+    const id = this.deps.createId?.() ?? globalThis.crypto.randomUUID()
+    const { password, ...fields } = input
+    const withAccount = (folders: MailFolders): MailSettings => ({
       ...settings,
       enabled: true,
-      accounts: [...settings.accounts, account],
-      defaultAccountId: settings.defaultAccountId ?? account.id
+      accounts: [...settings.accounts, { id, ...fields, folders }],
+      defaultAccountId: settings.defaultAccountId ?? id
     })
+    // An account the settings would refuse, one past the limit of accounts for one, is turned down before the server is asked.
+    parseMailInput(mailSettingsSchema, withAccount({ sent: null, archive: null, trash: null }))
+    const next = withAccount((await this.probe(input)).folders)
+    // Only removing the account removes its password, so the password is taken back when the settings cannot
+    // be saved with the account, and neither is left without the other.
+    this.deps.secrets.set(id, password)
+    try {
+      this.deps.saveSettings(next)
+    } catch (error) {
+      this.deps.secrets.remove(id)
+      throw error
+    }
     this.applySettings()
-    return account
+    return next.accounts.at(-1)!
   }
 
   async updateAccount(id: string, patchValue: unknown, password?: string): Promise<MailAccount> {
@@ -486,17 +499,12 @@ export class MailService {
    */
   private async settleReply(message: MailMessage, account: MailAccount, replyAll: boolean): Promise<MailReply> {
     const sync = this.requireSync(account.id)
+    const uidValidity = this.uidValidityOf(message)
     const text = await sync.fetchBody(message.folder, message.uid)
-    const path = folderPath(account, message.folder)
-    const parent = await sync.run(async (client) => {
-      const lock = await client.getMailboxLock(path)
-      try {
-        const fetched = await client.fetchOne(message.uid, { envelope: true, headers: ['references'] }, { uid: true })
-        if (!fetched) throw new Error(errorText('mail.errors.message.notFound'))
-        return { inReplyTo: fetched.envelope?.inReplyTo ?? '', references: parseReferences(fetched.headers?.toString('latin1')) }
-      } finally {
-        lock.release()
-      }
+    const parent = await sync.byUid(message.folder, uidValidity, async (client) => {
+      const fetched = await client.fetchOne(message.uid, { envelope: true, headers: ['references'] }, { uid: true })
+      if (!fetched) throw new Error(errorText('mail.errors.message.notFound'))
+      return { inReplyTo: fetched.envelope?.inReplyTo ?? '', references: parseReferences(fetched.headers?.toString('latin1')) }
     })
     const { to, cc } = replyRecipients(message, account.email, replyAll)
     return {
@@ -558,7 +566,7 @@ export class MailService {
     const account = this.accountOf(message.accountId)
     const sync = this.requireSync(account.id)
     const head = { label: account.label, ...describe(message) }
-    const path = folderPath(account, message.folder)
+    const uidValidity = this.uidValidityOf(message)
     if (input.operation === 'archive') {
       if (message.folder !== 'inbox') throw new Error(errorText('mail.errors.change.notInInbox'))
       const destination = account.folders.archive
@@ -566,13 +574,8 @@ export class MailService {
       return {
         detail: t('mail.confirm.archive', { ...head, folder: destination }),
         perform: async () => {
-          await sync.run(async (client) => {
-            const lock = await client.getMailboxLock(path)
-            try {
-              if (!(await client.messageMove(message.uid, destination, { uid: true }))) throw new Error(REJECTED)
-            } finally {
-              lock.release()
-            }
+          await sync.byUid(message.folder, uidValidity, async (client) => {
+            if (!(await client.messageMove(message.uid, destination, { uid: true }))) throw new Error(REJECTED)
           })
           this.deps.cache.remove(message.id)
           this.afterChange(account.id)
@@ -586,13 +589,8 @@ export class MailService {
       return {
         detail: t('mail.confirm.trash', { ...head, folder: destination }),
         perform: async () => {
-          await sync.run(async (client) => {
-            const lock = await client.getMailboxLock(path)
-            try {
-              if (!(await client.messageMove(message.uid, destination, { uid: true }))) throw new Error(REJECTED)
-            } finally {
-              lock.release()
-            }
+          await sync.byUid(message.folder, uidValidity, async (client) => {
+            if (!(await client.messageMove(message.uid, destination, { uid: true }))) throw new Error(REJECTED)
           })
           this.deps.cache.remove(message.id)
           this.afterChange(account.id)
@@ -603,7 +601,7 @@ export class MailService {
     return {
       detail: t(input.starred ? 'mail.confirm.star' : 'mail.confirm.unstar', head),
       perform: async () => {
-        await sync.run((client) => storeFlag(client, path, [message.uid], '\\Flagged', input.starred))
+        await sync.byUid(message.folder, uidValidity, (client) => storeFlag(client, [message.uid], '\\Flagged', input.starred))
         this.deps.cache.setFlags(message.id, { starred: input.starred })
         this.afterChange(account.id)
         return {
@@ -622,13 +620,13 @@ export class MailService {
    */
   private planMarkRead(ids: readonly string[], read: boolean): { detail: string; perform: () => Promise<MailChangeResult> } {
     const messages = [...new Set(ids)].map((id) => this.requireMessage(id))
-    const groups = new Map<string, { account: MailAccount; sync: MailAccountSync; path: string; messages: MailMessage[] }>()
+    const groups = new Map<string, { account: MailAccount; sync: MailAccountSync; folder: MailFolder; uidValidity: string | null; messages: MailMessage[] }>()
     for (const message of messages) {
       const key = `${message.accountId}:${message.folder}`
       let group = groups.get(key)
       if (!group) {
         const account = this.accountOf(message.accountId)
-        group = { account, sync: this.requireSync(account.id), path: folderPath(account, message.folder), messages: [] }
+        group = { account, sync: this.requireSync(account.id), folder: message.folder, uidValidity: this.uidValidityOf(message), messages: [] }
         groups.set(key, group)
       }
       group.messages.push(message)
@@ -646,7 +644,7 @@ export class MailService {
       detail,
       perform: async () => {
         for (const group of groups.values()) {
-          await group.sync.run((client) => storeFlag(client, group.path, group.messages.map((message) => message.uid), '\\Seen', read))
+          await group.sync.byUid(group.folder, group.uidValidity, (client) => storeFlag(client, group.messages.map((message) => message.uid), '\\Seen', read))
           for (const message of group.messages) this.deps.cache.setFlags(message.id, { unread: !read })
           this.afterChange(group.account.id)
         }
@@ -667,6 +665,11 @@ export class MailService {
     const message = this.deps.cache.get(id)
     if (!message) throw new Error(errorText('mail.errors.message.notFound'))
     return message
+  }
+
+  /** The UIDVALIDITY the UID of a message just read from the cache belongs to, which an operation by that UID hands to byUid. */
+  private uidValidityOf(message: MailMessage): string | null {
+    return this.deps.cache.uidValidity(message.accountId, message.folder)
   }
 
   private afterChange(accountId: string): void {
@@ -723,10 +726,10 @@ export class MailService {
     }
     if (sync && answered !== null) {
       try {
-        // The id names a folder and a UID, which after a change of UIDVALIDITY can belong to another message.
+        // The id was settled with the reply, and since then a fetch of a renewed UIDVALIDITY can have filed another message under it.
         const original = this.deps.cache.get(answered.id)
         if (!original || original.messageId !== answered.messageId) throw new Error(errorText('mail.errors.message.notFound'))
-        await sync.run((client) => storeFlag(client, folderPath(account, original.folder), [original.uid], '\\Answered', true))
+        await sync.byUid(original.folder, this.uidValidityOf(original), (client) => storeFlag(client, [original.uid], '\\Answered', true))
         this.deps.cache.setFlags(original.id, { answered: true })
       } catch (error) {
         notes.push(t('mail.result.answeredFailed', { reason: errorMessage(error) }))
@@ -776,24 +779,12 @@ const draftSummary = (draft: MailDraft): string => {
 }
 
 /**
- * Adds or removes a flag. imapflow returns false instead of throwing when the flag is not permitted or
- * no mailbox is selected, so the false is turned into an error rather than passing silently.
+ * Adds or removes a flag in the folder byUid opened. imapflow returns false instead of throwing when the
+ * flag is not permitted or no mailbox is selected, so the false is turned into an error rather than passing silently.
  */
-async function storeFlag(client: ImapClient, path: string, uids: number[], flag: string, add: boolean): Promise<void> {
-  const lock = await client.getMailboxLock(path)
-  try {
-    const ok = add ? await client.messageFlagsAdd(uids, [flag], { uid: true }) : await client.messageFlagsRemove(uids, [flag], { uid: true })
-    if (!ok) throw new Error(REJECTED)
-  } finally {
-    lock.release()
-  }
-}
-
-function folderPath(account: MailAccount, folder: MailMessage['folder']): string {
-  if (folder === 'inbox') return 'INBOX'
-  const path = account.folders[folder]
-  if (!path) throw new Error(errorText('mail.errors.folder.notSet', { folder: t(`mail.boxes.${folder}`) }))
-  return path
+async function storeFlag(client: ImapClient, uids: number[], flag: string, add: boolean): Promise<void> {
+  const ok = add ? await client.messageFlagsAdd(uids, [flag], { uid: true }) : await client.messageFlagsRemove(uids, [flag], { uid: true })
+  if (!ok) throw new Error(REJECTED)
 }
 
 const clip = (text: string): string =>

@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { CornerUpLeft, X } from 'lucide-react'
 import { displayName, formatAddress, type MailAccount, type MailChangeInput, type MailDraft } from '@shared/mail'
 import type { Toast } from '@/state/stores'
 import { keyForApp } from '@/ui/key-for-app'
+import { useAskBeforeDiscard } from './ask-before-discard'
 import { useDraftEditor } from './draft-editor'
 import { splitRecipients } from './format'
 import { displayError } from '@/display-error'
@@ -15,6 +16,10 @@ import { useT } from '@/i18n'
  * moment after each keystroke and disappears once it has been sent. A reply draft carries the
  * recipients settled from the original message, shown as the addresses it is sent to, and only its
  * body is written.
+ *
+ * The fields are not a form: Enter in a text field of a form clicks its submit button, and a mail must
+ * go out only on a press of "送信". A new message lives here alone until it is sent or saved, and a
+ * draft's change lives here alone while main refuses to save it, so leaving either asks first.
  */
 export function Composer({
   accounts,
@@ -31,6 +36,7 @@ export function Composer({
   /** Sends a new message through main and answers whether it went out. */
   onSend: (change: MailChangeInput) => Promise<boolean>
   onNotice: (toast: Omit<Toast, 'id'>) => void
+  /** Takes the composer away at once; the composer asks first itself when leaving would lose something typed. */
   onClose: () => void
 }): React.JSX.Element {
   return draft ? <DraftComposer accounts={accounts} draft={draft} onNotice={onNotice} onClose={onClose} /> : <NewComposer accounts={accounts} defaultAccountId={defaultAccountId} onSend={onSend} onNotice={onNotice} onClose={onClose} />
@@ -68,9 +74,10 @@ function NewComposer({
   const t = useT()
   const recipients = splitRecipients(to)
   const ready = recipients.length > 0 && body.trim().length > 0 && accountId
-  const stopEscape = stopEscapeWith(onClose)
-  const submit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault()
+  const typed = [to, cc, subject, body].some((value) => value.trim() !== '')
+  const leave = useAskBeforeDiscard(typed, onClose)
+  const stopEscape = stopEscapeWith(() => void leave())
+  const send = async (): Promise<void> => {
     if (!ready || busy) return
     setBusy('send')
     try {
@@ -94,10 +101,10 @@ function NewComposer({
     }
   }
   return (
-    <form className="ml-reader ml-composer" aria-label={t('mail.composer.formLabel')} onSubmit={(event) => void submit(event)}>
+    <section className="ml-reader ml-composer" aria-label={t('mail.composer.formLabel')}>
       <div className="ml-reader-head">
         <h2>{t('mail.composer.newTitle')}</h2>
-        <button type="button" className="ml-icon" aria-label={t('common.close')} onClick={onClose}>
+        <button type="button" className="ml-icon" aria-label={t('common.close')} onClick={() => void leave()}>
           <X size={18} />
         </button>
       </div>
@@ -137,11 +144,11 @@ function NewComposer({
         <button type="button" className="cal-btn" disabled={busy !== null || (!body.trim() && !to.trim() && !subject.trim())} onClick={() => void saveDraft()}>
           {busy === 'save' ? t('common.saving') : t('mail.composer.saveDraft')}
         </button>
-        <button type="submit" className="cal-primary" disabled={!ready || busy !== null}>
+        <button type="button" className="cal-primary" disabled={!ready || busy !== null} onClick={() => void send()}>
           {busy === 'send' ? t('mail.sending') : t('mail.send')}
         </button>
       </div>
-    </form>
+    </section>
   )
 }
 
@@ -152,9 +159,13 @@ function DraftComposer({ accounts, draft, onNotice, onClose }: { accounts: MailA
   const busy = editor.sending || editor.busy === 'discard'
   const locked = busy || editor.sendStarted
   const ready = editor.fields.body.trim().length > 0 && (draft.reply !== null || splitRecipients(editor.fields.to).length > 0)
-  const stopEscape = stopEscapeWith(onClose)
-  const submit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault()
+  // A change still waiting for its save is saved as the composer goes; only one main refused would be lost.
+  const leave = useAskBeforeDiscard(editor.refused, () => {
+    if (editor.refused) editor.abandon()
+    onClose()
+  })
+  const stopEscape = stopEscapeWith(() => void leave())
+  const send = async (): Promise<void> => {
     if (!ready || locked) return
     const summary = await editor.send()
     if (summary) {
@@ -170,11 +181,11 @@ function DraftComposer({ accounts, draft, onNotice, onClose }: { accounts: MailA
   }
   const replyValues = draft.reply ? { name: displayName(draft.reply.from), subject: draft.reply.subject || t('mail.noSubject') } : null
   return (
-    <form className="ml-reader ml-composer" aria-label={t('mail.composer.draftTitle')} onSubmit={(event) => void submit(event)}>
+    <section className="ml-reader ml-composer" aria-label={t('mail.composer.draftTitle')}>
       <div className="ml-reader-head">
         <h2>{draft.reply ? t('mail.composer.replyDraft') : t('mail.composer.draftTitle')}</h2>
         <span className="ml-reader-account">{editor.busy === 'save' ? t('common.saving') : editor.dirty ? t('mail.composer.notSaved') : t('mail.composer.saved')}</span>
-        <button type="button" className="ml-icon" aria-label={t('common.close')} onClick={onClose}>
+        <button type="button" className="ml-icon" aria-label={t('common.close')} onClick={() => void leave()}>
           <X size={18} />
         </button>
       </div>
@@ -250,11 +261,11 @@ function DraftComposer({ accounts, draft, onNotice, onClose }: { accounts: MailA
           {t('mail.composer.discard')}
         </button>
         {!editor.sendStarted && (
-          <button type="submit" className="cal-primary" disabled={!ready || busy}>
+          <button type="button" className="cal-primary" disabled={!ready || busy} onClick={() => void send()}>
             {editor.sending ? t('mail.sending') : t('mail.send')}
           </button>
         )}
       </div>
-    </form>
+    </section>
   )
 }

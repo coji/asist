@@ -1,4 +1,4 @@
-import type { FetchMessageObject, MessageAddressObject, MessageStructureObject } from 'imapflow'
+import type { FetchMessageObject, MailboxLockObject, MessageAddressObject, MessageStructureObject } from 'imapflow'
 import { htmlToText } from 'html-to-text'
 import {
   MAIL_FOLDERS,
@@ -230,6 +230,64 @@ export class MailAccountSync {
     return this.account.folders[folder]
   }
 
+  private requirePath(folder: MailFolder): string {
+    const path = this.pathOf(folder)
+    if (!path) throw new Error(errorText('mail.errors.folder.notSet', { folder: t(`mail.boxes.${folder}`) }))
+    return path
+  }
+
+  /**
+   * Runs an operation on messages of `folder` named by UID, in the queue like every other operation. A UID
+   * names a message only within one UIDVALIDITY of its folder, which the server can renew at any time, as
+   * when the mailbox is recreated. `uidValidity` is the value the cache had recorded when the caller read
+   * the UIDs, and the operation runs only while the folder still has it.
+   */
+  byUid<T>(folder: MailFolder, uidValidity: string | null, operation: (client: ImapClient) => Promise<T>): Promise<T> {
+    return this.run(async (client) => {
+      const lock = await this.openGeneration(client, folder, uidValidity)
+      try {
+        return await operation(client)
+      } finally {
+        lock.release()
+      }
+    })
+  }
+
+  /** Opens `folder` for UIDs of the generation `uidValidity`, and fails as if their messages were gone once the server has renewed it. */
+  private async openGeneration(client: ImapClient, folder: MailFolder, uidValidity: string | null): Promise<MailboxLockObject> {
+    const path = this.requirePath(folder)
+    const lock = await client.getMailboxLock(path)
+    try {
+      const opened = this.recordGeneration(client, folder, path)
+      // The cache of a renewed folder is dropped here already, so that its UIDs reach nothing before the next fetch.
+      if (opened.renewed) {
+        this.options.onChanged()
+        this.scheduleFolderSync(folder)
+      }
+      if (opened.uidValidity !== uidValidity) throw new Error(errorText('mail.errors.message.notFound'))
+      return lock
+    } catch (error) {
+      lock.release()
+      throw error
+    }
+  }
+
+  /**
+   * Records the UIDVALIDITY of the folder just opened. A renewed one drops the folder's cache, since every
+   * UID of the old generation may name another message now, and the folder's next fetch counts as its first.
+   */
+  private recordGeneration(client: ImapClient, folder: MailFolder, path: string): { uidValidity: string; renewed: boolean } {
+    const mailbox = client.mailbox
+    if (!mailbox) throw new Error(errorText('mail.errors.folder.openFailed', { path }))
+    const uidValidity = String(mailbox.uidValidity)
+    const renewed = this.options.cache.setUidValidity(this.account.id, folder, uidValidity)
+    if (renewed) {
+      this.failedBodies[folder].clear()
+      this.synced.delete(folder)
+    }
+    return { uidValidity, renewed }
+  }
+
   private async ensureClient(): Promise<ImapClient> {
     if (this.client?.usable) return this.client
     this.setState('connecting')
@@ -345,13 +403,9 @@ export class MailAccountSync {
     let changed = false
     const arrived: MailMessage[] = []
     try {
-      const mailbox = client.mailbox
-      if (!mailbox) throw new Error(errorText('mail.errors.folder.openFailed', { path }))
       // A folder dropped for a new UIDVALIDITY has changed even when nothing of its new generation is fetched.
-      const dropped = cache.setUidValidity(account.id, folder, String(mailbox.uidValidity))
-      changed = dropped
-      const first = dropped || !this.synced.has(folder)
-      if (dropped) this.failedBodies[folder].clear()
+      changed = this.recordGeneration(client, folder, path).renewed
+      const first = !this.synced.has(folder)
       const since = syncSince(new Date(this.now()), this.options.syncDays())
       const serverUids = await client.search({ since }, { uid: true })
       // imapflow's search answers false instead of throwing when the server rejects the command or the
@@ -452,21 +506,19 @@ export class MailAccountSync {
       void this.run(async (client) => {
         let fetched = 0
         for (const folder of MAIL_FOLDERS) {
-          const path = this.pathOf(folder)
-          if (!path) continue
-          fetched += await this.hydrate(client, folder, path, HYDRATE_BATCH[folder])
+          if (this.pathOf(folder)) fetched += await this.hydrate(client, folder, HYDRATE_BATCH[folder])
         }
         if (fetched > 0) this.scheduleHydrate(100)
       }).catch((error: unknown) => console.warn(`mail bodies (${this.account.label}):`, errMessage(error)))
     }, delay)
   }
 
-  private async hydrate(client: ImapClient, folder: MailFolder, path: string, limit: number): Promise<number> {
+  private async hydrate(client: ImapClient, folder: MailFolder, limit: number): Promise<number> {
     const { account, cache } = this.options
     const failed = this.failedBodies[folder]
     const pending = cache.pendingBodies(account.id, folder, limit, [...failed])
     if (pending.length === 0) return 0
-    const lock = await client.getMailboxLock(path)
+    const lock = await this.openGeneration(client, folder, cache.uidValidity(account.id, folder))
     try {
       for (const item of pending) {
         try {
@@ -495,17 +547,10 @@ export class MailAccountSync {
     if (cached !== null) return Promise.resolve(cached)
     const parts = cache.bodyParts(id)
     if (!parts) return Promise.reject(new Error(errorText('mail.errors.message.notFound')))
-    const path = this.pathOf(folder)
-    if (!path) return Promise.reject(new Error(errorText('mail.errors.folder.notSet', { folder: t(`mail.boxes.${folder}`) })))
-    return this.run(async (client) => {
-      const lock = await client.getMailboxLock(path)
-      try {
-        const text = await fetchText(client, uid, parts)
-        cache.setBody(id, text)
-        return text
-      } finally {
-        lock.release()
-      }
+    return this.byUid(folder, cache.uidValidity(account.id, folder), async (client) => {
+      const text = await fetchText(client, uid, parts)
+      cache.setBody(id, text)
+      return text
     })
   }
 }

@@ -25,6 +25,16 @@ import { useT, useFormatLocale } from '@/i18n'
 const PAGE = 50
 type Pane = MiniAppState<'mail'>['pane']
 
+/**
+ * A move of the user's within the view that takes the right pane away. It asks the leave guard first, as
+ * openApp does for a move out of the view; a new message with something typed into it sets the guard.
+ */
+async function leaveFor(patch: Partial<Omit<MiniAppState<'mail'>, 'app'>>): Promise<void> {
+  const { leaveGuard, update } = useViewStore.getState()
+  if (leaveGuard && !(await leaveGuard())) return
+  update('mail', patch)
+}
+
 /** The toast after a change that went through. Starring and marking as read show in the list itself, so they say nothing. */
 const DONE_KEY = {
   send: 'mail.done.send',
@@ -141,7 +151,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
       if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
-      if (pane) update('mail', { pane: null })
+      if (pane) void leaveFor({ pane: null })
       else closeApp()
     }
     window.addEventListener('keydown', onKey)
@@ -284,7 +294,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
             accounts={accounts}
             statuses={statuses}
             accountId={accountId}
-            onView={(next) => update('mail', { box: next, pane: null })}
+            onView={(next) => void leaveFor({ box: next, pane: null })}
             onAccount={(next) => update('mail', { accountId: next })}
             onCompose={() => setPane({ kind: 'compose' })}
           />
@@ -297,7 +307,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
                 </button>
               </div>
             ) : view === 'drafts' ? (
-              <DraftList drafts={shownDrafts} query={query} selectedId={selectedId} now={now} onSelect={(draft) => setPane({ kind: 'draft', id: draft.id })} />
+              <DraftList drafts={shownDrafts} query={query} selectedId={selectedId} now={now} onSelect={(draft) => void leaveFor({ pane: { kind: 'draft', id: draft.id } })} />
             ) : (
               <MessageList
                 messages={messages}
@@ -309,7 +319,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
                 accountLabels={accountLabels}
                 showAccount={accounts.length > 1 && accountId === null}
                 now={now}
-                onSelect={(message) => setPane({ kind: 'message', id: message.id })}
+                onSelect={(message) => void leaveFor({ pane: { kind: 'message', id: message.id } })}
                 onStar={(message) => void submit({ operation: 'star', id: message.id, starred: !message.starred })}
                 onLoadMore={() => setExtent({ scope, rows: rows + PAGE })}
                 onRetry={() => setAttempt((value) => value + 1)}

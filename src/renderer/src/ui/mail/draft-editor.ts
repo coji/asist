@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorText } from '@shared/i18n/error-text'
-import type { MailDraft } from '@shared/mail'
+import type { MailDraft, MailDraftPatch } from '@shared/mail'
 import { splitRecipients } from './format'
 import { displayError } from '@/display-error'
-import { useMailStore } from '@/state/stores'
+import { translate } from '@/i18n'
+import { useMailStore, useToastStore } from '@/state/stores'
 
 /**
  * Editing a draft, which behaves the same in the card and in the composer of the mail view. Input is
  * saved to main a short while after the typing, so that nothing travels while the user types, and
- * sending saves first. What the Agent changed through update_mail_draft is taken over here as long
- * as nothing is half typed on this side.
+ * sending saves first. A change still waiting for that save when the editor goes away is saved at
+ * once. What the Agent changed through update_mail_draft is taken over here as long as nothing is
+ * half typed on this side.
  */
 
 export interface DraftFields {
@@ -22,6 +24,7 @@ export interface DraftFields {
 const SAVE_DELAY_MS = 600
 
 export const fieldsOf = (draft: MailDraft): DraftFields => ({ to: draft.to.join(', '), cc: draft.cc.join(', '), subject: draft.subject, body: draft.body })
+const patchOf = (fields: DraftFields): MailDraftPatch => ({ to: splitRecipients(fields.to), cc: splitRecipients(fields.cc), subject: fields.subject, body: fields.body })
 
 export function useDraftEditor(draft: MailDraft | null): {
   fields: DraftFields
@@ -37,6 +40,10 @@ export function useDraftEditor(draft: MailDraft | null): {
    */
   sendStarted: boolean
   error: string
+  /** A typed change is not saved and the last attempt failed, as when main refuses an address it cannot read. */
+  refused: boolean
+  /** Gives up the change main refused, so that nothing of it is saved when the editor goes. */
+  abandon: () => void
   /** The summary once the draft has been sent, or null on failure, with the reason in `error`. */
   send: () => Promise<string | null>
   discard: () => Promise<boolean>
@@ -61,9 +68,26 @@ export function useDraftEditor(draft: MailDraft | null): {
   const save = async (): Promise<void> => {
     if (!id) return
     const current = latest.current
-    await window.api.mailDraftUpdate(id, { to: splitRecipients(current.to), cc: splitRecipients(current.cc), subject: current.subject, body: current.body })
+    await window.api.mailDraftUpdate(id, patchOf(current))
     if (latest.current === current) setDirty(false)
   }
+
+  const unsaved = useRef<{ id: string; fields: DraftFields } | null>(null)
+  unsaved.current = dirty && id ? { id, fields } : null
+  // Set before a send or a discard starts, since main can report the draft gone and the editor can go
+  // before either returns, and when the user gives up a refused change. Nothing is saved on unmount then.
+  const released = useRef(false)
+  useEffect(
+    () => () => {
+      const left = unsaved.current
+      if (!left || released.current) return
+      // The editor that would show a failure is gone, so a toast says it.
+      window.api.mailDraftUpdate(left.id, patchOf(left.fields)).catch((err: unknown) => {
+        useToastStore.getState().push({ kind: 'error', title: translate('mail.composer.draftSaveFailed'), body: displayError(err) })
+      })
+    },
+    []
+  )
 
   useEffect(() => {
     if (!dirty || !id) return
@@ -87,6 +111,7 @@ export function useDraftEditor(draft: MailDraft | null): {
     if (!id || sending || busy === 'discard') return null
     setBusy('send')
     setSending(id, true)
+    released.current = true
     try {
       if (dirty) await save()
       const result = await window.api.mailDraftSend(id)
@@ -94,6 +119,7 @@ export function useDraftEditor(draft: MailDraft | null): {
       setError('')
       return result.summary
     } catch (err) {
+      released.current = false
       setError(displayError(err))
       return null
     } finally {
@@ -105,10 +131,12 @@ export function useDraftEditor(draft: MailDraft | null): {
   const discard = async (): Promise<boolean> => {
     if (!id || sending) return false
     setBusy('discard')
+    released.current = true
     try {
       await window.api.mailDraftRemove(id)
       return true
     } catch (err) {
+      released.current = false
       setError(displayError(err))
       return false
     } finally {
@@ -116,7 +144,11 @@ export function useDraftEditor(draft: MailDraft | null): {
     }
   }
 
+  const abandon = (): void => {
+    released.current = true
+  }
+
   const sendStarted = (draft?.sendStartedAt ?? null) !== null && !sending
-  return { fields, set, dirty, busy, sending, sendStarted, error, send, discard }
+  return { fields, set, dirty, busy, sending, sendStarted, error, refused: dirty && error !== '', abandon, send, discard }
 }
 
