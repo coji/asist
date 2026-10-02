@@ -2,8 +2,8 @@
  * The PDF viewer's cases. In six runs of each on an M5 under a load average of 15 to 50 on 2026-10-02, the card
  * showed page 1 in 0.4 to 2.5 s, most of it the preview frame starting and loading pdf.js and its worker as the
  * demo's development server serves them, and the focus view showed its first screen in 0.1 to 0.3 s and every
- * later screen within 0.18 s. The renderers grew by 0.37 to 0.6 GB at the peak, the preview frame's process holding
- * 0.2 to 0.3 GB of it with a document open, and the GPU process by 0.08 to 0.17 GB. The main thread was held for
+ * later screen within 0.18 s. The renderers grew by 0.43 to 0.6 GB at the peak, the preview frame's process holding
+ * 0.2 to 0.3 GB of it with a document open, and the GPU process by 0.09 to 0.15 GB. The main thread was held for
  * 0.03 to 0.14 s, and up to 0.42 s in the runs under the heaviest load.
  *
  * Every page in view has to be drawn. The viewer gives a canvas only to the pages within a screen of the view, and

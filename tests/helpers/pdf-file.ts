@@ -1,9 +1,9 @@
 /**
- * PDFs for the tests of the PDF viewer, laid out as Chrome's "Save as PDF" lays one out: each page's content stream
- * and picture in page order, then the page tree, balanced with eight pages under each node, the font and the
- * catalog, and a cross-reference table at the end. A page is A4 with lines of text in a standard font, and a picture
- * on every `pictureEvery`-th page, starting with page 1, 515 pt wide with its top 27 pt below the page's, as raw RGB
- * that no decoder has to read unless the picture says otherwise.
+ * PDFs for the tests of the PDF viewer, with a page tree balanced with eight pages under each node, as Chrome's
+ * "Save as PDF" writes one: each page's content stream and picture in page order, then the page tree, the font and
+ * the catalog, and a cross-reference table at the end. A page is A4 with lines of text in a standard font, and a
+ * picture on every `pictureEvery`-th page, starting with page 1, 515 pt wide from 40 pt in and 300 pt up, as raw
+ * RGB that no decoder has to read unless the picture says otherwise.
  */
 
 export interface PdfPicture {
