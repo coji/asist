@@ -409,7 +409,11 @@ describe('OpenAI paid from the ChatGPT plan', () => {
 
   it('streams a JSON call with its input as a list, since the plan accepts nothing else, and reads the JSON from the message', async () => {
     const message = { type: 'message', id: 'msg_1', role: 'assistant', content: [{ type: 'output_text', text: '{"bridge":"はい"}' }] }
-    mocks.events = [{ type: 'response.completed', response: { status: 'completed', output: [message], usage: { input_tokens: 10, input_tokens_details: { cached_tokens: 0 }, output_tokens: 5 } } }]
+    // The plan's completion event carries no output, so the JSON is only in the item that completed before it.
+    mocks.events = [
+      { type: 'response.output_item.done', item: message },
+      { type: 'response.completed', response: { status: 'completed', output: [], usage: { input_tokens: 10, input_tokens_details: { cached_tokens: 0 }, output_tokens: 5 } } }
+    ]
     const { openaiAdapter } = await import('../src/main/services/llm/openai')
     const response = await openaiAdapter.completeJson({ model: MODEL, system: 's', user: 'u', schema: { type: 'object' }, maxTokens: 1024, signal: new AbortController().signal }, PLAN)
     expect(mocks.params[0]).toMatchObject({ stream: true, input: [{ role: 'user', content: 'u' }], text: { format: { type: 'json_schema', strict: true } } })

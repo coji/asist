@@ -284,11 +284,17 @@ function roundUsage(usage: OpenAI.Responses.ResponseUsage | undefined, output: r
   }
 }
 
-/** A response read to its end from a stream, for a caller that needs only the whole of it. */
+/**
+ * A response read to its end from a stream, for a caller that needs only the whole of it. Paid from the
+ * ChatGPT plan, the completion event carries an empty `output` (measured on 2026-10-03), so the output is
+ * the items as each one completed.
+ */
 async function streamedResponse(client: OpenAI, params: Omit<ResponseCreateParamsStreaming, 'stream'>, signal: AbortSignal): Promise<Response> {
   const stream = await client.responses.create({ ...params, stream: true }, { signal })
+  const output: ResponseOutputItem[] = []
   for await (const event of streamEvents('OpenAI', stream)) {
-    if (event.type === 'response.completed' || event.type === 'response.incomplete') return event.response
+    if (event.type === 'response.output_item.done') output.push(event.item)
+    if (event.type === 'response.completed' || event.type === 'response.incomplete') return { ...event.response, output }
     if (event.type === 'response.failed') throw streamFailure('OpenAI', event.response.error?.code, event.response.error?.message)
     if (event.type === 'error') throw streamFailure('OpenAI', event.code, event.message)
   }
