@@ -58,10 +58,10 @@ describe('a memory curation job, which starts with nobody to confirm it', () => 
       expect(args[args.indexOf('--permission-mode') + 1]).toBe('dontAsk')
       const allowed = args.slice(args.indexOf('--allowedTools') + 1, args.indexOf('--disallowedTools'))
       expect(allowed.filter((rule) => rule.startsWith('Bash'))).toEqual([
-        'Bash(uv run --no-project .claude/skills/memory-curation/scripts/count.py *)',
-        'Bash(uv run --no-project /memory/wt/.claude/skills/memory-curation/scripts/count.py *)',
-        'Bash(uv run --no-project .claude/skills/memory-curation/scripts/validate.py *)',
-        'Bash(uv run --no-project /memory/wt/.claude/skills/memory-curation/scripts/validate.py *)'
+        'Bash(.claude/skills/memory-curation/uv run --no-project .claude/skills/memory-curation/scripts/count.py *)',
+        'Bash(/memory/wt/.claude/skills/memory-curation/uv run --no-project /memory/wt/.claude/skills/memory-curation/scripts/count.py *)',
+        'Bash(.claude/skills/memory-curation/uv run --no-project .claude/skills/memory-curation/scripts/validate.py *)',
+        'Bash(/memory/wt/.claude/skills/memory-curation/uv run --no-project /memory/wt/.claude/skills/memory-curation/scripts/validate.py *)'
       ])
       expect(allowed).not.toContain('WebFetch')
       expect(args.slice(args.indexOf('--disallowedTools') + 1)).toContain('Edit(./.claude/skills/**)')

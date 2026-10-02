@@ -83,25 +83,12 @@ describe('running uv', () => {
 })
 
 describe('running a script with uv run, as the curation Agent runs its checks', () => {
-  it('finds the bundled uv on PATH, ahead of the folders it had, and leaves out the user\'s uv and Python settings and the provider keys', () => {
+  it('leaves out the user\'s uv and Python settings and the provider keys, and keeps uv\'s Python under userData', () => {
     const env = uvRunEnv({ PATH: '/usr/bin', UV_INDEX_URL: 'https://mirror.invalid/simple', PYTHONPATH: '/elsewhere', ANTHROPIC_API_KEY: 'sk-test' }, '/data')
-    expect(env.PATH).toBe([path.dirname(uvPath()), '/usr/bin'].join(path.delimiter))
     expect(env.UV_INDEX_URL).toBeUndefined()
     expect(env.PYTHONPATH).toBeUndefined()
     expect(env.ANTHROPIC_API_KEY).toBeUndefined()
     expect(env.UV_PYTHON_INSTALL_DIR).toBe(path.join('/data', 'python'))
-  })
-
-  it('keeps the name Windows gave PATH, so that the process has one PATH', () => {
-    const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
-    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' })
-    try {
-      const env = uvRunEnv({ Path: 'C:\\Windows' }, '/data')
-      expect(Object.keys(env).filter((key) => key.toUpperCase() === 'PATH')).toEqual(['Path'])
-      expect(env.Path!.startsWith(path.dirname(uvPath()))).toBe(true)
-    } finally {
-      Object.defineProperty(process, 'platform', platform)
-    }
   })
 
   it('runs no script and downloads no Python when the pinned Python is not installed, whatever Python the machine has', () => {
@@ -109,10 +96,10 @@ describe('running a script with uv run, as the curation Agent runs its checks', 
     const script = path.join(userData, 'hello.py')
     fs.writeFileSync(script, 'print("ran")\n')
     try {
-      // Only the bundled uv is on PATH; the command is the one the curation Agent runs.
-      const env = uvRunEnv({ PATH: '', HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, SYSTEMROOT: process.env.SYSTEMROOT }, userData)
-      const run = spawnSync('uv', ['run', '--no-project', script], { env, encoding: 'utf8', windowsHide: true })
-      // uv itself ran, found on that PATH, and refused rather than running the script on another Python.
+      // The machine's Python stays on PATH; the bundled uv runs the script as the curation Agent runs its checks.
+      const env = uvRunEnv({ PATH: process.env.PATH, HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, SYSTEMROOT: process.env.SYSTEMROOT }, userData)
+      const run = spawnSync(uvPath(), ['run', '--no-project', script], { env, encoding: 'utf8', windowsHide: true })
+      // uv itself ran and refused rather than running the script on another Python.
       expect(run.error).toBeUndefined()
       expect([typeof run.status, run.status === 0]).toEqual(['number', false])
       expect(run.stdout).not.toContain('ran')

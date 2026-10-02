@@ -1,9 +1,10 @@
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { CURATION_SKILL, SKILL_DIRS, curationSkillSource } from '@shared/memory-curation'
+import { CURATION_SKILL, SKILL_DIRS, curationScriptCommand, curationSkillSource } from '@shared/memory-curation'
 import { FIXED, validateDocument } from '@shared/memory-page'
 import { createTranslator } from '@shared/i18n'
 import { PROMPT_DOCUMENTS, PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '@shared/memory-format'
@@ -36,6 +37,32 @@ const places = (output: string): string[] =>
     .split('\n')
     .filter(Boolean)
     .map((line) => /^([^:]+?)(:\d+)?:/.exec(line)?.slice(1).filter(Boolean).join('') ?? line)
+
+/** A folder for the front of PATH holding a uv that only says it is a stand-in: uv.cmd for PowerShell, a script for a POSIX shell. */
+function standInUv(kind: 'sh' | 'cmd'): string {
+  const dir = mkdtempSync(path.join(tmpdir(), 'asist-stand-in-uv-'))
+  if (kind === 'cmd') fs.writeFileSync(path.join(dir, 'uv.cmd'), '@echo stand-in uv\r\n@exit /b 3\r\n')
+  else fs.writeFileSync(path.join(dir, 'uv'), '#!/bin/sh\necho stand-in uv\nexit 3\n', { mode: 0o755 })
+  return dir
+}
+
+/**
+ * The shells the Agents run a command in on this system, without the startup files that would make the test
+ * depend on the machine: on macOS bash, as codex runs one, and zsh, the shell claude reads the user's settings
+ * from; on Windows PowerShell, as codex runs one, and Git Bash, as claude does.
+ */
+function agentShells(): Array<{ shell: string; args: string[]; standIn: 'sh' | 'cmd' }> {
+  if (process.platform === 'win32') {
+    return [
+      { shell: 'powershell.exe', args: ['-NoProfile', '-NonInteractive', '-Command'], standIn: 'cmd' },
+      { shell: path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Git', 'bin', 'bash.exe'), args: ['--noprofile', '--norc', '-c'], standIn: 'sh' }
+    ]
+  }
+  return [
+    { shell: '/bin/bash', args: ['--noprofile', '--norc', '-c'], standIn: 'sh' },
+    { shell: '/bin/zsh', args: ['-f', '-c'], standIn: 'sh' }
+  ]
+}
 
 /** A directory laid out the way the skill asks, which both validators accept. */
 function wellFormed(): string {
@@ -226,6 +253,33 @@ describe('the memory-curation skill', () => {
       for (const skills of SKILL_DIRS) expect(validate(path.join(worktree, skills, CURATION_SKILL), dir)).toEqual({ ok: true, output: 'OK\n' })
       fs.writeFileSync(path.join(dir, 'pages', '壊れ.md'), '---\n---\n# 壊れ\n\n## 要約\n\n')
       for (const skills of SKILL_DIRS) expect(places(validate(path.join(worktree, skills, CURATION_SKILL), dir).output)).toEqual(['pages/壊れ.md:5'])
+    }
+  })
+
+  it('runs its checks with the command it gives, through the uv ASIST copies into its folder, whatever uv comes first on PATH', () => {
+    // A curation's worktree is the memory itself, with the skill installed into it.
+    const worktree = wellFormed()
+    installSkill(worktree, skillDir('ja-JP'))
+    const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH'
+    for (const { shell, args, standIn } of agentShells()) {
+      const env = {
+        ...process.env,
+        UV_NO_CONFIG: '1',
+        UV_PYTHON_DOWNLOADS: 'never',
+        PYTHONDONTWRITEBYTECODE: '1',
+        PYTHONUTF8: '1',
+        [pathKey]: [standInUv(standIn), process.env[pathKey]].join(path.delimiter)
+      }
+      const run = (command: string): { status: number | null; output: string } => {
+        const result = spawnSync(shell, [...args, command], { cwd: worktree, env, encoding: 'utf8', windowsHide: true })
+        if (result.error) throw result.error
+        return { status: result.status, output: `${result.stdout}${result.stderr}`.trim() }
+      }
+      // A uv found on PATH would be the stand-in.
+      expect([shell, run('uv --version')]).toEqual([shell, { status: 3, output: 'stand-in uv' }])
+      for (const dir of SKILL_DIRS) {
+        expect([shell, dir, run(`${curationScriptCommand(`${dir}/${CURATION_SKILL}`, 'validate.py')} .`)]).toEqual([shell, dir, { status: 0, output: 'OK' }])
+      }
     }
   })
 

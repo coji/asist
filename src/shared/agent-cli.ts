@@ -2,7 +2,7 @@ import type { AgentCliStatus, AgentEngine } from './ipc'
 import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
 import type { OsFamily } from './platform'
-import { CURATION_SCRIPTS, CURATION_SCRIPT_RUNNER, CURATION_SKILL, SKILL_DIRS } from './memory-curation'
+import { CURATION_SCRIPTS, CURATION_SKILL, SKILL_DIRS, curationScriptCommand } from './memory-curation'
 
 /**
  * Argument building for the agent CLIs. The per-engine differences in starting, resuming and
@@ -70,14 +70,14 @@ const clip = (s: string): string => `${s.slice(0, 80)}${s.length > 80 ? '…' : 
  * transcript, which can carry text from a mail or a web page written to steer the agent. So it does not
  * get the unattended mode of a writing job. claude runs in restricted mode, which ignores the user's
  * settings and keeps the file tools inside the worktree; anything not allowed here is refused
- * (dontAsk); the only commands are the skill's scripts, and the skill's own files are closed to editing
- * so that a script cannot be rewritten into another program. Measured with claude 2.1.276 on
+ * (dontAsk); the only commands are the skill's scripts, and the skill's own files, the uv that runs them
+ * included, are closed to editing so that neither can be rewritten into another program. Measured with claude 2.1.276 on
  * 2026-09-23: a deny rule for the file tools must be written as Edit(...), since Write(...) is ignored,
  * and a compound command such as `validate.py . && curl …` is refused as a whole.
  */
 function claudeCurationArgs(cwd: string): string[] {
   const scripts = CURATION_SCRIPTS.flatMap((script) =>
-    ['', `${cwd}/`].map((root) => `Bash(${CURATION_SCRIPT_RUNNER} ${root}${SKILL_DIRS[0]}/${CURATION_SKILL}/scripts/${script} *)`)
+    ['', `${cwd}/`].map((root) => `Bash(${curationScriptCommand(`${root}${SKILL_DIRS[0]}/${CURATION_SKILL}`, script)} *)`)
   )
   return [
     '--restricted',

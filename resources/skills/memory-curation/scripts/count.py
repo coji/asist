@@ -1,5 +1,5 @@
 """Counts what each file that goes into every conversation costs there, against its limit.
-Usage: uv run --no-project count.py <memoryDir>
+Usage: <skill>/uv run --no-project <skill>/scripts/count.py <memoryDir>
 
 Prints one line per file and the exit code is 1 when a file is over its limit. The count is the one ASIST
 makes before it merges a curation and when the user saves on the memory screen. The English skill ships the

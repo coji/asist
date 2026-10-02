@@ -15,8 +15,9 @@ the result before it commits it.
 - Read, search and write the files of this directory with whatever tools you have (a file reading tool,
   `cat`, `ls`, `grep`, whichever works). Beyond that, the only commands to run are this skill's
   `scripts/count.py` and `scripts/validate.py`. Run them exactly as
-  `uv run --no-project <path to this skill>/scripts/count.py .`; with `2>&1`, `&&` or anything else added, the
-  whole command may be refused. ASIST provides uv and the Python the two run on.
+  `<path to this skill>/uv run --no-project <path to this skill>/scripts/count.py .`; with `2>&1`, `&&` or
+  anything else added, the whole command may be refused. ASIST provides the `uv` in this skill's folder and the
+  Python the two run on; do not use a `uv` from PATH.
 - What the user asked me to forget ("forget that") goes into no file.
 
 ## What ASIST does with each file
@@ -87,10 +88,10 @@ templates are in `assets/templates/` (page.md, user.md, me.md, journal.md).
 9. **Clear away the files that are no longer used.** If there is a `profile.md` or an `instruction.md`, move
    what is worth keeping into user.md and me.md, then delete it; what it says I have been asked goes under
    `## What they expect of ASIST`. If there is a `forget.jsonl`, delete it.
-10. **Count, and shorten.** Run `uv run --no-project <path to this skill>/scripts/count.py .`. When a file is over, shorten
+10. **Count, and shorten.** Run `<path to this skill>/uv run --no-project <path to this skill>/scripts/count.py .`. When a file is over, shorten
     it as "When a file is over its limit" below says, and run it again until it prints `OK`. ASIST throws
     away a curation that leaves a file over its limit.
-11. **Check.** Run `uv run --no-project <path to this skill>/scripts/validate.py .` and fix what it reports until it prints
+11. **Check.** Run `<path to this skill>/uv run --no-project <path to this skill>/scripts/validate.py .` and fix what it reports until it prints
     `OK`. ASIST does not take in a curation with anything left unfixed. After fixing, run count.py again.
 12. **Report.** Finish with a short account: the subjects you wrote into the journal, the pages you added,
     the headings you rewrote, what you changed in me.md and under "What they expect of ASIST", what you left

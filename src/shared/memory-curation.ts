@@ -125,11 +125,16 @@ export const SKILL_DIRS = ['.claude/skills', '.agents/skills'] as const
  */
 export const CURATION_SCRIPTS = ['count.py', 'validate.py'] as const
 /**
- * How the Agent runs a script of the skill, followed by the script's path. The bundled uv runs it on the
- * Python ASIST installed for it, so a curation needs neither Node nor a Python of the user's; --no-project
- * keeps uv from looking for a project in the folders above the worktree.
+ * The command the Agent runs a script of the skill with, `skill` being the skill's folder as the Agent names
+ * it. The uv is the copy of the bundled one that ASIST puts in that folder, run on the Python ASIST installed
+ * for it, so a curation needs neither Node nor a Python of the user's. It is named by its path rather than
+ * found on PATH, because the shell a command runs in sets PATH again: codex runs it in a login shell and
+ * claude in a snapshot of the user's, where path_helper on macOS and the user's startup files can put a uv of
+ * the user's ahead of any folder ASIST added. On Windows the copy is uv.exe, which this name finds as well.
+ * --no-project keeps uv from looking for a project in the folders above the worktree.
  */
-export const CURATION_SCRIPT_RUNNER = 'uv run --no-project'
+export const curationScriptCommand = (skill: string, script: (typeof CURATION_SCRIPTS)[number]): string =>
+  `${skill}/uv run --no-project ${skill}/scripts/${script}`
 /**
  * The rules of the memory's markdown and the values they read, which both skills' scripts import from two
  * folders above their scripts/: resources/skills in the app, and each of SKILL_DIRS in the worktree.

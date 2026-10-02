@@ -6,7 +6,7 @@ import { errMessage } from '@shared/api-errors'
 import { errorText } from '@shared/i18n/error-text'
 import { conversationLocale } from './conversation-locale'
 import { resourcePath } from './resource-path'
-import { installPython, uvRunEnv } from './uv'
+import { installPython, uvPath, uvRunEnv } from './uv'
 
 /**
  * Makes ready the Python the skill's scripts run on, before a curation's Agent starts: the Agent may run in
@@ -32,8 +32,9 @@ export function skillSourceDir(locale: ConversationLocale = conversationLocale()
 
 /**
  * Installs the skill into every directory an agent looks in, one for claude and one for codex, with the
- * rules its scripts import beside it, and writes AGENTS.md. Both locations are listed in .gitignore,
- * so the worktree stays clean.
+ * rules its scripts import beside it and a copy of the bundled uv in it, which the Agent runs its checks with
+ * (curationScriptCommand), and writes AGENTS.md. Both locations are listed in .gitignore, so the worktree
+ * stays clean.
  */
 export function installSkill(worktreeDir: string, source = skillSourceDir()): void {
   if (!fs.existsSync(path.join(source, 'SKILL.md'))) throw new Error(`the memory curation skill is missing: ${source}`)
@@ -41,6 +42,10 @@ export function installSkill(worktreeDir: string, source = skillSourceDir()): vo
     const target = path.join(worktreeDir, dir, CURATION_SKILL)
     fs.rmSync(target, { recursive: true, force: true })
     copyFolder(source, target)
+    // A copy rather than a link: a link on Windows is a junction, which leaves git's removal of the worktree to
+    // decide whether it deletes through it into the app. On APFS the copy is a clone that takes no space (uv
+    // 0.12.18 is 37 MB on macOS); elsewhere the whole of uv is written once per curation.
+    fs.copyFileSync(uvPath(), path.join(target, path.basename(uvPath())), fs.constants.COPYFILE_FICLONE)
     for (const file of FORMAT_FILES) fs.copyFileSync(path.join(path.dirname(source), file), path.join(worktreeDir, dir, file))
   }
   fs.writeFileSync(path.join(worktreeDir, 'AGENTS.md'), worktreeAgentsMd(conversationLocale()), { mode: 0o600 })

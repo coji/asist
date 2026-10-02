@@ -1,4 +1,4 @@
-"""Checks a memory folder. Usage: uv run --no-project validate.py <memoryDir>
+"""Checks a memory folder. Usage: <skill>/uv run --no-project <skill>/scripts/validate.py <memoryDir>
 
 Every problem is printed on its own line and the exit code is 1; with none it prints OK. The rules come from
 memory_format.py, two folders up, which ASIST applies as well when it merges a curation. The Japanese skill
