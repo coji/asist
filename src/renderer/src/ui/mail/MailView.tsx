@@ -4,6 +4,7 @@ import { MAX_BULK_CHANGE, type MailChangeInput, type MailListQuery, type MailLis
 import type { MessageKey } from '@shared/i18n'
 import { useMailStore, useSettingsStore, useToastStore } from '@/state/stores'
 import { useMiniApp, useViewStore, type MiniAppState } from '@/state/view'
+import { keyForApp } from '@/ui/key-for-app'
 import { Composer } from './Composer'
 import { DraftList } from './DraftList'
 import { MessageList } from './MessageList'
@@ -139,7 +140,7 @@ export function MailView({ open }: { open: boolean }): React.JSX.Element {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       if (pane) update('mail', { pane: null })
       else closeApp()
     }

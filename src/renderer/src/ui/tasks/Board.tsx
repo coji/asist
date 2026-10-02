@@ -22,6 +22,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities'
 import { AlignLeft, Plus } from 'lucide-react'
 import { TASK_STATUSES, columnOf, type Task, type TaskStatus } from '@shared/tasks'
+import { keyForApp } from '@/ui/key-for-app'
 import { DueChip } from './DueChip'
 import { useT } from '@/i18n'
 
@@ -426,7 +427,7 @@ function QuickAdd({ status, onAdd }: { status: TaskStatus; onAdd: (title: string
           if (!title.trim()) setEditing(false)
         }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
+          if (keyForApp(event) === 'Escape') {
             event.stopPropagation()
             setTitle('')
             setEditing(false)

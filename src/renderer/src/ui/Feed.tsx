@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { sendTypedMessage, typedTextFits } from '@/conversation'
 import { displayError } from '@/display-error'
+import { keyForApp } from '@/ui/key-for-app'
 import { useT } from '@/i18n'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { useFeedStore, useTurnStore, type FeedLine } from '@/state/stores'
@@ -161,8 +162,7 @@ export function Feed(): React.JSX.Element {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            // The Enter that confirms a conversion in the Japanese IME must not send the message.
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+            if (keyForApp(e) === 'Enter') {
               e.preventDefault()
               send()
             }

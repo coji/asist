@@ -3,6 +3,7 @@ import { Archive, ChevronDown, ChevronRight, CornerUpLeft, MailOpen, Paperclip, 
 import { errorText } from '@shared/i18n/error-text'
 import { displayName, formatAddress, type MailAccount, type MailChangeInput, type MailMessage, type MailReply } from '@shared/mail'
 import { useMailStore, useToastStore } from '@/state/stores'
+import { keyForApp } from '@/ui/key-for-app'
 import { fullTime, sizeLabel } from './format'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
@@ -273,7 +274,7 @@ export function Reader({
                         value={reply.text}
                         onChange={(event) => setReply({ ...reply, text: event.target.value })}
                         onKeyDown={(event) => {
-                          if (event.key === 'Escape') {
+                          if (keyForApp(event) === 'Escape') {
                             event.stopPropagation()
                             setReply(null)
                           }

@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Plus, X } from 'lucide-react'
-import { dayKeyOf, openTasks, type Task, type TaskPatch, type TaskStatus } from '@shared/tasks'
+import { openTasks, type Task, type TaskPatch, type TaskStatus } from '@shared/tasks'
 import { TASK_VIEWS } from '@shared/mini-apps'
 import { useTaskStore, useToastStore } from '@/state/stores'
 import { useMiniApp, useViewStore } from '@/state/view'
 import { askConfirm } from '@/state/confirm'
+import { keyForApp } from '@/ui/key-for-app'
 import { Board } from './Board'
 import { Editor } from './Editor'
 import { ListView } from './ListView'
+import { useToday } from './today'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 
@@ -16,18 +18,6 @@ import { useT } from '@/i18n'
  * list ordered by due date, and shows the editor on the right. Every change goes to main, and the
  * full set main has committed comes back into the store and redraws the screen.
  */
-
-/** Today's day key, which every due date is judged against. */
-function useToday(active: boolean): string {
-  const [today, setToday] = useState(() => dayKeyOf(new Date()))
-  useEffect(() => {
-    if (!active) return
-    setToday(dayKeyOf(new Date()))
-    const timer = setInterval(() => setToday(dayKeyOf(new Date())), 60_000)
-    return () => clearInterval(timer)
-  }, [active])
-  return today
-}
 
 /** App passes `open`, so the view keeps drawing through the closing animation even after the store says it is closed. */
 export function TasksView({ open }: { open: boolean }): React.JSX.Element {
@@ -41,7 +31,7 @@ export function TasksView({ open }: { open: boolean }): React.JSX.Element {
   const load = useTaskStore((s) => s.load)
   const toast = useToastStore((s) => s.push)
   const t = useT()
-  const today = useToday(open)
+  const today = useToday()
   const [title, setTitle] = useState('')
 
   useEffect(() => {
@@ -54,7 +44,7 @@ export function TasksView({ open }: { open: boolean }): React.JSX.Element {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       if (selectedId) update('tasks', { taskId: null })
       else closeApp()
     }
@@ -86,7 +76,7 @@ export function TasksView({ open }: { open: boolean }): React.JSX.Element {
     add(value)
     setTitle('')
   }
-  const patch = (task: Task, change: TaskPatch): void => void act(t('tasks.updateFailed'), () => window.api.taskUpdate(task.id, change))
+  const patch = (task: Task, change: TaskPatch): Promise<boolean> => act(t('tasks.updateFailed'), () => window.api.taskUpdate(task.id, change))
   const move = (id: string, status: TaskStatus, index: number): Promise<boolean> =>
     act(t('tasks.moveFailed'), () => window.api.taskMove({ id, status, index }))
   const remove = async (task: Task): Promise<void> => {
@@ -102,7 +92,7 @@ export function TasksView({ open }: { open: boolean }): React.JSX.Element {
       setSelectedId(null)
     })
   }
-  const toggleDone = (task: Task): void => patch(task, { status: task.status === 'done' ? 'todo' : 'done' })
+  const toggleDone = (task: Task): void => void patch(task, { status: task.status === 'done' ? 'todo' : 'done' })
   const clearDone = async (): Promise<void> => {
     const count = tasks.filter((task) => task.status === 'done').length
     const approved = await askConfirm({

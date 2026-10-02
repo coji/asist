@@ -8,6 +8,7 @@ import { MarkdownContent } from '@/panels/viewers/MarkdownViewer'
 import { relativeTime } from '@/panels/primitives/format'
 import { displayError } from '@/display-error'
 import { SaveShortcutKey, isSaveShortcut } from '@/ui/save-shortcut'
+import { keyForApp } from '@/ui/key-for-app'
 import { useFormatLocale, useT } from '@/i18n'
 import '@/panels/viewers/viewers.css'
 import '@/assets/notes.css'
@@ -103,7 +104,7 @@ export function NotesView({ open }: { open: boolean }): React.JSX.Element {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       if (!editing) closeApp()
       else void leaveEditing()
     }

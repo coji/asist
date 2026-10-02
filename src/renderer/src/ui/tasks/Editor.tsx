@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Trash2, X } from 'lucide-react'
 import { TASK_STATUSES, addDaysKey, type Task, type TaskPatch, type TaskStatus } from '@shared/tasks'
 import { relativeTime } from '@/panels/primitives/format'
+import { useFieldDraft } from '@/ui/field-draft'
+import { keyForApp } from '@/ui/key-for-app'
 import { useT } from '@/i18n'
 
 /**
@@ -18,29 +20,19 @@ export function Editor({
 }: {
   task: Task
   today: string
-  onChange: (patch: TaskPatch) => void
+  /** Saves a change through main, reporting a failure itself, and resolves to whether it was saved. */
+  onChange: (patch: TaskPatch) => Promise<boolean>
   onRemove: () => void
   onClose: () => void
 }): React.JSX.Element {
   const t = useT()
-  const [title, setTitle] = useState(task.title)
-  const [notes, setNotes] = useState(task.notes)
-  const commitTitle = (): void => {
-    const value = title.trim()
-    if (!value) {
-      setTitle(task.title)
-      return
-    }
-    if (value !== task.title) onChange({ title: value })
-  }
-  const commitNotes = (): void => {
-    if (notes !== task.notes) onChange({ notes })
-  }
+  const title = useFieldDraft(task.title, { format: (text) => text, parse: (text) => text.trim() || null, save: (value) => onChange({ title: value }) })
+  const notes = useFieldDraft(task.notes, { format: (text) => text, parse: (text) => text, save: (value) => onChange({ notes: value }) })
   const setStatus = (status: TaskStatus): void => {
-    if (status !== task.status) onChange({ status })
+    if (status !== task.status) void onChange({ status })
   }
   const setDue = (due: string | null): void => {
-    if (due !== task.due) onChange({ due })
+    if (due !== task.due) void onChange({ due })
   }
   const quick: Array<[string, string | null]> = [
     [t('tasks.editor.dueToday'), today],
@@ -64,16 +56,17 @@ export function Editor({
       </div>
       <input
         className="tk-editor-title"
-        value={title}
         aria-label={t('tasks.editor.title')}
-        onChange={(event) => setTitle(event.target.value)}
-        onBlur={commitTitle}
+        {...title.props}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
-          if (event.key === 'Escape') {
+          title.props.onKeyDown(event)
+          if (keyForApp(event) === 'Escape') {
+            const field = event.currentTarget
             event.stopPropagation()
-            setTitle(task.title)
-            ;(event.target as HTMLInputElement).blur()
+            // blur() runs onBlur before React would apply a discard made in this handler, and that onBlur
+            // would save the text Escape throws away.
+            flushSync(title.discard)
+            field.blur()
           }
         }}
       />
@@ -97,12 +90,11 @@ export function Editor({
         <label htmlFor={`notes-${task.id}`}>{t('tasks.editor.notes')}</label>
         <textarea
           id={`notes-${task.id}`}
-          value={notes}
           placeholder={t('tasks.editor.notesPlaceholder')}
-          onChange={(event) => setNotes(event.target.value)}
-          onBlur={commitNotes}
+          {...notes.props}
           onKeyDown={(event) => {
-            if (event.key === 'Escape') event.stopPropagation()
+            notes.props.onKeyDown(event)
+            if (keyForApp(event) === 'Escape') event.stopPropagation()
           }}
         />
       </div>

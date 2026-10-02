@@ -3,12 +3,14 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type D
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { isJobExecuting } from '@shared/job-status'
-import { dayKeyOf, openTasks } from '@shared/tasks'
+import { openTasks } from '@shared/tasks'
 import { DEFAULT_DOCK_ORDER, type DockItem } from '@shared/dock'
 import type { MessageKey } from '@shared/i18n'
 import { useT } from '@/i18n'
 import { useJobStore, useMailStore, useSettingsStore, useTaskStore, useToastStore } from '@/state/stores'
 import { activeMiniApp, useViewStore } from '@/state/view'
+import { keyForApp } from '@/ui/key-for-app'
+import { useToday } from '@/ui/tasks/today'
 import asistIcon from '@/assets/holo/asist.png'
 import agentIcon from '@/assets/holo/agent.png'
 import tasksIcon from '@/assets/holo/tasks.png'
@@ -53,10 +55,8 @@ export function NavigationDock(): React.JSX.Element {
   const runningJobs = useJobStore((s) => s.jobs.filter((job) => isJobExecuting(job.status)).length)
   // Open tasks that are due today or overdue, counted on the badge so that the number can be read
   // without opening the screen.
-  const dueTasks = useTaskStore((s) => {
-    const today = dayKeyOf(new Date())
-    return openTasks(s.tasks).filter((task) => task.due !== null && task.due <= today).length
-  })
+  const today = useToday()
+  const dueTasks = useTaskStore((s) => openTasks(s.tasks).filter((task) => task.due !== null && task.due <= today).length)
   // Unread mail from the last 24 hours only, so that old unread mail does not inflate the number.
   const recentMail = useMailStore((s) => s.status?.unreadRecent ?? 0)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -66,7 +66,7 @@ export function NavigationDock(): React.JSX.Element {
   useEffect(() => {
     if (open !== 'settings' && open !== 'jobs') return
     const close = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       closeApp()
     }
     window.addEventListener('keydown', close)

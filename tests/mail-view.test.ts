@@ -394,6 +394,29 @@ describe('composing and Escape', () => {
     expect(api.mailChange).toHaveBeenCalledWith(expect.objectContaining({ to: ['Tanaka, Taro <taro@example.com>', '"Sato, Hana" <hana@example.co.jp>', 's@example.com'] }))
   })
 
+  it('keeps the composer, the reply form and the reader on the Escape that cancels an IME conversion in them', async () => {
+    // Chromium on macOS sends the Escape that cancels an IME conversion with isComposing set.
+    const cancelConversion = (field: Element): boolean => field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true }))
+    const view = await render()
+    await act(async () => view.querySelector<HTMLButtonElement>('.ml-compose')!.click())
+    const body = view.querySelector<HTMLTextAreaElement>(`.ml-composer [aria-label="${t('mail.fields.body')}"]`)!
+    await act(async () => setValue(body, 'よろしく'))
+    await act(async () => void cancelConversion(body))
+    expect(view.querySelector('.ml-composer')).not.toBeNull()
+    expect(body.value).toBe('よろしく')
+
+    await act(async () => useViewStore.getState().update('mail', { pane: null }))
+    await act(async () => view.querySelector<HTMLButtonElement>('.ml-row-main')!.click())
+    await act(async () => {})
+    await act(async () => [...view.querySelectorAll<HTMLButtonElement>('.ml-actions .cal-btn')].find((el) => el.textContent?.includes(t('mail.reply')))!.click())
+    const reply = view.querySelector<HTMLTextAreaElement>('.ml-reply textarea')!
+    await act(async () => setValue(reply, 'かようび'))
+    await act(async () => void cancelConversion(reply))
+    expect(view.querySelector('.ml-reply')).not.toBeNull()
+    expect(view.querySelector('.ml-reader')).not.toBeNull()
+    expect(useViewStore.getState().open?.app).toBe('mail')
+  })
+
   it('closes the reader on the first Escape and the screen on the second', async () => {
     const view = await render()
     await act(async () => view.querySelector<HTMLButtonElement>('.ml-row-main')!.click())

@@ -179,6 +179,17 @@ describe('the notes screen', () => {
     expect(useViewStore.getState().open?.app).not.toBe('notes')
   })
 
+  it('stays open on the Escape that cancels an IME conversion in the filter', async () => {
+    const view = await render()
+    const filter = view.querySelector<HTMLInputElement>(`input[aria-label="${t('notes.filter')}"]`)!
+    await act(async () => setValue(filter, 'じゅうでん'))
+    // Chromium on macOS sends the Escape that cancels an IME conversion with isComposing set.
+    await act(async () => void filter.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })))
+    expect(useViewStore.getState().open?.app).toBe('notes')
+    await act(async () => void filter.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    expect(useViewStore.getState().open?.app).not.toBe('notes')
+  })
+
   it('asks before the back button, the Dock, a card or open_app throws an unsaved note away, and keeps it when the answer is no', async () => {
     const view = await render()
     await act(async () => button(view, t('notes.newNote')).click())

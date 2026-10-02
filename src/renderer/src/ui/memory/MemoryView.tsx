@@ -4,6 +4,7 @@ import type { MemoryDocument } from '@shared/ipc'
 import type { Translate } from '@shared/i18n'
 import { JOURNAL_SELF_HEADINGS } from '@shared/memory-page'
 import { SaveShortcutKey, isSaveShortcut } from '@/ui/save-shortcut'
+import { keyForApp } from '@/ui/key-for-app'
 import { useToastStore } from '@/state/stores'
 import { useLeaveGuard, useMiniApp, useViewStore } from '@/state/view'
 import { askConfirm } from '@/state/confirm'
@@ -137,7 +138,7 @@ export function MemoryView({ open }: { open: boolean }): React.JSX.Element {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       if (mode.kind === 'read') closeApp()
       else void leaveEditing()
     }

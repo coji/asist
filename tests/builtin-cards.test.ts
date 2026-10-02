@@ -343,6 +343,59 @@ describe('todo and notes cards', () => {
     expect([...card.querySelectorAll('.card-row-title')].map((el) => el.textContent)).toEqual(['牛乳を買う'])
   })
 
+  it('adds nothing on the Enter that confirms an IME conversion, and adds the task on the next Enter', async () => {
+    const card = await renderAt(spec('todo', {}), L)
+    const input = card.querySelector<HTMLInputElement>('.card-input input')!
+    const type = (value: string): void => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    await act(async () => type('資料を'))
+    // Chromium on macOS sends the Enter that confirms an IME conversion with isComposing set.
+    await act(async () => void input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true })))
+    expect(api.taskCreate).not.toHaveBeenCalled()
+    await act(async () => type('資料を作る'))
+    await act(async () => void input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    expect(api.taskCreate.mock.calls).toEqual([[{ title: '資料を作る' }]])
+  })
+
+  it('keeps the enlarged card open on the Escape that cancels an IME conversion in its field, and closes it on the next Escape', async () => {
+    await renderAt(spec('todo', {}), L)
+    await act(async () => {
+      root.render(
+        React.createElement(React.Fragment, null, React.createElement(Dock, { slot: 'right' }), React.createElement('section', { 'data-surface': 'focus' }, React.createElement(FocusOverlay)))
+      )
+      usePanelStore.getState().setFocused('todo:test')
+    })
+    const input = container.querySelector<HTMLInputElement>('[data-surface="focus"] .card-input input')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'しりょう')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => void input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })))
+    expect(usePanelStore.getState().focusedKey).toBe('todo:test')
+    expect(input.value).toBe('しりょう')
+    await act(async () => void input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    expect(usePanelStore.getState().focusedKey).toBeNull()
+  })
+
+  it('judges the due dates against the new day once midnight passes while the card stays on screen', async () => {
+    vi.useFakeTimers({ now: new Date(2026, 9, 2, 23, 59, 30) })
+    try {
+      useTaskStore.setState({ loaded: true, tasks: [taskOf('a', '経費精算', 'todo', 0, { due: '2026-10-03' })] })
+      const card = await renderAt(spec('todo', {}), L)
+      expect(card.querySelector('.tk-due')?.getAttribute('data-state')).toBe('tomorrow')
+      expect(card.querySelector('.card-note')).toBeNull()
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2 * 60_000)
+      })
+      expect(card.querySelector('.tk-due')?.getAttribute('data-state')).toBe('today')
+      expect(card.querySelector('.card-note')?.textContent).toBe(t('tasks.card.dueToday', { count: 1 }))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('redraws when main delivers the full list it has saved', async () => {
     const card = await renderAt(spec('todo', {}), L)
     expect(card.querySelector('.card-empty')).not.toBeNull()

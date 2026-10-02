@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { dayKeyOf, openTasks, type Task } from '@shared/tasks'
+import { openTasks, type Task } from '@shared/tasks'
 import { usePanelStore, useTaskStore } from '@/state/stores'
 import { useViewStore } from '@/state/view'
 import { DueChip } from '@/ui/tasks/DueChip'
+import { useToday } from '@/ui/tasks/today'
+import { keyForApp } from '@/ui/key-for-app'
 import type { CardContext, CardDefinition } from '../shell/card'
 import { Action, Actions, Box, Empty, More } from '../primitives/Card'
 import './todo.css'
@@ -27,6 +29,7 @@ function TodoBody({ spec, size }: CardContext): React.JSX.Element {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [input, setInput] = useState('')
+  const today = useToday()
   useEffect(() => {
     if (!loaded) void load()
   }, [loaded, load, spec.updatedAt])
@@ -63,7 +66,6 @@ function TodoBody({ spec, size }: CardContext): React.JSX.Element {
   }
   const complete = (task: Task): void => run(() => window.api.taskUpdate(task.id, { status: 'done' }))
 
-  const today = dayKeyOf(new Date())
   const open = openTasks(tasks)
   const doing = open.filter((task) => task.status === 'doing').length
   const dueToday = open.filter((task) => task.due === today).length
@@ -122,7 +124,7 @@ function TodoBody({ spec, size }: CardContext): React.JSX.Element {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') add()
+              if (keyForApp(e) === 'Enter') add()
             }}
             placeholder={t('tasks.card.addPlaceholder')}
             aria-label={t('tasks.card.addLabel')}

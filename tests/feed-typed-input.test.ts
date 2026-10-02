@@ -17,7 +17,7 @@ afterEach(() => {
   mocks.sendTypedMessage.mockClear()
 })
 
-async function typeAndPressEnter(text: string): Promise<HTMLInputElement> {
+async function typeAndPressEnter(text: string, isComposing = false): Promise<HTMLInputElement> {
   useSettingsStore.setState({ settings: { uiLocale: 'ja-JP' } as unknown as AppSettings })
   const container = document.body.appendChild(document.createElement('div'))
   root = createRoot(container)
@@ -29,7 +29,7 @@ async function typeAndPressEnter(text: string): Promise<HTMLInputElement> {
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
   await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing, bubbles: true }))
   })
   return input
 }
@@ -47,5 +47,12 @@ describe('the typed text box', () => {
     const input = await typeAndPressEnter('こんにちは')
     expect(mocks.sendTypedMessage).toHaveBeenCalledWith('こんにちは')
     expect(input.value).toBe('')
+  })
+
+  it('sends nothing on the Enter that confirms an IME conversion, which Chromium on macOS sends with isComposing set', async () => {
+    mocks.fits = true
+    const input = await typeAndPressEnter('こんにちは', true)
+    expect(mocks.sendTypedMessage).not.toHaveBeenCalled()
+    expect(input.value).toBe('こんにちは')
   })
 })

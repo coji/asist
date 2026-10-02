@@ -70,6 +70,10 @@ const setValue = (input: HTMLInputElement | HTMLTextAreaElement, value: string):
   Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(input, value)
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
+/** Chromium on macOS sends the Enter that confirms an IME conversion, and the Escape that cancels one, with isComposing set. */
+const press = (target: EventTarget, key: string, isComposing = false): boolean =>
+  target.dispatchEvent(new KeyboardEvent('keydown', { key, isComposing, bubbles: true }))
+const leave = (field: HTMLElement): boolean => field.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
 
 describe('board', () => {
   it('groups the tasks by column and shows the count, the due chip and how many are due today or overdue', async () => {
@@ -154,6 +158,184 @@ describe('board', () => {
     await answerConfirm(true)
     expect(api.tasksClearDone).toHaveBeenCalled()
     expect(useToastStore.getState().toasts.at(-1)?.title).toBe(t('tasks.deletedDone', { count: 1 }))
+  })
+})
+
+describe('editor', () => {
+  async function openEditor(): Promise<HTMLElement> {
+    const view = await render()
+    await act(async () => view.querySelector<HTMLElement>('.tk-column[data-status="doing"] .tk-card')!.click())
+    return view.querySelector<HTMLElement>('.tk-editor')!
+  }
+  const titleField = (editor: HTMLElement): HTMLInputElement => editor.querySelector<HTMLInputElement>('.tk-editor-title')!
+  const notesField = (editor: HTMLElement): HTMLTextAreaElement => editor.querySelector<HTMLTextAreaElement>('textarea')!
+  /** update_task from the conversation commits a change, and main delivers every task. */
+  const changeInMain = (patch: Partial<Task>): void =>
+    useTaskStore.getState().apply(tasks.map((item) => (item.id === 'c' ? { ...item, ...patch, updatedAt: 2 } : item)))
+
+  it('shows the title and the notes main committed while the editor was open', async () => {
+    const editor = await openEditor()
+    await act(async () => changeInMain({ title: 'レビューを終える', notes: '週表示も見る' }))
+    expect(titleField(editor).value).toBe('レビューを終える')
+    expect(notesField(editor).value).toBe('週表示も見る')
+  })
+
+  it('saves nothing when the title and the notes are entered and left without typing after main changed them', async () => {
+    const editor = await openEditor()
+    await act(async () => changeInMain({ title: 'レビューを終える', notes: '週表示も見る' }))
+    await act(async () => void leave(notesField(editor)))
+    await act(async () => void leave(titleField(editor)))
+    expect(api.taskUpdate).not.toHaveBeenCalled()
+  })
+
+  it('keeps the text being typed while main changes the task, and saves it when the field is left', async () => {
+    const editor = await openEditor()
+    await act(async () => setValue(notesField(editor), '月表示と週表示を見る'))
+    await act(async () => changeInMain({ notes: '週表示も見る' }))
+    expect(notesField(editor).value).toBe('月表示と週表示を見る')
+    await act(async () => void leave(notesField(editor)))
+    expect(api.taskUpdate.mock.calls).toEqual([['c', { notes: '月表示と週表示を見る' }]])
+  })
+
+  it('saves nothing when the typed text is put back to what the field held before the typing', async () => {
+    const editor = await openEditor()
+    await act(async () => setValue(notesField(editor), '月表示を見る。'))
+    await act(async () => changeInMain({ notes: '週表示も見る' }))
+    await act(async () => setValue(notesField(editor), '月表示を見る'))
+    await act(async () => void leave(notesField(editor)))
+    expect(api.taskUpdate).not.toHaveBeenCalled()
+    expect(notesField(editor).value).toBe('週表示も見る')
+  })
+
+  it('keeps a title main refused in the field, and saves it again when the field is left again', async () => {
+    api.taskUpdate.mockRejectedValueOnce(new Error('tasks.json に書けません'))
+    const editor = await openEditor()
+    const title = titleField(editor)
+    await act(async () => setValue(title, 'レビューを終える'))
+    await act(async () => void leave(title))
+    expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'error', title: t('tasks.updateFailed') })
+    expect(title.value).toBe('レビューを終える')
+    await act(async () => void leave(title))
+    expect(api.taskUpdate.mock.calls).toEqual([
+      ['c', { title: 'レビューを終える' }],
+      ['c', { title: 'レビューを終える' }]
+    ])
+  })
+
+  it('gives way to a change from the conversation after main refused the typed notes, and does not write them over it', async () => {
+    api.taskUpdate.mockRejectedValueOnce(new Error('tasks.json に書けません'))
+    const editor = await openEditor()
+    await act(async () => setValue(notesField(editor), 'ユーザーの補足'))
+    await act(async () => void leave(notesField(editor)))
+    await act(async () => changeInMain({ notes: 'モデルの補足' }))
+    expect(notesField(editor).value).toBe('モデルの補足')
+    await act(async () => void leave(notesField(editor)))
+    expect(api.taskUpdate.mock.calls).toEqual([['c', { notes: 'ユーザーの補足' }]])
+  })
+
+  it('saves a title typed back to the saved one while the save of the first edit is under way', async () => {
+    let answerFirst!: () => void
+    api.taskUpdate.mockImplementationOnce((id: string) => new Promise((resolve) => (answerFirst = () => resolve(tasks.find((item) => item.id === id)!))))
+    const editor = await openEditor()
+    const title = titleField(editor)
+    await act(async () => setValue(title, 'レビュー2'))
+    await act(async () => void leave(title))
+    await act(async () => setValue(title, 'レビュー'))
+    await act(async () => void leave(title))
+    await act(async () => {
+      changeInMain({ title: 'レビュー2' })
+      answerFirst()
+    })
+    expect(api.taskUpdate.mock.calls).toEqual([
+      ['c', { title: 'レビュー2' }],
+      ['c', { title: 'レビュー' }]
+    ])
+  })
+
+  it('keeps a second title main refused after the first one arrived from main', async () => {
+    let answerFirst!: () => void
+    let refuseSecond!: () => void
+    api.taskUpdate
+      .mockImplementationOnce((id: string) => new Promise((resolve) => (answerFirst = () => resolve(tasks.find((item) => item.id === id)!))))
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => (refuseSecond = () => reject(new Error('tasks.json に書けません')))))
+    const editor = await openEditor()
+    const title = titleField(editor)
+    await act(async () => setValue(title, '一回目'))
+    await act(async () => void leave(title))
+    await act(async () => setValue(title, '二回目'))
+    await act(async () => void leave(title))
+    await act(async () => {
+      changeInMain({ title: '一回目' })
+      answerFirst()
+    })
+    expect(title.value).toBe('二回目')
+    await act(async () => refuseSecond())
+    expect(title.value).toBe('二回目')
+    expect(useToastStore.getState().toasts.at(-1)).toMatchObject({ kind: 'error', title: t('tasks.updateFailed') })
+  })
+
+  it('saves the notes being typed when the editor closes while they still have focus, as when the model opens another task', async () => {
+    const editor = await openEditor()
+    const notes = notesField(editor)
+    notes.focus()
+    await act(async () => setValue(notes, '打ちかけの補足'))
+    await act(async () => useViewStore.getState().update('tasks', { taskId: 'a' }))
+    expect(api.taskUpdate.mock.calls).toEqual([['c', { notes: '打ちかけの補足' }]])
+  })
+
+  it('puts the title back and saves nothing when Escape is pressed in the title field', async () => {
+    const editor = await openEditor()
+    const title = titleField(editor)
+    title.focus()
+    await act(async () => setValue(title, 'レビュー書きかけ'))
+    await act(async () => void press(title, 'Escape'))
+    expect(api.taskUpdate).not.toHaveBeenCalled()
+    expect(title.value).toBe('レビュー')
+    expect(document.activeElement).not.toBe(title)
+    expect(container.querySelector('.tk-editor')).not.toBeNull()
+  })
+
+  it('stays in the title field on the Enter that confirms an IME conversion, and saves the title on the next Enter', async () => {
+    const editor = await openEditor()
+    const title = titleField(editor)
+    title.focus()
+    await act(async () => setValue(title, '資料を'))
+    await act(async () => void press(title, 'Enter', true))
+    expect(document.activeElement).toBe(title)
+    expect(api.taskUpdate).not.toHaveBeenCalled()
+    await act(async () => setValue(title, '資料を作る'))
+    await act(async () => void press(title, 'Enter'))
+    expect(api.taskUpdate.mock.calls).toEqual([['c', { title: '資料を作る' }]])
+  })
+
+  it('keeps the typed title, the editor and the screen on the Escape that cancels an IME conversion in the title', async () => {
+    const editor = await openEditor()
+    const title = titleField(editor)
+    title.focus()
+    await act(async () => setValue(title, 'レビューしりょう'))
+    await act(async () => void press(title, 'Escape', true))
+    expect(title.value).toBe('レビューしりょう')
+    expect(document.activeElement).toBe(title)
+    expect(container.querySelector('.tk-editor')).not.toBeNull()
+    expect(useViewStore.getState().open?.app).toBe('tasks')
+  })
+
+  it('keeps the field at the top, the field under a column and the editor on the Escape that cancels an IME conversion in a field', async () => {
+    await openEditor()
+    const view = container.querySelector<HTMLElement>('[aria-label="TASKS"]')!
+    const top = view.querySelector<HTMLInputElement>('.tk-add input')!
+    await act(async () => setValue(top, 'はいしゃ'))
+    await act(async () => void press(top, 'Escape', true))
+    expect(top.value).toBe('はいしゃ')
+    expect(view.querySelector('.tk-editor')).not.toBeNull()
+    await act(async () => view.querySelector<HTMLButtonElement>('.tk-column[data-status="doing"] .tk-quick-add button')!.click())
+    const quick = view.querySelector<HTMLInputElement>('.tk-column[data-status="doing"] .tk-quick-add input')!
+    await act(async () => setValue(quick, 'いますぐ'))
+    await act(async () => void press(quick, 'Escape', true))
+    expect(quick.isConnected).toBe(true)
+    expect(quick.value).toBe('いますぐ')
+    expect(view.querySelector('.tk-editor')).not.toBeNull()
+    expect(useViewStore.getState().open?.app).toBe('tasks')
   })
 })
 

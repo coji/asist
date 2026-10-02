@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react'
 import { AGENT_INSTALL_GUIDE, type SettingsContext } from '../context'
-import { useFieldDraft } from '../field-draft'
+import { useFieldDraft } from '@/ui/field-draft'
 import { Btn, Chip, Group, NotSavedHint, Page, Row } from '../primitives'
 import { PrepLine } from '../preparation'
 import { useT } from '@/i18n'

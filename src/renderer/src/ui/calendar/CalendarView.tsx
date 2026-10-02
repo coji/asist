@@ -18,6 +18,7 @@ import {
 } from '@shared/calendar-layout'
 import { useSettingsStore, useToastStore } from '@/state/stores'
 import { useMiniApp, useViewStore } from '@/state/view'
+import { keyForApp } from '@/ui/key-for-app'
 import {
   Card,
   DayCard,
@@ -198,7 +199,7 @@ export function CalendarView({ open }: { open: boolean }): React.JSX.Element {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (keyForApp(event) !== 'Escape' || event.defaultPrevented) return
       if (popover || eventId) closeCards()
       else closeApp()
     }

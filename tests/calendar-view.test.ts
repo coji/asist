@@ -156,6 +156,22 @@ it('edits an event that crosses midnight with its end day shown, and saves it wi
   })
 })
 
+it('keeps the event being written on the Escape that cancels an IME conversion in its title, and closes it on the next Escape', async () => {
+  await render()
+  await act(async () => container.querySelector<HTMLButtonElement>('.cal-create')!.click())
+  const title = container.querySelector<HTMLInputElement>('.cal-create-form .cal-title-input')!
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(title, 'ていれい')
+    title.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  // Chromium on macOS sends the Escape that cancels an IME conversion with isComposing set.
+  await act(async () => void title.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })))
+  expect(container.querySelector<HTMLInputElement>('.cal-create-form .cal-title-input')?.value).toBe('ていれい')
+  await act(async () => void title.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+  expect(container.querySelector('.cal-create-form')).toBeNull()
+  expect(useViewStore.getState().open?.app).toBe('calendar')
+})
+
 it('shows why the events could not be listed while the calendar is ready, and lists them on retry', async () => {
   calendarEvents.mockRejectedValue(new Error(errorText('calendar.errors.noReadCalendars')))
   await render()

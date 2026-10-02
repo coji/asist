@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import type { PanelSpec } from '@shared/ipc'
 import { usePanelStore } from '@/state/stores'
+import { keyForApp } from '@/ui/key-for-app'
 import { useT } from '@/i18n'
 import { cardDefinition } from '@/panels/registry'
 import { hasCardData } from '@/panels/shell/card'
@@ -58,7 +59,7 @@ export function FocusOverlay(): React.JSX.Element {
   useEffect(() => {
     if (!focusedKey) return
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setFocused(null)
+      if (keyForApp(e) === 'Escape') setFocused(null)
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)

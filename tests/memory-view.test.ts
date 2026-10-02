@@ -236,6 +236,17 @@ describe('the memory screen', () => {
     expect(useViewStore.getState().open?.app).not.toBe('memory')
   })
 
+  it('stays open on the Escape that cancels an IME conversion in the filter', async () => {
+    const view = await render()
+    const filter = view.querySelector<HTMLInputElement>(`input[aria-label="${t('memory.filter')}"]`)!
+    await act(async () => setValue(filter, 'おおかわ'))
+    // Chromium on macOS sends the Escape that cancels an IME conversion with isComposing set.
+    await act(async () => void filter.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })))
+    expect(useViewStore.getState().open?.app).toBe('memory')
+    await act(async () => void filter.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    expect(useViewStore.getState().open?.app).not.toBe('memory')
+  })
+
   it('keeps the draft of a page a curation removed while it was edited, refuses to save it with the reason, and moves on only once the draft is thrown away', async () => {
     const view = await render()
     await act(async () => itemByTitle(view, '松葉軒').click())

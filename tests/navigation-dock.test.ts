@@ -84,6 +84,35 @@ it('counts on the task badge the unfinished tasks due today or overdue, and neit
   }
 })
 
+it('counts on the task badge a task due the next day once midnight passes', async () => {
+  vi.useFakeTimers({ now: new Date(2026, 9, 2, 23, 59, 30) })
+  vi.stubGlobal('React', React)
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  try {
+    useViewStore.getState().closeApp()
+    useTaskStore.setState({
+      loaded: true,
+      error: '',
+      tasks: [{ id: 'a', title: '経費精算', notes: '', status: 'todo', due: '2026-10-03', order: 0, createdAt: 1, updatedAt: 1, completedAt: null }]
+    })
+    await act(async () => root.render(React.createElement(NavigationDock)))
+    const tasks = container.querySelector<HTMLButtonElement>('button[data-item="tasks"]')!
+    expect(tasks.querySelector('.dock-badge')).toBeNull()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2 * 60_000)
+    })
+    expect(tasks.querySelector('.dock-badge')?.textContent).toBe('1')
+  } finally {
+    await act(async () => root.unmount())
+    container.remove()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  }
+})
+
 it('counts on the mail badge the unread messages of the last 24 hours and not the older unread ones', async () => {
   vi.stubGlobal('React', React)
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
@@ -123,6 +152,32 @@ it('follows the stored dockOrder and keeps ASIST pinned to the left end', async 
     useSettingsStore.setState({ settings: null })
     await act(async () => root.unmount())
     container.remove()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('leaves the settings open on the Escape that cancels an IME conversion in one of their fields, and closes them on the next Escape', async () => {
+  vi.stubGlobal('React', React)
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  const field = document.body.appendChild(document.createElement('textarea'))
+  try {
+    useViewStore.getState().closeApp()
+    useTaskStore.setState({ tasks: [], loaded: true, error: '' })
+    await act(async () => root.render(React.createElement(NavigationDock)))
+    await act(async () => useViewStore.getState().openApp({ app: 'settings' }))
+    field.focus()
+    // Chromium on macOS sends the Escape that cancels an IME conversion with isComposing set.
+    await act(async () => void field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })))
+    expect(useViewStore.getState().open?.app).toBe('settings')
+    await act(async () => void field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    expect(useViewStore.getState().open?.app).not.toBe('settings')
+  } finally {
+    await act(async () => root.unmount())
+    container.remove()
+    field.remove()
     vi.unstubAllGlobals()
   }
 })
