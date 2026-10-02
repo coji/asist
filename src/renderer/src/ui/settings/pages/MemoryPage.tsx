@@ -3,10 +3,10 @@ import type { MemoryOverview } from '@shared/ipc'
 import { HoloSwitch } from '@/components/ui/switch'
 import { useToastStore } from '@/state/stores'
 import { useViewStore } from '@/state/view'
-import type { SettingsContext } from '../context'
+import { readFailure, statusOf, type SettingsContext } from '../context'
 import { useFieldDraft } from '@/ui/field-draft'
 import { Btn, Chip, Group, Link, NotSavedHint, Page, Row } from '../primitives'
-import { PrepProgress, PrepareButton } from '../preparation'
+import { PrepProgress, PrepareButton, UnreadChip } from '../preparation'
 import { displayError, errorMessageOf } from '@/display-error'
 import { useFormatLocale, useT } from '@/i18n'
 
@@ -23,7 +23,8 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
   // Null until main answers, and then the overview or the message of the error it threw.
   const [overview, setOverview] = useState<{ read: MemoryOverview } | { error: string } | null>(null)
   const [curating, setCurating] = useState(false)
-  const embeddingReady = embedding?.runtimeInstalled === true && embedding.modelInstalled
+  const search = statusOf(embedding)
+  const embeddingReady = search?.runtimeInstalled === true && search.modelInstalled
   const retention = useFieldDraft(settings.conversationLogRetentionDays, {
     format: String,
     parse: (text) => {
@@ -84,18 +85,18 @@ export function MemoryPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element
           hint={
             embeddingReady
               ? t(
-                  embedding.converting
+                  search.converting
                     ? 'settingsMemory.search.converting'
-                    : embedding.running
+                    : search.running
                       ? 'settingsMemory.search.convertedRunning'
                       : 'settingsMemory.search.converted',
-                  { embedded: embedding.embedded, total: embedding.total }
+                  { embedded: search.embedded, total: search.total }
                 )
-              : t('settingsMemory.search.notPrepared')
+              : (readFailure(embedding) ?? t('settingsMemory.search.notPrepared'))
           }
         >
-          {embedding === null ? (
-            <Chip>{t('settingsModels.checking')}</Chip>
+          {search === null ? (
+            <UnreadChip status={embedding} />
           ) : embeddingReady ? (
             <HoloSwitch checked={settings.memoryEmbeddingEnabled} onCheckedChange={(v) => set({ memoryEmbeddingEnabled: v })} />
           ) : (

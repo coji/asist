@@ -37,6 +37,8 @@ export const SCREENS = {
   'settings/about': { label: 'このアプリについて', group: '設定のページ' },
   'settings/memory/preparing': { label: '記憶(意味検索を準備中)', group: '設定のページ' },
   'settings/memory/converting': { label: '記憶(記憶を変換中)', group: '設定のページ' },
+  'settings/check-failed': { label: '概要(入っているものを確認できない)', group: '設定のページ' },
+  'settings/voice/check-failed': { label: '声(入っているものを確認できない)', group: '設定のページ' },
   setup: { label: '初回セットアップ', group: '起動と確認' },
   'setup/key-failed': { label: 'セットアップ(キーの認証に失敗)', group: '起動と確認' },
   'setup/mic-denied': { label: 'セットアップ(マイクが不許可)', group: '起動と確認' },

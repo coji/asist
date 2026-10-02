@@ -101,7 +101,8 @@ export function useFieldDraft<T>(saved: T, { format, parse, save }: FieldDraftOp
     })
   }
   // The field also goes away while it has focus, as when Escape closes the settings or the model opens another
-  // task, and Chromium sends no blur then, so what was typed is saved on unmount by the same rule.
+  // task. Chromium sends a blur then, but React 19 dispatches no events while it commits the removal, so
+  // onBlur never runs, and what was typed is saved on unmount by the same rule.
   const leaveOnUnmount = useRef(leave)
   useEffect(() => {
     leaveOnUnmount.current = leave

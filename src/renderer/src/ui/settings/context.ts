@@ -1,4 +1,4 @@
-import type { AizuchiClassifierStatus, AppSettings, AppStatus, EmbeddingStatus, SetupProgress, SetupStatus, TtsEngine, VapStatus } from '@shared/ipc'
+import type { AizuchiClassifierStatus, AppSettings, AppStatus, EmbeddingStatus, SetupStatus, TtsEngine, VapStatus } from '@shared/ipc'
 import type { Translate } from '@shared/i18n'
 import type { SettingsPage } from '@shared/mini-apps'
 import type { SettingsPatch } from '@shared/settings'
@@ -6,35 +6,37 @@ import type { PlatformCapabilities } from '@shared/platform'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { isLocalTtsEngine, ttsEngineRuns } from '@shared/tts-models'
 import { platformCapabilities } from '@/platform'
+import { displayError, errorMessageOf } from '@/display-error'
+import type { Preparation } from '@/state/preparation'
 import type { Pending } from './pending'
 
 export type { SettingsPage }
 
-/** The items that are prepared by a download in the main process. */
-export type PreparationTarget = 'asr' | 'tts' | 'vap' | 'embedding' | 'aizuchiClassifier'
+/** A state read from main: null until main answers, then what it answered, or the message of the error it threw. */
+export type StatusRead<T> = { read: T } | { error: string } | null
 
-/**
- * The progress of a preparation, such as fetching a model. Only one preparation runs at a time. The
- * progress channel does not say which preparation it belongs to, so `target` records the one that was
- * started, and only that item shows the progress.
- */
-export interface Preparation {
-  busy: boolean
-  target: PreparationTarget | null
-  progress: SetupProgress | null
-  message: string
-  /** The progress of preparing Whisper inside the browser, in percent, or null while nothing runs. */
-  localAsr: number | null
+/** Reads a state from main and hands it on as what main answered or as the error it threw. */
+export function readStatus<T>(read: () => Promise<T>, store: (status: StatusRead<T>) => void): Promise<void> {
+  return read().then(
+    (value) => store({ read: value }),
+    (err: unknown) => store({ error: errorMessageOf(err) })
+  )
 }
+
+/** What main answered, or null while it has not answered or after the read failed. */
+export const statusOf = <T>(status: StatusRead<T>): T | null => (status !== null && 'read' in status ? status.read : null)
+
+/** Why the read failed, in the language of the interface, or null when it has not failed. */
+export const readFailure = (status: StatusRead<unknown>): string | null => (status !== null && 'error' in status ? displayError(status.error) : null)
 
 /** The state and the operations each page receives. Saving settings and reloading status belong to the shell, SettingsDialog. */
 export interface SettingsContext {
   settings: AppSettings
   status: AppStatus | null
-  setup: SetupStatus | null
-  vap: VapStatus | null
-  embedding: EmbeddingStatus | null
-  aizuchiClassifier: AizuchiClassifierStatus | null
+  setup: StatusRead<SetupStatus>
+  vap: StatusRead<VapStatus>
+  embedding: StatusRead<EmbeddingStatus>
+  aizuchiClassifier: StatusRead<AizuchiClassifierStatus>
   prep: Preparation
   /** What is turned on and cannot work yet, which the overview lists and the list on the left counts. */
   pending: Pending[]
@@ -43,7 +45,6 @@ export interface SettingsContext {
   /** Saves and throws on failure, for a caller that wants to word the message itself. */
   save: (patch: SettingsPatch) => Promise<void>
   refreshStatus: () => Promise<void>
-  refreshSetup: () => Promise<void>
   go: (page: SettingsPage) => void
   prepare: {
     asr: () => void

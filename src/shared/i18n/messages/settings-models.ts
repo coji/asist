@@ -512,5 +512,18 @@ export const settingsModels = defineMessages({
     'pt-BR': 'Iniciando',
     'es-419': 'Iniciando',
     'es-ES': 'Iniciando'
+  },
+  checkFailed: {
+    'ja-JP': '確認できません',
+    'en-US': "Couldn't check",
+    'fr-FR': 'Vérification impossible',
+    'de-DE': 'Prüfung fehlgeschlagen',
+    'hi-IN': 'देखा नहीं जा सका',
+    'id-ID': 'Gagal memeriksa',
+    'it-IT': 'Controllo non riuscito',
+    'ko-KR': '확인하지 못함',
+    'pt-BR': 'Não foi possível verificar',
+    'es-419': 'No se pudo verificar',
+    'es-ES': 'No se ha podido comprobar'
   }
 })

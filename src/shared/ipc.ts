@@ -721,6 +721,17 @@ export interface SetupProgress {
   message?: string
 }
 
+/** What main prepares by a download: speech recognition, the local speech model, MaAI, semantic search and the aizuchi classifier. */
+export type PreparationTarget = 'asr' | 'tts' | 'vap' | 'embedding' | 'aizuchiClassifier'
+
+/**
+ * The progress of one preparation as the progress channel carries it. Every preparation reports on the
+ * one channel, so each event names its item, and a screen shows it under that item alone.
+ */
+export interface PreparationProgress extends SetupProgress {
+  target: PreparationTarget
+}
+
 /** The colours of the window buttons the OS draws over the page, taken from the theme. */
 export interface WindowControlColors {
   /** A CSS colour for the symbols on the buttons. */
@@ -1038,7 +1049,7 @@ export interface RendererApi {
   /** Downloads the files of the Qwen3-TTS size the settings name and starts it. Progress arrives through onSetupProgress. */
   prepareTtsModel(): Promise<{ ok: boolean; message: string }>
   cancelTtsPreparation(): Promise<boolean>
-  onSetupProgress(callback: (p: SetupProgress) => void): () => void
+  onSetupProgress(callback: (p: PreparationProgress) => void): () => void
 
   jobCancel(id: string): Promise<void>
   /** Merges the worktree's changes into the user's repository, or discards them. The diff is what the user reviews before merging. */

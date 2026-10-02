@@ -2,9 +2,10 @@ import type { ReactNode } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { HoloSwitch } from '@/components/ui/switch'
 import { useT } from '@/i18n'
+import type { PreparationTarget } from '@shared/ipc'
 import { progressLabel } from '../progress-label'
-import type { PreparationTarget, SettingsContext } from './context'
-import { Btn, Progress } from './primitives'
+import type { SettingsContext, StatusRead } from './context'
+import { Btn, Chip, Progress } from './primitives'
 
 /**
  * A preparation shown under the row that needs it: what is missing, the button that fetches it, and the
@@ -19,6 +20,12 @@ export function PrepLine({ text, children, progress }: { text: string; children:
       {progress}
     </div>
   )
+}
+
+/** In place of the control of a row whose state main has not reported: that it is being checked, or that the check failed. */
+export function UnreadChip({ status }: { status: StatusRead<unknown> }): React.JSX.Element {
+  const t = useT()
+  return status === null ? <Chip>{t('settingsModels.checking')}</Chip> : <Chip tone="warn">{t('settingsModels.checkFailed')}</Chip>
 }
 
 /** The button that starts one preparation, and the button that stops it where it can be stopped. */
@@ -38,10 +45,11 @@ export function PrepareButton({
   tone?: 'primary' | 'quiet'
 }): React.JSX.Element {
   const t = useT()
-  const preparing = ctx.prep.busy && ctx.prep.target === target
+  const { running } = ctx.prep
+  const preparing = running?.target === target
   return (
     <>
-      <Btn tone={tone} data-prep={target} disabled={ctx.prep.busy} onClick={onClick}>
+      <Btn tone={tone} data-prep={target} disabled={running !== null} onClick={onClick}>
         {preparing ? t('common.preparing') : (label ?? t('settingsModels.prepare'))}
       </Btn>
       {preparing && onCancel && (
@@ -55,9 +63,9 @@ export function PrepareButton({
 
 /** The progress of the preparation of `target`, or nothing while another one or none runs. */
 export function PrepProgress({ ctx, target }: { ctx: SettingsContext; target: PreparationTarget }): React.JSX.Element | null {
-  const { prep } = ctx
-  if (!(prep.busy && prep.target === target && prep.progress)) return null
-  return <Progress percent={prep.progress.pct ?? 0} label={progressLabel(prep.progress)} />
+  const { running } = ctx.prep
+  if (running?.target !== target || !running.progress) return null
+  return <Progress percent={running.progress.pct ?? 0} label={progressLabel(running.progress)} />
 }
 
 /**

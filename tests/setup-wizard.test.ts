@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AppSettings, AppStatus, SetupProgress, SetupStatus } from '@shared/ipc'
+import type { AppSettings, AppStatus, PreparationProgress, SetupStatus } from '@shared/ipc'
 import { createTranslator, type Translate, type UiLocale } from '@shared/i18n'
 import { SetupWizard } from '../src/renderer/src/ui/SetupWizard'
 import { useSettingsStore, useStatusStore } from '../src/renderer/src/state/stores'
@@ -27,7 +27,7 @@ let settings: AppSettings
 let status: AppStatus
 const ja = createTranslator('ja-JP')
 const verifiedKeys = new Set<string>()
-let progressListener: (progress: SetupProgress) => void = () => {}
+let progressListener: (progress: PreparationProgress) => void = () => {}
 
 /**
  * The local speech recognition as main reports it before anything is downloaded: none on a machine without
@@ -84,7 +84,7 @@ const api = {
     voiceEngine: isLiveEngine(request.voiceMode) ? request.voiceMode : 'cascade',
     micAutoStart: request.voiceMode !== 'text' && request.micAutoStart
   })),
-  onSetupProgress: vi.fn((listener: (progress: SetupProgress) => void) => {
+  onSetupProgress: vi.fn((listener: (progress: PreparationProgress) => void) => {
     progressListener = listener
     return () => {}
   }),
@@ -96,6 +96,7 @@ const api = {
   aizuchiClassifierPrepare: vi.fn(async () => ({ ok: true, message: '' })),
   vapStatus: vi.fn(async () => ({ runtimeInstalled: true, modelsInstalled: true, running: false })),
   vapPrepare: vi.fn(async () => ({ ok: true, message: '' })),
+  ttsTest: vi.fn(async () => ({ audio: new ArrayBuffer(0), text: '' })),
   requestMicPermission: vi.fn(async () => true),
   openExternal: vi.fn(async () => {})
 }
@@ -369,10 +370,25 @@ describe('first-run setup', () => {
     await press(t('setup.next'))
     await press('Qwen3-TTS')
     await press(t('setup.tts.prepareModel'))
-    await act(async () => progressListener({ status: 'downloading', pct: 29, downloadedMb: 576.3, totalMb: 1974, message: 'Qwen3-TTS' }))
+    await act(async () => progressListener({ target: 'tts', status: 'downloading', pct: 29, downloadedMb: 576.3, totalMb: 1974, message: 'Qwen3-TTS' }))
     const bar = container.querySelector('[role="progressbar"]')
     expect(bar?.getAttribute('aria-valuenow')).toBe('29')
     expect(container.querySelector('.st-progress-label')?.textContent).toContain('576.3 / 1974 MB')
+  })
+
+  it('says why the sample of the chosen speech engine could not be played', async () => {
+    status = { ...status, asr: true, tts: true }
+    api.ttsTest.mockRejectedValueOnce(new Error('the speech engine did not answer'))
+    await render()
+    await toModel(ja)
+    await verifyKey(ja)
+    await press(ja('setup.next'))
+    await press(ja('setup.speaking.voice.title'))
+    await press(ja('setup.next'))
+    await press(ja('setup.next'))
+    expect(container.querySelector('h1')?.textContent).toBe(ja('setup.steps.tts.title'))
+    await press(ja('common.playSample'))
+    expect(container.querySelector('.su-error')?.textContent).toBe('the speech engine did not answer')
   })
 
   it('turns the microphone on at the end of a voice setup through the gate every other switch uses, for the engine the setup saved', async () => {

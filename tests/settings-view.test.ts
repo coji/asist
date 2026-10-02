@@ -4,7 +4,7 @@ import path from 'node:path'
 import React, { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AppSettings, AppStatus, EmbeddingStatus, HotkeyStatus, MemoryOverview, SetupProgress } from '@shared/ipc'
+import type { AppSettings, AppStatus, EmbeddingStatus, HotkeyStatus, MemoryOverview, PreparationProgress } from '@shared/ipc'
 import { defaultPersona } from '@shared/persona'
 import { CONVERSATION_LOCALES } from '@shared/conversation-locale'
 import { createTranslator } from '@shared/i18n'
@@ -17,6 +17,7 @@ import { defaultModelsFor } from '@shared/llm-catalog'
 import { SettingsDialog } from '../src/renderer/src/ui/SettingsDialog'
 import { useSettingsStore, useStatusStore, useToastStore } from '../src/renderer/src/state/stores'
 import { useViewStore } from '../src/renderer/src/state/view'
+import { usePreparationStore } from '../src/renderer/src/state/preparation'
 import { asrModelSpec, offeredAsrModels } from '@shared/asr-models'
 import { CREDITS } from '@shared/credits'
 import { IRODORI_TTS_VOICES } from '@shared/tts-models'
@@ -95,6 +96,9 @@ const status: AppStatus = {
   live: 'off'
 }
 
+/** Whoever listens on main's progress channel now. */
+const progressListeners = new Set<(p: PreparationProgress) => void>()
+
 const embeddingReady: EmbeddingStatus = { runtimeInstalled: true, modelInstalled: true, running: false, enabled: false, converting: false, embedded: 3, total: 4, model: 'multilingual-e5-small' }
 
 const api = {
@@ -124,7 +128,10 @@ const api = {
   prepareAsrModel: vi.fn(async (_model: string) => ({ ok: true, message: '' })),
   cancelAsrPreparation: vi.fn(async () => {}),
   vapPrepare: vi.fn(async () => ({ ok: true, message: '' })),
-  onSetupProgress: vi.fn((_callback: (p: SetupProgress) => void) => () => {}),
+  onSetupProgress: vi.fn((callback: (p: PreparationProgress) => void) => {
+    progressListeners.add(callback)
+    return () => void progressListeners.delete(callback)
+  }),
   openExternal: vi.fn(async () => {}),
   appVersion: vi.fn(async () => '1.0.0'),
   appUpdateState: vi.fn(async (): Promise<AppUpdateState> => ({ phase: 'off' })),
@@ -150,11 +157,13 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.stubGlobal('window', Object.assign(window, { api }))
   for (const fn of Object.values(api)) fn.mockClear()
+  progressListeners.clear()
   api.embeddingStatus.mockReset().mockImplementation(async () => embeddingReady)
   api.embeddingPrepare.mockReset().mockImplementation(async () => ({ ok: true, message: '' }))
   useSettingsStore.setState({ settings })
   useStatusStore.setState({ status })
   useToastStore.setState({ toasts: [] })
+  usePreparationStore.setState({ running: null, localAsr: null, message: '' })
   useViewStore.getState().closeApp()
   useViewStore.getState().openApp({ app: 'settings' })
   container = document.createElement('div')
@@ -534,6 +543,46 @@ describe('settings fields that are saved once the user leaves them', () => {
     expect(api.saveSettings.mock.calls).toEqual([[{ agentCwd: '/Users/demo/projects' }]])
   })
 
+  it('saves an edited persona when the page goes away while the field still has focus, as when Escape closes the settings', async () => {
+    const view = await render()
+    await act(async () => nav(view, 'persona').click())
+    const persona = view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    persona.focus()
+    await act(async () => type(persona, '名前は ミナ。短く答える。'))
+    expect(api.saveSettings).not.toHaveBeenCalled()
+    await act(async () => root.render(React.createElement('div')))
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: '名前は ミナ。短く答える。' }]])
+  })
+
+  it('keeps an edited persona whose save failed in the field, marked as not saved, instead of putting the saved one back', async () => {
+    api.saveSettings.mockRejectedValueOnce(new Error('disk full'))
+    const view = await render()
+    await act(async () => nav(view, 'persona').click())
+    const persona = view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    persona.focus()
+    await act(async () => type(persona, '名前は ミナ。'))
+    await act(async () => leave(persona))
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: '名前は ミナ。' }]])
+    expect(persona.value).toBe('名前は ミナ。')
+    expect(persona.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('drops a persona whose save failed when it is reset to the default, and saves it no more once the settings close', async () => {
+    api.saveSettings.mockRejectedValueOnce(new Error('disk full'))
+    const view = await render()
+    await act(async () => nav(view, 'persona').click())
+    const persona = view.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${t('settingsPersona.text.label')}"]`)!
+    persona.focus()
+    await act(async () => type(persona, '名前は ミナ。'))
+    await act(async () => leave(persona))
+    const reset = [...view.querySelectorAll<HTMLButtonElement>('.st-btn')].find((button) => button.textContent === t('settingsPersona.text.reset'))!
+    await act(async () => reset.click())
+    expect(persona.value).toBe(settings.persona)
+    expect(persona.getAttribute('aria-invalid')).toBe('false')
+    await act(async () => root.render(React.createElement('div')))
+    expect(api.saveSettings.mock.calls).toEqual([[{ persona: '名前は ミナ。' }], [{ persona: settings.persona }]])
+  })
+
   it('does not leave the working folder on the Enter that confirms an IME conversion', async () => {
     const view = await render()
     await act(async () => nav(view, 'agent').click())
@@ -691,18 +740,20 @@ describe('settings fields that are saved once the user leaves them', () => {
 
 describe('settings dialog while a model is prepared or memories are converted', () => {
   const prepButton = (view: HTMLElement, target: string): HTMLButtonElement => view.querySelector<HTMLButtonElement>(`[data-prep="${target}"]`)!
+  /** The progress bars on screen, each with the heading of the group it is under and its value. */
+  const bars = (view: HTMLElement): Array<Array<string | null | undefined>> =>
+    [...view.querySelectorAll('[role="progressbar"]')].map((bar) => [bar.closest('.st-group')?.getAttribute('aria-label'), bar.getAttribute('aria-valuenow')])
+  const progress = (event: PreparationProgress): void => progressListeners.forEach((listener) => listener(event))
 
   it('shows the download progress under the item being prepared and nowhere else, and keeps the others waiting', async () => {
     api.embeddingStatus.mockImplementation(async () => ({ ...embeddingReady, runtimeInstalled: false, modelInstalled: false, embedded: 0, total: 45 }))
     let finish!: (result: { ok: boolean; message: string }) => void
     api.embeddingPrepare.mockImplementation(() => new Promise((resolve) => { finish = resolve }))
     const view = await render()
-    const emit = api.onSetupProgress.mock.calls[0][0]
 
     await act(async () => prepButton(view, 'embedding').click())
-    await act(async () => emit({ status: 'downloading', pct: 40, downloadedMb: 54, totalMb: 135 }))
-    const bars = [...view.querySelectorAll('[role="progressbar"]')].map((bar) => [bar.closest('.st-group')?.getAttribute('aria-label'), bar.getAttribute('aria-valuenow')])
-    expect(bars).toEqual([[t('settingsOverview.optionalTitle'), '40']])
+    await act(async () => progress({ target: 'embedding', status: 'downloading', pct: 40, downloadedMb: 54, totalMb: 135 }))
+    expect(bars(view)).toEqual([[t('settingsOverview.optionalTitle'), '40']])
     expect(prepButton(view, 'embedding').textContent).toBe(t('common.preparing'))
     // Only one preparation runs at a time, so the other items wait until this one ends.
     expect(prepButton(view, 'asr').textContent).toBe(t('settingsModels.prepare'))
@@ -714,12 +765,79 @@ describe('settings dialog while a model is prepared or memories are converted', 
     expect(prepButton(view, 'asr').disabled).toBe(false)
   })
 
-  it('ignores progress that arrives while nothing on this screen is being prepared', async () => {
+  it('shows under the item being prepared only the progress main reports for that item', async () => {
+    api.embeddingStatus.mockImplementation(async () => ({ ...embeddingReady, runtimeInstalled: false, modelInstalled: false, embedded: 0, total: 45 }))
+    api.embeddingPrepare.mockImplementation(() => new Promise(() => {}))
     const view = await render()
-    const emit = api.onSetupProgress.mock.calls[0][0]
-    await act(async () => emit({ status: 'downloading', pct: 10, downloadedMb: 1, totalMb: 10 }))
-    expect(view.querySelector('[role="progressbar"]')).toBeNull()
-    expect(prepButton(view, 'asr').disabled).toBe(false)
+    await act(async () => prepButton(view, 'embedding').click())
+    // Another screen, such as the first-run setup, prepares speech recognition on the same channel.
+    await act(async () => progress({ target: 'asr', status: 'downloading', pct: 70, downloadedMb: 1400, totalMb: 2000 }))
+    await act(async () => progress({ target: 'asr', status: 'done', pct: 100, downloadedMb: 2000, totalMb: 2000, message: 'Qwen3-ASR' }))
+    expect(bars(view)).toEqual([[t('settingsOverview.optionalTitle'), '0']])
+    expect(view.querySelector('.st-notice')).toBeNull()
+  })
+
+  it('still shows a preparation that goes on after the settings are closed, with its progress, and starts no second one once they are opened again', async () => {
+    let finish!: (result: { ok: boolean; message: string }) => void
+    api.prepareAsrModel.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+    const view = await render()
+    await act(async () => prepButton(view, 'asr').click())
+    // Escape or the dock closes the settings while main is still downloading, and the user opens them again.
+    await act(async () => root.render(React.createElement('div')))
+    const reopened = await render()
+    await act(async () => progress({ target: 'asr', status: 'downloading', pct: 40, downloadedMb: 800, totalMb: 2000 }))
+    expect(prepButton(reopened, 'asr').textContent).toBe(t('common.preparing'))
+    expect(bars(reopened)).toEqual([[t('settingsOverview.todoTitle'), '40']])
+    expect(prepButton(reopened, 'vap').disabled).toBe(true)
+    await act(async () => prepButton(reopened, 'vap').click())
+    expect(api.vapPrepare).not.toHaveBeenCalled()
+    await act(async () => finish({ ok: true, message: '' }))
+  })
+
+  it('shows how a preparation ended while the settings were closed once they are opened again, until they close', async () => {
+    const close = (): Promise<void> =>
+      act(async () => {
+        await useViewStore.getState().closeApp()
+        root.render(React.createElement('div'))
+      })
+    // The app renders under StrictMode in development, which mounts each effect twice.
+    const open = async (): Promise<HTMLElement> => {
+      await act(async () => {
+        await useViewStore.getState().openApp({ app: 'settings' })
+        root.render(React.createElement(React.StrictMode, null, React.createElement(SettingsDialog, { open: true })))
+      })
+      await act(async () => {})
+      return container.querySelector<HTMLElement>('[aria-label="SETTINGS"]')!
+    }
+    let finish!: (result: { ok: boolean; message: string }) => void
+    api.vapPrepare.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+    const view = await open()
+    await act(async () => prepButton(view, 'vap').click())
+    await close()
+    await act(async () => finish({ ok: false, message: 'disk full' }))
+
+    const reopened = await open()
+    expect(reopened.querySelector('.st-notice')?.textContent).toBe('disk full')
+    expect(prepButton(reopened, 'vap').disabled).toBe(false)
+    await close()
+    expect((await open()).querySelector('.st-notice')).toBeNull()
+  })
+
+  it('reads what is installed again when a preparation started before the settings were opened again ends', async () => {
+    let finish!: (result: { ok: boolean; message: string }) => void
+    api.vapPrepare.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+    const view = await render()
+    await act(async () => prepButton(view, 'vap').click())
+    await act(async () => root.render(React.createElement('div')))
+    const reopened = await render()
+    await act(async () => nav(reopened, 'voice').click())
+    api.vapStatus.mockResolvedValueOnce({ runtimeInstalled: true, modelsInstalled: true, running: false })
+    await act(async () => finish({ ok: true, message: '' }))
+    await act(async () => {})
+    expect(api.saveSettings).toHaveBeenCalledWith({ vapEnabled: true })
+    const row = [...reopened.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.turnTaking'))!
+    expect(row.querySelector('[data-prep="vap"]')).toBeNull()
+    expect(row.querySelector('[role="switch"]')).not.toBeNull()
   })
 
   it('reports the last failed curation on the memory page as a warning with its reason, until a curation is under way', async () => {
@@ -1166,6 +1284,69 @@ describe('the global hotkey on the voice page', () => {
     await act(async () => {})
     const row = [...view.querySelectorAll('.st-row')].find((el) => el.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.hotkey'))
     expect(row?.querySelector('.st-row-hint')?.textContent).toBe(t('settingsVoice.mic.hotkeyFailed', { hotkey: '⌥Space' }))
+  })
+
+  it('gives the reason main could not tell the state of the keys', async () => {
+    api.hotkeyStatus.mockRejectedValueOnce(new Error('settings.json is damaged'))
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    await act(async () => {})
+    const row = [...view.querySelectorAll('.st-row')].find((el) => el.querySelector('.st-row-label')?.textContent === t('settingsVoice.mic.hotkey'))
+    expect(row?.querySelector('.st-row-hint')?.textContent).toBe('settings.json is damaged')
+  })
+})
+
+describe('settings dialog when main fails to report what is installed', () => {
+  const row = (view: HTMLElement, label: string): Element =>
+    [...view.querySelectorAll('.st-row')].find((one) => one.querySelector('.st-row-label')?.textContent === label)!
+  const hint = (one: Element): string | null | undefined => one.querySelector('.st-row-hint')?.textContent
+  const chip = (one: Element): string | null | undefined => one.querySelector('.st-chip')?.textContent
+
+  it('gives on the voice page the reason the recognition model and turn-taking could not be checked, instead of checking them for ever', async () => {
+    api.getSetupStatus.mockRejectedValueOnce(new Error('the GPU could not be listed'))
+    api.vapStatus.mockRejectedValueOnce(new Error('the MaAI environment is damaged'))
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    expect(hint(row(view, t('settingsVoice.recognition.model')))).toBe('the GPU could not be listed')
+    const turnTaking = row(view, t('settingsVoice.mic.turnTaking'))
+    expect(chip(turnTaking)).toBe(t('settingsModels.checkFailed'))
+    expect(hint(turnTaking)).toBe('the MaAI environment is damaged')
+    expect(turnTaking.querySelector('[data-prep="vap"]')).toBeNull()
+  })
+
+  it('gives on the overview the reason semantic search could not be checked, and offers no preparation of it', async () => {
+    api.embeddingStatus.mockRejectedValueOnce(new Error('the embedding environment is damaged'))
+    const view = await render()
+    const search = row(view, t('settingsMemory.search.title'))
+    expect(chip(search)).toBe(t('settingsModels.checkFailed'))
+    expect(hint(search)).toBe('the embedding environment is damaged')
+    expect(search.querySelector('[data-prep="embedding"]')).toBeNull()
+  })
+
+  it('lists on the overview the features turned on whose state could not be checked, each with its reason, and counts them in the page list', async () => {
+    useSettingsStore.setState({ settings: { ...settings, vapEnabled: true, aizuchi: true, memoryEmbeddingEnabled: true } })
+    api.vapStatus.mockRejectedValueOnce(new Error('the MaAI environment is damaged'))
+    api.aizuchiClassifierStatus.mockRejectedValueOnce(new Error('the classifier environment is damaged'))
+    api.embeddingStatus.mockRejectedValueOnce(new Error('the embedding environment is damaged'))
+    const view = await render()
+    const kinds = [...view.querySelectorAll('[data-pending]')].map((one) => one.getAttribute('data-pending'))
+    expect(kinds).toEqual(expect.arrayContaining(['turnTaking', 'aizuchi', 'semanticSearch']))
+    const todo = (kind: string): Element => view.querySelector(`[data-pending="${kind}"]`)!
+    expect([todo('turnTaking'), todo('aizuchi'), todo('semanticSearch')].map((one) => [hint(one), chip(one)])).toEqual([
+      ['the MaAI environment is damaged', t('settingsModels.checkFailed')],
+      ['the classifier environment is damaged', t('settingsModels.checkFailed')],
+      ['the embedding environment is damaged', t('settingsModels.checkFailed')]
+    ])
+    expect(sub(view, 'voice')?.getAttribute('data-tone')).toBe('warn')
+    expect(sub(view, 'memory')?.getAttribute('data-tone')).toBe('warn')
+  })
+
+  it('gives the reason the aizuchi classifier could not be checked under the aizuchi that are turned on', async () => {
+    useSettingsStore.setState({ settings: { ...settings, aizuchi: true } })
+    api.aizuchiClassifierStatus.mockRejectedValueOnce(new Error('the classifier environment is damaged'))
+    const view = await render()
+    await act(async () => nav(view, 'voice').click())
+    expect(hint(row(view, t('settingsVoice.response.aizuchi')))).toBe('the classifier environment is damaged')
   })
 })
 

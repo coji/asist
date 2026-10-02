@@ -3,11 +3,12 @@ import type { LlmProvider } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { conversationFeatures } from '@shared/conversation-locale'
 import type { PlatformCapabilities } from '@shared/platform'
-import { cascadeListeningReady, speechReadiness } from './context'
+import { cascadeListeningReady, speechReadiness, type StatusRead } from './context'
 
 /**
- * Something the settings turn on that cannot work yet. The overview lists these with the step that fixes
- * each, and the list on the left counts them; a feature left off is never one of them.
+ * Something the settings turn on that cannot work yet, or whose state main failed to report. The overview
+ * lists these with the step that fixes each, or the reason the check failed, and the list on the left
+ * counts them; a feature left off is never one of them.
  */
 export type Pending =
   | { kind: 'recognition' }
@@ -28,13 +29,21 @@ export function keyProviders(settings: AppSettings): LlmProvider[] {
   return [...new Set([...live, settings.conversationModel.provider, settings.bridgeModel.provider])]
 }
 
-/** What is turned on and not ready, as far as the statuses read so far tell. A status not read yet adds nothing. */
+/** Whether a state main reported shows its item missing, or main failed to report it. Not read yet, it shows nothing. */
+function missing<T>(read: StatusRead<T>, installed: (status: T) => boolean): boolean {
+  return read !== null && ('error' in read || !installed(read.read))
+}
+
+/**
+ * What is turned on and not ready, as far as the statuses read so far tell. A status not read yet adds
+ * nothing, and one main failed to report counts, since what it is about may not work either.
+ */
 export function pendingItems(input: {
   settings: AppSettings
   status: AppStatus | null
-  vap: VapStatus | null
-  embedding: EmbeddingStatus | null
-  aizuchiClassifier: AizuchiClassifierStatus | null
+  vap: StatusRead<VapStatus>
+  embedding: StatusRead<EmbeddingStatus>
+  aizuchiClassifier: StatusRead<AizuchiClassifierStatus>
   localSpeech: PlatformCapabilities['localSpeech']
 }): Pending[] {
   const { settings, status, vap, embedding, aizuchiClassifier, localSpeech } = input
@@ -47,12 +56,10 @@ export function pendingItems(input: {
     if (cascadeListeningReady(settings, status, localSpeech) === false) pending.push({ kind: localSpeech.backend === null ? 'browserWhisper' : 'recognition' })
     const speech = speechReadiness(settings.ttsEngine, status, localSpeech)
     if (speech === 'missing' || speech === 'cannotRun') pending.push({ kind: 'speech', reason: speech })
-    if (features.aizuchi && settings.aizuchi && aizuchiClassifier !== null && !(aizuchiClassifier.runtimeInstalled && aizuchiClassifier.modelInstalled)) {
-      pending.push({ kind: 'aizuchi' })
-    }
-    if (features.maai && settings.vapEnabled && vap !== null && !(vap.runtimeInstalled && vap.modelsInstalled)) pending.push({ kind: 'turnTaking' })
+    if (features.aizuchi && settings.aizuchi && missing(aizuchiClassifier, (read) => read.runtimeInstalled && read.modelInstalled)) pending.push({ kind: 'aizuchi' })
+    if (features.maai && settings.vapEnabled && missing(vap, (read) => read.runtimeInstalled && read.modelsInstalled)) pending.push({ kind: 'turnTaking' })
   }
-  if (settings.memoryEmbeddingEnabled && embedding !== null && !(embedding.runtimeInstalled && embedding.modelInstalled)) pending.push({ kind: 'semanticSearch' })
+  if (settings.memoryEmbeddingEnabled && missing(embedding, (read) => read.runtimeInstalled && read.modelInstalled)) pending.push({ kind: 'semanticSearch' })
   if (status !== null && status.agent !== 'found') pending.push({ kind: 'agent' })
   if (status !== null) {
     for (const provider of keyProviders(settings)) {

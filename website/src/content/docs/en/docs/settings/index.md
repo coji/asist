@@ -17,7 +17,7 @@ The settings open on "Overview".
 
 ![The Overview page in the settings, with the current setup and what needs preparing](/screens/en/settings-overview.webp)
 
-You can also download a model in the row of the item that uses it: speech recognition and speech on the "Voice" page, and semantic search on the "Memory" page. The progress appears in the row of the button you pressed. Only one download runs at a time.
+You can also download a model in the row of the item that uses it: speech recognition and speech on the "Voice" page, and semantic search on the "Memory" page. The progress appears in the row of the button you pressed. Only one download runs at a time. Closing the settings does not stop it, and the progress is back in the same row when you open them again.
 
 ![The Voice page in the settings, with a note under the speech recognition model that it has not been downloaded, and "Prepare"](/screens/en/settings-voice.webp)
 

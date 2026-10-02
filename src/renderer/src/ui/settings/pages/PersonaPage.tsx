@@ -1,17 +1,16 @@
-import { useState } from 'react'
 import { defaultPersona } from '@shared/persona'
 import { useViewStore } from '@/state/view'
 import type { SettingsContext } from '../context'
-import { Btn, Group, Link, Page, Row } from '../primitives'
+import { useFieldDraft } from '@/ui/field-draft'
+import { Btn, Group, Link, NotSavedHint, Page, Row } from '../primitives'
 import { useT } from '@/i18n'
 import { personaStateKey } from '../persona-state'
 
-/** The persona page, where the persona text is edited. It is saved when the field loses focus. */
+/** The persona page, where the persona text is edited and saved once the field is left. */
 export function PersonaPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, set } = ctx
   const t = useT()
-  const [draft, setDraft] = useState<string | null>(null)
-  const value = draft ?? settings.persona
+  const persona = useFieldDraft(settings.persona, { format: (text) => text, parse: (text) => text, save: (text) => set({ persona: text }) })
   // Resetting gives the persona of the language the conversation is held in now, not the one the app was installed in.
   const fresh = defaultPersona(settings.conversationLocale)
 
@@ -23,28 +22,20 @@ export function PersonaPage({ ctx }: { ctx: SettingsContext }): React.JSX.Elemen
         action={
           <Btn
             tone="quiet"
-            disabled={settings.persona === fresh && draft === null}
+            disabled={persona.value === fresh}
             onClick={() => {
-              setDraft(null)
-              set({ persona: fresh })
+              // A text whose save failed stays in the field over the saved value, and the default may be that
+              // very value, so saving it would not move the text aside.
+              persona.discard()
+              void set({ persona: fresh })
             }}
           >
             {t('settingsPersona.text.reset')}
           </Btn>
         }
       >
-        <Row label={t(personaStateKey(value))} hint={t('settingsPersona.text.hint')} wide>
-          <textarea
-            className="st-input"
-            aria-label={t('settingsPersona.text.label')}
-            value={value}
-            placeholder={t('settingsPersona.text.placeholder')}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => {
-              if (draft !== null && draft !== settings.persona) set({ persona: draft })
-              setDraft(null)
-            }}
-          />
+        <Row label={t(personaStateKey(persona.value))} hint={persona.failed ? <NotSavedHint /> : t('settingsPersona.text.hint')} wide>
+          <textarea className="st-input" aria-label={t('settingsPersona.text.label')} placeholder={t('settingsPersona.text.placeholder')} {...persona.props} />
         </Row>
       </Group>
 

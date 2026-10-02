@@ -8,10 +8,10 @@ import { useToastStore } from '@/state/stores'
 import { IRODORI_TTS_VOICES, QWEN_TTS_MODELS, QWEN_TTS_SIZES, QWEN_TTS_VOICES, isLocalTtsEngine, localTtsModel, localTtsSizeGb, offeredQwenTtsSizes, recommendLocalTts, ttsEngineRuns, type IrodoriTtsVoice, type QwenTtsSize, type QwenTtsVoice } from '@shared/tts-models'
 import { LOCAL_SPEECH_UNAVAILABLE_TEXT, shortcutLabel } from '@shared/platform'
 import { conversationFeatures, languageOf, ttsEngineSpeaks } from '@shared/conversation-locale'
-import { TTS_SITE, ttsEngineLabel, isExternalTts, speechReadiness, type SettingsContext } from '../context'
+import { TTS_SITE, ttsEngineLabel, isExternalTts, readFailure, readStatus, speechReadiness, statusOf, type SettingsContext, type StatusRead } from '../context'
 import { useSpeakerOptions } from '../speaker-options'
 import { Advanced, Btn, Chip, Group, Page, Row } from '../primitives'
-import { PrepLine, PrepProgress, PrepareButton, WhisperControl } from '../preparation'
+import { PrepLine, PrepProgress, PrepareButton, UnreadChip, WhisperControl } from '../preparation'
 import { VoicePicker, liveVoiceSample, localVoiceSample, playVoiceSample } from '../voice-picker'
 import { LIVE_ENGINE_INFO, isLiveEngine, type LiveEngine } from '@shared/voice-engine'
 import { displayError } from '@/display-error'
@@ -24,18 +24,18 @@ import { osMessageKey } from '@shared/i18n/os-message'
 function HotkeyRow({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, set } = ctx
   const t = useT()
-  const [status, setStatus] = useState<HotkeyStatus | null>(null)
+  const [status, setStatus] = useState<StatusRead<HotkeyStatus>>(null)
   // The main process registers the hotkey again before the saved settings come back, so reading the
   // status after each change of the switch gives the outcome of that registration.
   useEffect(() => {
-    void window.api.hotkeyStatus().then(setStatus)
+    void readStatus(() => window.api.hotkeyStatus(), setStatus)
   }, [settings.globalHotkey])
   const { os, hotkey: accelerator } = platformCapabilities()
   const hotkey = shortcutLabel(os, accelerator)
   return (
     <Row
       label={t('settingsVoice.mic.hotkey')}
-      hint={status === 'failed' ? t('settingsVoice.mic.hotkeyFailed', { hotkey }) : t('settingsVoice.mic.hotkeyHint', { hotkey })}
+      hint={readFailure(status) ?? (statusOf(status) === 'failed' ? t('settingsVoice.mic.hotkeyFailed', { hotkey }) : t('settingsVoice.mic.hotkeyHint', { hotkey }))}
     >
       <HoloSwitch checked={settings.globalHotkey} onCheckedChange={(v) => set({ globalHotkey: v })} />
     </Row>
@@ -171,8 +171,11 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
   const qwenTtsSizes = QWEN_TTS_SIZES.filter((size) => offeredSizes.includes(size) || size === settings.qwenTtsSize)
   const asrReady = status?.asr === true
   const asrChoices = localSpeech.backend === null ? [] : asrModelChoices()
-  const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
-  const classifierReady = aizuchiClassifier?.runtimeInstalled === true && aizuchiClassifier.modelInstalled
+  const asrModel = statusOf(setup)?.asr ?? null
+  const vapRead = statusOf(vap)
+  const classifier = statusOf(aizuchiClassifier)
+  const vapReady = vapRead?.runtimeInstalled === true && vapRead.modelsInstalled
+  const classifierReady = classifier?.runtimeInstalled === true && classifier.modelInstalled
   const readiness = engineUsable ? speechReadiness(engine, status, localSpeech) : null
   const ttsMissing = readiness === 'missing'
   const preview = (
@@ -212,9 +215,9 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
             <Row
               label={t('settingsVoice.recognition.model')}
               hint={
-                setup?.asr
-                  ? t('settingsVoice.recognition.modelHint', { memoryGb: setup.asr.totalMemoryGb, model: setup.asr.label, reason: asrRecommendationReason(t, localSpeech.backend, setup.asr) })
-                  : t('settingsVoice.recognition.checking')
+                asrModel
+                  ? t('settingsVoice.recognition.modelHint', { memoryGb: asrModel.totalMemoryGb, model: asrModel.label, reason: asrRecommendationReason(t, localSpeech.backend, asrModel) })
+                  : (readFailure(setup) ?? t('settingsVoice.recognition.checking'))
               }
             >
               <Chip tone={asrReady ? 'ok' : 'warn'}>{asrReady ? t('common.ready') : t('common.notReady')}</Chip>
@@ -239,9 +242,9 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
               </select>
             </Row>
             {asrReady && <PrepProgress ctx={ctx} target="asr" />}
-            {!asrReady && setup?.asr && (
+            {!asrReady && asrModel && (
               <PrepLine
-                text={t(settings.localAsrEnabled ? 'settingsModels.asr.notDownloadedWhisper' : 'settingsModels.asr.notDownloaded', { model: setup.asr.label })}
+                text={t(settings.localAsrEnabled ? 'settingsModels.asr.notDownloadedWhisper' : 'settingsModels.asr.notDownloaded', { model: asrModel.label })}
                 progress={<PrepProgress ctx={ctx} target="asr" />}
               >
                 <PrepareButton ctx={ctx} target="asr" onClick={prepare.asr} onCancel={prepare.cancelAsr} />
@@ -379,10 +382,10 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         </Row>
         {features.aizuchi && (
           <>
-            <Row label={t('settingsVoice.response.aizuchi')} hint={t('settingsVoice.response.aizuchiHint')}>
+            <Row label={t('settingsVoice.response.aizuchi')} hint={(settings.aizuchi ? readFailure(aizuchiClassifier) : null) ?? t('settingsVoice.response.aizuchiHint')}>
               <HoloSwitch checked={settings.aizuchi} onCheckedChange={(v) => set({ aizuchi: v })} />
             </Row>
-            {settings.aizuchi && aizuchiClassifier !== null && !classifierReady && (
+            {settings.aizuchi && classifier !== null && !classifierReady && (
               <PrepLine text={t('settingsModels.backchannel.notPrepared')} progress={<PrepProgress ctx={ctx} target="aizuchiClassifier" />}>
                 <PrepareButton ctx={ctx} target="aizuchiClassifier" onClick={prepare.aizuchiClassifier} />
               </PrepLine>
@@ -405,9 +408,9 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         )}
         {features.maai && (
           <>
-            <Row label={t('settingsVoice.mic.turnTaking')} hint={vapReady ? t('settingsVoice.mic.turnTakingOn') : t('settingsModels.turnTaking.hint')}>
-              {vap === null ? (
-                <Chip>{t('settingsModels.checking')}</Chip>
+            <Row label={t('settingsVoice.mic.turnTaking')} hint={readFailure(vap) ?? (vapReady ? t('settingsVoice.mic.turnTakingOn') : t('settingsModels.turnTaking.hint'))}>
+              {vapRead === null ? (
+                <UnreadChip status={vap} />
               ) : vapReady ? (
                 <HoloSwitch checked={settings.vapEnabled} onCheckedChange={(v) => set({ vapEnabled: v })} />
               ) : (

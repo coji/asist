@@ -10,7 +10,10 @@ import {
   type AgentJob,
   type AppStatus,
   type PanelEvent,
+  type PreparationProgress,
+  type PreparationTarget,
   type ReviewedMerge,
+  type SetupProgress,
   type SetupStatus,
   type TtsEngine,
   type TurnPlaybackAckStatus,
@@ -120,6 +123,10 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   }
   const send = (channel: string, payload: unknown): void => {
     if (!window.isDestroyed()) window.webContents.send(channel, payload)
+  }
+  const reportProgress = (target: PreparationTarget) => (progress: SetupProgress): void => {
+    const event: PreparationProgress = { ...progress, target }
+    send(IpcChannel.SetupProgress, event)
   }
   const microphone = microphonePermission(platformCapabilities().os)
   const chrome = windowChrome(platformCapabilities().os)
@@ -255,13 +262,13 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   )
   handle(IpcChannel.VapStatus, () => vap.installationStatus())
   handle(IpcChannel.VapPrepare, () =>
-    vap.prepare((progress) => send(IpcChannel.SetupProgress, progress))
+    vap.prepare(reportProgress('vap'))
   )
   handle(IpcChannel.VapPrepareCancel, () => vap.cancelPreparation())
 
   handle(IpcChannel.EmbeddingStatus, () => memory.embeddingStatus())
   handle(IpcChannel.EmbeddingPrepare, async () => {
-    const result = await embedding.prepare((progress) => send(IpcChannel.SetupProgress, progress))
+    const result = await embedding.prepare(reportProgress('embedding'))
     // Preparing again while the setting is already on, such as after the model or the runtime generation
     // changed, never toggles the setting, so the memories waiting for a vector are embedded here.
     if (result.ok) void memory.startEmbeddingIfEnabled().catch((err) => console.error('memory embedding:', err))
@@ -338,7 +345,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   })
   handle(IpcChannel.AizuchiClassifierStatus, () => aizuchiClassifier.status())
   handle(IpcChannel.AizuchiClassifierPrepare, () =>
-    aizuchiClassifier.prepare((progress) => send(IpcChannel.SetupProgress, progress))
+    aizuchiClassifier.prepare(reportProgress('aizuchiClassifier'))
   )
   handle(IpcChannel.AizuchiClassifierPrepareCancel, () => aizuchiClassifier.cancelPreparation())
 
@@ -396,14 +403,14 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
 
   handle(IpcChannel.AsrPrepare, (_e, model?: AsrModel) => {
     const selected = model ?? getSettings().asrModel
-    return asr.prepareModel(selected, (progress) => send(IpcChannel.SetupProgress, progress))
+    return asr.prepareModel(selected, reportProgress('asr'))
   })
   handle(IpcChannel.AsrPrepareCancel, () => asr.cancelPreparation())
   handle(IpcChannel.TtsPrepare, async () => {
     const engine = getSettings().ttsEngine
     // The screens offer the preparation only for the local engines, whose model this app downloads.
     if (!isLocalTtsEngine(engine)) throw new Error(`${engine} has no model to prepare`)
-    const result = await localTts.prepare(engine, (progress) => send(IpcChannel.SetupProgress, progress))
+    const result = await localTts.prepare(engine, reportProgress('tts'))
     // A bank built while the model was missing holds no audio.
     if (result.ok && getSettings().ttsEngine === engine) aizuchi.rebuild()
     return result

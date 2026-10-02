@@ -67,10 +67,6 @@ export function SetupWizard(): React.JSX.Element | null {
   const [ttsChecking, setTtsChecking] = useState(false)
   const [ttsDownload, setTtsDownload] = useState<SetupProgress | null>(null)
   const refreshGeneration = useRef(0)
-  // There is a single progress channel, and the extra preparations report on it too, so progress is
-  // accepted only while the listening step is on screen.
-  const stepRef = useRef<StepId>('language')
-  stepRef.current = step
   const locale = settings?.conversationLocale ?? 'ja-JP'
   const extras = useExtraModels(step === 'extras', mode, locale)
   const capabilities = platformCapabilities()
@@ -101,8 +97,8 @@ export function SetupWizard(): React.JSX.Element | null {
       })
       .catch((err: unknown) => setError(displayError(err)))
     return window.api.onSetupProgress((progress) => {
-      if (stepRef.current === 'tts') setTtsDownload(progress.status === 'downloading' ? progress : null)
-      if (stepRef.current !== 'listening') return
+      if (progress.target === 'tts') setTtsDownload(progress.status === 'downloading' ? progress : null)
+      if (progress.target !== 'asr') return
       if (progress.status === 'downloading') {
         setDownloadBusy(true)
         setDownload(progress)
@@ -497,7 +493,13 @@ export function SetupWizard(): React.JSX.Element | null {
               onRecheckTts={() => void verifyTts()}
               onPrepareTts={() => void prepareTts()}
               onCancelPrepareTts={() => void window.api.cancelTtsPreparation()}
-              onTestTts={() => void window.api.ttsTest().then((segment) => speechPlayer.playClip(segment.audio, segment.text, { role: 'preview' }))}
+              onTestTts={() => {
+                setError('')
+                void window.api
+                  .ttsTest()
+                  .then((segment) => speechPlayer.playClip(segment.audio, segment.text, { role: 'preview' }))
+                  .catch((err: unknown) => setError(displayError(err)))
+              }}
             />
           )}
           {step === 'mic' && (

@@ -1,6 +1,6 @@
 import { ttsEngineLabel } from '@/ui/settings/context'
 import { translate } from '@/i18n'
-import type { ApiKeyState, RendererApi, SetupProgress } from '@shared/ipc'
+import type { ApiKeyState, PreparationProgress, PreparationTarget, RendererApi } from '@shared/ipc'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
 import { errorText } from '@shared/i18n/error-text'
 import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
@@ -30,7 +30,7 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
   // The key state per provider. In 'key-failed' the Anthropic key is stored but has not been verified.
   const keys = Object.fromEntries(LLM_PROVIDERS.map((provider) => [provider, 'missing'])) as Record<LlmProvider, ApiKeyState>
   if (variant === 'key-failed') keys.anthropic = 'saved'
-  const progressListeners = new Set<(progress: SetupProgress) => void>()
+  const progressListeners = new Set<(progress: PreparationProgress) => void>()
   const base = {
     getSettings: api.getSettings,
     getStatus: api.getStatus,
@@ -94,11 +94,11 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
   api.prepareAsrModel = async () => {
     const totalMb = 1800
     for (let pct = 0; pct <= 100; pct += 4) {
-      progressListeners.forEach((listener) => listener({ status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb }))
+      progressListeners.forEach((listener) => listener({ target: 'asr', status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb }))
       await sleep(120)
     }
     state.asrReady = true
-    progressListeners.forEach((listener) => listener({ status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
+    progressListeners.forEach((listener) => listener({ target: 'asr', status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
     const asr = (await base.getSetupStatus()).asr
     if (!asr) throw new Error('この OS のデモではサーバーの音声認識を準備できません')
     return { ok: true, message: translate('settingsModels.preparation.done', { model: asr.label }) }
@@ -110,11 +110,11 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
     const totalMb = Math.round(localTtsSizeGb(model) * 1000)
     const message = translate('settingsModels.preparation.downloading', { model: model.label })
     for (let pct = 0; pct <= 100; pct += 4) {
-      progressListeners.forEach((listener) => listener({ status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb, message }))
+      progressListeners.forEach((listener) => listener({ target: 'tts', status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb, message }))
       await sleep(120)
     }
     state.tts = true
-    progressListeners.forEach((listener) => listener({ status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
+    progressListeners.forEach((listener) => listener({ target: 'tts', status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
     return { ok: true, message: '' }
   }
   api.saveSettings = async (patch) => {
@@ -128,22 +128,22 @@ export function prepareSetupDemo(api: RendererApi, variant: SetupDemoVariant): v
   }
   // The optional models (the embedding model, ModernBERT, MaAI). Preparing one streams progress and then reports it as installed.
   const installed = { embedding: false, modernbert: false, maai: false }
-  const fakePrepare = async (id: keyof typeof installed, totalMb: number): Promise<{ ok: boolean; message: string }> => {
+  const fakePrepare = async (id: keyof typeof installed, target: PreparationTarget, totalMb: number): Promise<{ ok: boolean; message: string }> => {
     for (let pct = 0; pct <= 100; pct += 5) {
-      progressListeners.forEach((listener) => listener({ status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb }))
+      progressListeners.forEach((listener) => listener({ target, status: 'downloading', pct, downloadedMb: Math.round((totalMb * pct) / 100), totalMb }))
       await sleep(90)
     }
     installed[id] = true
-    progressListeners.forEach((listener) => listener({ status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
+    progressListeners.forEach((listener) => listener({ target, status: 'done', pct: 100, downloadedMb: totalMb, totalMb }))
     return { ok: true, message: '' }
   }
   const baseExtras = { embeddingStatus: api.embeddingStatus, vapStatus: api.vapStatus, aizuchiClassifierStatus: api.aizuchiClassifierStatus }
   api.embeddingStatus = async () => ({ ...(await baseExtras.embeddingStatus()), runtimeInstalled: installed.embedding, modelInstalled: installed.embedding })
-  api.embeddingPrepare = () => fakePrepare('embedding', 135)
+  api.embeddingPrepare = () => fakePrepare('embedding', 'embedding', 135)
   api.aizuchiClassifierStatus = async () => ({ ...(await baseExtras.aizuchiClassifierStatus()), runtimeInstalled: installed.modernbert, modelInstalled: installed.modernbert })
-  api.aizuchiClassifierPrepare = () => fakePrepare('modernbert', 77)
+  api.aizuchiClassifierPrepare = () => fakePrepare('modernbert', 'aizuchiClassifier', 77)
   api.vapStatus = async () => ({ ...(await baseExtras.vapStatus()), runtimeInstalled: installed.maai, modelsInstalled: installed.maai })
-  api.vapPrepare = () => fakePrepare('maai', 245)
+  api.vapPrepare = () => fakePrepare('maai', 'vap', 245)
 
   // Neither VOICEVOX nor AivisSpeech is actually contacted. The demo acts as though the engine were
   // installed, waits as if it were starting in the background, and then connects. In 'tts-missing' it

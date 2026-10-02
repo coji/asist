@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conversationFeatures, type ConversationFeatures, type ConversationLocale } from '@shared/conversation-locale'
+import type { PreparationTarget } from '@shared/ipc'
 import type { SpeakingMode } from './steps'
 import { displayError } from '@/display-error'
 
 /**
  * The extra preparations. The additional models that make the conversation better are prepared one
  * after another without asking the user, and they start by themselves once this screen is reached.
- * The progress channel `onSetupProgress` is a single one and does not say which preparation it
- * belongs to, so two preparations never run at the same time.
  */
 export type ExtraState = 'waiting' | 'preparing' | 'ready' | 'failed' | 'skipped'
 export interface ExtraModel {
@@ -44,8 +43,12 @@ const CATALOG: Array<Pick<ExtraModel, 'id' | 'link' | 'sizeMb'> & { voiceOnly: b
   }
 ]
 
-const RUNNERS: Record<ExtraModel['id'], { installed: () => Promise<boolean>; prepare: () => Promise<{ ok: boolean; message: string }>; enable: () => Promise<unknown> }> = {
+const RUNNERS: Record<
+  ExtraModel['id'],
+  { target: PreparationTarget; installed: () => Promise<boolean>; prepare: () => Promise<{ ok: boolean; message: string }>; enable: () => Promise<unknown> }
+> = {
   embedding: {
+    target: 'embedding',
     installed: async () => {
       const status = await window.api.embeddingStatus()
       return status.runtimeInstalled && status.modelInstalled
@@ -54,6 +57,7 @@ const RUNNERS: Record<ExtraModel['id'], { installed: () => Promise<boolean>; pre
     enable: () => window.api.saveSettings({ memoryEmbeddingEnabled: true })
   },
   modernbert: {
+    target: 'aizuchiClassifier',
     installed: async () => {
       const status = await window.api.aizuchiClassifierStatus()
       return status.runtimeInstalled && status.modelInstalled
@@ -62,6 +66,7 @@ const RUNNERS: Record<ExtraModel['id'], { installed: () => Promise<boolean>; pre
     enable: async () => undefined
   },
   maai: {
+    target: 'vap',
     installed: async () => {
       const status = await window.api.vapStatus()
       return status.runtimeInstalled && status.modelsInstalled
@@ -104,7 +109,8 @@ export function useExtraModels(active: boolean, mode: SpeakingMode | null, local
   useEffect(() => {
     if (!active) return
     return window.api.onSetupProgress((progress) => {
-      if (running.current && progress.status === 'downloading') patch(running.current, { percent: progress.pct })
+      const id = running.current
+      if (id && progress.target === RUNNERS[id].target && progress.status === 'downloading') patch(id, { percent: progress.pct })
     })
   }, [active, patch])
 

@@ -24,10 +24,11 @@ import { conversationFeatures } from '@shared/conversation-locale'
 import { voiceController } from '@/voice/VoiceController'
 import { useSettingsStore, useStatusStore, useToastStore } from '@/state/stores'
 import { useMiniApp, useViewStore } from '@/state/view'
+import { usePreparationStore } from '@/state/preparation'
 import { useFormatLocale, useT, useUiLocale } from '@/i18n'
 import { localDate } from '@shared/api-usage'
 import { usageReport } from '@shared/usage-report'
-import { ttsEngineLabel, type Preparation, type PreparationTarget, type SettingsContext, type SettingsPage } from './settings/context'
+import { readStatus, statusOf, ttsEngineLabel, type SettingsContext, type SettingsPage, type StatusRead } from './settings/context'
 import { pendingItems, type Pending } from './settings/pending'
 import { ConversationPage } from './settings/pages/ConversationPage'
 import { PersonaPage } from './settings/pages/PersonaPage'
@@ -48,8 +49,8 @@ import { AGENT_MODE_NAME } from '@shared/agent-cli'
 
 /**
  * The settings screen, with the list of pages on the left and the chosen page on the right. It opens on
- * the overview, and the other pages follow under three headings. Saving, reloading the status and the
- * progress of a model preparation belong here and reach the pages as a SettingsContext.
+ * the overview, and the other pages follow under three headings. Saving, reloading the status and
+ * starting a model preparation belong here and reach the pages as a SettingsContext.
  */
 
 const ICONS: Record<SettingsPage, LucideIcon> = {
@@ -74,7 +75,6 @@ const SECTIONS: Array<{ title: 'assistant' | 'features' | 'general' | null; page
   { title: 'general', pages: ['language', 'appearance', 'apiKeys', 'usage', 'about'] }
 ]
 
-const IDLE: Preparation = { busy: false, target: null, progress: null, message: '', localAsr: null }
 /** How often the memory page reads the count again while memories are being converted. */
 const EMBEDDING_POLL_MS = 1_000
 
@@ -90,11 +90,11 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
   const applyStatus = useStatusStore((s) => s.apply)
   const toast = useToastStore((s) => s.push)
   const t = useT()
-  const [prep, setPrep] = useState<Preparation>(IDLE)
-  const [setup, setSetup] = useState<SetupStatus | null>(null)
-  const [vap, setVap] = useState<VapStatus | null>(null)
-  const [embedding, setEmbedding] = useState<EmbeddingStatus | null>(null)
-  const [aizuchiClassifier, setAizuchiClassifier] = useState<AizuchiClassifierStatus | null>(null)
+  const prep = usePreparationStore()
+  const [setup, setSetup] = useState<StatusRead<SetupStatus>>(null)
+  const [vap, setVap] = useState<StatusRead<VapStatus>>(null)
+  const [embedding, setEmbedding] = useState<StatusRead<EmbeddingStatus>>(null)
+  const [aizuchiClassifier, setAizuchiClassifier] = useState<StatusRead<AizuchiClassifierStatus>>(null)
   const [last30, setLast30] = useState<number | null>(null)
   const formatLocale = useFormatLocale()
   const uiLocale = useUiLocale()
@@ -106,35 +106,28 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
     mainRef.current?.scrollTo({ top: 0 })
   }, [page])
 
-  useEffect(
-    () =>
-      window.api.onSetupProgress((p) => {
-        // The first-run setup sends its progress on the same channel, and none of it belongs to an item here.
-        setPrep((current) => {
-          if (current.target === null) return current
-          return p.status === 'downloading' ? { ...current, progress: p } : { ...current, progress: null, message: p.message ?? current.message }
-        })
-      }),
-    []
-  )
-
-  const refreshSetup = async (): Promise<void> => {
-    const next = await window.api.getSetupStatus()
-    setSetup(next)
-    applyStatus(next.services)
-  }
-  const refreshEmbedding = async (): Promise<void> => setEmbedding(await window.api.embeddingStatus())
+  const refreshSetup = (): Promise<void> =>
+    readStatus(async () => {
+      const next = await window.api.getSetupStatus()
+      applyStatus(next.services)
+      return next
+    }, setSetup)
+  const refreshEmbedding = (): Promise<void> => readStatus(() => window.api.embeddingStatus(), setEmbedding)
   // What is installed and recommended follows the models the settings name, so it is read again whenever
-  // one of them changes, from whichever page changed it.
+  // one of them changes, from whichever page changed it, and whenever a preparation ends, even one started
+  // before the settings were last opened.
   useEffect(() => {
     if (!open) return
-    void refreshSetup().catch(() => setSetup(null))
-  }, [open, settings?.asrModel, settings?.ttsEngine, settings?.qwenTtsSize])
+    void refreshSetup()
+  }, [open, settings?.asrModel, settings?.ttsEngine, settings?.qwenTtsSize, prep.ended])
   useEffect(() => {
     if (!open) return
-    void window.api.vapStatus().then(setVap).catch(() => setVap(null))
-    void window.api.embeddingStatus().then(setEmbedding).catch(() => setEmbedding(null))
-    void window.api.aizuchiClassifierStatus().then(setAizuchiClassifier).catch(() => setAizuchiClassifier(null))
+    void readStatus(() => window.api.vapStatus(), setVap)
+    void refreshEmbedding()
+    void readStatus(() => window.api.aizuchiClassifierStatus(), setAizuchiClassifier)
+  }, [open, prep.ended])
+  useEffect(() => {
+    if (!open) return
     void window.api
       .apiUsage()
       .then((days) => setLast30(usageReport(days, localDate(new Date()), 30, 'kind').totalUsd))
@@ -143,10 +136,10 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
 
   // The main process converts the memories in the background after semantic search is turned on or
   // prepared, and says nothing when it finishes, so the count is read again until the conversion ends.
-  const converting = open && embedding?.converting === true
+  const converting = open && statusOf(embedding)?.converting === true
   useEffect(() => {
     if (!converting) return
-    const timer = setTimeout(() => void refreshEmbedding().catch(() => setEmbedding(null)), EMBEDDING_POLL_MS)
+    const timer = setTimeout(() => void refreshEmbedding(), EMBEDDING_POLL_MS)
     return () => clearTimeout(timer)
   }, [converting, embedding])
 
@@ -157,7 +150,7 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       () => {
         void refreshStatus()
         // Turning semantic search on starts the conversion of the memories in the main process.
-        if ('memoryEmbeddingEnabled' in patch) void refreshEmbedding().catch(() => setEmbedding(null))
+        if ('memoryEmbeddingEnabled' in patch) void refreshEmbedding()
         return true
       },
       (err: unknown) => {
@@ -166,90 +159,38 @@ export function SettingsDialog({ open }: { open: boolean }): React.JSX.Element {
       }
     )
 
-  /** Runs a preparation that downloads something. Only one runs at a time, and its message appears on the models page. */
-  const runPreparation = async (
-    target: PreparationTarget,
-    operation: () => Promise<{ ok: boolean; message: string }>,
-    after?: (ok: boolean) => Promise<void> | void
-  ): Promise<void> => {
-    if (prep.busy) return
-    setPrep({ ...IDLE, busy: true, target, progress: { status: 'downloading', pct: 0, downloadedMb: 0, totalMb: 0 } })
-    try {
-      const result = await operation()
-      setPrep((current) => ({ ...current, message: result.message }))
-      await after?.(result.ok)
-    } catch (error) {
-      setPrep((current) => ({ ...current, message: displayError(error) }))
-    } finally {
-      setPrep((current) => ({ ...current, busy: false, target: null, progress: null }))
-    }
-  }
+  const { run, runLocalAsr } = prep
   const prepare: SettingsContext['prepare'] = {
-    asr: () =>
-      void runPreparation(
-        'asr',
-        () => window.api.prepareAsrModel(settings.asrModel),
-        async () => {
-          await refreshStatus()
-          await refreshSetup()
-        }
-      ),
+    asr: () => void run('asr', () => window.api.prepareAsrModel(settings.asrModel), () => refreshStatus()),
     cancelAsr: () => void window.api.cancelAsrPreparation(),
-    localAsr: () => {
-      if (prep.localAsr !== null) return
-      setPrep((current) => ({ ...current, message: '', localAsr: 0 }))
-      void voiceController
-        .prepareLocalAsr(({ progress }) => setPrep((current) => ({ ...current, localAsr: progress })))
-        .then(() => save({ localAsrEnabled: true }))
-        .then(() => refreshStatus())
-        .then(() => setPrep((current) => ({ ...current, message: t('settings.localAsrPrepared') })))
-        .catch((err: unknown) => setPrep((current) => ({ ...current, message: displayError(err) })))
-        .finally(() => setPrep((current) => ({ ...current, localAsr: null })))
-    },
+    localAsr: () =>
+      void runLocalAsr(async (onProgress) => {
+        await voiceController.prepareLocalAsr(({ progress }) => onProgress(progress))
+        await save({ localAsrEnabled: true })
+        await refreshStatus()
+        return t('settings.localAsrPrepared')
+      }),
     cancelLocalAsr: () => voiceController.cancelLocalAsrPreparation(),
-    tts: () =>
-      void runPreparation(
-        'tts',
-        () => window.api.prepareTtsModel(),
-        async () => {
-          await refreshStatus()
-          await refreshSetup()
-        }
-      ),
+    tts: () => void run('tts', () => window.api.prepareTtsModel(), () => refreshStatus()),
     vap: () =>
-      void runPreparation(
-        'vap',
-        () => window.api.vapPrepare(),
-        async (ok) => {
-          setVap(await window.api.vapStatus())
-          if (ok) set({ vapEnabled: true })
-        }
-      ),
+      void run('vap', () => window.api.vapPrepare(), async (ok) => {
+        if (ok) await set({ vapEnabled: true })
+      }),
+    // The setting is saved before the preparation counts as ended and the count is read again, so that the
+    // status already reports the conversion the save starts.
     embedding: () =>
-      void runPreparation(
-        'embedding',
-        () => window.api.embeddingPrepare(),
-        async (ok) => {
-          // The setting is saved before the count is read, so that the status already reports the
-          // conversion the save starts.
-          if (ok) await save({ memoryEmbeddingEnabled: true })
-          await refreshEmbedding()
-        }
-      ),
+      void run('embedding', () => window.api.embeddingPrepare(), async (ok) => {
+        if (ok) await save({ memoryEmbeddingEnabled: true })
+      }),
     aizuchiClassifier: () =>
-      void runPreparation(
-        'aizuchiClassifier',
-        () => window.api.aizuchiClassifierPrepare(),
-        async (ok) => {
-          if (ok) set({ aizuchi: true })
-          setAizuchiClassifier(await window.api.aizuchiClassifierStatus())
-        }
-      )
+      void run('aizuchiClassifier', () => window.api.aizuchiClassifierPrepare(), async (ok) => {
+        if (ok) await set({ aizuchi: true })
+      })
   }
 
   const { localSpeech } = platformCapabilities()
   const pending = pendingItems({ settings, status, vap, embedding, aizuchiClassifier, localSpeech })
-  const ctx: SettingsContext = { settings, status, setup, vap, embedding, aizuchiClassifier, prep, pending, set, save, refreshStatus, refreshSetup, go: setPage, prepare }
+  const ctx: SettingsContext = { settings, status, setup, vap, embedding, aizuchiClassifier, prep, pending, set, save, refreshStatus, go: setPage, prepare }
 
   // The one-line note beside each entry in the list on the left, which tells the gist without opening
   // the page. It warns only about what is in use and cannot work yet; a feature left off is no warning.

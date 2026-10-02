@@ -11,9 +11,9 @@ import { isLocalTtsEngine } from '@shared/tts-models'
 import { osMessageKey } from '@shared/i18n/os-message'
 import { useT } from '@/i18n'
 import { platformCapabilities } from '@/platform'
-import { AGENT_INSTALL_GUIDE, TTS_SITE, cascadeListeningReady, isExternalTts, speechReadiness, ttsEngineLabel, type SettingsContext, type SettingsPage } from '../context'
+import { AGENT_INSTALL_GUIDE, TTS_SITE, cascadeListeningReady, isExternalTts, readFailure, speechReadiness, statusOf, ttsEngineLabel, type SettingsContext, type SettingsPage } from '../context'
 import { Btn, Chip, Group, Page, Row, type ChipTone } from '../primitives'
-import { PrepProgress, PrepareButton, WhisperControl } from '../preparation'
+import { PrepProgress, PrepareButton, UnreadChip, WhisperControl } from '../preparation'
 import type { Pending } from '../pending'
 
 /** One step of the conversation as it runs now: listening, answering or reading aloud. */
@@ -30,7 +30,7 @@ interface Step {
  * but not working yet, and the features that can still be added.
  */
 export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
-  const { settings, status, setup, vap, embedding, pending: todo, prepare, set, go } = ctx
+  const { settings, status, setup, vap, embedding, aizuchiClassifier, pending: todo, prepare, set, go } = ctx
   const t = useT()
   const { localSpeech, os } = platformCapabilities()
   const features = conversationFeatures(settings.conversationLocale)
@@ -39,8 +39,12 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
   const conversation = settings.conversationModel
   const listening = cascadeListeningReady(settings, status, localSpeech)
   const speech = speechReadiness(settings.ttsEngine, status, localSpeech)
-  const vapReady = vap?.runtimeInstalled === true && vap.modelsInstalled
-  const embeddingReady = embedding?.runtimeInstalled === true && embedding.modelInstalled
+  const asrModel = statusOf(setup)?.asr ?? null
+  const vapRead = statusOf(vap)
+  const embeddingRead = statusOf(embedding)
+  const classifierRead = statusOf(aizuchiClassifier)
+  const vapReady = vapRead?.runtimeInstalled === true && vapRead.modelsInstalled
+  const embeddingReady = embeddingRead?.runtimeInstalled === true && embeddingRead.modelInstalled
   const ready = { tone: 'ok', label: t('common.ready') } as const
   const notReady = { tone: 'warn', label: t('common.notReady') } as const
   const checking = { tone: 'dim', label: t('settingsModels.checking') } as const
@@ -65,7 +69,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
           // What listens now: the local model once it answers, and Whisper in the browser in its place until then.
           value:
             localSpeech.backend !== null && (status?.asr === true || !settings.localAsrEnabled)
-              ? (setup?.asr?.label ?? '…')
+              ? (asrModel?.label ?? (readFailure(setup) === null ? '…' : t('settingsModels.checkFailed')))
               : t('settingsModels.asr.browserWhisper'),
           chip: listening === null ? checking : listening ? ready : notReady
         },
@@ -90,7 +94,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
       case 'recognition':
         return {
           label: t('settingsModels.asr.title'),
-          hint: t('settingsModels.asr.notDownloaded', { model: setup?.asr?.label ?? '' }),
+          hint: readFailure(setup) ?? t('settingsModels.asr.notDownloaded', { model: asrModel?.label ?? '' }),
           action: <PrepareButton ctx={ctx} target="asr" onClick={prepare.asr} onCancel={prepare.cancelAsr} />,
           progress: <PrepProgress ctx={ctx} target="asr" />
         }
@@ -127,22 +131,22 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
       case 'aizuchi':
         return {
           label: t('settingsVoice.response.aizuchi'),
-          hint: t('settingsModels.backchannel.notPrepared'),
-          action: <PrepareButton ctx={ctx} target="aizuchiClassifier" onClick={prepare.aizuchiClassifier} />,
+          hint: readFailure(aizuchiClassifier) ?? t('settingsModels.backchannel.notPrepared'),
+          action: classifierRead === null ? <UnreadChip status={aizuchiClassifier} /> : <PrepareButton ctx={ctx} target="aizuchiClassifier" onClick={prepare.aizuchiClassifier} />,
           progress: <PrepProgress ctx={ctx} target="aizuchiClassifier" />
         }
       case 'turnTaking':
         return {
           label: t('settingsVoice.mic.turnTaking'),
-          hint: t('settingsModels.turnTaking.hint'),
-          action: <PrepareButton ctx={ctx} target="vap" onClick={prepare.vap} />,
+          hint: readFailure(vap) ?? t('settingsModels.turnTaking.hint'),
+          action: vapRead === null ? <UnreadChip status={vap} /> : <PrepareButton ctx={ctx} target="vap" onClick={prepare.vap} />,
           progress: <PrepProgress ctx={ctx} target="vap" />
         }
       case 'semanticSearch':
         return {
           label: t('settingsMemory.search.title'),
-          hint: t('settingsMemory.search.notPrepared'),
-          action: <PrepareButton ctx={ctx} target="embedding" onClick={prepare.embedding} />,
+          hint: readFailure(embedding) ?? t('settingsMemory.search.notPrepared'),
+          action: embeddingRead === null ? <UnreadChip status={embedding} /> : <PrepareButton ctx={ctx} target="embedding" onClick={prepare.embedding} />,
           progress: <PrepProgress ctx={ctx} target="embedding" />
         }
       case 'agent':
@@ -222,9 +226,9 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
         <Group title={t('settingsOverview.optionalTitle')} description={t('settingsOverview.optionalDescription')}>
           {optional.includes('semanticSearch') && (
             <>
-              <Row label={t('settingsMemory.search.title')} hint={t('settingsModels.semanticSearch.hint')}>
-                {embedding === null ? (
-                  <Chip>{t('settingsModels.checking')}</Chip>
+              <Row label={t('settingsMemory.search.title')} hint={readFailure(embedding) ?? t('settingsModels.semanticSearch.hint')}>
+                {embeddingRead === null ? (
+                  <UnreadChip status={embedding} />
                 ) : embeddingReady ? (
                   <HoloSwitch checked={false} onCheckedChange={(v) => set({ memoryEmbeddingEnabled: v })} />
                 ) : (
@@ -236,9 +240,9 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
           )}
           {optional.includes('turnTaking') && (
             <>
-              <Row label={t('settingsVoice.mic.turnTaking')} hint={t('settingsModels.turnTaking.hint')}>
-                {vap === null ? (
-                  <Chip>{t('settingsModels.checking')}</Chip>
+              <Row label={t('settingsVoice.mic.turnTaking')} hint={readFailure(vap) ?? t('settingsModels.turnTaking.hint')}>
+                {vapRead === null ? (
+                  <UnreadChip status={vap} />
                 ) : vapReady ? (
                   <HoloSwitch checked={false} onCheckedChange={(v) => set({ vapEnabled: v })} />
                 ) : (
