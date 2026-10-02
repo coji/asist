@@ -420,6 +420,29 @@ describe('first-run setup', () => {
     expect(container.querySelector('.su-error')?.textContent).toBe('the speech engine did not answer')
   })
 
+  it('scrolls the error into view once when it appears, and leaves the view alone while the step updates', async () => {
+    status = { ...status, asr: true, tts: true }
+    api.ttsTest.mockRejectedValueOnce(new Error('the speech engine did not answer'))
+    const scrolled = vi.spyOn(Element.prototype, 'scrollIntoView')
+    try {
+      await render()
+      await toModel(ja)
+      await verifyKey(ja)
+      await press(ja('setup.next'))
+      await press(ja('setup.speaking.voice.title'))
+      await press(ja('setup.next'))
+      await press(ja('setup.next'))
+      await press(ja('common.playSample'))
+      const error = container.querySelector('.su-error')
+      expect(scrolled.mock.contexts).toEqual([error])
+      // A progress report renders the step again; the user may have scrolled away from the error since.
+      await act(async () => progressListener({ target: 'tts', status: 'downloading', pct: 29, downloadedMb: 576.3, totalMb: 1974, message: 'Qwen3-TTS' }))
+      expect(scrolled.mock.contexts).toEqual([error])
+    } finally {
+      scrolled.mockRestore()
+    }
+  })
+
   it('turns the microphone on at the end of a voice setup through the gate every other switch uses, for the engine the setup saved', async () => {
     // An engine left from before is replaced by the way of talking chosen here.
     settings = { ...settings, voiceEngine: 'gemini-live' } as AppSettings

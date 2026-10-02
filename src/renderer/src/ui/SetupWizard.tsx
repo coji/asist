@@ -12,6 +12,7 @@ import { voiceController } from '@/voice/VoiceController'
 import { speechPlayer } from '@/voice/SpeechPlayer'
 import { microphoneCaptureErrorMessage, verifyMicrophoneCapture } from '@/voice/microphone-access'
 import { Btn } from './settings/primitives'
+import { SetupError } from './setup/error'
 import { useExtraModels } from './setup/extras'
 import { LanguageStep } from './setup/language'
 import { SafetyStep } from './setup/safety'
@@ -557,11 +558,7 @@ export function SetupWizard(): React.JSX.Element | null {
               ]}
             />
           )}
-          {error && (
-            <div className="su-error" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <SetupError message={error} />}
         </div>
 
         <footer className="su-foot">

@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/state/stores'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 import { Btn } from '../settings/primitives'
+import { SetupError } from './error'
 
 /**
  * The risks of using ASIST, shown once before it is used: as a step of the first-run setup, or in a
@@ -85,11 +86,7 @@ export function SafetyNotice({ onAcknowledged }: { onAcknowledged: () => void })
         </header>
         <div className="su-body">
           <SafetyStep uiLocale={settings.uiLocale} acknowledged={checked} onAcknowledged={setChecked} />
-          {error && (
-            <div className="su-error" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <SetupError message={error} />}
         </div>
         <footer className="su-foot">
           <p className="su-next" aria-live="polite">

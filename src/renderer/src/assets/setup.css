@@ -131,16 +131,12 @@
   line-height: 1.7;
   color: var(--color-holo-peach);
 }
-/* On a step whose content is taller than the dialog, the error message sticks to the bottom edge so it
-   is always visible. */
 .su-error {
-  position: sticky;
-  bottom: 0;
   margin-top: 12px;
   padding: 9px 12px;
   border: 1px solid rgb(from var(--color-holo-red) r g b / 0.35);
   border-radius: var(--ui-control-radius);
-  background: color-mix(in srgb, var(--color-holo-red) 8%, var(--color-holo-bg));
+  background: rgb(from var(--color-holo-red) r g b / 0.08);
   font-size: 12px;
   line-height: 1.7;
   color: var(--color-holo-red);
@@ -152,7 +148,6 @@
   align-items: center;
   gap: 3px;
   white-space: nowrap;
-  margin-left: 10px;
   font-size: 11.5px;
   color: var(--color-holo-cyan);
   cursor: pointer;
@@ -163,6 +158,18 @@
 .su-link:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+/* A text followed by a link or a note sits beside it while the line has room, and the link or note
+   otherwise starts the next line level with the text. The space between them is the row's gap, which a
+   wrapped line does not begin with; a margin on the link stayed at the start of the line it wrapped to. */
+.su-field label,
+.su-field .su-hint,
+.su-extra-name,
+.su-extra-about dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
 }
 
 /* Each language is named in itself and fits on one line, so the choices are a plain grid of names. */
@@ -461,7 +468,6 @@
   color: var(--color-holo-text);
 }
 .su-extra-name small {
-  margin-left: 10px;
   font-size: 11px;
   color: var(--color-holo-dim);
 }
@@ -549,9 +555,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-}
-.su-risks-foot .su-link {
-  margin-left: 0;
 }
 .su-check.su-ack {
   font-size: 12.5px;
