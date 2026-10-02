@@ -12,6 +12,8 @@ message from the body, so the title and body are written for `git log` as much a
 
 ## 1. Start on a branch
 
+- Before the first edit, give the work its issue and its card in 作業中 (`project-board`, section 1),
+  so the user sees it from the start. A session that already has a branch of its own does this too.
 - Never commit on main. Cut a branch from the latest main: `git fetch origin` and
   `git switch -c <name> origin/main`. The name is English kebab-case and names the change
   (`bundle-uv-and-git`, `fix-zombie-group-stop`).
@@ -42,6 +44,9 @@ gh pr create --base main --title "<the subject>" --body-file <file>
   covers all of them, because the squash commit keeps the body and none of the branch's messages.
 - "Checks" says what you ran and what you saw, with numbers where there are some (tests passed, the
   installed app's log). "Not checked" names what nobody verified. Screens go in as images.
+- The body ends with `Closes #<issue>` on a line of its own, before any line naming the agent, so the
+  merge closes the issue and moves its card to 完了. Move the card to レビュー・CI now (`project-board`).
+  A fix for a problem that must stay private has a draft card instead, and closes nothing.
 - In the Claude Code desktop app, follow the pull request with its PR tools after creating it.
 
 ## 4. Review
@@ -74,5 +79,6 @@ git branch -D <name>
 ```
 
 A squash merge makes the branch's commits unreachable from main, so `git branch -d` refuses; `-D` is
-expected. GitHub deletes the remote branch on merge. To see the change in the installed app, install
+expected. GitHub deletes the remote branch on merge, closes the issue and moves its card to 完了; a draft card
+you move yourself (`project-board`). To see the change in the installed app, install
 from main (`install-mac-app` on a Mac, `install-windows-app` on Windows).

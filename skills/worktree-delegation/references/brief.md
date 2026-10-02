@@ -36,7 +36,8 @@ the report. Do not use git stash, git checkout -- <path> or git reset.
 
 ## Finish
 Commit on your branch, with a message that follows AGENTS.md (one English sentence in the imperative,
-then what changed and why). Do not push and do not merge.
+then what changed and why). Do not push and do not merge. Do not open issues or pull requests and do
+not touch the project board, even where a skill says to: the agent that briefed you does that.
 
 ## Report
 The files changed with one line each, the root cause of each problem, the tests added,

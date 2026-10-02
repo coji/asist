@@ -30,6 +30,9 @@ List what main has gained since the last release to decide, and to tell the user
 git log --oneline "v$(node -p 'require("./package.json").version')"..origin/main
 ```
 
+The board's 次のリリース cards that are not 完了 are what the user expects in this release
+(`board.mjs list`, `project-board`). Name any of them that is left out when you ask the user.
+
 ## 2. Raise the version
 
 A pull request of its own, through the `pull-request` skill, titled `Raise the version to <version>`:
@@ -92,6 +95,11 @@ Windows, quit from the tray and open the app again, then see the new version on 
 
 When the documentation changed since the last release, deploy the website now, with the `website` skill.
 Until then the site describes the previous version, which is what the users still run.
+
+## 7. Clear the board
+
+Archive the 完了 cards, which this release shipped, and write a status update that names the version and
+what comes next (`project-board`, section 5).
 
 ## When something goes wrong
 
