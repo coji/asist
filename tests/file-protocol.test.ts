@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { allowedPath, type PathSystem } from '../src/main/services/file-preview'
+import { PREVIEW_ORIGIN } from '../src/shared/preview-page'
 
 const electron = vi.hoisted(() => ({ handle: vi.fn() }))
 vi.mock('electron', () => ({ protocol: { registerSchemesAsPrivileged: vi.fn(), handle: electron.handle } }))
@@ -178,6 +179,39 @@ describe('the Range header that video and audio use to seek', () => {
     const response = await serve(folder, fileUrl(path.join(folder, 'empty.mp3')), 'bytes=-100')
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('')
+  })
+})
+
+/**
+ * Whether a CORS check lets a page of the origin read the response, and the named response headers when given:
+ * Access-Control-Allow-Origin names the origin, and the headers are among those it exposes.
+ */
+function corsLets(response: Response, origin: string, exposed: string[] = []): boolean {
+  const listed = (response.headers.get('access-control-expose-headers') ?? '').toLowerCase().split(/\s*,\s*/)
+  return response.headers.get('access-control-allow-origin') === origin && exposed.every((name) => listed.includes(name.toLowerCase()))
+}
+
+describe('the preview page reading a file by ranges', () => {
+  it('answers the preflight of a suffix range and lets the preview page alone read where the range sits', async () => {
+    const { fileUrl, handleFileScheme } = await load()
+    const folder = mkdtempSync(path.join(tmpdir(), 'asist-file-protocol-'))
+    writeFileSync(path.join(folder, 'book.docx'), Buffer.alloc(100_000, 1))
+    electron.handle.mockClear()
+    handleFileScheme(() => [folder])
+    const handler = electron.handle.mock.calls[0][1] as (request: { method: string; url: string; headers: Headers }) => Response
+    const url = fileUrl(path.join(folder, 'book.docx'))
+
+    const preflight = handler({ method: 'OPTIONS', url, headers: new Headers({ origin: PREVIEW_ORIGIN, 'access-control-request-method': 'GET', 'access-control-request-headers': 'range' }) })
+    expect(preflight.ok).toBe(true)
+    expect(corsLets(preflight, PREVIEW_ORIGIN)).toBe(true)
+    expect(preflight.headers.get('access-control-allow-headers')?.toLowerCase().split(/\s*,\s*/)).toContain('range')
+
+    const response = handler({ method: 'GET', url, headers: new Headers({ origin: PREVIEW_ORIGIN, range: 'bytes=-65577' }) })
+    expect(response.status).toBe(206)
+    expect(response.headers.get('content-range')).toBe('bytes 34423-99999/100000')
+    expect(corsLets(response, PREVIEW_ORIGIN, ['Content-Range'])).toBe(true)
+    // An HTML page shown in the files card has an opaque origin, which CORS writes as null.
+    expect(corsLets(response, 'null')).toBe(false)
   })
 })
 

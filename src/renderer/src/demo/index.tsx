@@ -6,9 +6,11 @@ import { translate } from '@/i18n'
 import { loadPlatformCapabilities, platformCapabilities } from '@/platform'
 import { useSettingsStore } from '@/state/stores'
 import { applyTheme, DEFAULT_THEME, isThemeName, THEMES, type ThemeName } from '@/themes'
+import { PREVIEW_PAGE } from '@shared/preview-page'
+import { servePreviewFrom } from '@/panels/viewers/preview-client'
 import { mockApi, scriptSayings } from './api'
 import { findEntry } from './catalog'
-import { cardPath, resolveDemoRoute } from './routes'
+import { cardPath, PREVIEW_PAGE_HOST, resolveDemoRoute } from './routes'
 import { SCREENS, type ScreenName } from './screens'
 import { DEMO_VIEWS } from './views'
 
@@ -19,6 +21,7 @@ import { DEMO_VIEWS } from './views'
  */
 export async function bootDemo(root: Root): Promise<boolean> {
   window.api = mockApi
+  servePreviewFrom(`${location.protocol}//${PREVIEW_PAGE_HOST}:${location.port}/${PREVIEW_PAGE}`)
   const route = resolveDemoRoute(location.pathname)
   const screen = route.kind === 'screen' && route.name in SCREENS ? DEMO_VIEWS[route.name as ScreenName] : undefined
   // A screen may swap the capabilities, as the Google calendar's settings do, so it prepares the mock

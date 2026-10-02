@@ -1,6 +1,6 @@
 import './environment'
 import { logRenderer } from './logging'
-import { app, BrowserWindow, dialog, nativeImage, shell } from 'electron'
+import { app, BrowserWindow, dialog, nativeImage, protocol, shell } from 'electron'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import net from 'node:net'
@@ -23,7 +23,8 @@ import * as memory from './services/memory'
 import { initAppUpdates, installAfterFailedStart, installFailure, updatesItself, versionAfterFailedStart } from './services/app-update'
 import { initMemoryCuration } from './services/memory-curation'
 import { allowedFileRoots } from './services/agent'
-import { FILE_SCHEME, handleFileScheme, registerFileScheme } from './file-protocol'
+import { FILE_SCHEME, fileScheme, handleFileScheme } from './file-protocol'
+import { handlePreviewScheme, previewScheme, type RendererSource } from './preview-protocol'
 import { errorMessageIn, translatorIn } from './services/i18n'
 import { platformCapabilities } from './services/platform'
 import { getSettings } from './services/settings'
@@ -38,21 +39,27 @@ let mainWindow: BrowserWindow | null = null
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
 /** What a start that failed asks the launch after its quit to do instead of starting: update the app, and nothing else. */
 const UPDATE_AFTER_FAILED_START = '--update-after-failed-start'
-// asist-file://, which the files card fetches images, documents, audio and video over, has to be
-// registered before whenReady.
-registerFileScheme()
+// asist-file://, which the files card fetches images, documents, audio and video over, and asist-preview://,
+// which serves the page its viewers parse files in, have to be registered before whenReady, and in one call,
+// since Electron takes only one.
+protocol.registerSchemesAsPrivileged([fileScheme, previewScheme])
 
 /** The permissions the app's own page asks for: the microphone, copying a job's text, and a video in full screen. */
 const PAGE_PERMISSIONS = new Set(['media', 'clipboard-sanitized-write', 'fullscreen'])
 
 /**
- * The page the window shows, and the only page trusted with the preload bridge. A development launch takes
- * it from electron-vite's server; a packaged app always shows the page inside its package, whatever its
- * environment says.
+ * Where the renderer's pages come from. A development launch takes them from electron-vite's server; a packaged
+ * app always takes them from inside its package, whatever its environment says.
  */
+function rendererSource(): RendererSource {
+  const server = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL
+  return server ? { server } : { folder: path.join(__dirname, '../renderer') }
+}
+
+/** The page the window shows, and the only page trusted with the preload bridge. */
 function appPageUrl(): string {
-  const devServer = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL
-  return devServer ?? pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
+  const source = rendererSource()
+  return 'server' in source ? source.server : pathToFileURL(path.join(source.folder, 'index.html')).href
 }
 
 function createWindow(): void {
@@ -224,6 +231,7 @@ if (!hasSingleInstanceLock) {
     // and the place to fix is shown.
     getSettings()
     handleFileScheme(allowedFileRoots)
+    handlePreviewScheme(rendererSource(), appPageUrl())
 
     // In self-test mode the whole pipeline runs against the real services and the app then exits.
     if (process.env.ASIST_SELFTEST === '1') {
