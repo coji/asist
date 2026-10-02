@@ -280,6 +280,53 @@ export function manageAgentProcess(child: ChildProcess, token: string, events: A
 }
 
 /**
+ * The watcher's script, given the CLI's PID, which is also its group's. A line on its input means the CLI has
+ * exited; an end without one means ASIST is gone, and the CLI's group and every process descended from the CLI
+ * are sent SIGTERM. The descendants are read while the CLI still links them, since claude's Bash tool and codex
+ * run each command in a process group of their own, and codex 0.155.0 left its running command to finish after
+ * it got SIGTERM itself (2026-10-02). The depth limit keeps a table read while processes come and go from
+ * looping.
+ */
+const WATCHER = [
+  'read -r _ && exit',
+  'descendants=$(/bin/ps -axo pid=,ppid= | /usr/bin/awk -v root="$1" \'{ parent[$1] = $2 } END { for (pid in parent) { up = parent[pid]; for (depth = 0; (up in parent) && up != root && depth < 64; depth++) up = parent[up]; if (up == root) print pid } }\')',
+  'kill -TERM -"$1" $descendants'
+].join('\n')
+
+/**
+ * Sends the agent SIGTERM, as a stop begins, if ASIST ends, crashed or killed, while the CLI runs, as the
+ * launcher on Windows stops its job. Measured with claude 2.1.276 on 2026-10-02: once the process that started
+ * it was killed, it finished the running command, asked the model again and ran another one. The watcher is a
+ * shell in a session of its own that reads a pipe only ASIST writes to, and ASIST writes a line there once the
+ * CLI has exited, so that no watcher is left to signal the group's PID once another process may have it. Kept
+ * out of the agent's group, it never keeps the group alive after the CLI, which would make every end that
+ * settles on its own run a stop and cut short what the CLI left in its group.
+ *
+ * A watcher that cannot be started, as at the limit of processes, fails the job before its CLI is let start:
+ * an agent ASIST could not stop if it crashed is what the watcher exists to prevent, and the job's error says
+ * why it did not start, where the user can start it again.
+ */
+function watchForAsistEnd(group: number, env: NodeJS.ProcessEnv, child: ChildProcess): void {
+  const watcher = spawn('/bin/sh', ['-c', WATCHER, 'asist-agent-watcher', String(group)], {
+    env,
+    detached: true,
+    stdio: ['pipe', 'ignore', 'ignore'],
+    windowsHide: true
+  })
+  // A failed spawn is reported here with its reason after the job has already failed, and a watcher killed
+  // later by someone else leaves the agent running as it would be without one.
+  const lost = (error: Error): void => console.error(`the watcher of agent ${group} is gone:`, error)
+  watcher.on('error', lost)
+  if (watcher.pid === undefined) {
+    // The launcher reads the end of its input instead of "start" and exits without running the CLI.
+    child.stdin!.end()
+    throw new Error(errorText('jobs.process.watcherUnavailable'))
+  }
+  watcher.stdin!.on('error', lost)
+  child.once('exit', () => watcher.stdin!.end('\n'))
+}
+
+/**
  * An agent on macOS is the process group of a shell that waits for permission to start: the CLI must not
  * start writing before the job is persisted, and if ASIST exits first, the EOF on stdin ends the shell
  * before the exec. The prompt follows the permission on the same stdin: the shell's read takes only the
@@ -294,6 +341,7 @@ export const posixOwner: AgentOwner = {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true
     })
+    if (child.pid !== undefined) watchForAsistEnd(child.pid, env, child)
     return { child, identity: () => captureProcessIdentity(child.pid!, token), lifetime: manageAgentProcess(child, token, events) }
   },
   recover: recoverAgentProcess

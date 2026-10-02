@@ -1658,6 +1658,19 @@ export const jobs = defineMessages({
       'pt-BR': 'Não foi possível confirmar que o processo do agente terminou.',
       'es-419': 'No se pudo confirmar que el proceso del agente terminó.',
       'es-ES': 'No se ha podido confirmar que el proceso del agente haya terminado.'
+    },
+    watcherUnavailable: {
+      'ja-JP': 'ASIST が異常終了したときに Agent を止めるプロセスを起動できませんでした。',
+      'en-US': "ASIST couldn't start the process that stops the agent if ASIST quits unexpectedly.",
+      'fr-FR': "ASIST n'a pas pu lancer le processus qui arrête l'agent si ASIST se ferme de façon inattendue.",
+      'de-DE': 'ASIST konnte den Prozess nicht starten, der den Agent stoppt, falls ASIST unerwartet beendet wird.',
+      'hi-IN': 'ASIST अचानक बंद हो जाए तो Agent को रोकने वाली प्रोसेस शुरू नहीं हो सकी।',
+      'id-ID': 'ASIST tidak bisa menjalankan proses yang menghentikan agent jika ASIST tertutup secara tak terduga.',
+      'it-IT': "ASIST non è riuscito ad avviare il processo che ferma l'agente se ASIST si chiude in modo imprevisto.",
+      'ko-KR': 'ASIST가 예기치 않게 종료될 때 Agent를 멈추는 프로세스를 시작하지 못했습니다.',
+      'pt-BR': 'O ASIST não conseguiu iniciar o processo que para o agente se o ASIST fechar inesperadamente.',
+      'es-419': 'ASIST no pudo iniciar el proceso que detiene al agente si ASIST se cierra de forma inesperada.',
+      'es-ES': 'ASIST no ha podido iniciar el proceso que detiene al agente si ASIST se cierra de forma inesperada.'
     }
   },
   merging: {

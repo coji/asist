@@ -141,6 +141,24 @@ describe('launchAgentProcess', () => {
     expect((mocks.spawn.mock.calls[0][2].env as NodeJS.ProcessEnv).PATH).toBe(SHELL_PATH)
   })
 
+  it('fails the job and never lets its CLI start when the watcher that stops it if ASIST ends cannot be started', async () => {
+    // The launcher starts; the watcher does not, as when the user's processes are at their limit (EAGAIN).
+    const stdin = new PassThrough()
+    const launcher = Object.assign(new EventEmitter(), { pid: 4242, stdin, stdout: new PassThrough(), stderr: new PassThrough() })
+    const watcher = Object.assign(new EventEmitter(), { pid: undefined, stdin: new PassThrough() })
+    mocks.spawn.mockReturnValueOnce(launcher).mockReturnValueOnce(watcher)
+    mocks.execFileSync.mockReturnValue(' 4242     1  4242 Ss   Thu Jan  1 09:00:00 2026\n')
+    const handlers = { onSpawn: vi.fn(), onEvent: vi.fn(), onStderr: vi.fn(), onError: vi.fn(), onExit: vi.fn(), onStopFailed: vi.fn() }
+    const { launchAgentProcess } = await import('../src/main/services/agent-process')
+    launchAgentProcess(job, ['exec'], handlers)
+    await vi.waitFor(() => expect(handlers.onSpawn.mock.calls.length + handlers.onExit.mock.calls.length).toBeGreaterThan(0))
+    expect(String(stdin.read() ?? '')).toBe('')
+    expect(stdin.writableEnded).toBe(true)
+    expect(handlers.onSpawn).not.toHaveBeenCalled()
+    expect(handlers.onError).toHaveBeenCalledExactlyOnceWith(new Error(errorText('jobs.process.watcherUnavailable')))
+    expect(handlers.onExit).toHaveBeenCalledExactlyOnceWith(null)
+  })
+
   it('reports a process spawn failure to the caller', async () => {
     const { child, handlers } = await launch()
     const error = new Error('permission denied')

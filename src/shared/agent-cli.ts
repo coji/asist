@@ -153,7 +153,7 @@ export function buildStartArgs(job: AgentCliJob): string[] {
   return ['-p', '--output-format', 'stream-json', '--verbose', ...claudePermissionArgs(job)]
 }
 
-/** Resumes the stored session in the same directory. It throws when no session id was kept. */
+/** Resumes the stored session in the job's folder. It throws when no session id was kept. */
 export function buildResumeArgs(job: AgentCliJob): string[] {
   if (!job.sessionId) throw new Error(errorText('jobs.continue.noSession'))
   if (job.engine === 'codex') {

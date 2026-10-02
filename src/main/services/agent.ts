@@ -666,7 +666,9 @@ export async function continueJob(parentId: string, prompt: string, signal?: Abo
     ...(transferWorktree ? { worktree: unsettled(parent.worktree!) } : {})
   }
   // A worktree job whose changes are already merged or cleaned up continues in a fresh worktree cut
-  // from the repository, in the same folder inside it.
+  // from the repository, in the same folder inside it. claude keeps a session under the folder it ran in,
+  // and measured with claude 2.1.276 on 2026-10-02, --resume from another folder still finds it, by looking
+  // through the folders of every project, after the first folder is gone as well.
   let fresh: { repo: string; dir: string; branch: string } | undefined
   if (parent.worktree && !transferWorktree) {
     const repo = parent.worktree.repo
