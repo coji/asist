@@ -27,6 +27,7 @@ export interface ToolRoundOptions {
   /** The language the result is read in, because the model reads the synthesized "interrupted" result. */
   locale: ConversationLocale
   onStart?: (call: ToolUseCall) => void
+  /** Called for every tool that started, an aborted round included, since the tool ran however it ended. */
   onFinish?: (result: ToolRoundResult) => void
 }
 
@@ -62,9 +63,8 @@ export class ToolRoundExecutor {
     const completion = invocation.then(async (started) => { await started?.work.completion })
     const task = invocation.then(async (started): Promise<ToolRoundResult> => {
       if (!started) return { call, execution: interruptedExecution(this.options.locale, call.name) }
-      const execution = await started.work
-      const result = { call, execution }
-      if (!this.signal.aborted) this.options.onFinish?.(result)
+      const result = { call, execution: await started.work }
+      this.options.onFinish?.(result)
       return result
     })
     this.entries.push({ call, task, completion })

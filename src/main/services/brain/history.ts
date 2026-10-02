@@ -303,17 +303,18 @@ export class ConversationHistory {
   }
 
   /**
-   * The message list for an API request. The user's text carries a stamp of when it was spoken, and
-   * the messages sent during the turn follow unchanged. A turn that was interrupted or failed gets an
-   * assistant message holding what was spoken plus a marker. A turn's messages never contain a tool
-   * call on its own, because a call is only recorded together with its result.
+   * The message list for an API request. The user's text and a system notice carry a stamp of when they
+   * came, since the model takes the newest stamp for the time it is now and a report can come hours after
+   * the last utterance. The messages sent during the turn follow unchanged. A turn that was interrupted
+   * or failed gets an assistant message holding what was spoken plus a marker. A turn's messages never
+   * contain a tool call on its own, because a call is only recorded together with its result.
    */
   toMessages(): ConversationMessage[] {
     const out: ConversationMessage[] = []
     for (const turn of this.turns) {
       if (withdrawn(turn)) continue
       if (turn.user !== undefined) {
-        const body = turn.notice ? turn.user : stampUserMessage(this.options.locale(), turn.user, new Date(turn.t))
+        const body = stampUserMessage(this.options.locale(), turn.user, new Date(turn.t))
         out.push(userText([body, turn.notes, turn.jobStatus].filter(Boolean).join('\n\n')))
       }
       out.push(...turn.messages)

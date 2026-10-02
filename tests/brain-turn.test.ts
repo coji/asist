@@ -6,7 +6,7 @@ import mitt from 'mitt'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConfirmEvent } from '@shared/confirm'
 import type { AgentJob, TurnEvent, TurnPlaybackAckStatus } from '@shared/ipc'
-import type { ConversationMessage, ConversationPart, ConversationResult, NativeOutput, SearchEvent, StopReason } from '@shared/conversation'
+import type { ConversationMessage, ConversationPart, ConversationRequest, ConversationResult, NativeOutput, SearchEvent, StopReason } from '@shared/conversation'
 import { marker } from '@shared/conversation-markers'
 import { createTranslator } from '@shared/i18n'
 import { errorText, readErrorText } from '@shared/i18n/error-text'
@@ -121,23 +121,53 @@ const mocks = vi.hoisted(() => ({
   /** The agent jobs as the agent service keeps them. */
   jobs: new Map<string, AgentJob>(),
   contextBlock: (): string | null => null,
-  workClip: async (): Promise<unknown> => null
+  workClip: async (): Promise<unknown> => null,
+  conversationModel: { provider: 'anthropic', id: 'claude-sonnet-5' } as { provider: 'anthropic' | 'openai'; id: string },
+  /**
+   * The events of the Responses API for each OpenAI request, in order. A function among them is awaited
+   * in its place, so a response can wait for something before it goes on.
+   */
+  openaiResponses: [] as unknown[][],
+  /** The input of each OpenAI request, as the API receives it. */
+  openaiInputs: [] as unknown[][]
 }))
 
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
 vi.mock('../src/main/services/store', () => ({
   dataPath: (...parts: string[]) => path.join(mocks.userData, ...parts)
 }))
-vi.mock('../src/main/services/llm', () => ({
-  providerKey: () => mocks.key,
-  completeText: vi.fn(async (): Promise<{ text: string; stop: StopReason }> => ({ text: '', stop: 'end' })),
-  streamConversation: (request: { messages: ConversationMessage[]; system: Array<{ text: string }>; tools: unknown; signal?: AbortSignal }) => {
-    mocks.requests.push({ messages: structuredClone(request.messages), system: request.system, tools: request.tools })
-    const script = mocks.rounds.shift()
-    if (!script) throw new Error('no scripted round left')
-    return new FakeStream(script, request.signal)
+vi.mock('openai', async () => ({
+  APIError: (await import('openai/core/error')).APIError,
+  default: class FakeOpenAI {
+    responses = {
+      create: async (params: { input: unknown[] }) => {
+        mocks.openaiInputs.push(structuredClone(params.input))
+        const steps = mocks.openaiResponses.shift() ?? []
+        return (async function* () {
+          for (const step of steps) {
+            if (typeof step === 'function') await step()
+            else yield step
+          }
+        })()
+      }
+    }
   }
 }))
+vi.mock('../src/main/services/llm', async () => {
+  const { openaiAdapter } = await import('../src/main/services/llm/openai')
+  return {
+    providerKey: () => mocks.key,
+    completeText: vi.fn(async (): Promise<{ text: string; stop: StopReason }> => ({ text: '', stop: 'end' })),
+    streamConversation: (request: ConversationRequest) => {
+      mocks.requests.push({ messages: structuredClone(request.messages) as ConversationMessage[], system: [...request.system], tools: request.tools })
+      // An OpenAI round runs the adapter itself over the scripted events, so what it keeps is what the next request sends.
+      if (request.model.provider === 'openai') return openaiAdapter.stream(request, 'test-key')
+      const script = mocks.rounds.shift()
+      if (!script) throw new Error('no scripted round left')
+      return new FakeStream(script, request.signal)
+    }
+  }
+})
 vi.mock('../src/main/services/settings', () => ({
   getSettings: () => ({
     uiLocale: 'ja-JP',
@@ -145,7 +175,7 @@ vi.mock('../src/main/services/settings', () => ({
     region: 'JP',
     persona: '',
     ttsEngine: mocks.ttsEngine,
-    conversationModel: { provider: 'anthropic', id: 'claude-sonnet-5' },
+    conversationModel: mocks.conversationModel,
     bridgeModel: { provider: 'anthropic', id: 'claude-haiku-4-5-20251001' },
     conversationLogRetentionDays: 30,
     agentMode: 'readonly',
@@ -190,7 +220,8 @@ vi.mock('../src/main/services/memory', () => ({
   list: () => [{ id: 'm1', file: 'pages/中野.md', line: 3, kind: 'section', page: '中野', heading: '要約', aliases: [], text: '最寄り駅は中野', date: '2026-09-01', order: 0 }],
   search: vi.fn(() => [])
 }))
-vi.mock('../src/main/services/panel-fetchers', () => ({ fetchPanel: mocks.fetchPanel }))
+// Every card but the exchange rate is keyed and fetched with the props as the model gave them.
+vi.mock('../src/main/services/panel-fetchers', () => ({ fetchPanel: mocks.fetchPanel, completePanelProps: (_type: string, props: unknown) => props }))
 vi.mock('../src/main/services/user-local-data', () => ({ getLocalDataService: () => ({}) }))
 vi.mock('../src/main/services/user-tasks', () => ({ getTaskService: () => ({}) }))
 vi.mock('../src/main/services/timers', () => ({ create: vi.fn() }))
@@ -299,6 +330,9 @@ describe('brain turn', () => {
     mocks.jobs = new Map()
     mocks.contextBlock = () => null
     mocks.workClip = async () => null
+    mocks.conversationModel = { provider: 'anthropic', id: 'claude-sonnet-5' }
+    mocks.openaiResponses = []
+    mocks.openaiInputs = []
   })
 
   it('speaks the reply of a normal turn, keeps it in the history and the conversation log, and reports usage in metrics', async () => {
@@ -479,6 +513,92 @@ describe('brain turn', () => {
     expect(carried[1]).toEqual(said(INTERRUPTED_BEFORE_REPLY))
     expect(readLog().at(-1)).toMatchObject({ kind: 'assistant', text: '', interrupted: 'before-reply' })
     expect(events.some((e) => e.type === 'error')).toBe(false)
+  })
+
+  it.each(['the user cuts in', 'the response fails'] as const)('keeps a tool that ran before %s part way through the response, with its result, so the next turn knows it ran', async (end) => {
+    const { brain } = await loadBrain()
+    const timers = await import('../src/main/services/timers')
+    vi.mocked(timers.create).mockReturnValue({ id: 'timer-1', seconds: 300 } as never)
+    mocks.rounds.push(async (round) => {
+      round.text('5分のタイマーをかけますね。')
+      round.toolUse('t1', 'show_timer', { seconds: 300 })
+      // OpenAI and Gemini hand a tool call over before the response ends, and the tool runs meanwhile.
+      await vi.waitFor(() => expect(timers.create).toHaveBeenCalled())
+      if (end === 'the response fails') throw Object.assign(new Error('bad request'), { status: 400 })
+      return round.untilAborted()
+    })
+    mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+    const first = brain.beginTurn({ text: 'タイマーを5分でかけて' }, {}, 'user', false)!
+    if (end === 'the user cuts in') {
+      await vi.waitFor(() => expect(timers.create).toHaveBeenCalled())
+      brain.abortTurn(first.turnId)
+    }
+    await first.completion
+    await runToDone(brain, 'ありがとう')
+    const sent = mocks.requests[1].messages
+    expect(unansweredCalls(sent)).toEqual([])
+    const results = sent.flatMap((message) => message.parts).filter((part) => part.type === 'tool_result')
+    expect(results).toMatchObject([{ callId: 't1', name: 'show_timer' }])
+    expect(JSON.parse((results[0] as Extract<ConversationPart, { type: 'tool_result' }>).content)).toMatchObject({ started: true })
+    expect(timers.create).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a tool call that arrives after the user cut in, answered as interrupted without running it', async () => {
+    const { brain } = await loadBrain()
+    const timers = await import('../src/main/services/timers')
+    vi.mocked(timers.create).mockReturnValue({ id: 'timer-1', seconds: 300 } as never)
+    let first!: ReturnType<Brain['beginTurn']>
+    mocks.rounds.push(async (round) => {
+      round.toolUse('t1', 'show_timer', { seconds: 300 })
+      await vi.waitFor(() => expect(timers.create).toHaveBeenCalledOnce())
+      brain.abortTurn(first!.turnId)
+      // The provider had already sent the next call when the abort reached the stream.
+      round.toolUse('t2', 'show_timer', { seconds: 600 })
+      return round.untilAborted()
+    })
+    mocks.rounds.push(async (round) => { round.text('はい。'); return {} })
+    first = brain.beginTurn({ text: 'タイマーを5分と10分でかけて' }, {}, 'user', false)
+    await first!.completion
+    await runToDone(brain, 'ありがとう')
+    const sent = mocks.requests[1].messages
+    expect(unansweredCalls(sent)).toEqual([])
+    const results = sent.flatMap((message) => message.parts).filter((part) => part.type === 'tool_result')
+    expect(results).toMatchObject([{ callId: 't1' }, { callId: 't2', isError: true }])
+    expect(timers.create).toHaveBeenCalledOnce()
+  })
+
+  it('keeps an OpenAI round that failed on a call it never handed over in a form the next request is not refused for, with every call answered', async () => {
+    mocks.conversationModel = { provider: 'openai', id: 'gpt-5.5' }
+    const { brain } = await loadBrain()
+    const timers = await import('../src/main/services/timers')
+    vi.mocked(timers.create).mockReturnValue({ id: 'timer-1', seconds: 300 } as never)
+    const timer = (id: string, args: string): unknown => ({
+      type: 'response.output_item.done',
+      item: { type: 'function_call', id: `fc_${id}`, call_id: id, name: 'show_timer', arguments: args, status: 'completed' }
+    })
+    mocks.openaiResponses = [
+      [
+        { type: 'response.output_item.done', item: { type: 'reasoning', id: 'rs_1', summary: [], encrypted_content: 'enc' } },
+        timer('call_1', '{"seconds":300}'),
+        // The first call has run when the second arrives with its arguments broken, which fails the response.
+        async () => vi.waitFor(() => expect(timers.create).toHaveBeenCalled()),
+        timer('call_2', '{"seconds":')
+      ],
+      [
+        { type: 'response.output_text.delta', delta: 'はい。' },
+        { type: 'response.output_item.done', item: { type: 'message', id: 'msg_1', role: 'assistant', content: [{ type: 'output_text', text: 'はい。' }] } },
+        { type: 'response.completed', response: { status: 'completed', usage: { input_tokens: 10, output_tokens: 2 } } }
+      ]
+    ]
+    await runToDone(brain, 'タイマーを5分と10分でかけて')
+    await runToDone(brain, 'ありがとう')
+    const input = mocks.openaiInputs[1] as Array<{ type?: string; id?: string; call_id?: string }>
+    const called = input.filter((item) => item.type === 'function_call').map((item) => item.call_id)
+    // The API refuses a function call without its output, and a reasoning item without the item that followed it.
+    expect(called).toEqual(['call_1'])
+    expect(input.filter((item) => item.type === 'function_call_output').map((item) => item.call_id)).toEqual(called)
+    expect(input.filter((item, i) => item.type === 'reasoning' && typeof input[i + 1]?.id !== 'string')).toEqual([])
+    expect(timers.create).toHaveBeenCalledOnce()
   })
 
   it.each(['result', 'error'] as const)('moves on without waiting for the earlier memory search when the user rephrases, and keeps a late %s out of the history', async (late) => {
@@ -673,7 +793,7 @@ describe('brain turn', () => {
       await vi.advanceTimersByTimeAsync(10_000)
       expect(mocks.requests).toHaveLength(1)
       const { reportNotice } = await import('../src/main/services/brain/job-reporting')
-      expect(textOf(mocks.requests[0].messages.at(-1)!)).toBe(reportNotice(discarded).text)
+      expect(textOf(mocks.requests[0].messages.at(-1)!)).toContain(reportNotice(discarded).text)
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mocks.requests).toHaveLength(1)
       expect(events.flatMap((e) => (e.type === 'segment' ? [e.segment.text] : []))).toEqual(['調査が終わりました。'])
@@ -734,7 +854,7 @@ describe('brain turn', () => {
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mocks.requests).toHaveLength(1)
       const { reportNotice } = await import('../src/main/services/brain/job-reporting')
-      expect(textOf(mocks.requests[0].messages.at(-1)!)).toBe(reportNotice(FINISHED_JOB).text)
+      expect(textOf(mocks.requests[0].messages.at(-1)!)).toContain(reportNotice(FINISHED_JOB).text)
     } finally {
       vi.useRealTimers()
     }
@@ -865,6 +985,26 @@ describe('brain turn', () => {
     expect(events.find((e) => e.type === 'metrics' && 'toolCalls' in e.timings)).toMatchObject({ timings: { toolCalls: 2, rounds: 2 } })
   })
 
+  it('logs a tool the user cut off while it ran and tells the screen how it ended, so the summary and the memory curation see the call', async () => {
+    let fetchSignal: AbortSignal | undefined
+    mocks.fetchPanel.mockImplementation((_type, _props, signal: AbortSignal) => {
+      fetchSignal = signal
+      return new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))
+    })
+    mocks.rounds.push(async (round) => {
+      round.text('見てみますね。')
+      round.toolUse('t1', 'show_weather', { location: '東京都' })
+      return { stop: 'tool_calls' }
+    })
+    const { brain, events } = await loadBrain()
+    const handle = brain.beginTurn({ text: '東京の天気' }, {}, 'user', false)!
+    await vi.waitFor(() => expect(fetchSignal).toBeDefined())
+    brain.abortTurn(handle.turnId)
+    await handle.completion
+    expect(readLog().filter((r) => r.kind === 'tool')).toMatchObject([{ name: 'show_weather', input: '{"location":"東京都"}', isError: true }])
+    expect(events.flatMap((e) => (e.type === 'tool' ? [`${e.name}:${e.status}`] : []))).toEqual(['show_weather:start', 'show_weather:error'])
+  })
+
   it('keeps the tool call and its result from the previous turn in the next request and only appends to the history', async () => {
     mocks.fetchPanel.mockResolvedValueOnce(weatherPanel)
     mocks.rounds.push(async (round) => {
@@ -917,7 +1057,7 @@ describe('brain turn', () => {
     expect(textOf((await historyMessages())[0])).toContain('最寄り駅どこだっけ\n\n[記憶]\n# 中野\n\n## 要約\n最寄り駅')
 
     await runToDone(brain, '駅まで歩いて何分')
-    expect(textOf(mocks.requests[1].messages.at(-1)!)).not.toContain('[記憶]')
+    expect(textOf(mocks.requests[1].messages.at(-1)!)).not.toContain(marker('ja-JP', 'memory'))
     // The note of the previous turn is still sent as part of the history.
     expect(JSON.stringify(mocks.requests[1].messages[0])).toContain('# 中野')
     const injected = events
@@ -1353,6 +1493,23 @@ describe('brain turn', () => {
     expect(readLog().map((r) => [r.kind, r.turnId])).toEqual([['user', handle.turnId], ['assistant', handle.turnId]])
   })
 
+  it('counts the memory an input was recorded with as shown when the turn fails after the search, so the next utterance does not carry it again', async () => {
+    const { search } = await import('../src/main/services/memory')
+    const hit = { via: 'lexical', exact: true, record: { id: 'm1', file: 'pages/中野.md', line: 3, kind: 'section', page: '中野', heading: '要約', aliases: [], text: '最寄り駅', date: '2026-09-01', order: 0 } }
+    ;(search as unknown as ReturnType<typeof vi.fn>).mockReturnValue([hit])
+    // The job history is read after the memory search, and a file the app cannot read makes that throw.
+    mocks.contextBlock = () => { throw new Error('jobs.json: unsupported version 3') }
+    mocks.rounds.push(async (round) => { round.text('十分くらいです。'); return {} })
+    const { brain } = await loadBrain()
+    await runToDone(brain, '最寄り駅どこだっけ')
+    mocks.contextBlock = () => null
+    await runToDone(brain, '駅まで歩いて何分')
+    const sent = mocks.requests[0].messages
+    // The failed turn's utterance keeps the note it was recorded with, and that note is the only one.
+    expect(textOf(sent[0])).toContain(marker('ja-JP', 'memory'))
+    expect(textOf(sent.at(-1)!)).not.toContain(marker('ja-JP', 'memory'))
+  })
+
   it('reports a finished job once, not once per attempt, when reading aloud is off and no segment plays', async () => {
     for (let i = 0; i < 5; i++) mocks.rounds.push(async (round) => { round.text('調査が終わりました。'); return {} })
     mocks.ttsEngine = 'none'
@@ -1381,7 +1538,7 @@ describe('brain turn', () => {
     // Under Gemini Live the notice of a finished job is recorded by job reporting, before any turn read the history.
     record({ kind: 'notice', turnId: 7, notice: 'job-done', text: '[システム通知] ジョブが完了した。' })
     history.ensureLoaded()
-    expect(history.toMessages().map(textOf)).toEqual([expect.stringContaining('昨日の話'), 'はい。', '[システム通知] ジョブが完了した。'])
+    expect(history.toMessages().map(textOf)).toEqual([expect.stringContaining('昨日の話'), 'はい。', expect.stringContaining('[システム通知] ジョブが完了した。')])
   })
 
   /**

@@ -165,8 +165,8 @@ const COMMON_SECTIONS: readonly Section[] = [
   [
     { ja: `システム通知`, en: `Notices from the app` },
     {
-      ja: `- 「{systemNotice}」で始まるuserメッセージはユーザーの発話ではなく、アプリからの通知(ジョブ完了など)。内容を踏まえて、ユーザーへ自然な話し言葉で短く報告する。通知文をそのまま読み上げない。必要ならget_agent_jobで詳細を確認してから話す。`,
-      en: `- A user message beginning with "{systemNotice}" is not the user speaking: it is the app telling you something, such as a job that finished. Take in what it says and report it to the user in natural spoken words, briefly. Never read the notice out as it is written. When you need the detail, check with get_agent_job before you speak.`
+      ja: `- 「{systemNotice}」が付いたuserメッセージはユーザーの発話ではなく、アプリからの通知(ジョブ完了など)。内容を踏まえて、ユーザーへ自然な話し言葉で短く報告する。通知文をそのまま読み上げない。必要ならget_agent_jobで詳細を確認してから話す。`,
+      en: `- A user message marked "{systemNotice}" is not the user speaking: it is the app telling you something, such as a job that finished. Take in what it says and report it to the user in natural spoken words, briefly. Never read the notice out as it is written. When you need the detail, check with get_agent_job before you speak.`
     }
   ],
   BRIEFING_SECTION,

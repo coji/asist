@@ -8,6 +8,7 @@ const INTERRUPTED_BEFORE_REPLY = interruptedBeforeReply('ja-JP')
 const INTERRUPTED_WHILE_SPEAKING = interruptedWhileSpeaking('ja-JP')
 import type { ConversationRecord } from '../src/main/services/brain/conversation-log'
 import { ConversationHistory, type HistoryCheckpoint } from '../src/main/services/brain/history'
+import { stampUserMessage } from '../src/main/services/brain/prompt'
 
 function makeHistory(opts?: {
   stored?: ConversationRecord[]
@@ -270,7 +271,17 @@ describe('ConversationHistory, derived from the conversation log', () => {
     history.apply(assistant(1, '', { interrupted: 'before-reply' }))
     history.apply({ t: T0 + 5000, kind: 'notice', turnId: 2, notice: 'job-done', text: '[システム通知] 作業が終わりました' })
     history.apply(assistant(2, '終わりましたよ。'))
-    expect(history.toMessages()).toEqual([text('user', '[システム通知] 作業が終わりました'), text('assistant', '終わりましたよ。')])
+    expect(history.toMessages()).toEqual([text('user', stampUserMessage('ja-JP', '[システム通知] 作業が終わりました', new Date(T0 + 5000))), text('assistant', '終わりましたよ。')])
+  })
+
+  it('stamps a system notice with the time it came, so a report hours after the last utterance is not read at that utterance\'s time', () => {
+    const { history } = makeHistory()
+    history.apply(user(1, '調べておいて'))
+    history.apply(assistant(1, '始めます。'))
+    const reportedAt = T0 + 3 * 60 * 60_000
+    const report = '[システム通知] ジョブ「調査」が完了した。'
+    history.apply({ t: reportedAt, kind: 'notice', turnId: 2, notice: 'job-done', text: report })
+    expect(history.toMessages().at(-1)).toEqual(text('user', stampUserMessage('ja-JP', report, new Date(reportedAt))))
   })
 
   it('keeps the tool round trip of a turn whose spoken reply was recorded while its tool still ran', () => {
@@ -543,6 +554,26 @@ describe('compact', () => {
     expect(checkpoints).toEqual([])
     expect(errors[0]).toContain('summarize: api down')
     expect(history.needsCompaction()).toBe('soon')
+  })
+
+  it('resolves and reports why when the checkpoint cannot be written, since a turn starts the compaction without waiting for it', async () => {
+    const errors: string[] = []
+    const history = new ConversationHistory({
+      recentTurns: 0,
+      compressAtTokens: 10,
+      limitTokens: 600,
+      hardLimitTokens: 1_000_000,
+      load: () => [],
+      saveCheckpoint: () => { throw new Error('ENOSPC: no space left on device') },
+      summarize: async () => '要約',
+      locale: () => 'ja-JP',
+      onError: (stage, err) => errors.push(`${stage}: ${err instanceof Error ? err.message : String(err)}`)
+    })
+    for (let i = 0; i < 4; i++) turn(history, i)
+    history.noteContextTokens(100, history.revision)
+    await expect(history.compact('limit')).resolves.toBeUndefined()
+    expect(errors).toEqual(['checkpoint: ENOSPC: no space left on device'])
+    expect(history.summary).toBe('要約')
   })
 
   it('folds every answered turn into the summary for daily whatever the threshold is, and lets replaceSummary swap the summary', async () => {

@@ -9,7 +9,7 @@ import { withRetry } from '@shared/retry'
 import type { TurnHandle, TurnRunContext } from '@shared/turn-scheduler'
 import { summarizeTurnUsage } from '@shared/turn-usage'
 import { ToolRoundExecutor, buildToolResultsMessage, type ToolRoundResult } from '@shared/tool-round'
-import { buildResumeMessages, resumeAfterDisconnectNote } from '@shared/turn-recovery'
+import { buildResumeMessages, buildStoppedCallMessages, resumeAfterDisconnectNote } from '@shared/turn-recovery'
 import { buildMemoryInjection, memoryIdsInToolResult, type MemoryInjection } from '@shared/memory-injection'
 import { diagnoseCacheMiss, fingerprintRequest, type CacheMissReason } from '@shared/cache-diagnosis'
 import { conversationFeatures, fillPrompt, promptText, type ConversationLocale, type PromptText } from '@shared/conversation-locale'
@@ -215,7 +215,11 @@ async function runTurn(
   const openApp = input.notice ? null : openAppNote(locale)
   if (openApp) contextNotes.push(openApp)
   let jobStatus: string | null = null
-  const recordInput = (injection: MemoryInjection | null = null): void => {
+  // The memories whose note is among the notes. The input is recorded with their ids whenever it carries
+  // the note, a turn that fails before its request included, because the history shows the note from then
+  // on and a memory it shows is not injected again.
+  let injection: MemoryInjection | null = null
+  const recordInput = (): void => {
     const sent = {
       ...(contextNotes.length ? { notes: contextNotes.join('\n\n') } : {}),
       ...(jobStatus ? { jobStatus } : {})
@@ -232,7 +236,6 @@ async function runTurn(
   let compacted = false
   let historyFull = false
   const injectionStats = { count: 0, tokens: 0, searchMs: 0 }
-  let injection: MemoryInjection | null = null
   // Everything that can fail before a request is sent happens here, so that a failure ends the turn
   // before anything but the input is recorded.
   try {
@@ -306,7 +309,7 @@ async function runTurn(
   }
   // The conversation log is authoritative, so the record is written once the notes are settled; on an
   // early end the path above stores the input as it stands.
-  recordInput(injection)
+  recordInput()
   // The request is built from this revision of the history, and what the server measures on it is
   // kept only while it still describes the history.
   const revision = history.revision
@@ -469,9 +472,11 @@ async function runTurn(
           emittedThisAttempt = true
           pushText(delta)
         })
-        // A tool call that is complete starts running without waiting for the end of the response.
+        // A tool call that is complete starts running without waiting for the end of the response. One
+        // that arrives after the round was aborted is submitted too, and the round answers it as
+        // interrupted without running it: the confirmed response keeps the call, and a call the history
+        // keeps needs a result.
         stream.on('toolCall', (call) => {
-          if (toolRound.signal.aborted) return
           emittedThisAttempt = true
           toolRound.submit({ id: call.id, name: call.name, input: call.input })
         })
@@ -633,6 +638,17 @@ async function runTurn(
           result.message,
           buildToolResultsMessage(results, { index: round, maxRounds: MAX_TOOL_ROUNDS, allowNote: !result.pendingServerTool, locale })
         )
+      } catch (err) {
+        // The turn ends in this round, on a barge-in or a failure. A stream hands a tool call over before
+        // the response ends, so a tool of this response may have written something already. The tools
+        // still running or not started are stopped here, and every call goes into the history with what
+        // came of it, or the next turn may do again what is done.
+        if (toolRound.size > 0) {
+          await toolRound.close()
+          const recorded = (lastStream as ConversationStream | null)!.snapshot()!
+          appendMessages(...buildStoppedCallMessages(recorded, await toolRound.settle()))
+        }
+        throw err
       } finally {
         if (slowToolTimer) clearTimeout(slowToolTimer)
         slowToolTimer = null

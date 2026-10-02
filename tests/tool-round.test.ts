@@ -78,6 +78,24 @@ describe('ToolRoundExecutor', () => {
     expect(events).toEqual(['start:x', 'finish:x:r:x'])
   })
 
+  it('calls onFinish for a tool that was running when the round was aborted, and not for one that never started', async () => {
+    const controller = new AbortController()
+    const finished: string[] = []
+    const executor = new ToolRoundExecutor({
+      signal: controller.signal,
+      locale: 'ja-JP',
+      isParallel: (name) => name !== 'write',
+      execute: (c, signal) => task(new Promise((resolve) => signal.addEventListener('abort', () => resolve(exec(`stopped:${c.id}`, true)), { once: true }))),
+      onFinish: (r) => finished.push(`${r.call.id}:${r.execution.content}`)
+    })
+    executor.submit(call('a', 'read'))
+    executor.submit(call('b', 'write'))
+    await wait(5)
+    controller.abort()
+    await executor.settle()
+    expect(finished).toEqual(['a:stopped:a'])
+  })
+
   it('does not start a later writing tool while an earlier one is still working, even after its response timed out', async () => {
     vi.useFakeTimers()
     let finish!: (value: string) => void

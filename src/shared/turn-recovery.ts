@@ -8,6 +8,8 @@ import type { ToolRoundResult } from './tool-round'
  *   assistant message and resumes with a user message that asks for the rest without repetition.
  * - An interruption keeps what was spoken, followed by a marker. The user utterance stays in the
  *   history even when the interruption came before any reply.
+ * - A response that an interruption or a failure ends while its tools run keeps its tool calls with
+ *   their results.
  */
 
 const BEFORE_REPLY: PromptText = { ja: '(応答前に次の発話が来た)', en: '(the next utterance arrived before any reply)' }
@@ -41,19 +43,33 @@ export function buildResumeMessages(
   results: readonly ToolRoundResult[],
   note: string
 ): ConversationMessage[] {
+  const request: ConversationMessage = { role: 'user', parts: [...answerCalls(recorded, results), { type: 'text', text: note }] }
+  return hasContent(recorded) ? [recorded, request] : [request]
+}
+
+/**
+ * The messages that keep the tool calls of a response the turn ended on before its round was over, such
+ * as one the user cut off or one that failed: the confirmed part of the response, then a user message
+ * with a result for every call in it. The tools have run, or were stopped, by then, and a model that
+ * cannot read what came of them may do again what was already done. The turn's assistant record holds
+ * what was said, so only a response with a tool call needs this.
+ */
+export function buildStoppedCallMessages(recorded: ConversationMessage, results: readonly ToolRoundResult[]): ConversationMessage[] {
+  return [recorded, { role: 'user', parts: answerCalls(recorded, results) }]
+}
+
+/** A result for every tool call of the response, in its order. A call without one makes the next request invalid, so a missing result throws. */
+function answerCalls(recorded: ConversationMessage, results: readonly ToolRoundResult[]): ConversationPart[] {
   const byId = new Map(results.map((r) => [r.call.id, r]))
-  const parts: ConversationPart[] = []
-  for (const call of toolCallsOf(recorded)) {
+  return toolCallsOf(recorded).map((call): ConversationPart => {
     const result = byId.get(call.id)
-    if (!result) throw new Error(`tool call ${call.id} (${call.name}) has no result to resume with`)
-    parts.push({
+    if (!result) throw new Error(`tool call ${call.id} (${call.name}) has no result`)
+    return {
       type: 'tool_result',
       callId: call.id,
       name: call.name,
       content: result.execution.content,
       ...(result.execution.isError ? { isError: true } : {})
-    })
-  }
-  const request: ConversationMessage = { role: 'user', parts: [...parts, { type: 'text', text: note }] }
-  return hasContent(recorded) ? [recorded, request] : [request]
+    }
+  })
 }
