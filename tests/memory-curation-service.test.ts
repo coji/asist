@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@shared/i18n'
-import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '../resources/skills/memory-format.mjs'
+import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '@shared/memory-format'
+import { sectionsOverTheLimit } from './helpers/memory'
 
 const ja = createTranslator('ja-JP')
 
@@ -458,11 +459,7 @@ it('discards a curation that leaves a document of the prompt over its token limi
   git(repo, 'commit', '-qm', 'memory')
   const { curation, agent } = await setup()
   const job = curation.pendingJob()!
-  // Four sections, each within the cap of a section, which together pass the limit of the document.
-  const grown = me.replace(
-    '落ち着いて話す。',
-    ['私は誰か', '大事にしていること', '好きなもの', 'この人との関係'].map((heading) => `## ${heading}\n${'落ち着いて話し、確かめてから答えることを大事にしている。'.repeat(20)}`).join('\n\n')
-  )
+  const grown = me.replace('落ち着いて話す。', sectionsOverTheLimit('落ち着いて話し、確かめてから答えることを大事にしている。'))
   fs.writeFileSync(path.join(job.cwd, 'me.md'), grown)
   lastLaunch().onExit(0)
   expect(agent.get(job.id)?.mergeState).toBe('discarded')

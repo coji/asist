@@ -14,8 +14,9 @@ the result before it commits it.
   mails and web pages too, so the curation is built to stay inside this directory.
 - Read, search and write the files of this directory with whatever tools you have (a file reading tool,
   `cat`, `ls`, `grep`, whichever works). Beyond that, the only commands to run are this skill's
-  `scripts/count.mjs` and `scripts/validate.mjs`. Run them exactly as `node <path to this skill>/scripts/count.mjs .`;
-  with `2>&1`, `&&` or anything else added, the whole command may be refused.
+  `scripts/count.py` and `scripts/validate.py`. Run them exactly as
+  `uv run --no-project <path to this skill>/scripts/count.py .`; with `2>&1`, `&&` or anything else added, the
+  whole command may be refused. ASIST provides uv and the Python the two run on.
 - What the user asked me to forget ("forget that") goes into no file.
 
 ## What ASIST does with each file
@@ -27,8 +28,8 @@ the result before it commits it.
 | `pages/<name>.md` | A person, a company, a shop or place, a piece of work, a product. One each | Only the headings that bear on the conversation are found by search and put beside it |
 | `journal/YYYY-MM-DD.md` | My diary for the day, in the first person | The same |
 
-The two that go whole are read again in every turn, so each may hold 1500 tokens at most.
-`scripts/count.mjs` counts them the way ASIST does. Details and events that ended with the day go into the
+The two that go whole are read again in every turn, so each may hold 3000 tokens at most.
+`scripts/count.py` counts them the way ASIST does. Details and events that ended with the day go into the
 pages and the journal; the two keep what matters in almost every conversation.
 
 ## The language you write in
@@ -86,11 +87,11 @@ templates are in `assets/templates/` (page.md, user.md, me.md, journal.md).
 9. **Clear away the files that are no longer used.** If there is a `profile.md` or an `instruction.md`, move
    what is worth keeping into user.md and me.md, then delete it; what it says I have been asked goes under
    `## What they expect of ASIST`. If there is a `forget.jsonl`, delete it.
-10. **Count, and shorten.** Run `node <path to this skill>/scripts/count.mjs .`. When a file is over, shorten
+10. **Count, and shorten.** Run `uv run --no-project <path to this skill>/scripts/count.py .`. When a file is over, shorten
     it as "When a file is over its limit" below says, and run it again until it prints `OK`. ASIST throws
     away a curation that leaves a file over its limit.
-11. **Check.** Run `node <path to this skill>/scripts/validate.mjs .` and fix what it reports until it prints
-    `OK`. ASIST does not take in a curation with anything left unfixed. After fixing, run count.mjs again.
+11. **Check.** Run `uv run --no-project <path to this skill>/scripts/validate.py .` and fix what it reports until it prints
+    `OK`. ASIST does not take in a curation with anything left unfixed. After fixing, run count.py again.
 12. **Report.** Finish with a short account: the subjects you wrote into the journal, the pages you added,
     the headings you rewrote, what you changed in me.md and under "What they expect of ASIST", what you left
     out because the user asked you to forget it, and what you would like to ask the user. Say so when you
@@ -101,7 +102,7 @@ them with `add_task` during the conversation.
 
 ## When a file is over its limit
 
-count.mjs says how much is over in words of the file as it is written. Cut in this order:
+count.py says how much is over in words of the file as it is written. Cut in this order:
 
 1. Cut the events that ended with the day. An event from a day curated before is in that day's journal
    already, so just delete it. An event from a day you are curating now goes into that day's journal. Never
@@ -114,7 +115,7 @@ count.mjs says how much is over in words of the file as it is written. Cut in th
 A sentence the user wrote, and a request under "What they expect of ASIST", may be said more briefly but is
 never dropped.
 
-When validate.mjs says a heading of a page or a journal entry holds more than 800 characters, the same
+When validate.py says a heading of a page or a journal entry holds more than 800 characters, the same
 applies: move the events that ended with the day into the journal and the details onto another page.
 
 ## Do not
@@ -129,7 +130,7 @@ applies: move the events that ended with the day into the journal and the detail
 
 ## Before you finish
 
-- count.mjs prints `OK`.
-- validate.mjs prints `OK`.
+- count.py prints `OK`.
+- validate.py prints `OK`.
 - The day has a journal entry; profile.md, forget.jsonl and instruction.md are gone.
 - You have written the report.

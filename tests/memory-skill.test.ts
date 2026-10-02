@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -7,7 +6,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { CURATION_SKILL, SKILL_DIRS, curationSkillSource } from '@shared/memory-curation'
 import { FIXED, validateDocument } from '@shared/memory-page'
 import { createTranslator } from '@shared/i18n'
-import { PROMPT_DOCUMENTS, PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '../resources/skills/memory-format.mjs'
+import { PROMPT_DOCUMENTS, PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '@shared/memory-format'
+import { runPython, sectionsOverTheLimit } from './helpers/memory'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => process.cwd(), getPath: () => tmpdir() } }))
 vi.mock('../src/main/services/settings', () => ({
@@ -21,21 +21,10 @@ const ja = createTranslator('ja-JP')
 const LOCALES = ['ja-JP', 'en-US'] as const
 const TEMPLATES = ['page', 'user', 'me', 'journal']
 const skillDir = (locale: 'ja-JP' | 'en-US'): string => path.join(process.cwd(), 'resources', 'skills', curationSkillSource(locale))
-const validate = (skill: string, dir: string): { ok: boolean; output: string } => {
-  try {
-    return { ok: true, output: execFileSync('node', [path.join(skill, 'scripts', 'validate.mjs'), dir], { encoding: 'utf8' }) }
-  } catch (err) {
-    return { ok: false, output: String((err as { stdout?: string }).stdout ?? '') }
-  }
-}
-const count = (skill: string, dir: string): { ok: boolean; output: string } => {
-  try {
-    return { ok: true, output: execFileSync('node', [path.join(skill, 'scripts', 'count.mjs'), dir], { encoding: 'utf8' }) }
-  } catch (err) {
-    return { ok: false, output: String((err as { stdout?: string }).stdout ?? '') }
-  }
-}
-/** The numbers count.mjs prints on the line of a file, in their order, without its wording. */
+/** The skill's checks, run through the bundled uv as the curation Agent runs them. */
+const validate = (skill: string, dir: string): { ok: boolean; output: string } => runPython(path.join(skill, 'scripts', 'validate.py'), [dir])
+const count = (skill: string, dir: string): { ok: boolean; output: string } => runPython(path.join(skill, 'scripts', 'count.py'), [dir])
+/** The numbers count.py prints on the line of a file, in their order, without its wording. */
 const numbersOn = (output: string, file: string): number[] =>
   (output.split('\n').find((line) => line.startsWith(`${file}:`)) ?? '')
     .slice(file.length)
@@ -79,7 +68,7 @@ describe('the memory-curation skill', () => {
     expect(skill).toContain(`## ${FIXED.journalSelf.ja}`)
     expect(skill).toContain(FIXED.impression.ja)
     expect(skill.startsWith(`---\nname: ${CURATION_SKILL}\ndescription: `)).toBe(true)
-    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs', 'scripts/count.mjs']) {
+    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.py', 'scripts/count.py']) {
       expect(fs.existsSync(path.join(skillDir('ja-JP'), file))).toBe(true)
       expect(skill).toContain(file.split('/').pop()!)
     }
@@ -97,7 +86,7 @@ describe('the memory-curation skill', () => {
     expect(skill).toContain(`## ${FIXED.journalSelf.en}`)
     expect(skill).toContain('first person')
     expect(skill.split('\n').length).toBeLessThan(500)
-    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.mjs', 'scripts/count.mjs']) {
+    for (const file of ['references/format.md', 'references/me.md', 'scripts/validate.py', 'scripts/count.py']) {
       expect(fs.existsSync(path.join(skillDir('en-US'), file))).toBe(true)
       expect(skill).toContain(file.split('/').pop()!)
     }
@@ -152,7 +141,7 @@ describe('the memory-curation skill', () => {
     expect(problemsIn(dir)).toEqual(['instruction.md'])
   })
 
-  it('counts what each document of the prompt costs against its limit with count.mjs, in both skills, as ASIST counts it', () => {
+  it('counts what each document of the prompt costs against its limit with count.py, in both skills, as ASIST counts it', () => {
     const dir = wellFormed()
     for (const locale of LOCALES) {
       const { ok, output } = count(skillDir(locale), dir)
@@ -166,7 +155,7 @@ describe('the memory-curation skill', () => {
         ])
       }
     }
-    const me = `---\nupdated: 2026-09-22\n---\n# 私について\n\n${'私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(60)}\n`
+    const me = `---\nupdated: 2026-09-22\n---\n# 私について\n\n${sectionsOverTheLimit('私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。')}\n`
     fs.writeFileSync(path.join(dir, 'me.md'), me)
     const size = promptSize(me)
     const over = size.tokens - PROMPT_DOCUMENT_MAX_TOKENS
@@ -177,7 +166,7 @@ describe('the memory-curation skill', () => {
     expect([japanese.ok, numbersOn(japanese.output, 'me.md')]).toEqual([false, [size.tokens, PROMPT_DOCUMENT_MAX_TOKENS, over, cut.characters]])
     const english = count(skillDir('en-US'), dir)
     expect([english.ok, numbersOn(english.output, 'me.md')]).toEqual([false, [size.tokens, PROMPT_DOCUMENT_MAX_TOKENS, over, cut.words, cut.characters]])
-    // validate.mjs reports it too, since ASIST refuses to merge it.
+    // validate.py reports it too, since ASIST refuses to merge it.
     expect(problemsIn(dir)).toEqual(['me.md'])
   })
 
@@ -210,14 +199,14 @@ describe('the memory-curation skill', () => {
 
   it('reports every file exactly as the check ASIST runs before a merge does, so that nothing the Agent passes is refused', () => {
     const dir = wellFormed()
-    const prose = '私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(60)
+    const prose = '私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。'.repeat(180)
     const files: Record<string, string> = {
       // me.md may go without a heading; its text is then one section, and the whole is capped by its tokens.
       'me.md': `---\nupdated: 2026-09-22\n---\n# 私について\n\n${prose}\n`,
       'pages/大川俊介.md': '---\nupdated: 2026-09-20\n---\n# 大川俊介\n\n## 要約\n本人の上司。\n\n## 私の印象\n落ち着いた人。\n\n## 私の印象\nくるみアレルギーがある。\n',
       'pages/松葉軒.md': '---\naliases:\n- 松葉軒\nupdated: 2026-09-22\n---\n# 松葉軒\n行きつけの店。\n\n## 要約\nラーメン屋。\n',
       'journal/2026-09-09.md': '---\nupdated: 昨日\n---\n# 2026-09-09\n\n## 食事\n麺類の話。\n',
-      'user.md': `---\nupdated: 2026-09-22\n---\n# ユーザー\n\n${['属性', '好み', '習慣', 'ASIST への期待'].map((heading) => `## ${heading}\n${'麺類が好きで、辛さは控えめを選ぶ。'.repeat(30)}`).join('\n\n')}\n`
+      'user.md': `---\nupdated: 2026-09-22\n---\n# ユーザー\n\n${sectionsOverTheLimit('麺類が好きで、辛さは控えめを選ぶ。')}\n`
     }
     for (const [file, markdown] of Object.entries(files)) fs.writeFileSync(path.join(dir, file), markdown)
     const reported = problemsIn(dir)
@@ -228,7 +217,7 @@ describe('the memory-curation skill', () => {
     }
   })
 
-  it('runs its validate.mjs once installed into a worktree, where the rules it imports are copied beside it', () => {
+  it('runs its validate.py once installed into a worktree, where the rules it imports are copied beside it', () => {
     for (const locale of LOCALES) {
       // A curation's worktree is named after the job's title, which holds Japanese characters.
       const worktree = mkdtempSync(path.join(tmpdir(), '記憶の整理-'))

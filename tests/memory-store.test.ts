@@ -15,7 +15,8 @@ import * as store from '../src/main/services/memory-store'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import { MEMORY_GITIGNORE } from '@shared/memory-curation'
-import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '../resources/skills/memory-format.mjs'
+import { PROMPT_DOCUMENT_MAX_TOKENS, promptSize, textForTokens } from '@shared/memory-format'
+import { sectionsOverTheLimit } from './helpers/memory'
 import { longTempFolder } from './helpers/temp'
 
 const ja = createTranslator('ja-JP')
@@ -423,11 +424,7 @@ describe('the memory store', () => {
     fs.writeFileSync(path.join(dir, 'user.md'), user)
     git(dir, ['add', '-A'])
     git(dir, ['commit', '-qm', 'user'])
-    // Sections each within the cap of a section, which together pass the limit of the document.
-    const long = user.replace(
-      'コーヒーは砂糖なし。',
-      ['麺類', '辛さ', '飲み物', '甘いもの'].map((heading, i) => `${i === 0 ? '' : `## ${heading}\n`}${'麺類が好きで、辛さは控えめを選ぶ。'.repeat(30)}`).join('\n\n')
-    )
+    const long = user.replace('## 好み\nコーヒーは砂糖なし。', sectionsOverTheLimit('麺類が好きで、辛さは控えめを選ぶ。'))
     let refused: unknown = null
     try {
       store.writeDocument('user.md', long, user)

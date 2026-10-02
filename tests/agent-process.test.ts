@@ -8,7 +8,14 @@ import type { AgentJob } from '@shared/ipc'
 /** What the user's shell answers: the folders its startup files add, which an app opened from Finder does not inherit. */
 const SHELL_PATH = '/Users/me/.nvm/versions/node/v22.19.0/bin:/opt/homebrew/bin:/usr/bin:/bin'
 
-const mocks = vi.hoisted(() => ({ spawn: vi.fn(), execFileSync: vi.fn(), installed: vi.fn<(file: string) => boolean>(), readShellPath: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  spawn: vi.fn(),
+  execFileSync: vi.fn(),
+  installed: vi.fn<(file: string) => boolean>(),
+  readShellPath: vi.fn(),
+  prepareCurationScripts: vi.fn<(signal: AbortSignal) => Promise<void>>(),
+  curationScriptEnv: vi.fn<(env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv>()
+}))
 // ps, which reads the agent's processes once the CLI has closed, finds none but launchd.
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn, execFileSync: mocks.execFileSync }))
 vi.mock('node:fs', () => {
@@ -22,6 +29,10 @@ vi.mock('node:fs', () => {
   return { default: { constants: { X_OK: 1 }, accessSync: missing, statSync } }
 })
 vi.mock('../src/main/services/agent-process/shell-path', () => ({ readShellPath: mocks.readShellPath }))
+vi.mock('../src/main/services/memory-curation-skill', () => ({
+  prepareCurationScripts: mocks.prepareCurationScripts,
+  curationScriptEnv: mocks.curationScriptEnv
+}))
 vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ agentEngine: 'codex', uiLocale: 'ja-JP' }) }))
 // The output is parsed the same on every OS; macOS's launch through /bin/sh is the one whose spawn these tests replace.
 vi.mock('../src/main/services/platform', () => import('./helpers/platform'))
@@ -36,6 +47,8 @@ beforeEach(() => {
   vi.resetAllMocks()
   mocks.installed.mockReturnValue(true)
   mocks.readShellPath.mockResolvedValue(SHELL_PATH)
+  mocks.prepareCurationScripts.mockResolvedValue()
+  mocks.curationScriptEnv.mockImplementation((env) => ({ ...env, CURATION_SCRIPTS: 'ready' }))
   mocks.execFileSync.mockImplementation((_file: string, args: string[]) => (args[0] === '-axo' ? '    1     0     1 Ss   Thu Jan  1 09:00:00 2026\n' : ''))
 })
 afterEach(() => {
@@ -133,6 +146,54 @@ describe('launchAgentProcess', () => {
     expect(env.OPENAI_API_KEY).toBeUndefined()
     expect(env.CLAUDE_CODE_ENTRYPOINT).toBe('asist')
     expect(env.ASIST_AGENT_EXECUTION_ID).toEqual(expect.any(String))
+  })
+
+  it('starts a memory curation\'s CLI only once the Python of its skill\'s scripts is ready, in the environment that runs them', async () => {
+    let ready!: () => void
+    mocks.prepareCurationScripts.mockReturnValue(new Promise<void>((resolve) => { ready = resolve }))
+    const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() })
+    mocks.spawn.mockReturnValue(child)
+    const handlers = { onSpawn: vi.fn(), onEvent: vi.fn(), onStderr: vi.fn(), onError: vi.fn(), onExit: vi.fn() }
+    const { launchAgentProcess } = await import('../src/main/services/agent-process')
+    launchAgentProcess({ ...job, memoryCuration: { through: '2026-10-01', applied: false } }, ['exec'], handlers)
+    await setImmediate()
+    expect(mocks.spawn).not.toHaveBeenCalled()
+    ready()
+    await vi.waitFor(() => expect(mocks.spawn).toHaveBeenCalledOnce())
+    expect((mocks.spawn.mock.calls[0][2].env as NodeJS.ProcessEnv).CURATION_SCRIPTS).toBe('ready')
+  })
+
+  it('fails a memory curation whose Python cannot be prepared as a start that failed, and starts nothing', async () => {
+    const reason = new Error('no network')
+    mocks.prepareCurationScripts.mockRejectedValue(reason)
+    const handlers = { onSpawn: vi.fn(), onEvent: vi.fn(), onStderr: vi.fn(), onError: vi.fn(), onExit: vi.fn() }
+    const { launchAgentProcess } = await import('../src/main/services/agent-process')
+    await launchAgentProcess({ ...job, memoryCuration: { through: '2026-10-01', applied: false } }, ['exec'], handlers).completion
+    expect(handlers.onError).toHaveBeenCalledExactlyOnceWith(reason)
+    expect(handlers.onExit).toHaveBeenCalledExactlyOnceWith(null)
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('stops preparing the Python of a memory curation stopped before its CLI starts, and starts nothing', async () => {
+    let signal!: AbortSignal
+    mocks.prepareCurationScripts.mockImplementation((given) => {
+      signal = given
+      return new Promise<void>((_, reject) => given.addEventListener('abort', () => reject(new Error('aborted'))))
+    })
+    const handlers = { onSpawn: vi.fn(), onEvent: vi.fn(), onStderr: vi.fn(), onError: vi.fn(), onExit: vi.fn() }
+    const { launchAgentProcess } = await import('../src/main/services/agent-process')
+    const run = launchAgentProcess({ ...job, memoryCuration: { through: '2026-10-01', applied: false } }, ['exec'], handlers)
+    run.stop()
+    await run.completion
+    expect(signal.aborted).toBe(true)
+    expect(handlers.onExit).toHaveBeenCalledExactlyOnceWith(null)
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it('prepares no Python for a job that is not a memory curation, and starts it in the plain environment', async () => {
+    await launch()
+    expect(mocks.prepareCurationScripts).not.toHaveBeenCalled()
+    expect((mocks.spawn.mock.calls[0][2].env as NodeJS.ProcessEnv).CURATION_SCRIPTS).toBeUndefined()
   })
 
   it('starts the CLI with the PATH of the user\'s shell, not the one an app opened from Finder inherits', async () => {

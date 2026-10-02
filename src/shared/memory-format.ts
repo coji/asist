@@ -1,72 +1,129 @@
+import FORMAT from '../../resources/skills/memory-format.json'
+
 /**
  * The rules of the memory's markdown: how a document is read into its frontmatter, its `# name` line and
  * its sections, what in it breaks the rules, and what a document that goes into every prompt costs there.
  * ASIST applies them when it indexes the memory, when the memory screen saves a document, before it merges
- * a curation and when it builds the prompt, and the curation skills' validate.mjs and count.mjs report them
- * to the Agent, so a file the Agent's checks pass is never refused at the merge. The file is plain
- * JavaScript without imports because those scripts run it with node inside a curation worktree, where
- * nothing is built. It sits two folders above the skills' scripts/, here and where installSkill puts it.
+ * a curation and when it builds the prompt. The curation Agent checks its work with the same rules in
+ * Python (resources/skills/memory_format.py), because its scripts run where neither Node nor a Python of the
+ * user's may be; the values both read are in resources/skills/memory-format.json, and
+ * tests/fixtures/memory-format-cases.json holds the cases both must answer the same, so that a file the
+ * Agent's checks pass is never refused at the merge.
  */
 
+export type DocumentKind = 'me' | 'user' | 'page' | 'journal'
+export type PromptDocumentKind = 'me' | 'user'
+
+export interface PageFrontmatter {
+  present: boolean
+  aliases: string[]
+  /** Whether the frontmatter has an aliases key at all, even an empty one, which only a page may carry. */
+  hasAliases: boolean
+  updated: string | null
+  /** The keys an earlier form of the memory used, kind and links, which a page may no longer carry. */
+  obsoleteKeys: string[]
+}
+
+export interface PageSection {
+  /** The heading's line number, counted from one. The text above the first heading reports its first line. */
+  line: number
+  heading: string
+  text: string
+}
+
+export interface ParsedPage {
+  title: string
+  /** Whether the page has its own `# name` line. */
+  titled: boolean
+  frontmatter: PageFrontmatter
+  /** The sections that carry text. */
+  sections: PageSection[]
+}
+
+/** An amount of a document's own text. */
+export interface TextAmount {
+  /** Characters without whitespace. */
+  characters: number
+  words: number
+}
+
+export interface PromptSize extends TextAmount {
+  tokens: number
+}
+
+export type DocumentIssue =
+  | { kind: 'frontmatterMissing' }
+  | { kind: 'frontmatterUnclosed' }
+  | { kind: 'obsoleteKey'; key: string }
+  | { kind: 'aliasesOnlyOnPages' }
+  | { kind: 'updatedNotDate' }
+  | { kind: 'titleMissing' }
+  | { kind: 'noHeadings' }
+  | { kind: 'duplicateHeading'; line: number; heading: string; first: number }
+  | { kind: 'headingWithoutText'; line: number; heading: string }
+  | { kind: 'sectionTooLong'; line: number; heading: string; length: number }
+  | { kind: 'firstHeading'; heading: string }
+  | { kind: 'tooManyTokens'; tokens: number; limit: number; cut: TextAmount }
+
+export type PageNameIssue = 'characters' | 'reserved'
+
 /** The heading every page opens with, and the one the text above a document's first `## ` heading is read as. */
-export const SUMMARY_HEADING = Object.freeze({ ja: '要約', en: 'Summary' })
+export const SUMMARY_HEADING = FORMAT.summaryHeading as { readonly ja: string; readonly en: string }
 
 /**
  * The documents that go whole into the system prompt of every turn, by kind, in the order they go there.
  * The pages and the journal are reached through search instead.
  */
-export const PROMPT_DOCUMENTS = Object.freeze([
-  Object.freeze({ kind: 'me', file: 'me.md' }),
-  Object.freeze({ kind: 'user', file: 'user.md' })
-])
+export const PROMPT_DOCUMENTS = FORMAT.promptDocuments as ReadonlyArray<{ readonly kind: PromptDocumentKind; readonly file: string }>
 
 /**
  * The most tokens, as tokenEstimate counts them, that each document of PROMPT_DOCUMENTS may cost. They ride
  * in every turn, so each is capped rather than left to grow with every curation.
  */
-export const PROMPT_DOCUMENT_MAX_TOKENS = 1500
+export const PROMPT_DOCUMENT_MAX_TOKENS: number = FORMAT.promptDocumentMaxTokens
 
 /**
  * The longest a section of a page or a journal entry may be, in characters without whitespace. A section is
  * what one search hit carries into a turn.
  */
-export const SECTION_MAX_CHARS = 800
+export const SECTION_MAX_CHARS: number = FORMAT.sectionMaxChars
 
-/** The length the section cap is measured in: characters, with the whitespace left out. */
-const capLength = (text) => Array.from(text.replace(/\s+/gu, '')).length
+const within = (ranges: number[][], codePoint: number): boolean => ranges.some(([from, to]) => codePoint >= from && codePoint <= to)
 
 /**
- * The tokens a character is taken to cost, by the script it belongs to. Measured on 2026-10-02 over 82
- * texts in the eleven conversation languages (the app's dictionary and documentation, memory written for
- * the purpose) and three real memory files, against o200k_base (OpenAI, gpt-oss) and the countTokens of
- * Gemini 3.8 Flash: the estimate came to 0.94 to 1.13 times o200k for Japanese, which costs more there
- * than in Gemini (0.8 times o200k), 0.97 to 1.13 for Korean, 0.95 to 1.19 for Hindi, 0.94 to 1.21 for the
- * other languages written in Latin letters and 1.07 to 1.27 for English, and to no less than 0.94 times
- * Gemini in any language. Qwen3's tokenizer counts Hindi 2.4 times this estimate. Claude's tokenizer could
- * not be measured. A byte count, the other light estimate, gave 1.5 to 2 times what o200k counts for Hindi.
+ * Whitespace as JavaScript's \s and trim read it, written out in memory-format.json so that the Python of the
+ * curation, whose \s also takes a few control characters, reads the same characters as space.
  */
-function characterTokens(character) {
-  const codePoint = character.codePointAt(0)
-  const within = (from, to) => codePoint >= from && codePoint <= to
-  if (/\s/u.test(character)) return 0.1
-  if (within(0x3040, 0x30ff) || within(0x31f0, 0x31ff) || within(0xff66, 0xff9f)) return 0.65
-  if (within(0x3400, 0x4dbf) || within(0x4e00, 0x9fff) || within(0xf900, 0xfaff) || within(0x20000, 0x3ffff)) return 1.2
-  if (within(0xac00, 0xd7af) || within(0x1100, 0x11ff) || within(0x3130, 0x318f)) return 0.85
-  if (within(0x0900, 0x097f) || within(0xa8e0, 0xa8ff)) return 0.45
-  if (within(0x3000, 0x303f) || within(0xff00, 0xff65)) return 1
-  if (/\p{Script=Latin}/u.test(character)) return 0.3
-  if (codePoint < 0x80) return 0.6
-  return 1.5
+const isSpace = (codePoint: number): boolean => within(FORMAT.whitespace, codePoint)
+
+/** The length the section cap is measured in: characters, with the whitespace left out. */
+const capLength = (text: string): number => Array.from(text).filter((character) => !isSpace(character.codePointAt(0)!)).length
+
+/**
+ * The tokens a character is taken to cost, by the script it belongs to, from the first class of
+ * memory-format.json that holds it. Measured on 2026-10-02 over 82 texts in the eleven conversation
+ * languages (the app's dictionary and documentation, memory written for the purpose) and three real memory
+ * files, against o200k_base (OpenAI, gpt-oss) and the countTokens of Gemini 3.8 Flash: the estimate came to
+ * 0.94 to 1.13 times o200k for Japanese, which costs more there than in Gemini (0.8 times o200k), 0.97 to
+ * 1.13 for Korean, 0.95 to 1.19 for Hindi, 0.94 to 1.21 for the other languages written in Latin letters and
+ * 1.07 to 1.27 for English, and to no less than 0.94 times Gemini in any language. Qwen3's tokenizer counts
+ * Hindi 2.4 times this estimate. Claude's tokenizer could not be measured. A byte count, the other light
+ * estimate, gave 1.5 to 2 times what o200k counts for Hindi.
+ */
+function characterTokens(codePoint: number): number {
+  for (const { name, weight, ranges } of FORMAT.tokenWeights) {
+    if (name === 'whitespace' ? isSpace(codePoint) : within(ranges!, codePoint)) return weight
+  }
+  return FORMAT.otherWeight
 }
 
 /**
- * The tokens a conversation model is estimated to read for the text. It runs wherever the curation's
- * scripts run, with nothing to download, which a real tokenizer would need, and it errs on the side of more
- * tokens in every language measured.
+ * The tokens a conversation model is estimated to read for the text. It needs nothing to download, which a
+ * real tokenizer would, and it errs on the side of more tokens in every language measured.
  */
-export function tokenEstimate(text) {
+export function tokenEstimate(text: string): number {
   let tokens = 0
-  for (const character of text) tokens += characterTokens(character)
+  for (const character of text) tokens += characterTokens(character.codePointAt(0)!)
   return Math.ceil(tokens)
 }
 
@@ -74,23 +131,23 @@ export function tokenEstimate(text) {
  * Whether a piece of memory is written in Japanese. Kana decide it: of the eleven languages a
  * conversation can be held in, only Japanese writes them, and Japanese prose always contains them.
  */
-export const writtenInJapanese = (text) => /[\u3041-\u30ff]/.test(text)
+export const writtenInJapanese = (text: string): boolean => /[ぁ-ヿ]/.test(text)
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const OBSOLETE_KEYS = new Set(['kind', 'links'])
-const unquote = (text) => text.trim().replace(/^["']|["']$/g, '')
+const unquote = (text: string): string => text.trim().replace(/^["']|["']$/g, '')
 
 /**
  * Reads the frontmatter, the `key: value` lines fenced by `---`, and the line the body starts on. A list
  * is read as `[a, b]` on one line and as `- a` lines under its key, indented or not: the Agent writes the
  * first two, and a YAML library writes the items at the key's own indentation.
  */
-function parseFrontmatter(lines) {
-  const frontmatter = { present: false, aliases: [], hasAliases: false, updated: null, obsoleteKeys: [] }
+function parseFrontmatter(lines: string[]): { frontmatter: PageFrontmatter; bodyStart: number; unclosed: boolean } {
+  const frontmatter: PageFrontmatter = { present: false, aliases: [], hasAliases: false, updated: null, obsoleteKeys: [] }
   if (lines[0]?.trim() !== '---') return { frontmatter, bodyStart: 0, unclosed: false }
   frontmatter.present = true
   // The items of a list follow its key on lines of their own; those of an obsolete key are skipped.
-  let listKey = null
+  let listKey: 'aliases' | 'skip' | null = null
   for (let i = 1; i < lines.length; i++) {
     const raw = lines[i]
     if (raw.trim() === '---') return { frontmatter, bodyStart: i + 1, unclosed: false }
@@ -116,19 +173,27 @@ function parseFrontmatter(lines) {
   return { frontmatter, bodyStart: lines.length, unclosed: true }
 }
 
+interface Body {
+  frontmatter: PageFrontmatter
+  unclosed: boolean
+  title: string | null
+  headed: boolean
+  sections: PageSection[]
+}
+
 /**
  * Splits a document into its frontmatter, its `# ` line and its sections, empty ones included. A section is
  * a `## ` heading and the text under it. The text above the first heading is a section too, under the
  * summary heading in the form the document is written in, which is how a short page or a me.md written as
  * prose is read.
  */
-function readBody(markdown) {
+function readBody(markdown: string): Body {
   const lines = markdown.split(/\r?\n/)
   const { frontmatter, bodyStart, unclosed } = parseFrontmatter(lines)
-  let title = null
+  let title: string | null = null
   let headed = false
-  const sections = []
-  let current = null
+  const sections: PageSection[] = []
+  let current: PageSection | null = null
   for (let i = bodyStart; i < lines.length; i++) {
     const raw = lines[i]
     if (/^# /.test(raw)) {
@@ -151,13 +216,13 @@ function readBody(markdown) {
   return { frontmatter, unclosed, title, headed, sections }
 }
 
-const summaryFor = (markdown) => SUMMARY_HEADING[writtenInJapanese(markdown) ? 'ja' : 'en']
+const summaryFor = (markdown: string): string => SUMMARY_HEADING[writtenInJapanese(markdown) ? 'ja' : 'en']
 
 /**
  * Reads user.md, me.md, a page or a journal entry into the sections that carry text. A document without
  * its own `# ` line is named `fallbackTitle`.
  */
-export function parsePage(markdown, fallbackTitle) {
+export function parsePage(markdown: string, fallbackTitle: string): ParsedPage {
   const { frontmatter, title, sections } = readBody(markdown)
   return { title: title || fallbackTitle, titled: title !== null, frontmatter, sections: sections.filter((section) => section.text) }
 }
@@ -166,7 +231,7 @@ export function parsePage(markdown, fallbackTitle) {
  * A document of PROMPT_DOCUMENTS as it goes into the system prompt: every line but the frontmatter and the
  * `# ` line, trimmed. The prompt puts a heading of its own above it.
  */
-export function promptBody(markdown) {
+export function promptBody(markdown: string): string {
   const lines = markdown.split(/\r?\n/)
   return lines
     .slice(parseFrontmatter(lines).bodyStart)
@@ -180,14 +245,14 @@ export function promptBody(markdown) {
  * for: its characters without whitespace and its words, the units a curation in Japanese and in any other
  * language cuts by.
  */
-export function promptSize(markdown) {
+export function promptSize(markdown: string): PromptSize {
   const body = promptBody(markdown)
   return { tokens: tokenEstimate(body), characters: capLength(body), words: body.split(/\s+/u).filter(Boolean).length }
 }
 
 /** How much of the document's own text, in characters and in words, comes to `tokens` tokens. */
-export function textForTokens(size, tokens) {
-  const share = (count) => (size.tokens === 0 ? 0 : Math.ceil((tokens * count) / size.tokens))
+export function textForTokens(size: PromptSize, tokens: number): TextAmount {
+  const share = (count: number): number => (size.tokens === 0 ? 0 : Math.ceil((tokens * count) / size.tokens))
   return { characters: share(size.characters), words: share(size.words) }
 }
 
@@ -201,23 +266,22 @@ const WINDOWS_DEVICE_NAME = /^(con|conin\$|conout\$|prn|aux|nul|com[1-9¹²³]|l
  * a leading dot, which hides the file, and 'reserved' for a name Windows keeps for a device. A dot or a
  * space at the end of the name is not at the end of the file name, which always ends in .md.
  */
-export function pageNameIssue(name) {
+export function pageNameIssue(name: string): PageNameIssue | null {
   if (/[/\\:*?"<>|]/.test(name) || name.startsWith('.')) return 'characters'
   if (WINDOWS_DEVICE_NAME.test(name)) return 'reserved'
   return null
 }
 
-const inPrompt = (kind) => PROMPT_DOCUMENTS.some((document) => document.kind === kind)
+const inPrompt = (kind: DocumentKind): boolean => PROMPT_DOCUMENTS.some((document) => document.kind === kind)
 
 /**
  * What in a document breaks the rules, as values rather than sentences, since ASIST writes them in the
  * language of its interface and each skill in its own. `kind` is where the document lives: me, user, page
- * or journal. A heading may stand only once in a file, because a section is found by its
- * file and heading.
+ * or journal. A heading may stand only once in a file, because a section is found by its file and heading.
  */
-export function documentIssues(kind, markdown) {
+export function documentIssues(kind: DocumentKind, markdown: string): DocumentIssue[] {
   const { frontmatter, unclosed, title, headed, sections } = readBody(markdown)
-  const issues = []
+  const issues: DocumentIssue[] = []
   if ((kind === 'user' || kind === 'me' || kind === 'page') && !frontmatter.present) issues.push({ kind: 'frontmatterMissing' })
   if (unclosed) issues.push({ kind: 'frontmatterUnclosed' })
   for (const key of frontmatter.obsoleteKeys) issues.push({ kind: 'obsoleteKey', key })
@@ -225,7 +289,7 @@ export function documentIssues(kind, markdown) {
   if (frontmatter.updated && !DATE.test(frontmatter.updated)) issues.push({ kind: 'updatedNotDate' })
   if (kind !== 'journal' && title === null) issues.push({ kind: 'titleMissing' })
   if (kind !== 'me' && !headed) issues.push({ kind: 'noHeadings' })
-  const firstLines = new Map()
+  const firstLines = new Map<string, number>()
   for (const { line, heading, text } of sections) {
     const first = firstLines.get(heading)
     if (first === undefined) firstLines.set(heading, line)

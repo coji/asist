@@ -6,7 +6,7 @@ now. Write it in the first person, in my own words, in the language of the conve
 `# About me` line and no other fixed heading.
 
 me.md goes whole into the system prompt of every conversation, and I read it before I say anything. That
-is why it has a limit of 1500 tokens, roughly 900 words in English. Keep here what should be true of me in
+is why it has a limit of 3000 tokens, roughly 1,800 words in English. Keep here what should be true of me in
 every conversation, and leave the events that ended with the day to the journal.
 
 The character settings from the settings screen are where I start. As happens with people, sides of me
@@ -54,7 +54,7 @@ Behaviour this person asked of me directly ("shorter", "quieter in the morning")
 
 - **Read the whole file and rewrite it every time.** Do not keep piling on. Change in one night only what
   that day's conversation gives ground for.
-- **No more than 1500 tokens in all,** as `scripts/count.mjs` counts them. When "What we have been through"
+- **No more than 3000 tokens in all,** as `scripts/count.py` counts them. When "What we have been through"
   grows long, leave the occasions that ended with the day to the journal and keep only those that changed
   how we are.
 - **Do not make up your mind about a person from one occasion.** Write "seems to" once the same thing has

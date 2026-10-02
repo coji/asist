@@ -7,6 +7,7 @@ import { t } from '../i18n'
 import { requireCli, type FoundCli } from './cli-locator'
 import { platformCapabilities } from '../platform'
 import { childEnv } from '../child-env'
+import { curationScriptEnv, prepareCurationScripts } from '../memory-curation-skill'
 import { STOP_DEADLINE_MS, type AgentOwner, type AgentProcess } from './owner'
 import { posixOwner } from './posix'
 import { windowsOwner } from './windows'
@@ -51,8 +52,9 @@ export const recoverAgentProcess = (identity: AgentProcessIdentity, onStopped: (
 
 /**
  * Starts the job's CLI once it is located and returns at once, since on macOS the search waits for the
- * user's shell. A CLI that cannot be located or started is reported through onError and onExit, like one
- * that failed, and a stop asked before it started keeps it from starting.
+ * user's shell; a memory curation's CLI also waits for the Python of its skill's scripts. A CLI that cannot be
+ * located or started is reported through onError and onExit, like one that failed, and a stop asked before it
+ * started keeps it from starting.
  */
 export function launchAgentProcess(job: AgentJob, args: string[], handlers: ProcessHandlers): AgentProcess {
   let stopped = false
@@ -61,7 +63,9 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
     handlers.onError(error instanceof Error ? error : new Error(String(error)))
     handlers.onExit(null)
   }
-  const completion = requireCli(job.engine).then((cli) => {
+  const preparation = new AbortController()
+  const ready = Promise.all([requireCli(job.engine), job.memoryCuration ? prepareCurationScripts(preparation.signal) : undefined])
+  const completion = ready.then(([cli]) => {
     if (stopped) return handlers.onExit(null)
     try {
       running = startCli(job, cli, args, handlers)
@@ -93,6 +97,7 @@ export function launchAgentProcess(job: AgentJob, args: string[], handlers: Proc
     completion,
     stop: () => {
       stopped = true
+      preparation.abort()
       return running ? running.stop() : stopBeforeStart()
     }
   }
@@ -103,7 +108,8 @@ function startCli(job: AgentJob, cli: FoundCli, args: string[], handlers: Proces
   const parse = spec.createParser()
   // The CLI must not start writing before the job is persisted, so it runs only once "start" is written
   // to its standard input, after onSpawn. The prompt follows on the same input.
-  const env = childEnv({ ...cli.env, ...spec.env })
+  const base = childEnv({ ...cli.env, ...spec.env })
+  const env = job.memoryCuration ? curationScriptEnv(base) : base
   const { child, identity, lifetime } = owner().start(cli.path, args, { cwd: job.cwd, env, token: randomUUID() }, {
     onClose: handlers.onExit,
     onStopFailed: handlers.onStopFailed

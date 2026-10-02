@@ -1159,6 +1159,19 @@ export const memory = defineMessages({
       'pt-BR': 'o índice {file} está danificado e não pôde ser apagado para ser refeito ({message}). Verifique se nenhum outro app está com o arquivo aberto e abra o ASIST de novo',
       'es-419': 'el índice {file} está dañado y no se pudo borrar para volver a crearlo ({message}). Revisa que ninguna otra app tenga abierto el archivo y vuelve a abrir ASIST',
       'es-ES': 'el índice {file} está dañado y no se ha podido borrar para volver a crearlo ({message}). Comprueba que ninguna otra aplicación tenga abierto el archivo y vuelve a abrir ASIST'
+    },
+    checkPythonFailed: {
+      'ja-JP': '記憶の整理の確認に使う Python を用意できませんでした。初めての整理にはネットワークが要ります: {message}',
+      'en-US': 'The Python the memory curation checks its work with could not be prepared. The first curation needs the network: {message}',
+      'fr-FR': "Impossible de préparer le Python avec lequel l'organisation de la mémoire vérifie son travail. La première organisation a besoin du réseau : {message}",
+      'de-DE': 'Das Python, mit dem die Gedächtnispflege ihre Arbeit prüft, konnte nicht vorbereitet werden. Die erste Gedächtnispflege braucht das Netzwerk: {message}',
+      'hi-IN': 'याद की सफ़ाई जिस Python से अपना काम जाँचती है, वह तैयार नहीं हो सका। पहली सफ़ाई के लिए नेटवर्क चाहिए: {message}',
+      'id-ID': 'Python yang dipakai penataan ingatan untuk memeriksa hasilnya tidak bisa disiapkan. Penataan pertama memerlukan jaringan: {message}',
+      'it-IT': 'Non è stato possibile preparare il Python con cui il riordino della memoria controlla il suo lavoro. Il primo riordino ha bisogno della rete: {message}',
+      'ko-KR': '기억 정리가 작업을 확인하는 데 쓰는 Python을 준비하지 못했습니다. 첫 정리에는 네트워크가 필요합니다: {message}',
+      'pt-BR': 'Não foi possível preparar o Python com que a organização da memória confere o trabalho. A primeira organização precisa da rede: {message}',
+      'es-419': 'No se pudo preparar el Python con el que la organización de la memoria revisa su trabajo. La primera organización necesita la red: {message}',
+      'es-ES': 'No se ha podido preparar el Python con el que la organización de la memoria revisa su trabajo. La primera organización necesita la red: {message}'
     }
   }
 })

@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 import { errorText } from '@shared/i18n/error-text'
-import { childEnv, removeVariables } from './child-env'
+import { childEnv, envNameKey, pythonEnv, removeVariables } from './child-env'
 import { platformCapabilities } from './platform'
 import { resourcePath } from './resource-path'
 
@@ -82,6 +82,39 @@ export function runUv(args: string[], signal: AbortSignal): Promise<void> {
       else finish(new Error(stderr.trim() || `uv exited with ${code}`))
     })
   })
+}
+
+/**
+ * Installs the pinned Python under userData, for scripts uv runs on it without an environment of their own,
+ * such as the memory curation's checks. Measured with uv 0.12.18 on 2026-10-02: a plain `uv python install`
+ * also put a python3.12 into ~/.local/bin, which --no-bin keeps out, as --no-registry keeps the Windows
+ * registry clean. The first install took 67 s over the network and left 66 MB; once installed it returns in
+ * 0.06 s, offline too.
+ */
+export function installPython(signal: AbortSignal): Promise<void> {
+  return runUv(['python', 'install', '--no-bin', '--no-registry', PYTHON_VERSION], signal)
+}
+
+/**
+ * The environment of a process whose commands run scripts through `uv run`, such as the curation Agent: the
+ * bundled uv first on PATH, pinned to the Python installPython put under userData, never downloading one and
+ * keeping no cache, so a command needs no Python, uv or Node of the user's and writes nothing but temporary
+ * files. The user's own UV_ and PYTHON variables are left out, as for every Python ASIST runs.
+ */
+export function uvRunEnv(parent: NodeJS.ProcessEnv = process.env, userData = app.getPath('userData')): NodeJS.ProcessEnv {
+  const env = pythonEnv({ PYTHONDONTWRITEBYTECODE: '1' }, parent)
+  removeVariables(env, (key) => key.startsWith('UV_'))
+  const pathName = Object.keys(env).find((key) => envNameKey(key) === envNameKey('PATH')) ?? 'PATH'
+  env[pathName] = [path.dirname(uvPath()), env[pathName]].filter(Boolean).join(path.delimiter)
+  return {
+    ...env,
+    UV_NO_CONFIG: '1',
+    UV_PYTHON_INSTALL_DIR: path.join(userData, 'python'),
+    UV_PYTHON: PYTHON_VERSION,
+    UV_PYTHON_PREFERENCE: 'only-managed',
+    UV_PYTHON_DOWNLOADS: 'never',
+    UV_NO_CACHE: '1'
+  }
 }
 
 /** Creates the environment in dir from scratch, on the pinned Python, downloading it on first use. */

@@ -2,7 +2,7 @@ import type { AgentCliStatus, AgentEngine } from './ipc'
 import type { MessageKey } from './i18n'
 import { errorText } from './i18n/error-text'
 import type { OsFamily } from './platform'
-import { CURATION_SCRIPTS, CURATION_SKILL, SKILL_DIRS } from './memory-curation'
+import { CURATION_SCRIPTS, CURATION_SCRIPT_RUNNER, CURATION_SKILL, SKILL_DIRS } from './memory-curation'
 
 /**
  * Argument building for the agent CLIs. The per-engine differences in starting, resuming and
@@ -73,11 +73,11 @@ const clip = (s: string): string => `${s.slice(0, 80)}${s.length > 80 ? '…' : 
  * (dontAsk); the only commands are the skill's scripts, and the skill's own files are closed to editing
  * so that a script cannot be rewritten into another program. Measured with claude 2.1.276 on
  * 2026-09-23: a deny rule for the file tools must be written as Edit(...), since Write(...) is ignored,
- * and a compound command such as `validate.mjs . && curl …` is refused as a whole.
+ * and a compound command such as `validate.py . && curl …` is refused as a whole.
  */
 function claudeCurationArgs(cwd: string): string[] {
   const scripts = CURATION_SCRIPTS.flatMap((script) =>
-    ['', `${cwd}/`].map((root) => `Bash(node ${root}${SKILL_DIRS[0]}/${CURATION_SKILL}/scripts/${script} *)`)
+    ['', `${cwd}/`].map((root) => `Bash(${CURATION_SCRIPT_RUNNER} ${root}${SKILL_DIRS[0]}/${CURATION_SKILL}/scripts/${script} *)`)
   )
   return [
     '--restricted',

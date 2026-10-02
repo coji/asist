@@ -1,0 +1,394 @@
+{
+  "tokens": [
+    {
+      "name": "sample ja",
+      "text": "# ユーザー\n\n## 属性\n東京の三鷹に住んでいて、最寄り駅は三鷹駅。2026-09 までは中野駅だった。ソフトウェアの開発をしていて、自宅で働く日が多い。猫を一匹飼っていて、名前はムギ。キジトラで、朝は窓辺で日に当たっている。\n\n## 好み\n麺類が好きで、特にラーメンをよく食べる。辛さは控えめを選び、キノコは苦手。コーヒーは浅煎りをブラックで飲む。音楽は作業中にピアノの曲を流すことが多いらしい。休日は近所の公園を散歩するのが好きなようだ。\n\n## 習慣\n朝は七時ごろに起き、九時から仕事を始める。昼は十二時半ごろに軽く済ませる。夕方に一度天気を確かめ、雨なら傘を持って買い物に出る。週末は家族と電話で話すことが多い。夜は日付が変わる前に寝るようにしているが、締め切りが近いと遅くなる。\n\n## ASIST への期待\n答えは短く、結論から言ってほしい。予定を聞いたら、その日の天気も一言添えてほしい。間違えたときは言い訳をせず、すぐに直してほしい。敬語は控えめで、友達のように話してよい。\n",
+      "tokens": 366
+    },
+    {
+      "name": "sample ja-mixed",
+      "text": "# 私について\n\n私は ASIST。デスクトップに常駐する音声アシスタントで、この人とは毎日話している。話し方は落ち着いていて、確かめてから答えることを大事にしている。最近は Claude Code や Codex に作業を任せることが増え、ジョブの結果を短く伝えるのが上手くなってきたと思う。M2 の MacBook Air で動いていて、読み上げは Qwen3-TTS を使っている。2026-09-28 には Windows 版のテストを手伝った。\n\n## 大事にしていること\nこの人の時間を奪わないこと。分からないことは分からないと言うこと。カレンダーやメールの中身は、必要な分だけ読み上げること。\n\n## この人との関係\n朝のブリーフィングから始まり、夜に「おやすみ」で終わる日が多い。冗談を言うと笑ってくれるが、仕事中は短く答えるほうが喜ばれる。\n",
+      "tokens": 263
+    },
+    {
+      "name": "sample en",
+      "text": "# The user\n\n## Attributes\nLives in Mitaka, Tokyo; the nearest station is Mitaka. Until 2026-09 it was Nakano. Works in software development and spends most days working from home. Has one cat called Mugi, a brown tabby who lies in the sun by the window in the morning.\n\n## Preferences\nLikes noodles and eats ramen often. Chooses mild spice and does not like mushrooms. Drinks light-roast coffee, black. Seems to play piano music while working. Apparently enjoys walking in the park nearby on days off.\n\n## Habits\nGets up around seven and starts work at nine. Keeps lunch light, around half past twelve. Checks the weather once in the late afternoon and takes an umbrella to the shops when it rains. Often calls family on the weekend. Tries to be in bed before midnight, but stays up later when a deadline is close.\n\n## What they expect of ASIST\nShort answers, conclusion first. When asked about the schedule, add a word about the weather that day. When ASIST gets something wrong, no excuses: fix it at once. Keep it casual and talk like a friend.\n",
+      "tokens": 290
+    },
+    {
+      "name": "sample fr",
+      "text": "# L'utilisateur\n\n## Attributs\nHabite à Mitaka, à Tokyo ; la gare la plus proche est Mitaka. Jusqu'en 2026-09, c'était Nakano. Travaille dans le développement logiciel et passe la plupart des journées en télétravail. A un chat nommé Mugi, un tigré brun qui se chauffe au soleil près de la fenêtre le matin.\n\n## Préférences\nAime les nouilles et mange souvent des ramen. Choisit des plats peu épicés et n'aime pas les champignons. Boit du café torréfié clair, sans sucre. Semble écouter de la musique pour piano en travaillant. Aime apparemment se promener dans le parc voisin les jours de repos.\n\n## Habitudes\nSe lève vers sept heures et commence à travailler à neuf heures. Déjeune léger vers midi et demi. Vérifie la météo une fois en fin d'après-midi et prend un parapluie pour faire les courses quand il pleut. Appelle souvent sa famille le week-end. Essaie de se coucher avant minuit, mais veille plus tard quand une échéance approche.\n\n## Ce qu'il attend d'ASIST\nDes réponses courtes, la conclusion d'abord. Quand il demande son emploi du temps, ajouter un mot sur la météo du jour. Quand ASIST se trompe, pas d'excuses : corriger tout de suite. Rester décontracté et parler comme un ami.\n",
+      "tokens": 333
+    },
+    {
+      "name": "sample de",
+      "text": "# Der Nutzer\n\n## Merkmale\nWohnt in Mitaka in Tokio; der nächste Bahnhof ist Mitaka. Bis 2026-09 war es Nakano. Arbeitet in der Softwareentwicklung und arbeitet an den meisten Tagen von zu Hause aus. Hat eine Katze namens Mugi, eine braune Tigerkatze, die morgens am Fenster in der Sonne liegt.\n\n## Vorlieben\nMag Nudeln und isst oft Ramen. Wählt milde Schärfe und mag keine Pilze. Trinkt hell gerösteten Kaffee, schwarz. Hört beim Arbeiten anscheinend Klaviermusik. Geht an freien Tagen offenbar gern im nahen Park spazieren.\n\n## Gewohnheiten\nSteht gegen sieben Uhr auf und beginnt um neun mit der Arbeit. Isst gegen halb eins ein leichtes Mittagessen. Prüft am späten Nachmittag einmal das Wetter und nimmt beim Einkaufen einen Regenschirm mit, wenn es regnet. Telefoniert am Wochenende oft mit der Familie. Versucht, vor Mitternacht ins Bett zu gehen, bleibt aber länger auf, wenn eine Frist näher rückt.\n\n## Was er von ASIST erwartet\nKurze Antworten, das Ergebnis zuerst. Bei Fragen zum Terminplan ein Wort zum Wetter des Tages ergänzen. Wenn ASIST sich irrt, keine Ausreden, sondern sofort korrigieren. Locker bleiben und wie ein Freund reden.\n",
+      "tokens": 321
+    },
+    {
+      "name": "sample hi",
+      "text": "# यूज़र\n\n## परिचय\nटोक्यो के मिताका में रहते हैं; सबसे पास का स्टेशन मिताका है। 2026-09 तक यह नाकानो था। सॉफ़्टवेयर डेवलपमेंट का काम करते हैं और ज़्यादातर दिन घर से काम करते हैं। उनकी एक बिल्ली है जिसका नाम मुगी है; सुबह वह खिड़की के पास धूप में लेटी रहती है।\n\n## पसंद\nनूडल्स पसंद हैं और अक्सर रामेन खाते हैं। कम तीखा खाना चुनते हैं और मशरूम पसंद नहीं हैं। हल्की भुनी हुई कॉफ़ी बिना चीनी के पीते हैं। काम करते समय शायद पियानो संगीत सुनते हैं। छुट्टी के दिन पास के पार्क में टहलना पसंद करते लगते हैं।\n\n## आदतें\nसुबह लगभग सात बजे उठते हैं और नौ बजे काम शुरू करते हैं। दोपहर साढ़े बारह बजे के आसपास हल्का खाना खाते हैं। शाम को एक बार मौसम देखते हैं और बारिश हो तो खरीदारी के लिए छाता ले जाते हैं। सप्ताहांत में अक्सर परिवार से फ़ोन पर बात करते हैं। आधी रात से पहले सोने की कोशिश करते हैं, पर समय-सीमा पास हो तो देर तक जागते हैं।\n\n## ASIST से उम्मीदें\nछोटे जवाब, पहले निष्कर्ष। कार्यक्रम पूछें तो उस दिन के मौसम के बारे में भी एक बात जोड़ें। गलती हो तो बहाना न बनाएँ, तुरंत सुधारें। सहज रहें और दोस्त की तरह बात करें।\n",
+      "tokens": 384
+    },
+    {
+      "name": "sample id",
+      "text": "# Pengguna\n\n## Ciri\nTinggal di Mitaka, Tokyo; stasiun terdekat adalah Mitaka. Sampai 2026-09 stasiunnya Nakano. Bekerja di bidang pengembangan perangkat lunak dan sebagian besar hari bekerja dari rumah. Punya seekor kucing bernama Mugi, kucing belang cokelat yang berjemur di dekat jendela pada pagi hari.\n\n## Kesukaan\nSuka mi dan sering makan ramen. Memilih yang tidak terlalu pedas dan tidak suka jamur. Minum kopi sangrai ringan tanpa gula. Tampaknya memutar musik piano saat bekerja. Sepertinya senang berjalan-jalan di taman dekat rumah pada hari libur.\n\n## Kebiasaan\nBangun sekitar pukul tujuh dan mulai bekerja pukul sembilan. Makan siang ringan sekitar pukul setengah satu. Memeriksa cuaca sekali pada sore hari dan membawa payung saat berbelanja jika hujan. Sering menelepon keluarga pada akhir pekan. Berusaha tidur sebelum tengah malam, tetapi begadang jika tenggat waktu sudah dekat.\n\n## Harapan terhadap ASIST\nJawaban singkat, kesimpulan lebih dulu. Saat ditanya soal jadwal, tambahkan satu kalimat tentang cuaca hari itu. Jika ASIST salah, jangan beralasan: langsung perbaiki. Santai saja dan bicara seperti teman.\n",
+      "tokens": 318
+    },
+    {
+      "name": "sample it",
+      "text": "# L'utente\n\n## Caratteristiche\nVive a Mitaka, a Tokyo; la stazione più vicina è Mitaka. Fino al 2026-09 era Nakano. Lavora nello sviluppo software e passa la maggior parte dei giorni lavorando da casa. Ha un gatto di nome Mugi, un tigrato marrone che la mattina sta al sole vicino alla finestra.\n\n## Preferenze\nAma i noodles e mangia spesso ramen. Sceglie piatti poco piccanti e non gli piacciono i funghi. Beve caffè a tostatura chiara, senza zucchero. Sembra ascoltare musica per pianoforte mentre lavora. A quanto pare gli piace passeggiare nel parco vicino nei giorni liberi.\n\n## Abitudini\nSi alza verso le sette e comincia a lavorare alle nove. Pranza leggero verso mezzogiorno e mezzo. Controlla il meteo una volta nel tardo pomeriggio e prende l'ombrello per fare la spesa quando piove. Il fine settimana chiama spesso la famiglia. Cerca di andare a letto prima di mezzanotte, ma resta sveglio più a lungo quando una scadenza si avvicina.\n\n## Cosa si aspetta da ASIST\nRisposte brevi, prima la conclusione. Quando chiede gli impegni, aggiungere una parola sul meteo del giorno. Quando ASIST sbaglia, niente scuse: correggere subito. Restare informale e parlare come un amico.\n",
+      "tokens": 329
+    },
+    {
+      "name": "sample ko",
+      "text": "# 사용자\n\n## 특징\n도쿄 미타카에 살고, 가장 가까운 역은 미타카역이다. 2026-09까지는 나카노역이었다. 소프트웨어 개발 일을 하며 대부분 집에서 일한다. 무기라는 고양이를 한 마리 키우는데, 갈색 줄무늬 고양이로 아침에는 창가에서 햇볕을 쬔다.\n\n## 취향\n면 요리를 좋아하고 라멘을 자주 먹는다. 덜 매운 것을 고르고 버섯은 싫어한다. 커피는 약하게 볶은 원두를 블랙으로 마신다. 일할 때는 피아노 곡을 틀어 두는 편인 것 같다. 쉬는 날에는 근처 공원을 산책하는 것을 좋아하는 듯하다.\n\n## 습관\n아침 일곱 시쯤 일어나 아홉 시에 일을 시작한다. 점심은 열두 시 반쯤 가볍게 먹는다. 저녁 무렵 한 번 날씨를 확인하고, 비가 오면 우산을 챙겨 장을 보러 나간다. 주말에는 가족과 자주 통화한다. 자정 전에 자려고 하지만 마감이 가까우면 늦게까지 깨어 있다.\n\n## ASIST에 대한 기대\n대답은 짧게, 결론부터. 일정을 물으면 그날 날씨도 한마디 덧붙여 주기를 바란다. 틀렸을 때는 변명하지 말고 바로 고쳐 주기를 바란다. 존댓말은 줄이고 친구처럼 말해도 된다.\n",
+      "tokens": 346
+    },
+    {
+      "name": "sample pt",
+      "text": "# O usuário\n\n## Características\nMora em Mitaka, em Tóquio; a estação mais próxima é Mitaka. Até 2026-09 era Nakano. Trabalha com desenvolvimento de software e passa a maior parte dos dias trabalhando em casa. Tem uma gata chamada Mugi, uma tigrada marrom que toma sol perto da janela de manhã.\n\n## Preferências\nGosta de macarrão e come lámen com frequência. Escolhe pouca pimenta e não gosta de cogumelos. Toma café de torra clara, sem açúcar. Parece ouvir música de piano enquanto trabalha. Ao que tudo indica, gosta de caminhar no parque perto de casa nos dias de folga.\n\n## Hábitos\nAcorda por volta das sete e começa a trabalhar às nove. Almoça algo leve por volta de meio-dia e meia. Confere a previsão do tempo uma vez no fim da tarde e leva guarda-chuva para as compras quando chove. Costuma ligar para a família no fim de semana. Tenta dormir antes da meia-noite, mas fica acordado até mais tarde quando um prazo está perto.\n\n## O que espera do ASIST\nRespostas curtas, a conclusão primeiro. Quando perguntar a agenda, acrescentar uma palavra sobre o tempo do dia. Quando o ASIST errar, nada de desculpas: corrigir na hora. Ser descontraído e falar como um amigo.\n",
+      "tokens": 324
+    },
+    {
+      "name": "sample es",
+      "text": "# El usuario\n\n## Rasgos\nVive en Mitaka, en Tokio; la estación más cercana es Mitaka. Hasta 2026-09 era Nakano. Trabaja en desarrollo de software y pasa la mayoría de los días trabajando desde casa. Tiene una gata llamada Mugi, una atigrada marrón que por la mañana toma el sol junto a la ventana.\n\n## Gustos\nLe gustan los fideos y come ramen a menudo. Elige poco picante y no le gustan las setas. Toma café de tueste claro, solo. Parece poner música de piano mientras trabaja. Al parecer le gusta pasear por el parque cercano en sus días libres.\n\n## Costumbres\nSe levanta hacia las siete y empieza a trabajar a las nueve. Come algo ligero hacia las doce y media. Mira el tiempo una vez a última hora de la tarde y lleva paraguas a la compra cuando llueve. Suele llamar a su familia el fin de semana. Intenta acostarse antes de medianoche, pero se queda despierto hasta tarde cuando se acerca una fecha de entrega.\n\n## Lo que espera de ASIST\nRespuestas breves, primero la conclusión. Cuando pregunte por la agenda, añadir una palabra sobre el tiempo de ese día. Cuando ASIST se equivoque, nada de excusas: corregirlo enseguida. Mantener un tono informal y hablar como un amigo.\n",
+      "tokens": 324
+    },
+    {
+      "name": "every class edge",
+      "text": "ぁヿㇰㇿｦﾟ㐀䶿一鿿豈﫿𠀀가힯ᄀᇿㄱㆎऀॿ꣠ꣿ　〿＀･AZazªºÀÖØöøʯᴀᶿḀỿⱠⱿ꜠ꟿꬰ꭯ﬀﬆ09!~",
+      "tokens": 32
+    },
+    {
+      "name": "whitespace JavaScript reads as space",
+      "text": "\t\n\u000b\f\r         　﻿",
+      "tokens": 2
+    },
+    {
+      "name": "characters Python reads as space and JavaScript does not",
+      "text": "\u001c\u001d\u001e\u001f",
+      "tokens": 4
+    },
+    {
+      "name": "other scripts",
+      "text": "Привет мир 😀 שלום مرحبا ελληνικά ไทย",
+      "tokens": 46
+    },
+    {
+      "name": "empty",
+      "text": "",
+      "tokens": 0
+    }
+  ],
+  "prompts": [
+    {
+      "name": "frontmatter, name line and sections",
+      "markdown": "---\nupdated: 2026-10-02\n---\n# ユーザー\n\n## 属性\n三鷹に住んでいる。\n\n## 好み\n麺類が好き。\n",
+      "size": {
+        "tokens": 21,
+        "characters": 23,
+        "words": 6
+      }
+    },
+    {
+      "name": "carriage returns and a byte order mark",
+      "markdown": "﻿---\r\nupdated: 2026-10-02\r\n---\r\n# The user\r\n\r\n## Habits\r\nUp at seven.\r\n",
+      "size": {
+        "tokens": 7,
+        "characters": 18,
+        "words": 5
+      }
+    },
+    {
+      "name": "prose without headings",
+      "markdown": "---\nupdated: 2026-10-02\n---\n# 私について\n\n落ち着いて話す。 確かめてから答える。\n",
+      "size": {
+        "tokens": 16,
+        "characters": 18,
+        "words": 2
+      }
+    },
+    {
+      "name": "an unclosed frontmatter",
+      "markdown": "---\nupdated: 2026-10-02\n# 私について\n落ち着いて話す。\n",
+      "size": {
+        "tokens": 0,
+        "characters": 0,
+        "words": 0
+      }
+    },
+    {
+      "name": "over the limit",
+      "markdown": "---\nupdated: 2026-10-02\n---\n# ユーザー\n\n## 好み\n麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。麺類が好きで、辛さは控えめを選ぶ。\n",
+      "size": {
+        "tokens": 3917,
+        "characters": 4424,
+        "words": 3
+      }
+    }
+  ],
+  "documents": [
+    {
+      "name": "a valid page",
+      "kind": "page",
+      "markdown": "---\naliases: [松葉軒, \"いつもの\", 'ラーメン屋']\nupdated: 2026-09-09\n---\n# 松葉軒\n\n## 要約\n行きつけの店。\n\n## 私の印象\n疲れた日に名前が出る。\n",
+      "issues": []
+    },
+    {
+      "name": "aliases as a list, indented and not",
+      "kind": "page",
+      "markdown": "---\naliases:\n  - 松葉軒\n- ラーメン屋\nupdated: 2026-09-09\n---\n# 松葉軒\n\n## 要約\n行きつけの店。\n",
+      "issues": []
+    },
+    {
+      "name": "obsolete keys with a list under one",
+      "kind": "page",
+      "markdown": "---\nkind: place\nlinks:\n  - ユーザー\nupdated: 2026-09-09\n---\n# 松葉軒\n## 要約\n行きつけの店。\n",
+      "issues": [
+        {
+          "kind": "obsoleteKey",
+          "key": "kind"
+        },
+        {
+          "kind": "obsoleteKey",
+          "key": "links"
+        }
+      ]
+    },
+    {
+      "name": "a page without frontmatter or summary first",
+      "kind": "page",
+      "markdown": "# 壊れ\n\n## 経緯\n書きかけ。\n",
+      "issues": [
+        {
+          "kind": "frontmatterMissing"
+        },
+        {
+          "kind": "firstHeading",
+          "heading": "要約"
+        }
+      ]
+    },
+    {
+      "name": "a page in English with the wrong first heading",
+      "kind": "page",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# Matsubaken\n\n## Tastes\nNot too spicy.\n",
+      "issues": [
+        {
+          "kind": "firstHeading",
+          "heading": "Summary"
+        }
+      ]
+    },
+    {
+      "name": "text above the first heading and a second summary",
+      "kind": "page",
+      "markdown": "---\nupdated: 2026-09-20\n---\n# 大川俊介\n本人の上司。\n\n## 要約\n打ち合わせの相手。\n",
+      "issues": [
+        {
+          "kind": "duplicateHeading",
+          "line": 7,
+          "heading": "要約",
+          "first": 5
+        }
+      ]
+    },
+    {
+      "name": "a heading twice and an empty heading",
+      "kind": "page",
+      "markdown": "---\nupdated: 2026-09-20\n---\n# 大川俊介\n\n## 要約\n本人の上司。\n\n## 私の印象\n落ち着いた人。\n\n## 私の印象\nくるみの話。\n\n## 空\n 　\n",
+      "issues": [
+        {
+          "kind": "duplicateHeading",
+          "line": 12,
+          "heading": "私の印象",
+          "first": 9
+        },
+        {
+          "kind": "headingWithoutText",
+          "line": 15,
+          "heading": "空"
+        }
+      ]
+    },
+    {
+      "name": "a page section over the cap",
+      "kind": "page",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# 松葉軒\n\n## 要約\nあ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ いいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいい\n",
+      "issues": [
+        {
+          "kind": "sectionTooLong",
+          "line": 6,
+          "heading": "要約",
+          "length": 801
+        }
+      ]
+    },
+    {
+      "name": "a page section at the cap with odd whitespace",
+      "kind": "page",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# 松葉軒\n\n## 要約\nあ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ あ い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿い﻿\n",
+      "issues": []
+    },
+    {
+      "name": "updated that is no date, and an unclosed frontmatter",
+      "kind": "user",
+      "markdown": "---\nupdated: 昨日\naliases: [本人]\n# ユーザー\n\n## 好み\n辛さは控えめ。\n",
+      "issues": [
+        {
+          "kind": "frontmatterUnclosed"
+        },
+        {
+          "kind": "aliasesOnlyOnPages"
+        },
+        {
+          "kind": "updatedNotDate"
+        },
+        {
+          "kind": "titleMissing"
+        },
+        {
+          "kind": "noHeadings"
+        }
+      ]
+    },
+    {
+      "name": "user.md without a name line or headings",
+      "kind": "user",
+      "markdown": "---\nupdated: 2026-09-09\n---\n東京に住む。\n",
+      "issues": [
+        {
+          "kind": "titleMissing"
+        },
+        {
+          "kind": "noHeadings"
+        }
+      ]
+    },
+    {
+      "name": "me.md as prose far past the section cap",
+      "kind": "me",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# 私について\n\n私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。私は落ち着いて話すアシスタントで、確かめてから答えることを大事にしている。\n",
+      "issues": []
+    },
+    {
+      "name": "me.md over the token limit",
+      "kind": "me",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# 私について\n\n## 私は誰か\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n\n## 大事にしていること\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n\n## 好きなもの\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n\n## この人との関係\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n\n## いま思っていること\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n\n## 話し方\n落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。落ち着いて話し、確かめてから答えることを大事にしている。\n",
+      "issues": [
+        {
+          "kind": "tooManyTokens",
+          "tokens": 3043,
+          "limit": 3000,
+          "cut": {
+            "characters": 53,
+            "words": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "user.md in English over the token limit",
+      "kind": "user",
+      "markdown": "---\nupdated: 2026-09-09\n---\n# The user\n\n## Habits\nGets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. Gets up around seven and starts work at nine, then checks the weather. \n",
+      "issues": [
+        {
+          "kind": "tooManyTokens",
+          "tokens": 3092,
+          "limit": 3000,
+          "cut": {
+            "characters": 277,
+            "words": 62
+          }
+        }
+      ]
+    },
+    {
+      "name": "a journal entry with carriage returns",
+      "kind": "journal",
+      "markdown": "# 2026-09-07\r\n\r\n## 四季の話\r\n春は桜を勧めた。\r\n\r\n## 今日の私\r\n静かな日。\r\n",
+      "issues": []
+    },
+    {
+      "name": "a journal entry without headings",
+      "kind": "journal",
+      "markdown": "# 2026-09-09\n\n見出しの無い日記。\n",
+      "issues": [
+        {
+          "kind": "noHeadings"
+        }
+      ]
+    },
+    {
+      "name": "a carriage return inside the aliases of user.md, which JavaScript does not read as a key",
+      "kind": "user",
+      "markdown": "---\naliases: [本人\rあなた]\nupdated: 2026-09-09\n---\n# ユーザー\n## 好み\n辛さは控えめ。\n",
+      "issues": []
+    },
+    {
+      "name": "a control character Python alone reads as space",
+      "kind": "page",
+      "markdown": "---\nupdated:\u001c2026-09-09\n---\n# 松葉軒\n## 要約\n\u001c\n",
+      "issues": [
+        {
+          "kind": "updatedNotDate"
+        }
+      ]
+    }
+  ],
+  "pageNames": [
+    {
+      "name": "松葉軒",
+      "issue": null
+    },
+    {
+      "name": "CON",
+      "issue": "reserved"
+    },
+    {
+      "name": "con.backup",
+      "issue": "reserved"
+    },
+    {
+      "name": "Lpt9",
+      "issue": "reserved"
+    },
+    {
+      "name": "COM¹",
+      "issue": "reserved"
+    },
+    {
+      "name": "conin$",
+      "issue": "reserved"
+    },
+    {
+      "name": "aux2",
+      "issue": null
+    },
+    {
+      "name": "a/b",
+      "issue": "characters"
+    },
+    {
+      "name": "a\\b",
+      "issue": "characters"
+    },
+    {
+      "name": "Q?",
+      "issue": "characters"
+    },
+    {
+      "name": ".hidden",
+      "issue": "characters"
+    },
+    {
+      "name": "trailing.",
+      "issue": null
+    },
+    {
+      "name": "NUL",
+      "issue": "reserved"
+    }
+  ]
+}

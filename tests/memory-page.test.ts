@@ -18,7 +18,7 @@ import {
   promptSize,
   textForTokens,
   tokenEstimate
-} from '../resources/skills/memory-format.mjs'
+} from '@shared/memory-format'
 import { createTranslator } from '@shared/i18n'
 import { errorText } from '@shared/i18n/error-text'
 import TOKEN_SAMPLES from './fixtures/token-estimate-samples.json'
@@ -273,7 +273,7 @@ describe('documents', () => {
     ])
     expect(validateDocument('me.md', '---\naliases: [アシスト]\n---\n# 私について\n## 私は誰か\n落ち着いた声で話す。\n', ja)).toEqual([
       ja('memory.check.aliasesOnlyOnPages', { file: 'me.md' })
-    ])    // An empty list is refused too, as validate.mjs refuses it, so a page the Agent passes is never refused at the merge.
+    ])    // An empty list is refused too, as validate.py refuses it, so a page the Agent passes is never refused at the merge.
     expect(validateDocument('user.md', '---\naliases: []\nupdated: 2026-09-09\n---\n# ユーザー\n## 好み\n辛さは控えめ。\n', ja)).toEqual([
       ja('memory.check.aliasesOnlyOnPages', { file: 'user.md' })
     ])

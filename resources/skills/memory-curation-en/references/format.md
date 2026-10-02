@@ -54,13 +54,13 @@ above `## Summary` makes a second "Summary".
 
 ## Length
 
-- **me.md and user.md hold 1500 tokens each at most.** Both are read whole in every
-  turn, so whatever they grow by makes every conversation heavier. `scripts/count.mjs` counts them the way
-  ASIST does and also says how much that is in words. In English that is roughly 900 words; the frontmatter
+- **me.md and user.md hold 3000 tokens each at most.** Both are read whole in every
+  turn, so whatever they grow by makes every conversation heavier. `scripts/count.py` counts them the way
+  ASIST does and also says how much that is in words. In English that is roughly 1,800 words; the frontmatter
   and the `# ` line are not counted.
 - **In the pages and the journal, what stands under one `## heading` is at most 800 characters**, because a
   heading that search finds is put beside the conversation whole. Characters are counted without spaces and
-  line breaks, and `validate.mjs` reports anything over.
+  line breaks, and `validate.py` reports anything over.
 
 A file grows too long when it holds events that ended with the day, or things that belong on a page. Move
 those there and shorten it.

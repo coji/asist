@@ -16,7 +16,7 @@ import {
   type PageNameIssue,
   type ParsedPage,
   type PromptDocumentKind
-} from '../../resources/skills/memory-format.mjs'
+} from './memory-format'
 import journalTemplateJa from '../../resources/skills/memory-curation/assets/templates/journal.md?raw'
 import pageTemplateJa from '../../resources/skills/memory-curation/assets/templates/page.md?raw'
 import journalTemplateEn from '../../resources/skills/memory-curation-en/assets/templates/journal.md?raw'
@@ -26,9 +26,9 @@ export { PROMPT_DOCUMENTS, parsePage, promptBody, type PromptDocumentKind }
 
 /**
  * Reading and writing the memory pages, which are markdown. They live in `userData/memory/`, and the
- * files are the memory itself. How a document is read and what breaks its rules live in
- * resources/skills/memory-format.mjs, which the curation skills' scripts read too; this file turns what it
- * reads into units and list entries, and its findings into sentences. A heading and the body under it,
+ * files are the memory itself. How a document is read and what breaks its rules live in memory-format.ts,
+ * which the curation skills' Python answers the same; this file turns what it reads into units and list
+ * entries, and its findings into sentences. A heading and the body under it,
  * called a section, is the unit of search and injection for the pages and the journal, and its id is
  * derived from the file path and the heading, so rewriting the body leaves the unit identical.
  */
@@ -299,7 +299,7 @@ function issueText(file: string, issue: DocumentIssue, t: Translate): string {
 }
 
 /**
- * Checks the document against the rules of memory-format.mjs and returns what needs fixing, in the
+ * Checks the document against the rules of memory-format.ts and returns what needs fixing, in the
  * language of the interface, or nothing when it is valid. Reading the whole directory and saving from
  * the screen apply the same rules.
  */

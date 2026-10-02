@@ -123,12 +123,18 @@ export const SKILL_DIRS = ['.claude/skills', '.agents/skills'] as const
  * the prompt costs against its limit, and the rules of the markdown. They are the only commands a claude
  * curation may run.
  */
-export const CURATION_SCRIPTS = ['count.mjs', 'validate.mjs'] as const
+export const CURATION_SCRIPTS = ['count.py', 'validate.py'] as const
 /**
- * The rules of the memory's markdown, which both skills' scripts import from two folders above their
- * scripts/: resources/skills in the app, and each of SKILL_DIRS in the worktree.
+ * How the Agent runs a script of the skill, followed by the script's path. The bundled uv runs it on the
+ * Python ASIST installed for it, so a curation needs neither Node nor a Python of the user's; --no-project
+ * keeps uv from looking for a project in the folders above the worktree.
  */
-export const FORMAT_MODULE = 'memory-format.mjs'
+export const CURATION_SCRIPT_RUNNER = 'uv run --no-project'
+/**
+ * The rules of the memory's markdown and the values they read, which both skills' scripts import from two
+ * folders above their scripts/: resources/skills in the app, and each of SKILL_DIRS in the worktree.
+ */
+export const FORMAT_FILES = ['memory_format.py', 'memory-format.json'] as const
 /**
  * The .gitignore of the memory repository. The app copies the skill and AGENTS.md in on every run, so
  * they stay out of the memory commits. A save from the memory screen that a power loss cuts off before its

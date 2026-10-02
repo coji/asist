@@ -1,0 +1,21 @@
+{
+  "promptDocuments": [
+    { "kind": "me", "file": "me.md" },
+    { "kind": "user", "file": "user.md" }
+  ],
+  "promptDocumentMaxTokens": 3000,
+  "sectionMaxChars": 800,
+  "summaryHeading": { "ja": "要約", "en": "Summary" },
+  "whitespace": [[9, 13], [32, 32], [160, 160], [5760, 5760], [8192, 8202], [8232, 8233], [8239, 8239], [8287, 8287], [12288, 12288], [65279, 65279]],
+  "tokenWeights": [
+    { "name": "whitespace", "weight": 0.1 },
+    { "name": "kana", "weight": 0.65, "ranges": [[12352, 12543], [12784, 12799], [65382, 65439]] },
+    { "name": "han", "weight": 1.2, "ranges": [[13312, 19903], [19968, 40959], [63744, 64255], [131072, 262143]] },
+    { "name": "hangul", "weight": 0.85, "ranges": [[44032, 55215], [4352, 4607], [12592, 12687]] },
+    { "name": "devanagari", "weight": 0.45, "ranges": [[2304, 2431], [43232, 43263]] },
+    { "name": "cjkPunctuation", "weight": 1, "ranges": [[12288, 12351], [65280, 65381]] },
+    { "name": "latin", "weight": 0.3, "ranges": [[65, 90], [97, 122], [170, 170], [186, 186], [192, 214], [216, 246], [248, 687], [7424, 7615], [7680, 7935], [11360, 11391], [42784, 43007], [43824, 43887], [64256, 64262]] },
+    { "name": "ascii", "weight": 0.6, "ranges": [[0, 127]] }
+  ],
+  "otherWeight": 1.5
+}
