@@ -33,7 +33,8 @@ const models = vi.hoisted(() => ({
     uiLocale: 'ja-JP',
     conversationLocale: 'ja-JP',
     conversationModel: { provider: 'anthropic', id: 'claude-main' },
-    bridgeModel: { provider: 'anthropic', id: 'claude-fast' }
+    bridgeModel: { provider: 'anthropic', id: 'claude-fast' },
+    bridgePhrase: true
   },
   retrieved: [] as Array<{ id: string; key: string }>
 }))

@@ -380,6 +380,9 @@ export function VoicePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
         <Row label={t('settingsVoice.response.bargeIn')} hint={t('settingsVoice.response.bargeInHint')}>
           <HoloSwitch checked={settings.bargeIn} onCheckedChange={(v) => set({ bargeIn: v })} />
         </Row>
+        <Row label={t('settingsVoice.response.bridgePhrase')} hint={t('settingsVoice.response.bridgePhraseHint')}>
+          <HoloSwitch checked={settings.bridgePhrase} onCheckedChange={(v) => set({ bridgePhrase: v })} />
+        </Row>
         {features.aizuchi && (
           <>
             <Row label={t('settingsVoice.response.aizuchi')} hint={(settings.aizuchi ? readFailure(aizuchiClassifier) : null) ?? t('settingsVoice.response.aizuchiHint')}>

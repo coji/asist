@@ -23,7 +23,8 @@ const mocks = vi.hoisted(() => ({
   settings: {
     uiLocale: 'ja-JP',
     conversationModel: { provider: 'anthropic', id: 'claude-main' },
-    bridgeModel: { provider: 'anthropic', id: 'claude-fast' }
+    bridgeModel: { provider: 'anthropic', id: 'claude-fast' },
+    bridgePhrase: true
   }
 }))
 
@@ -67,6 +68,7 @@ beforeEach(() => {
   mocks.googleList.mockResolvedValue({ page: [] })
   mocks.settings.conversationModel = { provider: 'anthropic', id: 'claude-main' }
   mocks.settings.bridgeModel = { provider: 'anthropic', id: 'claude-fast' }
+  mocks.settings.bridgePhrase = true
   mocks.retrieve.mockResolvedValue({ type: 'model' })
   mocks.compatibleRetrieve.mockResolvedValue({ object: 'model' })
   mocks.compatibleList.mockResolvedValue({ data: [] })
@@ -111,6 +113,30 @@ describe('LLM configuration validation fingerprint', () => {
       'claude-next',
       'claude-fast'
     ])
+  })
+})
+
+describe('the bridge phrase model while the bridge phrase is off', () => {
+  it('is not looked up, so a missing key for its provider does not fail the configuration', async () => {
+    mocks.settings.bridgePhrase = false
+    mocks.settings.bridgeModel = { provider: 'openai', id: 'gpt-fast' }
+    const llm = await import('../src/main/services/llm')
+
+    await expect(llm.validateConfiguration()).resolves.toBeUndefined()
+    expect(mocks.retrieve.mock.calls.map(([id]) => id)).toEqual(['claude-main'])
+    expect(mocks.compatibleRetrieve).not.toHaveBeenCalled()
+    expect(llm.configuredApiKeyVerified()).toBe(true)
+  })
+
+  it('is looked up again once the bridge phrase is turned on', async () => {
+    mocks.settings.bridgePhrase = false
+    const llm = await import('../src/main/services/llm')
+    await llm.validateConfiguration()
+
+    mocks.settings.bridgePhrase = true
+    expect(llm.configuredApiKeyVerified()).toBe(false)
+    await expect(llm.configuredApiKeyAvailable()).resolves.toBe(true)
+    expect(mocks.retrieve.mock.calls.map(([id]) => id)).toEqual(['claude-main', 'claude-main', 'claude-fast'])
   })
 })
 

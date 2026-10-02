@@ -9,6 +9,7 @@ import type { JsonSchema } from '@shared/conversation'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
 import { errorText } from '@shared/i18n/error-text'
 import type { ApiKeyState, AppSettings } from '@shared/ipc'
+import { modelsInUse, type ModelSetting } from '@shared/settings'
 import { t } from '../i18n'
 import { SecretUnreadableError } from '../encrypted-secrets'
 import { getSettings } from '../settings'
@@ -16,10 +17,9 @@ import { providerKey, type ProviderKeys } from './keys'
 import { ADAPTERS, completeJson } from './call'
 
 /**
- * Validation of the configured conversation model and bridge model, plus the lightweight one-shot
- * JSON call on the bridge model. A configuration is only persisted once each configured model has
- * been fetched from the real API with that provider's key, so a configuration that cannot run is
- * never stored.
+ * Validation of the models in use, plus the lightweight one-shot JSON call on the bridge model. A
+ * configuration is only persisted once each model in use has been fetched from the real API with that
+ * provider's key, so a configuration that cannot run is never stored.
  */
 
 export { providerKey, saveProviderKey } from './keys'
@@ -55,13 +55,11 @@ export function llmKeyStates(): Record<LlmProvider, ApiKeyState> {
   return Object.fromEntries(LLM_PROVIDERS.map((provider) => [provider, keyState(provider)])) as Record<LlmProvider, ApiKeyState>
 }
 
+/** The models in use, as the checks against the real API name them. */
 export function configuredModels(
-  settings: Pick<AppSettings, 'conversationModel' | 'bridgeModel'> = getSettings()
+  settings: Pick<AppSettings, ModelSetting | 'bridgePhrase'> = getSettings()
 ): ConfiguredApiModel[] {
-  return [
-    { label: t('llmModels.targets.conversationModel'), provider: settings.conversationModel.provider, id: settings.conversationModel.id },
-    { label: t('llmModels.targets.bridgeModel'), provider: settings.bridgeModel.provider, id: settings.bridgeModel.id }
-  ]
+  return modelsInUse(settings).map(({ setting, model }) => ({ label: t(`llmModels.targets.${setting}`), provider: model.provider, id: model.id }))
 }
 
 /** The keys of the providers the models use. No other provider's key is read. */

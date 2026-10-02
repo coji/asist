@@ -21,7 +21,7 @@ import {
 } from '@shared/ipc'
 import type { AsrModel } from '@shared/asr-models'
 import { isLocalTtsEngine } from '@shared/tts-models'
-import { parseSettingsPatch } from '@shared/settings'
+import { bringsModelIntoUse, parseSettingsPatch } from '@shared/settings'
 import { parseTurnMetricLog } from '@shared/turn-metric-log'
 import { docsUrl } from '@shared/docs-links'
 import { getSettings, saveSettings } from './services/settings'
@@ -50,7 +50,7 @@ import {
   validateConfiguration,
   validateProviderKey
 } from './services/llm'
-import { LLM_PROVIDERS, LLM_PROVIDER_INFO, sameModel } from '@shared/llm-catalog'
+import { LLM_PROVIDERS, LLM_PROVIDER_INFO } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine, liveTextInput } from '@shared/voice-engine'
 import { stopsLiveEngine } from '@shared/live-session-policy'
 import { appendJsonl } from './services/store'
@@ -342,11 +342,11 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
   handle(IpcChannel.TimerCancel, (_e, id: string) => timers.cancel(String(id)))
 
   handle(IpcChannel.AizuchiBank, () => aizuchi.getBank())
-  handle(IpcChannel.BridgePlan, (_e, input: { text: unknown; lastAssistantText: unknown }) => {
+  handle(IpcChannel.BridgePlan, (_e, input: { text: unknown; lastAssistantText: unknown; afterAizuchi: unknown }) => {
     const text = typeof input?.text === 'string' ? input.text.trim() : ''
-    if (!text || text.length > 500) throw new Error('invalid bridge plan input')
+    if (!text || text.length > 500 || typeof input.afterAizuchi !== 'boolean') throw new Error('invalid bridge plan input')
     const lastAssistantText = typeof input.lastAssistantText === 'string' ? input.lastAssistantText : ''
-    return bridgePlan.plan({ text, lastAssistantText })
+    return bridgePlan.plan({ text, lastAssistantText, afterAizuchi: input.afterAizuchi })
   })
   handle(IpcChannel.BridgeClip, (_e, text: unknown) => {
     if (typeof text !== 'string' || !text.trim() || text.length > 60) {
@@ -498,10 +498,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
       }
 
       const prospective = { ...before, ...patch }
-      if (
-        !sameModel(prospective.conversationModel, before.conversationModel) ||
-        !sameModel(prospective.bridgeModel, before.bridgeModel)
-      ) {
+      if (bringsModelIntoUse(before, prospective)) {
         // The prospective values are checked against the real API first, so that saving cannot leave a
         // broken configuration behind. A missing key for that provider is rejected here.
         await validateConfiguration(configuredModels(prospective))

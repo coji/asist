@@ -1,4 +1,4 @@
-import type { BridgePlan } from '@shared/ipc'
+import type { BridgePlan, BridgePlanRequest } from '@shared/ipc'
 import { PartialLookahead } from './lookahead'
 
 /**
@@ -12,20 +12,15 @@ const MIN_PLAN_CHARS = 4
 /** Once speech has ended, even a short partial transcript is sent once, since the bridging phrase is built from it. */
 const MIN_FINISH_CHARS = 2
 
-export interface PlanInput {
-  text: string
-  lastAssistantText: string
-}
-
 export interface PlannerPorts {
-  plan(input: PlanInput): Promise<BridgePlan>
+  plan(input: BridgePlanRequest): Promise<BridgePlan>
   /** Called whenever a plan comes back; the HUD displays it. */
-  onPlan(plan: BridgePlan, input: PlanInput): void
+  onPlan(plan: BridgePlan, input: BridgePlanRequest): void
   onFailure(error: unknown): void
 }
 
 export class BridgePlanner {
-  private readonly lookahead: PartialLookahead<PlanInput, BridgePlan>
+  private readonly lookahead: PartialLookahead<BridgePlanRequest, BridgePlan>
 
   constructor(ports: PlannerPorts) {
     this.lookahead = new PartialLookahead({
@@ -42,7 +37,7 @@ export class BridgePlanner {
   }
 
   /** Takes an updated partial transcript. Text identical to the last one is not sent again. */
-  observe(input: PlanInput): void {
+  observe(input: BridgePlanRequest): void {
     const text = input.text.trim()
     if (text.length >= MIN_PLAN_CHARS) this.lookahead.send({ ...input, text })
   }
@@ -57,7 +52,7 @@ export class BridgePlanner {
    * partial transcript, and if a request is in flight it waits for it. Waiting is allowed here
    * because the bridging phrase only has to play before the answer itself.
    */
-  finish(input: PlanInput): Promise<BridgePlan | null> {
+  finish(input: BridgePlanRequest): Promise<BridgePlan | null> {
     const text = input.text.trim()
     if (!this.lookahead.busy && this.lookahead.current() === null && text.length >= MIN_FINISH_CHARS) {
       this.lookahead.send({ ...input, text })

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { KeyRound } from 'lucide-react'
 import { LLM_PROVIDERS, LLM_PROVIDER_INFO, type LlmProvider } from '@shared/llm-catalog'
-import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
+import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import type { MessageKey } from '@shared/i18n'
 import { keyReadable, type ApiKeyState } from '@shared/ipc'
 import { useStatusStore, useToastStore } from '@/state/stores'
 import type { SettingsContext } from '../context'
+import { keyProviders } from '../pending'
 import { Btn, Chip, Group, Page, type ChipTone } from '../primitives'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
@@ -36,18 +37,13 @@ function ApiKeys({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
   const { settings, status } = ctx
   const t = useT()
   const [opened, setOpened] = useState<LlmProvider | null>(null)
-  // The key of the provider behind a live engine is needed for that engine too, which the hint names.
-  const liveEngine = isLiveEngine(settings.voiceEngine) ? LIVE_ENGINE_INFO[settings.voiceEngine] : null
+  const inUse = keyProviders(settings)
   return (
     <Group>
       {LLM_PROVIDERS.map((provider) => {
         const info = LLM_PROVIDER_INFO[provider]
         const state = status?.llmKeys[provider] ?? 'missing'
         const saved = keyReadable(state)
-        const inUse =
-          provider === settings.conversationModel.provider ||
-          provider === settings.bridgeModel.provider ||
-          liveEngine?.provider === provider
         const engineOfProvider = Object.values(LIVE_ENGINE_INFO).find((engine) => engine.provider === provider)?.label ?? null
         return (
           <div key={provider} className="st-key" data-provider={provider}>
@@ -56,7 +52,7 @@ function ApiKeys({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
               {info.label}
               <code>{info.envKey}</code>
               <Chip tone={KEY_STATE_CHIP[state].tone}>{t(KEY_STATE_CHIP[state].label)}</Chip>
-              {inUse && <Chip tone="cyan">{t('settingsIntegrations.apiKeys.inUse')}</Chip>}
+              {inUse.includes(provider) && <Chip tone="cyan">{t('settingsIntegrations.apiKeys.inUse')}</Chip>}
             </div>
             <Btn tone={saved ? 'quiet' : undefined} onClick={() => setOpened(opened === provider ? null : provider)}>
               {opened === provider

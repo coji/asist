@@ -3,7 +3,7 @@ import { calendarSettingsSchema } from './calendar'
 import { mailSettingsSchema } from './mail'
 import { ASR_MODELS, type AsrModel } from './asr-models'
 import { dockOrderSchema } from './dock'
-import { conversationModelSchema } from './llm-catalog'
+import { conversationModelSchema, sameModel, type ConversationModel } from './llm-catalog'
 import { IRODORI_TTS_VOICE_IDS, QWEN_TTS_SIZES, QWEN_TTS_VOICE_IDS } from './tts-models'
 import { CONVERSATION_LOCALES } from './conversation-locale'
 import { UI_LOCALES } from './i18n'
@@ -21,10 +21,7 @@ const fields = {
    */
   safetyNoticeVersion: z.union([z.literal(0), z.literal(1)]),
   conversationModel: conversationModelSchema,
-  /**
-   * The provider and model for the aizuchi lookahead, which picks the kind of aizuchi and prepares a
-   * short bridging phrase while the user is still speaking.
-   */
+  /** The provider and model that prepare the bridge phrase while the user is still speaking. */
   bridgeModel: conversationModelSchema,
   voiceEngine: z.enum(VOICE_ENGINES),
   geminiLive: liveModelSettingSchema,
@@ -52,8 +49,11 @@ const fields = {
   qwenTtsVoice: z.enum(QWEN_TTS_VOICE_IDS),
   qwenTtsSize: z.enum(QWEN_TTS_SIZES),
   bargeIn: z.boolean(),
+  /** Whether a backchannel plays the moment the user stops speaking. Only a Japanese conversation has them. */
   aizuchi: z.boolean(),
   aizuchiRate: z.number().min(0).max(1),
+  /** Whether a short line, prepared while the user is still speaking, plays before the reply, in every conversation language. */
+  bridgePhrase: z.boolean(),
   listeningAizuchi: z.boolean(),
   /** The VAD's silence duration, chosen in the settings screen. */
   hangoverMs: z.number().int().min(200).max(900),
@@ -138,6 +138,34 @@ export const mergeSettings = (current: AppSettings, patch: SettingsPatch): AppSe
 export const safetyNoticePending = (settings: Pick<AppSettings, 'onboardingVersion' | 'safetyNoticeVersion'>): boolean =>
   settings.onboardingVersion >= 1 && settings.safetyNoticeVersion < 1
 
+/** A setting that holds a model of a provider's API. */
+export type ModelSetting = 'conversationModel' | 'bridgeModel'
+
+/**
+ * The models these settings put to use, which are the ones whose provider's key is needed and which are
+ * checked against the real API: the conversation model, and the bridge phrase model only while the bridge
+ * phrase is on.
+ */
+export function modelsInUse(
+  settings: Pick<AppSettings, ModelSetting | 'bridgePhrase'>
+): Array<{ setting: ModelSetting; model: ConversationModel }> {
+  const used: ModelSetting[] = settings.bridgePhrase ? ['conversationModel', 'bridgeModel'] : ['conversationModel']
+  return used.map((setting) => ({ setting, model: settings[setting] }))
+}
+
+/**
+ * Whether the settings after a change use a model the settings before it did not: a model changed while
+ * it is in use, or the bridge phrase turned on. Only such a change has a model to check against the real
+ * API before it is saved.
+ */
+export function bringsModelIntoUse(
+  before: Pick<AppSettings, ModelSetting | 'bridgePhrase'>,
+  after: Pick<AppSettings, ModelSetting | 'bridgePhrase'>
+): boolean {
+  const usedBefore = modelsInUse(before)
+  return modelsInUse(after).some(({ setting, model }) => !usedBefore.some((one) => one.setting === setting && sameModel(one.model, model)))
+}
+
 /** The speech recognition models of version 3, which named the macOS runtime, by the names of version 4. */
 const V3_ASR_MODELS: Record<string, string> = {
   auto: 'auto',
@@ -159,7 +187,7 @@ const V4_ASR_MODELS: Record<string, AsrModel> = {
 
 export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
   name: 'settings.json',
-  version: 9,
+  version: 10,
   upgrades: {
     // Version 2 adds the theme. Everything written before it was drawn in future.
     1: (content) => ({ ...(content as Record<string, unknown>), theme: 'future' }),
@@ -203,6 +231,13 @@ export const SETTINGS_FORMAT: StoredFormat<AppSettings> = {
       delete upgraded.gptLive
       if (upgraded.voiceEngine === 'gpt-live') upgraded.voiceEngine = 'cascade'
       return upgraded
+    },
+    // Version 10 gives the bridge phrase a switch of its own. Until then the aizuchi switch silenced it in
+    // every conversation language, so it starts as that switch was. A value version 9 did not allow is
+    // kept, for the parse to refuse.
+    9: (content) => {
+      const stored = content as Record<string, unknown>
+      return { ...stored, bridgePhrase: stored.aizuchi }
     }
   },
   parse: parseAppSettings,

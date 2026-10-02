@@ -645,17 +645,43 @@ export const settingsVoice = defineMessages({
       'es-ES': 'Frecuencia de los asentimientos'
     },
     aizuchiHint: {
-      'ja-JP': '話し終えた直後に相槌を打ち、短い一言で返事までの間をつなぎます。',
-      'en-US': 'Gives a backchannel right after you finish and fills the wait for the reply with a short phrase.',
-      'fr-FR': "Acquiesce dès que vous avez fini et comble l'attente de la réponse par une courte phrase.",
-      'de-DE': 'Gibt direkt nach Ihrem Satz ein Hörersignal und überbrückt die Wartezeit bis zur Antwort mit einem kurzen Satz.',
-      'hi-IN': 'आपके बोलना खत्म करते ही हुंकारा भरता है और जवाब तक का समय एक छोटे वाक्य से भरता है।',
-      'id-ID': 'Menyahut begitu Anda selesai bicara dan mengisi jeda sebelum jawaban dengan kalimat pendek.',
-      'it-IT': "Dà un cenno di ascolto appena finisci e riempie l'attesa della risposta con una frase breve.",
-      'ko-KR': '말을 마치자마자 맞장구를 치고, 대답까지의 틈을 짧은 한마디로 잇습니다.',
-      'pt-BR': 'Dá um sinal de escuta logo que você termina e preenche a espera pela resposta com uma frase curta.',
-      'es-419': 'Asiente en cuanto terminas y llena la espera de la respuesta con una frase corta.',
-      'es-ES': 'Asiente en cuanto terminas y llena la espera de la respuesta con una frase corta.'
+      'ja-JP': '話し終えた直後に、話の内容に合った相槌を打ちます。',
+      'en-US': 'Gives a backchannel that fits what you said, right after you finish.',
+      'fr-FR': 'Acquiesce dès que vous avez fini, selon ce que vous avez dit.',
+      'de-DE': 'Gibt direkt nach Ihrem Satz ein Hörersignal, das zu Ihren Worten passt.',
+      'hi-IN': 'आपके बोलना खत्म करते ही, आपकी बात के हिसाब से हुंकारा भरता है।',
+      'id-ID': 'Menyahut sesuai isi ucapan Anda begitu Anda selesai bicara.',
+      'it-IT': 'Appena finisci, dà un cenno di ascolto adatto a ciò che hai detto.',
+      'ko-KR': '말을 마치자마자 내용에 맞는 맞장구를 칩니다.',
+      'pt-BR': 'Dá um sinal de escuta de acordo com o que você disse, logo que você termina.',
+      'es-419': 'Asiente según lo que dijiste, en cuanto terminas.',
+      'es-ES': 'Asiente según lo que has dicho, en cuanto terminas.'
+    },
+    bridgePhrase: {
+      'ja-JP': 'つなぎの一言',
+      'en-US': 'Bridge phrase',
+      'fr-FR': 'Phrase de transition',
+      'de-DE': 'Überbrückungssatz',
+      'hi-IN': 'शुरुआती वाक्य',
+      'id-ID': 'Kalimat penyambung',
+      'it-IT': 'Frase di raccordo',
+      'ko-KR': '연결 멘트',
+      'pt-BR': 'Frase de transição',
+      'es-419': 'Frase de enlace',
+      'es-ES': 'Frase de enlace'
+    },
+    bridgePhraseHint: {
+      'ja-JP': '返事の前に短い一言を挟んで間をつなぎます。オフにすると、つなぎの一言のモデルを使いません。',
+      'en-US': "Says a short phrase before the reply to fill the wait. When it's off, the bridge phrase model isn't used.",
+      'fr-FR': "Dit une courte phrase avant la réponse pour combler l'attente. Quand elle est désactivée, le modèle de la phrase de transition n'est pas utilisé.",
+      'de-DE': 'Sagt vor der Antwort einen kurzen Satz, der die Wartezeit überbrückt. Ist er ausgeschaltet, wird das Modell für den Überbrückungssatz nicht verwendet.',
+      'hi-IN': 'जवाब से पहले एक छोटा वाक्य कहकर इंतज़ार का समय भरता है। बंद होने पर शुरुआती वाक्य का मॉडल इस्तेमाल नहीं होता।',
+      'id-ID': 'Mengucapkan kalimat pendek sebelum jawaban untuk mengisi jeda. Kalau dimatikan, model kalimat penyambung tidak dipakai.',
+      'it-IT': "Dice una frase breve prima della risposta per riempire l'attesa. Se è disattivata, il modello della frase di raccordo non viene usato.",
+      'ko-KR': '대답하기 전에 짧은 한마디로 기다리는 틈을 잇습니다. 끄면 연결 멘트 모델을 사용하지 않습니다.',
+      'pt-BR': 'Diz uma frase curta antes da resposta para preencher a espera. Quando desativada, o modelo da frase de transição não é usado.',
+      'es-419': 'Dice una frase corta antes de la respuesta para llenar la espera. Si la desactivas, no se usa el modelo de las frases de enlace.',
+      'es-ES': 'Dice una frase corta antes de la respuesta para llenar la espera. Si la desactivas, no se usa el modelo de las frases de enlace.'
     }
   },
   mic: {

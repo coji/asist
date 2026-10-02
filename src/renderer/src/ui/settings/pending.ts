@@ -2,6 +2,7 @@ import { keyReadable, type AizuchiClassifierStatus, type AppSettings, type AppSt
 import type { LlmProvider } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO, isLiveEngine } from '@shared/voice-engine'
 import { conversationFeatures } from '@shared/conversation-locale'
+import { modelsInUse } from '@shared/settings'
 import type { PlatformCapabilities } from '@shared/platform'
 import { cascadeListeningReady, speechReadiness, type StatusRead } from './context'
 
@@ -21,12 +22,12 @@ export type Pending =
   | { kind: 'key'; provider: LlmProvider; state: 'missing' | 'unreadable' }
 
 /**
- * The providers whose key the conversation needs now, as main checks them: the two models under every
- * engine, and the provider of a live engine besides.
+ * The providers whose key the conversation needs now, as main checks them: those of the models in use
+ * under every engine, and the provider of a live engine besides.
  */
 export function keyProviders(settings: AppSettings): LlmProvider[] {
   const live = isLiveEngine(settings.voiceEngine) ? [LIVE_ENGINE_INFO[settings.voiceEngine].provider] : []
-  return [...new Set([...live, settings.conversationModel.provider, settings.bridgeModel.provider])]
+  return [...new Set([...live, ...modelsInUse(settings).map(({ model }) => model.provider)])]
 }
 
 /** Whether a state main reported shows its item missing, or main failed to report it. Not read yet, it shows nothing. */

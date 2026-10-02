@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { BridgeClip, BridgePlan } from '@shared/ipc'
+import type { BridgeClip, BridgePlan, BridgePlanRequest } from '@shared/ipc'
 import {
   CONVERSATION_LANGUAGE_NAMES,
   fillPrompt,
@@ -26,9 +26,9 @@ import * as tts from './tts'
  * that point; one input is a few hundred tokens, a few times per utterance.
  *
  * The bridge is that line synthesized with TTS. The first sound of the real answer is measured at a p50 of
- * more than three seconds, so the silence after the aizuchi clip, which runs 0.5 to 1 second, is filled
- * with a line that fits what was just said. Only a Japanese conversation plays a clip before it; in
- * every other language the bridge is the first thing the user hears, and it fills the whole gap.
+ * more than three seconds, so the gap is filled with a line that fits what was just said. An aizuchi clip,
+ * which runs 0.5 to 1 second, can play before it only in a Japanese conversation with the aizuchi on;
+ * otherwise the bridge is the first thing the user hears, and it fills the whole gap.
  */
 
 /**
@@ -43,9 +43,9 @@ const bridgeLength = (language: PromptLanguage, text: string): number =>
   language === 'ja' ? text.length : text.split(/\s+/).filter(Boolean).length
 
 /**
- * The Japanese prompt tells the model that a backchannel clip has just played, because Japanese is the
- * only conversation that plays one. Elsewhere the line stands alone, so that part is left out rather
- * than translated.
+ * {aizuchiNote} takes AIZUCHI_BEFORE_BRIDGE when the request says an aizuchi can sound before the line, and
+ * nothing otherwise. Told that a clip plays first, the model avoids the receiving words a clip says, so a
+ * line heard first would start abruptly.
  */
 const PLAN_SYSTEM: PromptText = {
   ja: `あなたは音声アシスタントの聞き手として、ユーザーの話を受けて本題(答えや作業)に入る前に口にする、ごく短い一言(bridge)だけを用意する。ユーザーが話している途中の認識テキスト(末尾が欠けていることがある)と、直前のアシスタントの発話を受け取り、JSONで返す。
@@ -59,8 +59,7 @@ bridge の性格:
   - 軽い反応: 「あー、それは。」「おー、通ったんですね。」「え、7分は厳しいですね。」
   - 相手の気持ちを受ける: 「それはしんどいですね。」
 - 同じ人が同じ型で受け続けると機械的に聞こえるので、「〜ですね。」「〜の件ですね。」に偏らせない。語尾も変える。
-- この一言の直前に短い相槌クリップ(うん・なるほど・了解です・確かに など)が鳴っている。同じ語で始めない。
-- 答え・提案・質問・確認は書かない(本題は別に用意される)。
+{aizuchiNote}- 答え・提案・質問・確認は書かない(本題は別に用意される)。
 - 挨拶、短い返事(はい・うん・いいよ)、こちらの誤りの訂正、言いかけ(続きがある)には空文字。受けると不自然になるときも空文字でよい。
 
 出力は JSON のオブジェクトで、bridge に一言を入れる。例: {"bridge":"徹夜か早起きか、ですよね。"}`,
@@ -75,10 +74,16 @@ What the bridge is:
   - a light reaction: "Oh, that one." / "Nice, you got in." / "Seven minutes is tight."
   - meet the feeling: "That sounds rough."
 - The same shape every time sounds mechanical, so do not lean on one pattern and do not end them all alike.
-- Do not write the answer, a suggestion, a question or a confirmation; the substance is prepared elsewhere.
+{aizuchiNote}- Do not write the answer, a suggestion, a question or a confirmation; the substance is prepared elsewhere.
 - Answer with an empty string for a greeting, a short reply ("yes", "sure", "go ahead"), a correction of something you got wrong, or an utterance that clearly has more coming. An empty string is right whenever taking it in would sound unnatural.
 
 Return a JSON object with the line in bridge. For example: {"bridge":"So it's stay up or get up early."}`
+}
+
+/** One point of the bridge's description in PLAN_SYSTEM. */
+export const AIZUCHI_BEFORE_BRIDGE: PromptText = {
+  ja: `この一言の直前に短い相槌クリップ(うん・なるほど・了解です・確かに など)が鳴っている。同じ語で始めない。`,
+  en: `A short backchannel clip ("mm-hm", "I see", "got it", "right" and the like) plays right before this line. Do not start with the same word.`
 }
 
 const PLAN_BRIDGE_DESCRIPTION: PromptText = {
@@ -136,17 +141,13 @@ export function parseBridgePlan(locale: ConversationLocale, value: unknown): Bri
 /** The wait is short, because a result that arrives after the utterance ends is of no use. */
 const PLAN_TIMEOUT_MS = 4_000
 
-export interface PlanInput {
-  text: string
-  lastAssistantText: string
-}
-
-export async function plan(input: PlanInput): Promise<BridgePlan> {
+export async function plan(input: BridgePlanRequest): Promise<BridgePlan> {
   const locale = conversationLocale()
   const language = promptLanguage(locale)
   const system = fillPrompt(promptText(locale, PLAN_SYSTEM), {
     cap: String(BRIDGE_CAP[language]),
-    language: CONVERSATION_LANGUAGE_NAMES[locale]
+    language: CONVERSATION_LANGUAGE_NAMES[locale],
+    aizuchiNote: input.afterAizuchi ? `- ${promptText(locale, AIZUCHI_BEFORE_BRIDGE)}\n` : ''
   })
   const user = fillPrompt(promptText(locale, PLAN_USER), {
     last: sliceCodePoints(input.lastAssistantText, -LAST_LINE_MAX) || promptText(locale, PLAN_USER_NO_LAST),

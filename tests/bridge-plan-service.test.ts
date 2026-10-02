@@ -22,11 +22,25 @@ describe('bridge-plan', () => {
   it('validates the output of the fast model and throws when it does not have the expected shape', async () => {
     const { plan } = await import('../src/main/services/bridge-plan')
     mocks.quickJson.mockResolvedValueOnce({ bridge: '京都の天気ですね。' })
-    await expect(plan({ text: '京都の天気', lastAssistantText: '' })).resolves.toEqual({ bridge: '京都の天気ですね。' })
+    await expect(plan({ text: '京都の天気', lastAssistantText: '', afterAizuchi: true })).resolves.toEqual({ bridge: '京都の天気ですね。' })
     const [, user] = mocks.quickJson.mock.calls[0] as [string, string]
     expect(user).toContain('京都の天気')
     mocks.quickJson.mockResolvedValueOnce({ intent: 'maybe' })
-    await expect(plan({ text: '京都の天気', lastAssistantText: '' })).rejects.toThrow()
+    await expect(plan({ text: '京都の天気', lastAssistantText: '', afterAizuchi: true })).rejects.toThrow()
+  })
+
+  it('tells the model that a backchannel has just played only when one goes before the line', async () => {
+    const { plan, AIZUCHI_BEFORE_BRIDGE } = await import('../src/main/services/bridge-plan')
+    const { promptText } = await import('../src/shared/conversation-locale')
+    mocks.quickJson.mockClear()
+    mocks.quickJson.mockResolvedValue({ bridge: '' })
+    await plan({ text: '京都の天気', lastAssistantText: '', afterAizuchi: true })
+    await plan({ text: '京都の天気', lastAssistantText: '', afterAizuchi: false })
+    const [[afterAizuchi], [alone]] = mocks.quickJson.mock.calls as Array<[string, string]>
+
+    expect(alone).not.toBe(afterAizuchi)
+    expect(afterAizuchi).toContain(promptText('ja-JP', AIZUCHI_BEFORE_BRIDGE))
+    expect(alone).not.toContain(promptText('ja-JP', AIZUCHI_BEFORE_BRIDGE))
   })
 
   it('puts only the end of a long previous line in the prompt, never half a character', async () => {
@@ -35,7 +49,7 @@ describe('bridge-plan', () => {
     // wherever it falls, and a strict JSON parser refuses the lone half (Anthropic answers 400).
     for (const line of ['😀'.repeat(50_000), `${'😀'.repeat(50_000)}あ`]) {
       mocks.quickJson.mockResolvedValueOnce({ bridge: '' })
-      await plan({ text: '明日の天気は', lastAssistantText: line })
+      await plan({ text: '明日の天気は', lastAssistantText: line, afterAizuchi: true })
       const [, user] = mocks.quickJson.mock.calls.at(-1) as [string, string]
       expect(user.isWellFormed()).toBe(true)
       expect(user).toContain(line.slice(-5))

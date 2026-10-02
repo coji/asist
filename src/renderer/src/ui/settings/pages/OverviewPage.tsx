@@ -77,7 +77,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
           page: 'conversation',
           title: t('settings.pages.conversation'),
           value: modelName(conversation),
-          sub: t('settingsOverview.bridge', { model: modelName(settings.bridgeModel) }),
+          ...(settings.bridgePhrase ? { sub: t('settingsOverview.bridge', { model: modelName(settings.bridgeModel) }) } : {}),
           chip: keyOf(conversation.provider)
         },
         {

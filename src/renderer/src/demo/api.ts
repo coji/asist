@@ -135,6 +135,7 @@ const settings: AppSettings = {
   bargeIn: true,
   aizuchi: true,
   aizuchiRate: 0.85,
+  bridgePhrase: true,
   hangoverMs: 350,
   partialIntervalMs: 600,
   agentCwd: '/Users/demo',
