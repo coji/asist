@@ -39,7 +39,12 @@ const LISTENING_OVERLAP_MS = 2500
 export interface OpeningInput {
   startedAt: number
   speechEndAt: number
-  /** The classification available when speech ended; nothing waits for a newer one. Without it no aizuchi plays. */
+  /**
+   * The utterance may open with an aizuchi. It was settled when the capture began, and the look-ahead
+   * was told the same while the user spoke, so that its phrase follows the aizuchi that plays.
+   */
+  aizuchi: boolean
+  /** The classification available when speech ended, which picks the aizuchi; nothing waits for a newer one. Without it no aizuchi plays. */
   classification: AizuchiClassification | null
   /** The bridge this utterance may have, or null when it may have none. */
   bridge: OpeningBridge | null
@@ -115,7 +120,7 @@ export class TurnOpening {
 
   begin(input: OpeningInput): void {
     const aizuchi =
-      input.sinceListeningMs < LISTENING_OVERLAP_MS ? null : this.ports.pickAizuchi(input.classification)
+      input.aizuchi && input.sinceListeningMs >= LISTENING_OVERLAP_MS ? this.ports.pickAizuchi(input.classification) : null
     const opening: Opening = {
       startedAt: input.startedAt,
       speechEndAt: input.speechEndAt,

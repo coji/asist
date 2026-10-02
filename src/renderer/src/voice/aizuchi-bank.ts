@@ -30,19 +30,12 @@ export async function loadAizuchiBank(): Promise<void> {
   }
 }
 
-export interface AizuchiPolicy {
-  enabled: boolean
-  /** The probability of playing an aizuchi, from 0 to 1. */
-  rate: number
-}
-
 /**
- * Picks the aizuchi that opens a turn, or nothing. Without a classification nothing plays, and no
- * rule over the text stands in for one; the same holds when the category has no clip.
+ * Picks the clip for the aizuchi that opens a turn, or nothing. Whether the turn opens with one at all
+ * is the caller's to decide. Without a classification nothing plays, and no rule over the text stands
+ * in for one; the same holds when the category has no clip.
  */
-export function pickAizuchi(classification: AizuchiClassification | null, policy: AizuchiPolicy): AizuchiClip | null {
-  if (!policy.enabled || bank.length === 0) return null
-  if (Math.random() > policy.rate) return null
+export function pickAizuchi(classification: AizuchiClassification | null): AizuchiClip | null {
   const category = categoryOfClassification(classification)
   if (category === null) return null
   const clip = pickWeightedClip(bank.filter((c) => c.category === category), { excludeText: lastText })

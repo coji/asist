@@ -201,9 +201,10 @@ export interface BridgePlanRequest {
   text: string
   lastAssistantText: string
   /**
-   * An aizuchi can sound right before the phrase: the aizuchi are on, the conversation has them and the
-   * classifier runs. Whether one does is settled when speech ends, by the classification and the
-   * frequency, after the phrase has been asked for.
+   * An aizuchi sounds right before the phrase: the aizuchi are on, the conversation has them, the
+   * classifier runs, and the frequency drew one when the capture began. The opening at speech end, after
+   * the phrase has been asked for, still leaves it out when the classification finds no clip that fits or
+   * an aizuchi played while the user was speaking just before.
    */
   afterAizuchi: boolean
 }

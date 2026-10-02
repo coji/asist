@@ -153,9 +153,7 @@ vi.mock('@/voice/SpeechPlayer', async () => {
 })
 vi.mock('@/voice/aizuchi-bank', () => ({
   loadAizuchiBank: vi.fn(async () => {}),
-  pickAizuchi: vi.fn((_classification: unknown, policy: { enabled: boolean }) =>
-    policy.enabled ? { text: 'はい。', category: 'flow', weight: 1, audio: 'eA==' } : null
-  ),
+  pickAizuchi: vi.fn(() => ({ text: 'はい。', category: 'flow', weight: 1, audio: 'eA==' })),
   pickListeningClip: vi.fn(() => ({ text: 'うん', audio: 'eA==' }))
 }))
 vi.mock('@/i18n', () => ({ translate: (key: string) => key, uiLocale: () => 'ja-JP' }))
@@ -269,8 +267,9 @@ function sound(segment: Record<string, unknown>, durationMs: number): void {
 const savedRows = (metricsLog: Mock): Array<Record<string, unknown>> =>
   metricsLog.mock.calls.map((call) => (call as Array<Record<string, unknown>>)[0])
 
-/** A whole utterance: speech end, which plays the opening "はい。", then the final transcript. */
+/** A whole utterance: its capture, the speech end, which plays the opening "はい。", then the final transcript. */
 function speak(text: string): void {
+  voice().events.emit('state', 'capturing')
   utterance(speechEnd(performance.now() - 2500), text)
 }
 
@@ -795,6 +794,34 @@ describe('the aizuchi and the bridge phrase, each turned on and off by its own s
     for (const [input] of bridgePlan.mock.calls as Array<[{ afterAizuchi?: boolean }]>) expect(input.afterAizuchi).toBe(afterAizuchi)
   })
 
+  it.each([
+    ['opens', 0.1],
+    ['does not open', 0.9]
+  ] as const)('tells the look-ahead of an aizuchi exactly when one opens the turn, here one that %s it', async (_case, first) => {
+    mocks.settings.aizuchiRate = 0.5
+    // The opening takes its clip from the bank itself, here one that has a clip for the classification.
+    const bank = await vi.importActual<typeof import('@/voice/aizuchi-bank')>('@/voice/aizuchi-bank')
+    vi.stubGlobal('window', { api: { aizuchiBank: async () => [{ text: 'なるほど。', category: 'understand', weight: 1, audio: 'eA==' }] } })
+    await bank.loadAizuchiBank()
+    const pickAizuchi = vi.mocked((await import('@/voice/aizuchi-bank')).pickAizuchi)
+    pickAizuchi.mockImplementation(bank.pickAizuchi)
+    // Every draw after the first comes out the other way, so a second draw for the same utterance disagrees with the first.
+    let draws = 0
+    const random = vi.spyOn(Math, 'random').mockImplementation(() => (draws++ % 2 === 0 ? first : 1 - first))
+    try {
+      const { bridgePlan, turnStart } = await speakOnce(japanese, '会議の件ですね。')
+
+      const opened = playedRoles().includes('aizuchi')
+      expect(opened).toBe(first < 0.5)
+      expect(bridgePlan).toHaveBeenCalled()
+      for (const [input] of bridgePlan.mock.calls as Array<[{ afterAizuchi?: boolean }]>) expect(input.afterAizuchi).toBe(opened)
+      expect(startOptions(turnStart).aizuchi !== undefined).toBe(opened)
+    } finally {
+      random.mockRestore()
+      pickAizuchi.mockReset()
+    }
+  })
+
   it('says nothing before the reply with both switches on when there is no voice to say it in', async () => {
     mocks.settings.ttsEngine = 'none'
     const { aizuchiClassify, bridgePlan, bridgeSynthesize } = await speakOnce(japanese, '会議の件ですね。')
@@ -1139,6 +1166,7 @@ describe('the measurements shown in the HUD', () => {
     const conversation = await start({ turnStart: vi.fn(async () => 42), metricsLog })
     speak('今何時?')
     await flush()
+    voice().events.emit('state', 'capturing')
     speechEnd(performance.now() - 1500)
     sound(lastClip(), 400)
     conversation.handleTurnEvent({ type: 'done', turnId: 42, fullText: '' })
@@ -1152,9 +1180,11 @@ describe('the measurements shown in the HUD', () => {
   it('measures a turn from its own utterance when the echo of its opening aizuchi ended in speech before it became a turn', async () => {
     const metricsLog = vi.fn(async (_payload: Record<string, unknown>) => {})
     const conversation = await start({ turnStart: vi.fn(async () => 42), metricsLog })
+    voice().events.emit('state', 'capturing')
     const first = speechEnd(performance.now() - 2500)
     sound(lastClip(), 400)
     // The echo of that aizuchi makes a capture of its own, which ends while the first is still transcribed.
+    voice().events.emit('state', 'capturing')
     const echo = speechEnd(performance.now() - 300)
     sound(lastClip(), 900)
     utterance(first, '今何時?')

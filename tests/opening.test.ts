@@ -9,6 +9,7 @@ const classification: AizuchiClassification = { cls: 'understand', prob: 0.9, co
 const input = {
   startedAt: 10,
   speechEndAt: 1000,
+  aizuchi: true,
   classification,
   /** The lookahead plan is already resolved when the speech ends, and the classification lets the utterance have a bridge. */
   bridge: { plan: Promise.resolve<BridgePlan | null>(plan), screened: true },

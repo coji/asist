@@ -41,11 +41,32 @@ const turnMetrics = new TurnMetrics(
   (timings) => useTurnStore.getState().setTimings(timings)
 )
 interface OpeningPolicy {
-  /** The aizuchi may play, and the classifier that picks it runs on the partial transcripts. */
+  /**
+   * The aizuchi are on and their classifier runs on the partial transcripts. Besides picking the kind of
+   * aizuchi, it keeps the bridge phrase out of replies, corrections, greetings and unfinished sentences.
+   */
+  classify: boolean
+  /**
+   * The utterance being captured may open with an aizuchi: the classifier runs, and the frequency drew
+   * one when the capture began. Its classification at speech end picks the clip, or none.
+   *
+   * The look-ahead is told this as afterAizuchi while the user speaks, and the opening at speech end can
+   * still leave the aizuchi out. When a listening aizuchi played just before speech end, the note still
+   * holds, because that aizuchi sounded right before the phrase. A classification too unsure to pick a
+   * clip, or a category without one, leaves a phrase written for an aizuchi that does not play. The
+   * look-ahead is not asked again at speech end, which would delay every bridge phrase, and the phrase is
+   * not dropped, which would lose it.
+   */
   aizuchi: boolean
   /** The bridge phrase may play, and the look-ahead that words it runs on the partial transcripts. */
   bridge: boolean
 }
+/**
+ * Whether the aizuchi frequency lets an aizuchi open the utterance being captured. It is drawn once, when
+ * the capture begins, because the look-ahead is told while the user still speaks whether an aizuchi goes
+ * before its phrase, and the aizuchi at speech end has to be the one it was told of.
+ */
+let aizuchiDrawn = false
 /**
  * What may sound at the opening of a turn, each part by its own switch. With the TTS engine set to none
  * neither part is played. The aizuchi are Japanese and need the classifier, which runs only once its
@@ -54,11 +75,9 @@ interface OpeningPolicy {
  */
 function openingPolicy(): OpeningPolicy {
   const settings = useSettingsStore.getState().settings
-  if (!settings || settings.ttsEngine === 'none') return { aizuchi: false, bridge: false }
-  return {
-    aizuchi: settings.aizuchi && conversationFeatures(settings.conversationLocale).aizuchi && classifier.running,
-    bridge: settings.bridgePhrase
-  }
+  if (!settings || settings.ttsEngine === 'none') return { classify: false, aizuchi: false, bridge: false }
+  const classify = settings.aizuchi && conversationFeatures(settings.conversationLocale).aizuchi && classifier.running
+  return { classify, aizuchi: classify && aizuchiDrawn, bridge: settings.bridgePhrase }
 }
 /** The configured voice engine. A live engine takes the microphone and the typed text instead of the voice pipeline and brain. */
 const voiceEngine = (): VoiceEngine => useSettingsStore.getState().settings?.voiceEngine ?? 'cascade'
@@ -109,16 +128,13 @@ const classifier = new AizuchiClassifierFeed({
  */
 function openingBridge(policy: OpeningPolicy, classification: AizuchiClassification | null, partialText: string): OpeningBridge | null {
   if (!policy.bridge) return null
-  if (policy.aizuchi && (classification === null || !bridgeAllowed(classification.cls))) return null
-  return { plan: planner.finish({ text: partialText, lastAssistantText: lastAssistantText(), afterAizuchi: policy.aizuchi }), screened: policy.aizuchi }
+  if (policy.classify && (classification === null || !bridgeAllowed(classification.cls))) return null
+  return { plan: planner.finish({ text: partialText, lastAssistantText: lastAssistantText(), afterAizuchi: policy.aizuchi }), screened: policy.classify }
 }
 
 /** The opening of a turn, the aizuchi and the bridge. It sounds at speech end from VAD and is handed to the brain with the final transcript. */
 const opening = new TurnOpening({
-  pickAizuchi: (classification) => {
-    const settings = useSettingsStore.getState().settings
-    return pickAizuchi(classification, { enabled: settings?.aizuchi ?? false, rate: settings?.aizuchiRate ?? 0 })
-  },
+  pickAizuchi,
   play: (clip, role) => speechPlayer.playClip(clip.audio, clip.text, { role }),
   synthesizeBridge: (text) => window.api.bridgeSynthesize(text),
   bodyQueuedAfter: (time) => speechPlayer.bodyQueuedAfter(time),
@@ -245,6 +261,7 @@ async function initializeConversation(): Promise<void> {
       planner.reset()
       classifier.reset()
       void classifier.check()
+      aizuchiDrawn = Math.random() < (useSettingsStore.getState().settings?.aizuchiRate ?? 0)
       opening.captureStarted()
     } else {
       opening.captureEnded()
@@ -265,7 +282,7 @@ async function initializeConversation(): Promise<void> {
     useTurnStore.getState().setPartial(text)
     const policy = openingPolicy()
     if (policy.bridge) planner.observe({ text, lastAssistantText: lastAssistantText(), afterAizuchi: policy.aizuchi })
-    if (policy.aizuchi) classifier.observe({ prev: lastAssistantText(), text })
+    if (policy.classify) classifier.observe({ prev: lastAssistantText(), text })
   })
 
   voiceController.events.on('bargein', () => {
@@ -314,10 +331,11 @@ async function initializeConversation(): Promise<void> {
     })
     // The aizuchi is chosen from the classification available now and is skipped when there is none,
     // while the bridge waits for the look-ahead in flight.
-    const classification = policy.aizuchi ? classifier.current() : null
+    const classification = policy.classify ? classifier.current() : null
     opening.begin({
       startedAt: end.startedAt,
       speechEndAt: end.speechEndAt,
+      aizuchi: policy.aizuchi,
       classification,
       bridge: openingBridge(policy, classification, end.partialText),
       sinceListeningMs: voiceController.msSinceBackchannel
