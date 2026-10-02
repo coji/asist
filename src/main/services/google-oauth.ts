@@ -1,10 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto'
-import http from 'node:http'
-import type { AddressInfo } from 'node:net'
+import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { errorText } from '@shared/i18n/error-text'
 import { SecretUnreadableError, type EncryptedSecretStore } from './encrypted-secrets'
 import { fetchFailure } from './fetch-failure'
+import { base64url, openLoopback, pkcePair, type LoopbackRead } from './oauth-loopback'
 
 /**
  * Signing in to Google as an installed app (RFC 8252): the system browser shows Google's consent page and
@@ -57,14 +56,6 @@ export class GoogleSignedOut extends Error {
 /** The reason a sign-in stops when a newer one or a sign-out takes its place. */
 export class SignInReplaced extends Error {}
 
-const base64url = (bytes: Buffer): string => bytes.toString('base64url')
-
-/** A code verifier of 43 characters and its S256 challenge. */
-export function pkcePair(): { verifier: string; challenge: string } {
-  const verifier = base64url(randomBytes(32))
-  return { verifier, challenge: base64url(createHash('sha256').update(verifier).digest()) }
-}
-
 const tokenSchema = z.object({
   access_token: z.string().min(1),
   expires_in: z.number().positive(),
@@ -72,47 +63,13 @@ const tokenSchema = z.object({
   scope: z.string().optional()
 })
 
-interface Arrival {
-  code: string
-  answer: (signedIn: boolean) => void
-}
-
-interface Loopback {
-  uri: string
-  arrival: Promise<Arrival>
-  close: () => void
-}
-
 /**
- * The server the browser comes back to. It takes one answer on its root: a code that carries the state
- * this sign-in sent, or Google's error. A request with another state is refused and ends the sign-in, since
- * only a page other than Google's could have sent it.
+ * Google's answer on the root of the loopback server: a code that carries the state this sign-in sent, or
+ * Google's error. A request with another state ends the sign-in, since only a page other than Google's
+ * could have sent it.
  */
-async function openLoopback(state: string, page: (signedIn: boolean) => string, signal: AbortSignal, timeoutMs: number): Promise<Loopback> {
-  let settled = false
-  let settle!: { resolve: (arrival: Arrival) => void; reject: (error: unknown) => void }
-  const arrival = new Promise<Arrival>((resolve, reject) => {
-    settle = {
-      resolve: (value) => {
-        settled = true
-        resolve(value)
-      },
-      reject: (error) => {
-        settled = true
-        reject(error)
-      }
-    }
-  })
-  const server = http.createServer((request, response) => {
-    const url = new URL(request.url ?? '/', 'http://127.0.0.1')
-    if (url.pathname !== '/' || settled) {
-      response.writeHead(404, { connection: 'close' }).end()
-      return
-    }
-    const answer = (signedIn: boolean): void => {
-      response.writeHead(signedIn ? 200 : 400, { 'content-type': 'text/html; charset=utf-8', connection: 'close' }).end(page(signedIn))
-    }
-    const params = url.searchParams
+function readGoogleReturn(state: string): (params: URLSearchParams) => LoopbackRead<string> {
+  return (params) => {
     const code = params.get('code')
     const failure =
       params.get('state') !== state
@@ -122,34 +79,7 @@ async function openLoopback(state: string, page: (signedIn: boolean) => string, 
           : params.get('error') || !code
             ? 'calendar.errors.googleSignInFailed'
             : null
-    if (failure || !code) {
-      answer(false)
-      settle.reject(new Error(errorText(failure ?? 'calendar.errors.googleSignInFailed')))
-      return
-    }
-    settle.resolve({ code, answer })
-  })
-  // A sign-in that fails before anyone waits for the browser, as when the browser does not open, would
-  // otherwise leave this rejection unhandled; whoever awaits the arrival still sees it.
-  arrival.catch(() => undefined)
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => resolve())
-  })
-  const timer = setTimeout(() => settle.reject(new Error(errorText('calendar.errors.googleSignInTimedOut', { minutes: Math.round(timeoutMs / 60_000) }))), timeoutMs)
-  const abort = (): void => settle.reject(signal.reason)
-  signal.addEventListener('abort', abort, { once: true })
-  // A sign-out or a newer sign-in may have come while the server was starting to listen.
-  if (signal.aborted) abort()
-  return {
-    uri: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-    arrival,
-    close: () => {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', abort)
-      server.close()
-      server.closeIdleConnections()
-    }
+    return failure || !code ? { error: new Error(errorText(failure ?? 'calendar.errors.googleSignInFailed')) } : { value: code }
   }
 }
 
@@ -249,7 +179,15 @@ export class GoogleAuth {
     this.signingIn = controller
     const { verifier, challenge } = pkcePair()
     const state = base64url(randomBytes(16))
-    const loopback = await openLoopback(state, this.deps.page, controller.signal, this.deps.signInTimeoutMs ?? SIGN_IN_TIMEOUT_MS)
+    const timeoutMs = this.deps.signInTimeoutMs ?? SIGN_IN_TIMEOUT_MS
+    const loopback = await openLoopback({
+      path: '/',
+      read: readGoogleReturn(state),
+      page: this.deps.page,
+      signal: controller.signal,
+      timeoutMs,
+      timedOut: () => new Error(errorText('calendar.errors.googleSignInTimedOut', { minutes: Math.round(timeoutMs / 60_000) }))
+    })
     try {
       const url = new URL(AUTHORIZE_URL)
       url.search = new URLSearchParams({
@@ -266,7 +204,7 @@ export class GoogleAuth {
       }).toString()
       controller.signal.throwIfAborted()
       await this.deps.openBrowser(url.href)
-      const { code, answer } = await loopback.arrival
+      const { value: code, answer } = await loopback.arrival
       try {
         await this.exchange(code, verifier, loopback.uri, controller)
       } catch (error) {

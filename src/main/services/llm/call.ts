@@ -2,13 +2,11 @@ import type { LlmPurpose } from '@shared/api-usage'
 import { llmCost } from '@shared/api-pricing'
 import { textOf, userText, type ConversationRequest, type ConversationStream, type JsonSchema, type StopReason } from '@shared/conversation'
 import type { ConversationLocale } from '@shared/conversation-locale'
-import { errorText } from '@shared/i18n/error-text'
-import { LLM_PROVIDER_INFO, type ConversationModel, type LlmProvider } from '@shared/llm-catalog'
+import type { ConversationModel, LlmProvider } from '@shared/llm-catalog'
 import type { RoundUsage } from '@shared/ipc'
-import { getSettings } from '../settings'
 import { recordUsage } from '../usage-ledger'
 import type { ProviderAdapter, ProviderCredential } from './adapter'
-import { providerCredential } from './credentials'
+import { missingCredentialError, providerCredential } from './credentials'
 import { anthropicAdapter } from './anthropic'
 import { cerebrasAdapter } from './cerebras'
 import { googleAdapter } from './google'
@@ -31,9 +29,7 @@ export const ADAPTERS: Record<LlmProvider, ProviderAdapter> = {
 export function requireCredential(provider: LlmProvider): ProviderCredential {
   const credential = providerCredential(provider)
   if (credential) return credential
-  if (provider === 'openai' && getSettings().openaiAuth === 'chatgpt') throw new Error(errorText('settingsIntegrations.chatgpt.errors.signedOut'))
-  const info = LLM_PROVIDER_INFO[provider]
-  throw new Error(errorText('llmModels.errors.keyMissing', { provider: info.label, envKey: info.envKey }))
+  throw missingCredentialError(provider)
 }
 
 /**
@@ -41,8 +37,8 @@ export function requireCredential(provider: LlmProvider): ProviderCredential {
  * and the API's prices would show a cost the user never pays.
  */
 function recordCall(purpose: LlmPurpose, model: ConversationModel, usage: RoundUsage, credential: ProviderCredential): void {
-  const costUsd = credential.type === 'chatgpt' ? null : llmCost(model, usage)
-  recordUsage({ kind: 'llm', purpose, provider: model.provider, model: model.id, calls: 1, ...usage, costUsd })
+  const billing = credential.type === 'chatgpt' ? 'chatgpt-plan' : 'api'
+  recordUsage({ kind: 'llm', purpose, provider: model.provider, model: model.id, calls: 1, ...usage, billing, costUsd: billing === 'api' ? llmCost(model, usage) : null })
 }
 
 /**

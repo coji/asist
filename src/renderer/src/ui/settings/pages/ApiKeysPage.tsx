@@ -92,8 +92,8 @@ function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
     setSigningIn(true)
     void window.api
       .chatgptSignIn()
-      .then((after) => {
-        if (after.chatgpt.state === 'signedIn') toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
+      .then(({ completed }) => {
+        if (completed) toast({ kind: 'ok', title: t('settingsIntegrations.chatgpt.signedIn') })
         return refreshStatus()
       })
       .catch((err: unknown) => toast({ kind: 'error', title: t('settingsIntegrations.chatgpt.signInFailedTitle'), body: displayError(err) }))
@@ -135,12 +135,23 @@ function OpenAiAuth({ ctx }: { ctx: SettingsContext }): React.JSX.Element {
           </Btn>
         </>
       ) : (
-        <Btn tone="primary" onClick={signIn}>
-          {t('settingsIntegrations.chatgpt.signIn')}
-        </Btn>
+        <>
+          <Btn tone="primary" onClick={signIn}>
+            {t('settingsIntegrations.chatgpt.signIn')}
+          </Btn>
+          {chatgpt.state === 'unreadable' && (
+            <Btn tone="quiet" onClick={signOut}>
+              {t('settingsIntegrations.chatgpt.signOut')}
+            </Btn>
+          )}
+        </>
       )}
       <span className="st-key-hint">
-        {chatgpt.state === 'signedIn' && chatgpt.email ? t('settingsIntegrations.chatgpt.connected', { account: chatgpt.email }) : t('settingsIntegrations.chatgpt.hint')}
+        {chatgpt.state === 'unreadable'
+          ? t('settingsIntegrations.chatgpt.errors.unreadable')
+          : chatgpt.state === 'signedIn' && chatgpt.email
+            ? t('settingsIntegrations.chatgpt.connected', { account: chatgpt.email })
+            : t('settingsIntegrations.chatgpt.hint')}
       </span>
     </div>
   )

@@ -19,7 +19,7 @@ import { useToastStore } from '@/state/stores'
 import type { SettingsContext } from '../context'
 import { Btn, Chip, Group, Page, Row, type ChipTone } from '../primitives'
 import { PrepLine } from '../preparation'
-import { keyProviders } from '../pending'
+import { keyProviders, missingCredentialText } from '../pending'
 import { displayError } from '@/display-error'
 import { useT } from '@/i18n'
 
@@ -113,17 +113,10 @@ export function ConversationPage({ ctx }: { ctx: SettingsContext }): React.JSX.E
           </Row>
         )}
         {missingKeys.map(({ provider, state }) => {
-          const info = LLM_PROVIDER_INFO[provider]
           return (
             <PrepLine
               key={provider}
-              text={
-                state === 'unreadable'
-                  ? t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: info.label })
-                  : live && LIVE_ENGINE_INFO[live].provider === provider
-                    ? t('settingsConversation.live.keyMissing', { envKey: info.envKey })
-                    : t('settingsConversation.models.keyMissing', { envKey: info.envKey })
-              }
+              text={missingCredentialText(t, { provider, state }, settings, live)}
             >
               <Chip tone={KEY_STATE_CHIP[state].tone}>{t(KEY_STATE_CHIP[state].label)}</Chip>
               <Btn tone="primary" onClick={() => go('apiKeys')}>

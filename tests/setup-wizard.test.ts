@@ -155,6 +155,7 @@ beforeEach(async () => {
   settings = {
     onboardingVersion: 0,
     safetyNoticeVersion: 0,
+    openaiAuth: 'api-key',
     uiLocale: 'ja-JP',
     conversationLocale: 'ja-JP',
     region: 'JP',
@@ -351,6 +352,20 @@ describe('first-run setup', () => {
       bridgeModel: { provider: 'openai', id: 'gpt-5.6-luna' }
     })
     expect(button(ja('setup.next')).disabled).toBe(false)
+  })
+
+  it('calls OpenAI with the key verified for it, even after ChatGPT was chosen earlier in the setup', async () => {
+    settings = { ...settings, openaiAuth: 'chatgpt' }
+    await render()
+    await toModel(ja)
+    await act(async () => container.querySelector<HTMLButtonElement>('.su-provider[data-provider="openai"]')!.click())
+    const input = container.querySelector<HTMLInputElement>('#su-key')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'sk-test')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await press(ja('setup.model.verifyAndSave'))
+    expect(api.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ openaiAuth: 'api-key' }))
   })
 
   it('skips the listening, reading and microphone steps in text-only mode and completes with TTS turned off', async () => {

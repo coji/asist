@@ -74,7 +74,8 @@ export function ModelStep({
   onRecheck,
   onChatgpt,
   chatgptSigningIn,
-  onCancelChatgpt
+  onCancelChatgpt,
+  paidByPlan
 }: {
   provider: LlmProvider
   onProvider: (provider: LlmProvider) => void
@@ -92,6 +93,8 @@ export function ModelStep({
   /** A ChatGPT sign-in waits for the browser, which the user may have closed, so it can be stopped. */
   chatgptSigningIn: boolean
   onCancelChatgpt: () => void
+  /** OpenAI is paid from the ChatGPT plan, so what was verified is the sign-in rather than a key. */
+  paidByPlan: boolean
 }): React.JSX.Element {
   const t = useT()
   const info = LLM_PROVIDER_INFO[provider]
@@ -122,7 +125,7 @@ export function ModelStep({
       {verified ? (
         <div className="su-result" data-tone="ok">
           <Chip tone="ok">{t('setup.model.verified')}</Chip>
-          <span>{t('setup.model.verifiedNote', { provider: info.label })}</span>
+          <span>{paidByPlan ? t('settingsIntegrations.chatgpt.usingPlan') : t('setup.model.verifiedNote', { provider: info.label })}</span>
         </div>
       ) : (
         <>

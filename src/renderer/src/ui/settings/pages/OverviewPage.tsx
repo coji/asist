@@ -14,7 +14,7 @@ import { platformCapabilities } from '@/platform'
 import { AGENT_INSTALL_GUIDE, TTS_SITE, cascadeListeningReady, isExternalTts, readFailure, speechReadiness, statusOf, ttsEngineLabel, type SettingsContext, type SettingsPage } from '../context'
 import { Btn, Chip, Group, Page, Row, type ChipTone } from '../primitives'
 import { PrepProgress, PrepareButton, UnreadChip, WhisperControl } from '../preparation'
-import type { Pending } from '../pending'
+import { missingCredentialText, type Pending } from '../pending'
 
 /** One step of the conversation as it runs now: listening, answering or reading aloud. */
 interface Step {
@@ -167,12 +167,7 @@ export function OverviewPage({ ctx }: { ctx: SettingsContext }): React.JSX.Eleme
         const info = LLM_PROVIDER_INFO[item.provider]
         return {
           label: t('settingsConversation.models.apiKey', { provider: info.label }),
-          hint:
-            item.state === 'unreadable'
-              ? t('settingsIntegrations.apiKeys.errors.keyUnreadable', { provider: info.label })
-              : live && LIVE_ENGINE_INFO[live].provider === item.provider
-                ? t('settingsConversation.live.keyMissing', { envKey: info.envKey })
-                : t('settingsConversation.models.keyMissing', { envKey: info.envKey }),
+          hint: missingCredentialText(t, item, settings, live),
           action: <Btn onClick={() => go('apiKeys')}>{t('settingsIntegrations.apiKeys.register')}</Btn>
         }
       }

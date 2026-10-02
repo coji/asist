@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { localDate, type UsageDay, type UsageItem } from '@shared/api-usage'
+import { localDate, usageItemKey, type UsageDay, type UsageItem } from '@shared/api-usage'
 import { modelName, type LlmProvider } from '@shared/llm-catalog'
 import { LIVE_ENGINE_INFO } from '@shared/voice-engine'
 import { OTHER_SERIES, modelSeriesId, usageReport, type UsageGrouping } from '@shared/usage-report'
@@ -128,8 +128,14 @@ export function UsagePage({ ctx }: { ctx: SettingsContext }): React.JSX.Element 
       {report && report.lines.length > 0 && (
         <Group title={t('settingsUsage.breakdownTitle')}>
           {report.lines.map((item) => (
-            <Row key={`${item.kind}|${lineLabel(item)}|${item.costUsd === null}`} label={lineLabel(item)} hint={<>{detail(item)}{lineNote(item) && <><br />{lineNote(item)}</>}</>}>
-              {item.costUsd === null ? <Chip tone="warn">{t('settingsUsage.unpriced')}</Chip> : <span className="st-value">{usd(item.costUsd)}</span>}
+            <Row key={usageItemKey(item)} label={lineLabel(item)} hint={<>{detail(item)}{lineNote(item) && <><br />{lineNote(item)}</>}</>}>
+              {item.kind === 'llm' && item.billing === 'chatgpt-plan' ? (
+                <Chip>{t('settingsUsage.chatgptPlan')}</Chip>
+              ) : item.costUsd === null ? (
+                <Chip tone="warn">{t('settingsUsage.unpriced')}</Chip>
+              ) : (
+                <span className="st-value">{usd(item.costUsd)}</span>
+              )}
             </Row>
           ))}
           {ctx.settings.agentEngine === 'codex' && <Row label={t('settingsUsage.codexNote')} />}

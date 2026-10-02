@@ -12,7 +12,8 @@ vi.mock('../src/main/services/settings', () => ({ getSettings: () => ({ openaiAu
 vi.mock('../src/main/services/llm/keys', () => ({ providerKey: () => mocks.key }))
 vi.mock('../src/main/services/chatgpt', () => ({ chatgptAuth: () => ({ account: () => mocks.account, accessToken: mocks.accessToken }) }))
 
-const { credentialIdentity, providerCredential } = await import('../src/main/services/llm/credentials')
+const { credentialIdentity, missingCredentialError, providerCredential } = await import('../src/main/services/llm/credentials')
+const { errorText } = await import('../src/shared/i18n/error-text')
 
 beforeEach(() => {
   mocks.openaiAuth = 'api-key'
@@ -45,6 +46,11 @@ describe('the credential of a provider', () => {
   it('is the API key for every other provider, whatever OpenAI uses', () => {
     mocks.openaiAuth = 'chatgpt'
     expect(providerCredential('anthropic')).toEqual({ type: 'api-key', key: 'sk-openai' })
+  })
+
+  it('is named as the ChatGPT sign-in when that is what is missing, not as an API key to set', () => {
+    expect(missingCredentialError('openai', 'chatgpt').message).toBe(errorText('settingsIntegrations.chatgpt.errors.signedOut'))
+    expect(missingCredentialError('openai', 'api-key').message).toBe(errorText('llmModels.errors.keyMissing', { provider: 'OpenAI', envKey: 'OPENAI_API_KEY' }))
   })
 
   it('is told apart by the registration of a sign-in, which stays the same while its token changes every hour', () => {

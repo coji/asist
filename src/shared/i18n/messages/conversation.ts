@@ -213,6 +213,19 @@ export const conversation = defineMessages({
       'pt-BR': 'Não foi possível escrever uma resposta. Fale comigo de novo.',
       'es-419': 'No se pudo escribir una respuesta. Vuelve a hablarme.',
       'es-ES': 'No se ha podido escribir una respuesta. Vuelve a hablarme.'
+    },
+    planLimit: {
+      'ja-JP': 'ChatGPT プランの利用上限に達しました。ChatGPT の設定の「使用量」で、上限と戻る時刻を確かめてください。',
+      'en-US': 'Your ChatGPT plan’s usage limit was reached. Check the limit and when it resets under Usage in ChatGPT’s settings.',
+      'fr-FR': 'La limite d’utilisation de votre forfait ChatGPT est atteinte. Vérifiez la limite et sa réinitialisation dans « Utilisation » des réglages de ChatGPT.',
+      'de-DE': 'Das Nutzungslimit Ihres ChatGPT-Abos ist erreicht. Prüfen Sie das Limit und wann es zurückgesetzt wird unter „Nutzung“ in den Einstellungen von ChatGPT.',
+      'hi-IN': 'आपके ChatGPT प्लान की उपयोग सीमा पूरी हो गई। ChatGPT की सेटिंग में “उपयोग” में सीमा और वह कब रीसेट होगी, देखें।',
+      'id-ID': 'Batas pemakaian paket ChatGPT Anda sudah tercapai. Periksa batas dan waktu pemulihannya di “Penggunaan” pada pengaturan ChatGPT.',
+      'it-IT': 'È stato raggiunto il limite di utilizzo del tuo piano ChatGPT. Controlla il limite e quando si azzera in «Utilizzo» nelle impostazioni di ChatGPT.',
+      'ko-KR': 'ChatGPT 요금제의 사용 한도에 도달했습니다. ChatGPT 설정의 ‘사용량’에서 한도와 재설정 시각을 확인하십시오.',
+      'pt-BR': 'O limite de uso do seu plano do ChatGPT foi atingido. Confira o limite e quando ele é renovado em “Uso” nas configurações do ChatGPT.',
+      'es-419': 'Se alcanzó el límite de uso de tu plan de ChatGPT. Revisa el límite y cuándo se restablece en «Uso» de la configuración de ChatGPT.',
+      'es-ES': 'Se ha alcanzado el límite de uso de tu plan de ChatGPT. Revisa el límite y cuándo se restablece en «Uso» de los ajustes de ChatGPT.'
     }
   },
   logUnreadable: {

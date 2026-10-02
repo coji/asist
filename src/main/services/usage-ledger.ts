@@ -14,11 +14,26 @@ import { openStoredFileSync } from './stored-file'
 
 const USAGE_FILE = 'api-usage.json'
 
-/** Version 1 was the bare list of days; version 2 is an object, which is what can carry the version. */
+/**
+ * Version 1 was the bare list of days; version 2 is an object, which is what can carry the version. Version 3
+ * says who paid for each model call, and every call until then was paid through an API key.
+ */
 export const USAGE_FORMAT: StoredFormat<UsageDay[]> = {
   name: USAGE_FILE,
-  version: 2,
-  upgrades: { 1: (content) => ({ days: content }) },
+  version: 3,
+  upgrades: {
+    1: (content) => ({ days: content }),
+    2: (content) => {
+      const stored = content as { days?: unknown }
+      if (!Array.isArray(stored.days)) return stored
+      const days = stored.days.map((day: unknown) => {
+        const items = (day as { items?: unknown } | null)?.items
+        if (!Array.isArray(items)) return day
+        return { ...(day as object), items: items.map((item: unknown) => ((item as { kind?: unknown } | null)?.kind === 'llm' ? { ...(item as object), billing: 'api' } : item)) }
+      })
+      return { ...stored, days }
+    }
+  },
   parse: (content) => usageDaysSchema.parse((content as { days?: unknown } | null)?.days),
   serialize: (usage) => ({ days: usage })
 }

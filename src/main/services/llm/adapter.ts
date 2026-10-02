@@ -24,7 +24,7 @@ import type { RoundUsage } from '@shared/ipc'
  * of the account signed in with ChatGPT, whose access token expires within the hour and is fetched for
  * each request. `account` names the registration, which stays the same while the token changes.
  */
-export type ProviderCredential = { type: 'api-key'; key: string } | { type: 'chatgpt'; account: string; accessToken: () => Promise<string> }
+export type ProviderCredential = { type: 'api-key'; key: string } | { type: 'chatgpt'; account: string; accessToken: (signal?: AbortSignal) => Promise<string> }
 
 export const apiKeyCredential = (key: string): ProviderCredential => ({ type: 'api-key', key })
 

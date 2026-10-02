@@ -177,8 +177,10 @@ export function SetupWizard(): React.JSX.Element | null {
     setError('')
     try {
       if (!useSavedKey) applyStatus(await window.api.saveApiKey(provider, apiKey))
-      // Before it saves, main checks that this pair can really be fetched with the provider's key.
-      if (!modelsMatch) await saveSettings(defaults)
+      // Before it saves, main checks that this pair can really be fetched with the provider's key. A key
+      // verified for OpenAI is also what OpenAI is then called with, even after a ChatGPT sign-in here.
+      const toApiKey = provider === 'openai' && settings.openaiAuth !== 'api-key'
+      if (!modelsMatch || toApiKey) await saveSettings({ ...defaults, ...(toApiKey ? { openaiAuth: 'api-key' as const } : {}) })
       setApiKey('')
       await refresh()
     } catch (err) {
@@ -198,8 +200,8 @@ export function SetupWizard(): React.JSX.Element | null {
     setChatgptSigningIn(true)
     setError('')
     try {
-      const after = await window.api.chatgptSignIn()
-      if (after.chatgpt.state === 'signedIn') await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
+      const { completed } = await window.api.chatgptSignIn()
+      if (completed) await saveSettings({ ...defaults, openaiAuth: 'chatgpt' })
       await refresh()
     } catch (err) {
       setError(displayError(err))
@@ -456,6 +458,7 @@ export function SetupWizard(): React.JSX.Element | null {
               onRecheck={() => void verifyKey(true)}
               onChatgpt={() => void signInWithChatgpt()}
               chatgptSigningIn={chatgptSigningIn}
+              paidByPlan={provider === 'openai' && settings.openaiAuth === 'chatgpt'}
               onCancelChatgpt={() => void window.api.chatgptCancelSignIn()}
             />
           )}

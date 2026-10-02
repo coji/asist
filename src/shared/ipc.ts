@@ -1255,10 +1255,10 @@ export interface RendererApi {
    */
   verifySavedApiKey(provider: LlmProvider): Promise<AppStatus>
   /**
-   * Signs in with ChatGPT in the browser and returns the status afterwards, which shows nobody signed in when
-   * the sign-in was cancelled. No token ever leaves main.
+   * Signs in with ChatGPT in the browser and returns the status afterwards. `completed` is false for a
+   * sign-in that was cancelled or replaced, which leaves any earlier sign-in as it was. No token ever leaves main.
    */
-  chatgptSignIn(): Promise<AppStatus>
+  chatgptSignIn(): Promise<{ completed: boolean; status: AppStatus }>
   /** Stops a ChatGPT sign-in that waits for the browser; the pending chatgptSignIn then fails. */
   chatgptCancelSignIn(): Promise<void>
   /** Revokes the ChatGPT sign-in at OpenAI, forgets it here, and returns the status afterwards. */

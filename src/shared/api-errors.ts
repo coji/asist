@@ -32,12 +32,26 @@ const httpStatus = (err: unknown): number | undefined =>
 const isConnectionError = (err: unknown): boolean =>
   err instanceof Error && /^APIConnection(Timeout)?Error$/.test(err.constructor.name)
 
+const PLAN_USAGE_LIMIT = 'subscription_sharing_usage_limit_exceeded'
+
+/**
+ * The usage limit of a ChatGPT plan, which OpenAI sends as a 429 like a rate limit but which lasts hours, so
+ * waiting a few seconds never clears it.
+ */
+export function isPlanUsageLimit(err: unknown): boolean {
+  // Before the stream opens the OpenAI package keeps the code on the error, not in its message; inside the
+  // stream the adapter writes it into the message.
+  const code = err && typeof err === 'object' && 'code' in err ? err.code : undefined
+  return code === PLAN_USAGE_LIMIT || errMessageChain(err).includes(PLAN_USAGE_LIMIT)
+}
+
 /**
  * Whether the error is transient and worth a retry: overload, rate limit, 5xx, or a failed or dropped
  * connection. An error event that arrives over SSE after the stream is established has no status, so
  * the message text is checked as well.
  */
 export function isTransientApiError(err: unknown): boolean {
+  if (isPlanUsageLimit(err)) return false
   if (isConnectionError(err)) return true
   const status = httpStatus(err) ?? 0
   if (status === 408 || status === 409 || status === 429 || status >= 500) return true
@@ -58,6 +72,7 @@ export type ApiErrorKey = Extract<MessageKey, `conversation.reply.${string}`>
 export function apiErrorKey(err: unknown): ApiErrorKey {
   const msg = errMessage(err)
   const status = httpStatus(err)
+  if (isPlanUsageLimit(err)) return 'conversation.reply.planLimit'
   if (status === 529 || /overloaded/i.test(msg)) return 'conversation.reply.overloaded'
   if (status === 429 || /rate.?limit/i.test(msg)) return 'conversation.reply.rateLimit'
   if (status === 401 || status === 403 || /authentication|invalid.*api.?key/i.test(msg)) return 'conversation.reply.authentication'

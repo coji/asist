@@ -12,7 +12,7 @@ import {
   PLAN_USAGE_SCOPE,
   type ChatGptSecretId
 } from '../src/main/services/chatgpt-oauth'
-import type { EncryptedSecretStore } from '../src/main/services/encrypted-secrets'
+import { SecretUnreadableError, type EncryptedSecretStore } from '../src/main/services/encrypted-secrets'
 
 /** Signing in with ChatGPT and keeping its tokens. OpenAI's endpoints are faked; the browser's return to 127.0.0.1 is real. */
 
@@ -215,6 +215,50 @@ describe('signing in with ChatGPT', () => {
     expect(openai.calls.filter((call) => call.url === CHATGPT_REVOKE_URL).map((call) => call.form.get('token'))).toEqual(['refresh-1'])
   })
 
+  it('takes a response without scope as granting what was asked for', async () => {
+    const openai = fakeOpenAI([(form, nonce) => { const response = granted()(form, nonce); return response.json().then((body: Record<string, unknown>) => { delete body.scope; return json(body) }) }])
+    const { openBrowser } = browser(openai)
+    const auth = authWith(openai, memorySecrets(), openBrowser)
+    await auth.signIn()
+    expect(auth.signInState()).toBe('signedIn')
+  })
+
+  it('replaces a sign-in this build cannot read instead of failing on it', async () => {
+    const openai = fakeOpenAI([granted()])
+    // Everything saved was encrypted by another build, so reading any of it throws until it is removed.
+    const secrets = memorySecrets({ hostId: 'urn:uuid:other-build', clientId: 'oaiapp_other', session: session() })
+    const foreign = new Set<ChatGptSecretId>(['hostId', 'clientId', 'session'])
+    const { get, set } = secrets
+    secrets.get = (id) => {
+      if (foreign.has(id)) throw new SecretUnreadableError('foreign')
+      return get(id)
+    }
+    secrets.remove = (id) => {
+      foreign.delete(id)
+      secrets.values.delete(id)
+    }
+    secrets.set = (id, secret) => {
+      foreign.delete(id)
+      set(id, secret)
+    }
+    const { openBrowser, opened } = browser(openai)
+    const auth = authWith(openai, secrets, openBrowser)
+    expect(auth.signInState()).toBe('unreadable')
+    await auth.signIn()
+    expect(opened[0].searchParams.get('client_id')).toBe('dynamic_agent_client')
+    expect(opened[0].searchParams.get('ext_agent_host_id')).not.toBe('urn:uuid:other-build')
+    expect(auth.signInState()).toBe('signedIn')
+  })
+
+  it('gives back the grant of the sign-in a new one replaces', async () => {
+    const openai = fakeOpenAI([granted({ refresh_token: 'refresh-new' })])
+    const secrets = memorySecrets({ hostId: 'urn:uuid:x', clientId: CLIENT_ID, session: session() })
+    const { openBrowser } = browser(openai, (authorize) => ({ code: 'code-1', state: authorize.searchParams.get('state')! }))
+    await authWith(openai, secrets, openBrowser).signIn()
+    expect(openai.calls.filter((call) => call.url === CHATGPT_REVOKE_URL).map((call) => call.form.get('token'))).toEqual(['refresh-old'])
+    expect(JSON.parse(secrets.values.get('session')!).refreshToken).toBe('refresh-new')
+  })
+
   it('stops a sign-in that waits for the browser when it is cancelled', async () => {
     const openai = fakeOpenAI([])
     const auth = authWith(openai, memorySecrets())
@@ -251,6 +295,25 @@ describe('the ChatGPT access token', () => {
     expect(openai.tokenCalls()).toHaveLength(1)
   })
 
+  it('lets a caller stop waiting for a refresh, which still runs to its end and saves the rotated token', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const openai = fakeOpenAI([
+      async () => {
+        await held
+        return json({ access_token: 'access-2', token_type: 'Bearer', expires_in: 3600, refresh_token: 'refresh-2', id_token: idToken({}), scope: SCOPE })
+      }
+    ])
+    const secrets = memorySecrets({ clientId: CLIENT_ID, session: session() })
+    const auth = authWith(openai, secrets)
+    const caller = new AbortController()
+    const waiting = auth.accessToken(caller.signal)
+    caller.abort(new Error('barge-in'))
+    await expect(waiting).rejects.toThrow('barge-in')
+    release()
+    await vi.waitFor(() => expect(JSON.parse(secrets.values.get('session')!).refreshToken).toBe('refresh-2'))
+  })
+
   it('keeps the rotated refresh token even when checking the new ID token fails afterwards', async () => {
     const openai = fakeOpenAI([() => json({ access_token: 'access-2', token_type: 'Bearer', expires_in: 3600, refresh_token: 'refresh-2', id_token: idToken({}, strangerKey.privateKey), scope: SCOPE })])
     const secrets = memorySecrets({ clientId: CLIENT_ID, session: session() })
@@ -258,13 +321,13 @@ describe('the ChatGPT access token', () => {
     expect(JSON.parse(secrets.values.get('session')!).refreshToken).toBe('refresh-2')
   })
 
-  it('signs out when the refresh token is reused or revoked, without trying any other credential, and keeps the registration', async () => {
+  it('signs out when the refresh token is reused or revoked, without trying any other credential, and forgets the registration with it', async () => {
     const openai = fakeOpenAI([() => json({ error: 'refresh_token_reused' }, 400)])
     const secrets = memorySecrets({ clientId: CLIENT_ID, session: session() })
     const auth = authWith(openai, secrets)
     await expect(auth.accessToken()).rejects.toBeInstanceOf(ChatGptSignedOut)
     expect(auth.signInState()).toBe('signedOut')
-    expect(secrets.values.get('clientId')).toBe(CLIENT_ID)
+    expect(secrets.values.has('clientId')).toBe(false)
     await expect(auth.accessToken()).rejects.toBeInstanceOf(ChatGptSignedOut)
     expect(openai.tokenCalls()).toHaveLength(1)
   })

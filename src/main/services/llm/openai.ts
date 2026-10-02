@@ -53,8 +53,8 @@ function clientFor(key: string): OpenAI {
 }
 
 /** The access token of a ChatGPT sign-in is sent where the SDK would send an API key. */
-async function clientOf(credential: ProviderCredential): Promise<OpenAI> {
-  return clientFor(credential.type === 'api-key' ? credential.key : await credential.accessToken())
+async function clientOf(credential: ProviderCredential, signal: AbortSignal): Promise<OpenAI> {
+  return clientFor(credential.type === 'api-key' ? credential.key : await credential.accessToken(signal))
 }
 
 /** The output limit, which a request paid from the ChatGPT plan has to leave out. */
@@ -164,7 +164,7 @@ class OpenAIStream extends AdapterStream {
     private readonly request: ConversationRequest
   ) {
     super()
-    this.start(async () => this.run(await clientOf(credential)))
+    this.start(async () => this.run(await clientOf(credential, request.signal)))
   }
 
   protected nativeSnapshot(openText: string): ConversationMessage['native'] {
@@ -310,7 +310,7 @@ const outputText = (response: Response): string =>
  * list the SDK parses, and fetching one model refuses the token for lack of the api.model.read scope.
  */
 async function planModels(credential: Extract<ProviderCredential, { type: 'chatgpt' }>, signal: AbortSignal): Promise<string[]> {
-  const response = await fetch('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${await credential.accessToken()}` }, signal })
+  const response = await fetch('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${await credential.accessToken(signal)}` }, signal })
   if (!response.ok) throw statusError(response.status, `OpenAI: listing the models of the ChatGPT plan failed (HTTP ${response.status})`)
   const body = (await response.json()) as { models?: Array<{ slug?: unknown }> }
   if (!Array.isArray(body.models)) throw new Error('OpenAI: the models of the ChatGPT plan came back in an unknown form')
@@ -322,7 +322,7 @@ export const openaiAdapter: ProviderAdapter = {
 
   async completeJson(request: JsonRequest, credential: ProviderCredential) {
     const effort = effortFor(request.model)
-    const client = await clientOf(credential)
+    const client = await clientOf(credential, request.signal)
     const params = {
       model: request.model.id,
       instructions: request.system,

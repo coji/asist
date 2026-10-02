@@ -146,8 +146,9 @@ const api = {
     {
       date: localDate(new Date()),
       items: [
-        { kind: 'llm', purpose: 'conversation', provider: 'openai', model: 'gpt-5.6-luna', calls: 10, input: 1000, cacheRead: 9000, cacheCreation: 0, output: 500, webSearches: 0, costUsd: 1.2 },
-        { kind: 'llm', purpose: 'bridge', provider: 'openai', model: 'my-own-model', calls: 4, input: 400, cacheRead: 0, cacheCreation: 0, output: 40, webSearches: 0, costUsd: null },
+        { kind: 'llm', purpose: 'conversation', provider: 'openai', model: 'gpt-5.6-luna', calls: 10, input: 1000, cacheRead: 9000, cacheCreation: 0, output: 500, webSearches: 0, billing: 'api', costUsd: 1.2 },
+        { kind: 'llm', purpose: 'bridge', provider: 'openai', model: 'my-own-model', calls: 4, input: 400, cacheRead: 0, cacheCreation: 0, output: 40, webSearches: 0, billing: 'api', costUsd: null },
+        { kind: 'llm', purpose: 'conversation', provider: 'openai', model: 'gpt-5.6-terra', calls: 3, input: 300, cacheRead: 0, cacheCreation: 0, output: 30, webSearches: 0, billing: 'chatgpt-plan', costUsd: null },
         { kind: 'agent', engine: 'claude', jobs: 1, costUsd: 0.3 }
       ]
     }
@@ -266,7 +267,7 @@ describe('settings dialog', () => {
     expect(nav(view, 'usage').querySelector('.st-nav-sub')?.textContent).toBe(t('settings.summary.usage', { amount: total! }))
   })
 
-  it('shows the costs of the range, leaves an unpriced model out of the total, and says why Codex jobs are missing', async () => {
+  it('shows the costs of the range, leaves an unpriced model and the ChatGPT plan out of the total, and says why Codex jobs are missing', async () => {
     const view = await render()
     await act(async () => nav(view, 'usage').click())
     await act(async () => {})
@@ -281,9 +282,11 @@ describe('settings dialog', () => {
       `GPT-5.6 Luna · ${t('settingsUsage.purposes.conversation')}`,
       'Claude Code',
       `my-own-model · ${t('settingsUsage.purposes.bridge')}`,
+      `GPT-5.6 Terra · ${t('settingsUsage.purposes.conversation')}`,
       t('settingsUsage.codexNote')
     ])
     expect(lines[2].querySelector('.st-chip')?.textContent).toBe(t('settingsUsage.unpriced'))
+    expect(lines[3].querySelector('.st-chip')?.textContent).toBe(t('settingsUsage.chatgptPlan'))
   })
 
   it('prepares speech recognition from the row that chooses its model, and reads the status again once it is done', async () => {

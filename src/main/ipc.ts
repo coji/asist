@@ -46,7 +46,6 @@ import { fetchPanel } from './services/panel-fetchers'
 import {
   configuredModels,
   configuredApiKeyAvailable,
-  credentialsOf,
   providerKey,
   llmKeyStates,
   saveProviderKey,
@@ -508,7 +507,7 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
         // The prospective values are checked against the real API first, so that saving cannot leave a
         // broken configuration behind. A missing key or ChatGPT sign-in for that provider is rejected here.
         const models = configuredModels(prospective)
-        await validateConfiguration(models, credentialsOf(models, prospective.openaiAuth))
+        await validateConfiguration(models, prospective.openaiAuth)
       }
       // A live engine is only checked for the provider's key, because the Live API has no way to query a
       // model. A failure to connect surfaces as a notification when the microphone is turned on.
@@ -571,15 +570,16 @@ export function registerIpc(window: BrowserWindow, appPage: string): void {
 
   // A sign-in waits for the browser for minutes, so it does not hold the configuration lock meanwhile; only
   // what it changes afterwards, the status, is read under it.
-  // A sign-in the user cancelled, or that a newer one or a sign-out replaced, is no failure: the status it
-  // returns tells the page that nobody signed in.
-  handle(IpcChannel.ChatGptSignIn, async (): Promise<AppStatus> => {
+  // A sign-in the user cancelled, or that a newer one or a sign-out replaced, is no failure.
+  handle(IpcChannel.ChatGptSignIn, async (): Promise<{ completed: boolean; status: AppStatus }> => {
+    let completed = true
     try {
       await chatgptAuth().signIn()
     } catch (error) {
       if (!(error instanceof ChatGptSignInReplaced)) throw error
+      completed = false
     }
-    return computeStatus()
+    return { completed, status: await computeStatus() }
   })
 
   handle(IpcChannel.ChatGptCancelSignIn, () => chatgptAuth().cancelSignIn())

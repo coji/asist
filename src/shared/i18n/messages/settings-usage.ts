@@ -415,5 +415,18 @@ export const settingsUsage = defineMessages({
       'es-419': 'No se pudo entender el registro de uso de las API. Revisa {file}: {detail}',
       'es-ES': 'No se ha podido entender el registro de uso de las API. Comprueba {file}: {detail}'
     }
+  },
+  chatgptPlan: {
+    'ja-JP': 'ChatGPT プラン',
+    'en-US': 'ChatGPT plan',
+    'fr-FR': 'Forfait ChatGPT',
+    'de-DE': 'ChatGPT-Abo',
+    'hi-IN': 'ChatGPT प्लान',
+    'id-ID': 'Paket ChatGPT',
+    'it-IT': 'Piano ChatGPT',
+    'ko-KR': 'ChatGPT 요금제',
+    'pt-BR': 'Plano do ChatGPT',
+    'es-419': 'Plan de ChatGPT',
+    'es-ES': 'Plan de ChatGPT'
   }
 })

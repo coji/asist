@@ -47,7 +47,7 @@ describe('recording the use of a conversation model', () => {
     await streamConversation(request, 'conversation').final()
     await Promise.resolve()
     expect(mocks.recordUsage).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'llm', purpose: 'conversation', provider: 'anthropic', model: 'claude-haiku-4-5', calls: 1, costUsd: 1 })
+      expect.objectContaining({ kind: 'llm', purpose: 'conversation', provider: 'anthropic', model: 'claude-haiku-4-5', calls: 1, billing: 'api', costUsd: 1 })
     )
   })
 
@@ -56,7 +56,7 @@ describe('recording the use of a conversation model', () => {
     mocks.final.mockReturnValue(Promise.resolve({ usage }))
     await streamConversation({ model: { provider: 'openai', id: 'gpt-5.6-terra' } } as ConversationRequest, 'conversation').final()
     await Promise.resolve()
-    expect(mocks.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ provider: 'openai', model: 'gpt-5.6-terra', input: 1_000_000, costUsd: null }))
+    expect(mocks.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ provider: 'openai', model: 'gpt-5.6-terra', input: 1_000_000, billing: 'chatgpt-plan', costUsd: null }))
   })
 
   it('records nothing for a response that fails, whose usage never arrives', async () => {

@@ -18,6 +18,7 @@ const llm = (patch: Partial<Extract<UsageItem, { kind: 'llm' }>> = {}): UsageIte
   cacheCreation: 0,
   output: 10,
   webSearches: 0,
+  billing: 'api',
   costUsd: 0.01,
   ...patch
 })
@@ -60,6 +61,12 @@ describe('the daily sums', () => {
   it('keeps unpriced calls apart, so a missing price never erases the cost of the priced ones', () => {
     const days = addUsage(addUsage([], '2026-09-23', llm()), '2026-09-23', llm({ costUsd: null }))
     expect(days[0].items.map((item) => item.costUsd)).toEqual([0.01, null])
+  })
+
+  it('keeps calls paid from the ChatGPT plan apart from unpriced API calls of the same model', () => {
+    const plan = llm({ provider: 'openai', model: 'gpt-5.6-terra', billing: 'chatgpt-plan', costUsd: null })
+    const days = addUsage(addUsage([], '2026-09-23', plan), '2026-09-23', llm({ provider: 'openai', model: 'gpt-5.6-terra', costUsd: null }))
+    expect(days[0].items.map((item) => item.kind === 'llm' && item.billing)).toEqual(['chatgpt-plan', 'api'])
   })
 
   it('keeps the days in date order whatever order they arrive in', () => {

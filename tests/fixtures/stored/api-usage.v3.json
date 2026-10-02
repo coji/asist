@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "days": [
+    {
+      "date": "2026-10-03",
+      "items": [
+        { "kind": "llm", "purpose": "conversation", "provider": "anthropic", "model": "claude-sonnet-5", "calls": 12, "input": 30000, "cacheRead": 250000, "cacheCreation": 8000, "output": 2400, "webSearches": 1, "billing": "api", "costUsd": 0.21 },
+        { "kind": "llm", "purpose": "bridge", "provider": "cerebras", "model": "qwen-3.8-27b", "calls": 40, "input": 52000, "cacheRead": 0, "cacheCreation": 0, "output": 1800, "webSearches": 0, "billing": "api", "costUsd": null },
+        { "kind": "llm", "purpose": "conversation", "provider": "openai", "model": "gpt-5.6-terra", "calls": 13, "input": 92381, "cacheRead": 169216, "cacheCreation": 0, "output": 1331, "webSearches": 3, "billing": "chatgpt-plan", "costUsd": null },
+        { "kind": "live", "engine": "gemini-live", "model": "gemini-3.8-live", "seconds": 240, "costUsd": 0.09 },
+        { "kind": "agent", "engine": "claude", "jobs": 2, "costUsd": 0.4 }
+      ]
+    }
+  ]
+}

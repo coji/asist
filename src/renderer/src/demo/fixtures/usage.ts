@@ -32,7 +32,7 @@ function llm(
     output: perCall.output * calls,
     webSearches
   }
-  return { kind: 'llm', purpose, provider, model, calls, ...usage, costUsd: llmCost({ provider, id: model }, usage) }
+  return { kind: 'llm', purpose, provider, model, calls, ...usage, billing: 'api', costUsd: llmCost({ provider, id: model }, usage) }
 }
 
 export function demoUsageDays(today = new Date()): UsageDay[] {

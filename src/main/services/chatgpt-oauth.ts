@@ -1,11 +1,10 @@
 import { createPublicKey, randomBytes, randomUUID, timingSafeEqual, verify, type JsonWebKeyInput } from 'node:crypto'
-import http from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { z } from 'zod'
+import { waitWithAbort } from '@shared/abort'
 import { errorText } from '@shared/i18n/error-text'
 import { SecretUnreadableError, type EncryptedSecretStore } from './encrypted-secrets'
 import { fetchFailure } from './fetch-failure'
-import { pkcePair } from './google-oauth'
+import { base64url, openLoopback, pkcePair, type LoopbackRead } from './oauth-loopback'
 
 /**
  * Signing in with ChatGPT so that OpenAI requests are paid from the user's ChatGPT plan instead of an API
@@ -35,6 +34,11 @@ const REGISTRATION_CLIENT_ID = 'dynamic_agent_client'
 const SIGN_IN_TIMEOUT_MS = 5 * 60_000
 /** An access token this close to its expiry is renewed before a request rather than risk a 401 in the middle of one. */
 const EXPIRY_MARGIN_MS = 60_000
+/**
+ * How long one request to the sign-in server may take. A refresh holds up every OpenAI call and a sign-out
+ * holds up saving the settings, so neither waits for undici's own limit of minutes.
+ */
+const REQUEST_TIMEOUT_MS = 15_000
 /** The clock difference tolerated when checking the expiry of an ID token. */
 const CLOCK_SKEW_S = 5
 
@@ -44,6 +48,7 @@ const CLOCK_SKEW_S = 5
  */
 const TERMINAL_REFRESH_ERRORS = new Set([
   'invalid_grant',
+  'invalid_client',
   'invalid_refresh_token',
   'token_expired',
   'refresh_token_expired',
@@ -108,95 +113,25 @@ export interface ChatGptAccount {
   clientId: string
 }
 
-const base64url = (bytes: Buffer): string => bytes.toString('base64url')
-
 function sameText(a: string, b: string): boolean {
   const left = Buffer.from(a)
   const right = Buffer.from(b)
   return left.length === right.length && timingSafeEqual(left, right)
 }
 
-interface Arrival {
-  code: string
-  clientId: string | null
-  answer: (signedIn: boolean) => void
-}
-
-interface Loopback {
-  uri: string
-  arrival: Promise<Arrival>
-  close: () => void
-}
-
 /**
- * The server the browser comes back to, on the path OpenAI requires. A request for another host, path or
- * state is refused without ending the sign-in, since any page in the browser can reach 127.0.0.1 and must
- * not be able to cancel it; the one with this sign-in's state is answered once and ends it.
+ * OpenAI's answer on the callback path. A request with another state is not its answer and leaves the
+ * sign-in waiting, since any page in the browser can reach 127.0.0.1 and must not be able to cancel it.
  */
-async function openLoopback(state: string, page: (signedIn: boolean) => string, signal: AbortSignal, timeoutMs: number): Promise<Loopback> {
-  let settled = false
-  let settle!: { resolve: (arrival: Arrival) => void; reject: (error: unknown) => void }
-  const arrival = new Promise<Arrival>((resolve, reject) => {
-    settle = {
-      resolve: (value) => {
-        settled = true
-        resolve(value)
-      },
-      reject: (error) => {
-        settled = true
-        reject(error)
-      }
-    }
-  })
-  let host = ''
-  const server = http.createServer((request, response) => {
-    const url = new URL(request.url ?? '/', `http://${host}`)
-    if (request.method !== 'GET' || request.headers.host !== host || url.pathname !== CALLBACK_PATH || settled) {
-      response.writeHead(404, { connection: 'close' }).end()
-      return
-    }
-    const params = url.searchParams
-    if (params.getAll('state').length !== 1 || !sameText(params.get('state') ?? '', state)) {
-      response.writeHead(400, { connection: 'close' }).end()
-      return
-    }
-    const answer = (signedIn: boolean): void => {
-      response
-        .writeHead(signedIn ? 200 : 400, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', connection: 'close' })
-        .end(page(signedIn))
-    }
+function readChatGptReturn(state: string): (params: URLSearchParams) => LoopbackRead<{ code: string; clientId: string | null }> {
+  return (params) => {
+    if (params.getAll('state').length !== 1 || !sameText(params.get('state') ?? '', state)) return null
     const code = params.get('code')
     if (params.get('error') || !code || params.getAll('code').length !== 1 || params.getAll('client_id').length > 1) {
-      answer(false)
       const denied = params.get('error') === 'access_denied'
-      settle.reject(new Error(errorText(denied ? 'settingsIntegrations.chatgpt.errors.signInDenied' : 'settingsIntegrations.chatgpt.errors.signInFailed')))
-      return
+      return { error: new Error(errorText(denied ? 'settingsIntegrations.chatgpt.errors.signInDenied' : 'settingsIntegrations.chatgpt.errors.signInFailed')) }
     }
-    settle.resolve({ code, clientId: params.get('client_id'), answer })
-  })
-  // A sign-in that fails before anyone waits for the browser would otherwise leave this rejection unhandled.
-  arrival.catch(() => undefined)
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => resolve())
-  })
-  host = `127.0.0.1:${(server.address() as AddressInfo).port}`
-  const timer = setTimeout(
-    () => settle.reject(new Error(errorText('settingsIntegrations.chatgpt.errors.signInTimedOut', { minutes: Math.round(timeoutMs / 60_000) }))),
-    timeoutMs
-  )
-  const abort = (): void => settle.reject(signal.reason)
-  signal.addEventListener('abort', abort, { once: true })
-  if (signal.aborted) abort()
-  return {
-    uri: `http://${host}${CALLBACK_PATH}`,
-    arrival,
-    close: () => {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', abort)
-      server.close()
-      server.closeIdleConnections()
-    }
+    return { value: { code, clientId: params.get('client_id') } }
   }
 }
 
@@ -224,6 +159,8 @@ export class ChatGptAuth {
    * saves nothing, so a sign-out made meanwhile is not undone by the old account's tokens coming back.
    */
   private generation = 0
+  /** OpenAI's signing keys, fetched again only when an ID token names a key they lack. */
+  private signingKeys: z.infer<typeof jwksSchema>['keys'] | null = null
   constructor(private readonly deps: ChatGptAuthDependencies) {}
 
   private now(): number {
@@ -273,17 +210,17 @@ export class ChatGptAuth {
   /**
    * A valid access token, renewed when the saved one is about to expire. Concurrent callers share one
    * refresh, because the refresh token rotates and a second refresh with the old one would revoke the
-   * session. The refresh runs to its end even if the request that started it is cancelled, so the
-   * replacement refresh token is never lost.
+   * session. The refresh runs to its end even if every caller stops waiting for it, so the replacement
+   * refresh token is never lost; `signal` ends only this caller's wait.
    */
-  accessToken(): Promise<string> {
+  accessToken(signal?: AbortSignal): Promise<string> {
     const session = this.session()
     if (!session) return Promise.reject(new ChatGptSignedOut())
     if (session.expiresAt - EXPIRY_MARGIN_MS > this.now()) return Promise.resolve(session.accessToken)
     this.refreshing ??= this.refresh(session).finally(() => {
       this.refreshing = null
     })
-    return this.refreshing
+    return signal ? waitWithAbort(this.refreshing, signal) : this.refreshing
   }
 
   private async refresh(session: Session): Promise<string> {
@@ -300,7 +237,7 @@ export class ChatGptAuth {
     if (!response.ok) {
       const code = await oauthError(response, 'refresh')
       if (code !== null && TERMINAL_REFRESH_ERRORS.has(code)) {
-        if (current()) this.deps.secrets.remove('session')
+        if (current()) this.forget()
         throw new ChatGptSignedOut()
       }
       throw new Error(errorText('settingsIntegrations.chatgpt.errors.requestFailed', { status: response.status }))
@@ -319,7 +256,8 @@ export class ChatGptAuth {
       if (!current()) throw new ChatGptSignedOut()
       // A refresh that came back for another account would mix two accounts' tokens under one registration.
       if (identity.subject !== session.subject) {
-        this.deps.secrets.remove('session')
+        this.forget()
+        await this.revoke(token.refresh_token, clientId).catch((error: unknown) => console.warn('ChatGPT: revoking a refresh for another account failed:', error))
         throw new ChatGptSignedOut()
       }
       this.saveSession({ ...refreshed, idToken: token.id_token, ...(identity.email ? { email: identity.email } : {}) })
@@ -336,12 +274,30 @@ export class ChatGptAuth {
     this.signingIn?.abort(new ChatGptSignInReplaced())
     const controller = new AbortController()
     this.signingIn = controller
+    // A sign-in replaces one this build cannot read, so what cannot be read is dropped first.
+    for (const id of ['hostId', 'clientId', 'session'] as const) {
+      try {
+        if (id === 'session') this.session()
+        else this.deps.secrets.get(id)
+      } catch (error) {
+        if (!(error instanceof SecretUnreadableError)) throw error
+        this.deps.secrets.remove(id)
+      }
+    }
     const hostId = this.hostId()
     const savedClientId = this.deps.secrets.get('clientId')
     const { verifier, challenge } = pkcePair()
     const state = base64url(randomBytes(32))
     const nonce = base64url(randomBytes(32))
-    const loopback = await openLoopback(state, this.deps.page, controller.signal, this.deps.signInTimeoutMs ?? SIGN_IN_TIMEOUT_MS)
+    const timeoutMs = this.deps.signInTimeoutMs ?? SIGN_IN_TIMEOUT_MS
+    const loopback = await openLoopback({
+      path: CALLBACK_PATH,
+      read: readChatGptReturn(state),
+      page: this.deps.page,
+      signal: controller.signal,
+      timeoutMs,
+      timedOut: () => new Error(errorText('settingsIntegrations.chatgpt.errors.signInTimedOut', { minutes: Math.round(timeoutMs / 60_000) }))
+    })
     try {
       const url = new URL(AUTHORIZE_URL)
       url.search = new URLSearchParams({
@@ -359,7 +315,10 @@ export class ChatGptAuth {
       }).toString()
       controller.signal.throwIfAborted()
       await this.deps.openBrowser(url.href)
-      const { code, clientId: returnedClientId, answer } = await loopback.arrival
+      const {
+        value: { code, clientId: returnedClientId },
+        answer
+      } = await loopback.arrival
       try {
         const clientId = returnedClientId ?? savedClientId
         if (!clientId || clientId === REGISTRATION_CLIENT_ID || (savedClientId !== null && returnedClientId !== null && returnedClientId !== savedClientId)) {
@@ -415,8 +374,9 @@ export class ChatGptAuth {
     let identity: { subject: string; email: string | null }
     try {
       controller.signal.throwIfAborted()
-      // The consent page lets the user sign in without sharing the plan, and such a token cannot pay for a request.
-      const granted = new Set((token.scope ?? '').split(/\s+/))
+      // The consent page lets the user sign in without sharing the plan, and such a token cannot pay for a
+      // request. A response without `scope` granted what was asked for (RFC 6749, 5.1).
+      const granted = new Set(token.scope === undefined ? SCOPES : token.scope.split(/\s+/))
       if (!granted.has(PLAN_USAGE_SCOPE)) throw new Error(errorText('settingsIntegrations.chatgpt.errors.planUsageNotGranted'))
       if (!token.id_token) throw new Error(errorText('settingsIntegrations.chatgpt.errors.badResponse'))
       identity = await this.verifyIdToken(token.id_token, clientId, nonce)
@@ -426,6 +386,7 @@ export class ChatGptAuth {
       await this.revoke(token.refresh_token, clientId).catch(() => undefined)
       throw error
     }
+    const replaced = this.session()
     this.generation++
     this.saveSession({
       version: 1,
@@ -436,6 +397,8 @@ export class ChatGptAuth {
       refreshToken: token.refresh_token,
       expiresAt: this.now() + token.expires_in * 1000
     })
+    // The session this sign-in replaced would otherwise stay connected at OpenAI with nothing here to end it.
+    if (replaced) await this.revoke(replaced.refreshToken, clientId).catch((error: unknown) => console.warn('ChatGPT: revoking the replaced sign-in failed:', error))
   }
 
   /**
@@ -455,16 +418,13 @@ export class ChatGptAuth {
       throw invalid()
     }
     if (header.alg !== 'RS256') throw invalid()
-    let response: Response
-    try {
-      response = await this.deps.fetch(CHATGPT_JWKS_URL)
-    } catch (error) {
-      throw fetchFailure(CHATGPT_JWKS_URL, error)
+    const keyOf = (keys: z.infer<typeof jwksSchema>['keys']) => keys.find((key) => key.kty === 'RSA' && (header.kid === undefined || key.kid === header.kid))
+    // OpenAI rotates its keys, so a key the cached set lacks sends for the set again.
+    let jwk = this.signingKeys ? keyOf(this.signingKeys) : undefined
+    if (!jwk) {
+      this.signingKeys = await this.fetchSigningKeys(invalid)
+      jwk = keyOf(this.signingKeys)
     }
-    if (!response.ok) throw new Error(errorText('settingsIntegrations.chatgpt.errors.requestFailed', { status: response.status }))
-    const keys = jwksSchema.safeParse(await response.json().catch(() => null))
-    if (!keys.success) throw invalid()
-    const jwk = keys.data.keys.find((key) => key.kty === 'RSA' && (header.kid === undefined || key.kid === header.kid))
     if (!jwk) throw invalid()
     const signed = verify('RSA-SHA256', Buffer.from(`${parts[0]}.${parts[1]}`), createPublicKey({ key: jwk, format: 'jwk' } as JsonWebKeyInput), Buffer.from(parts[2], 'base64url'))
     const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud]
@@ -485,6 +445,19 @@ export class ChatGptAuth {
     return { subject: claims.sub, email: typeof claims.email === 'string' ? claims.email : null }
   }
 
+  private async fetchSigningKeys(invalid: () => Error): Promise<z.infer<typeof jwksSchema>['keys']> {
+    let response: Response
+    try {
+      response = await this.deps.fetch(CHATGPT_JWKS_URL, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+    } catch (error) {
+      throw fetchFailure(CHATGPT_JWKS_URL, error)
+    }
+    if (!response.ok) throw new Error(errorText('settingsIntegrations.chatgpt.errors.requestFailed', { status: response.status }))
+    const keys = jwksSchema.safeParse(await response.json().catch(() => null))
+    if (!keys.success) throw invalid()
+    return keys.data.keys
+  }
+
   /**
    * Takes the grant back at OpenAI and forgets the session and its registration here; the host id stays.
    * Both are forgotten even when OpenAI cannot be reached, and the failure is then raised, since the grant
@@ -502,9 +475,14 @@ export class ChatGptAuth {
       // A session that cannot be read cannot be revoked from here either; it is only dropped.
       console.warn('ChatGPT sign-in cannot be read at sign-out:', error)
     }
+    this.forget()
+    if (session && clientId) await this.revoke(session.refreshToken, clientId)
+  }
+
+  /** Forgets the session and its registration, which belongs to that account alone; the host id stays. */
+  private forget(): void {
     this.deps.secrets.remove('session')
     this.deps.secrets.remove('clientId')
-    if (session && clientId) await this.revoke(session.refreshToken, clientId)
   }
 
   private async revoke(token: string, clientId: string): Promise<void> {
@@ -517,7 +495,8 @@ export class ChatGptAuth {
       return await this.deps.fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-        body: new URLSearchParams(form)
+        body: new URLSearchParams(form),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
       })
     } catch (error) {
       throw fetchFailure(url, error)
