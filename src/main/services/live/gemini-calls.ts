@@ -6,6 +6,7 @@ import { memoryIdsInToolResult } from '@shared/memory-injection'
 import { ToolCallOrder } from '@shared/tool-call-order'
 import type { ToolExecution, ToolExecutionTask } from '@shared/tool-registry'
 import { conversationLocale } from '../conversation-locale'
+import { stampUserMessage } from '../brain/prompt'
 import type { GeminiFunctionCall, GeminiLiveDeps, GeminiSession } from './gemini-live'
 
 /**
@@ -22,6 +23,8 @@ export interface GeminiCallsDeps extends Pick<GeminiLiveDeps, 'executeTool' | 'i
   touch: () => void
   /** The memories a result has shown the session. */
   memoriesSent: (ids: readonly string[]) => void
+  /** The engine's clock, which stamps a notice with the time it is sent. */
+  now: () => number
 }
 
 /** Tells Gemini what came of a call it cancelled after its operation had started. */
@@ -112,7 +115,8 @@ export class GeminiCalls {
       if (execution.unfinished) {
         this.deps.recordTool(turnId, name, call.args ?? {}, execution)
         const locale = conversationLocale()
-        const text = fillPrompt(promptText(locale, CANCELLED_AFTER_START), { notice: marker(locale, 'systemNotice'), result: execution.content })
+        const notice = fillPrompt(promptText(locale, CANCELLED_AFTER_START), { notice: marker(locale, 'systemNotice'), result: execution.content })
+        const text = stampUserMessage(locale, notice, new Date(this.deps.now()))
         this.deps.session()?.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false })
       }
       return
