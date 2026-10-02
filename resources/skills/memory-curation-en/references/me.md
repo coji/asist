@@ -48,8 +48,7 @@ My mood lately, what I keep wondering about, what I would like to try, what I re
 ```
 
 Behaviour this person asked of me directly ("shorter", "quieter in the morning") goes under
-`## What they expect of ASIST` in user.md, and is summed up under `## What I have been asked` in
-instruction.md. What belongs in me.md is the way of speaking that grew out of it.
+`## What they expect of ASIST` in user.md. What belongs in me.md is the way of speaking that grew out of it.
 
 ## How to go about it
 

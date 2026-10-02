@@ -16,7 +16,6 @@ export const SUMMARY_HEADING = Object.freeze({ ja: '要約', en: 'Summary' })
  * The pages and the journal are reached through search instead.
  */
 export const PROMPT_DOCUMENTS = Object.freeze([
-  Object.freeze({ kind: 'instruction', file: 'instruction.md' }),
   Object.freeze({ kind: 'me', file: 'me.md' }),
   Object.freeze({ kind: 'user', file: 'user.md' })
 ])
@@ -212,14 +211,13 @@ const inPrompt = (kind) => PROMPT_DOCUMENTS.some((document) => document.kind ===
 
 /**
  * What in a document breaks the rules, as values rather than sentences, since ASIST writes them in the
- * language of its interface and each skill in its own. `kind` is where the document lives: instruction,
- * me, user, page or journal. A heading may stand only once in a file, because a section is found by its
+ * language of its interface and each skill in its own. `kind` is where the document lives: me, user, page
+ * or journal. A heading may stand only once in a file, because a section is found by its
  * file and heading.
  */
 export function documentIssues(kind, markdown) {
   const { frontmatter, unclosed, title, headed, sections } = readBody(markdown)
   const issues = []
-  if (kind === 'instruction' && frontmatter.present) issues.push({ kind: 'frontmatterNotAllowed' })
   if ((kind === 'user' || kind === 'me' || kind === 'page') && !frontmatter.present) issues.push({ kind: 'frontmatterMissing' })
   if (unclosed) issues.push({ kind: 'frontmatterUnclosed' })
   for (const key of frontmatter.obsoleteKeys) issues.push({ kind: 'obsoleteKey', key })

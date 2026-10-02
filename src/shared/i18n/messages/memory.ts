@@ -196,19 +196,6 @@ export const memory = defineMessages({
       'pt-BR': 'O usuário',
       'es-419': 'El usuario',
       'es-ES': 'El usuario'
-    },
-    instruction: {
-      'ja-JP': 'いつも覚えておくこと',
-      'en-US': 'Always keep in mind',
-      'fr-FR': 'À toujours garder en tête',
-      'de-DE': 'Immer im Blick',
-      'hi-IN': 'हमेशा याद रखने वाली बातें',
-      'id-ID': 'Selalu diingat',
-      'it-IT': 'Da tenere sempre a mente',
-      'ko-KR': '늘 기억해 둘 것',
-      'pt-BR': 'Manter sempre em mente',
-      'es-419': 'Tener siempre presente',
-      'es-ES': 'Tener siempre presente'
     }
   },
   meta: {
@@ -289,19 +276,6 @@ export const memory = defineMessages({
       'pt-BR': 'me.md · Sobre mim. Vai em todo system prompt. A organização escreve, e você pode editar aqui',
       'es-419': 'me.md · Sobre mí. Se incluye en cada system prompt. La organización lo escribe y puedes editarlo aquí',
       'es-ES': 'me.md · Sobre mí. Se incluye en todos los system prompts. La organización lo escribe y puedes editarlo aquí'
-    },
-    instruction: {
-      'ja-JP': 'instruction.md · 毎回の system prompt に載ります。整理が書き、ここでも直せます',
-      'en-US': 'instruction.md · Goes into every system prompt. The curation writes it, and you can edit it here',
-      'fr-FR': "instruction.md · Va dans chaque prompt système. L'organisation l'écrit, et vous pouvez le modifier ici",
-      'de-DE': 'instruction.md · Kommt in jeden system prompt. Die Gedächtnispflege schreibt sie, und Sie können sie hier bearbeiten',
-      'hi-IN': 'instruction.md · हर system prompt में जाती है। सफ़ाई इसे लिखती है, और आप इसे यहाँ बदल सकते हैं',
-      'id-ID': 'instruction.md · Masuk ke setiap system prompt. Penataan menulisnya, dan Anda bisa mengubahnya di sini',
-      'it-IT': 'instruction.md · Va in ogni system prompt. Il riordino lo scrive, e puoi modificarlo qui',
-      'ko-KR': 'instruction.md · 매번 system prompt에 들어갑니다. 정리가 쓰고, 여기서도 고칠 수 있습니다',
-      'pt-BR': 'instruction.md · Vai em todo system prompt. A organização escreve, e você pode editar aqui',
-      'es-419': 'instruction.md · Se incluye en cada system prompt. La organización lo escribe y puedes editarlo aquí',
-      'es-ES': 'instruction.md · Se incluye en todos los system prompts. La organización lo escribe y puedes editarlo aquí'
     },
     user: {
       'ja-JP': 'user.md · ユーザー本人の属性、好み、習慣、ASIST への期待。毎回の system prompt に載ります。整理が書き、ここでも直せます',
@@ -766,32 +740,6 @@ export const memory = defineMessages({
       'es-419': '{file}: no hay ningún encabezado «##»',
       'es-ES': '{file}: no hay ningún encabezado “##”'
     },
-    frontmatterNotAllowed: {
-      'ja-JP': '{file}: このファイルには frontmatter を置きません',
-      'en-US': '{file}: this file has no frontmatter',
-      'fr-FR': '{file} : ce fichier ne prend pas de frontmatter',
-      'de-DE': '{file}: diese Datei hat keinen frontmatter',
-      'hi-IN': '{file}: इस फ़ाइल में frontmatter नहीं होता',
-      'id-ID': '{file}: file ini tidak memakai frontmatter',
-      'it-IT': '{file}: questo file non ha frontmatter',
-      'ko-KR': '{file}: 이 파일에는 frontmatter를 두지 않습니다',
-      'pt-BR': '{file}: este arquivo não leva frontmatter',
-      'es-419': '{file}: este archivo no lleva frontmatter',
-      'es-ES': '{file}: este archivo no lleva frontmatter'
-    },
-    instructionMissing: {
-      'ja-JP': '{file} がありません',
-      'en-US': '{file} is missing',
-      'fr-FR': '{file} est absent',
-      'de-DE': '{file} fehlt',
-      'hi-IN': '{file} नहीं है',
-      'id-ID': '{file} tidak ada',
-      'it-IT': 'manca {file}',
-      'ko-KR': '{file}이 없습니다',
-      'pt-BR': 'falta {file}',
-      'es-419': 'falta {file}',
-      'es-ES': 'falta {file}'
-    },
     aliasesOnlyOnPages: {
       'ja-JP': '{file}: aliases は pages/ のページにだけ書きます',
       'en-US': '{file}: aliases belong on the pages under pages/ only',
@@ -806,17 +754,17 @@ export const memory = defineMessages({
       'es-ES': '{file}: aliases solo va en las páginas de pages/'
     },
     obsoleteFile: {
-      'ja-JP': '{file} は使わないので、中身を instruction.md か user.md に移してから消します',
-      'en-US': '{file} is no longer used; move what it holds into instruction.md or user.md and delete it',
-      'fr-FR': "{file} n'est plus utilisé ; déplacez son contenu dans instruction.md ou user.md, puis supprimez-le",
-      'de-DE': '{file} wird nicht mehr verwendet; übertragen Sie den Inhalt nach instruction.md oder user.md und löschen Sie die Datei',
-      'hi-IN': '{file} अब इस्तेमाल नहीं होती; इसकी बातें instruction.md या user.md में ले जाएँ और इसे मिटाएँ',
-      'id-ID': '{file} tidak dipakai lagi; pindahkan isinya ke instruction.md atau user.md, lalu hapus',
-      'it-IT': '{file} non si usa più; sposta il contenuto in instruction.md o user.md e cancellalo',
-      'ko-KR': '{file}은 더 이상 쓰지 않으므로, 내용을 instruction.md나 user.md로 옮긴 뒤 지웁니다',
-      'pt-BR': '{file} não é mais usado; passe o conteúdo para instruction.md ou user.md e apague o arquivo',
-      'es-419': '{file} ya no se usa; pasa su contenido a instruction.md o user.md y bórralo',
-      'es-ES': '{file} ya no se usa; pasa su contenido a instruction.md o user.md y bórralo'
+      'ja-JP': '{file} は使わないので、中身を me.md か user.md に移してから消します',
+      'en-US': '{file} is no longer used; move what it holds into me.md or user.md and delete it',
+      'fr-FR': "{file} n'est plus utilisé ; déplacez son contenu dans me.md ou user.md, puis supprimez-le",
+      'de-DE': '{file} wird nicht mehr verwendet; übertragen Sie den Inhalt nach me.md oder user.md und löschen Sie die Datei',
+      'hi-IN': '{file} अब इस्तेमाल नहीं होती; इसकी बातें me.md या user.md में ले जाएँ और इसे मिटाएँ',
+      'id-ID': '{file} tidak dipakai lagi; pindahkan isinya ke me.md atau user.md, lalu hapus',
+      'it-IT': '{file} non si usa più; sposta il contenuto in me.md o user.md e cancellalo',
+      'ko-KR': '{file}은 더 이상 쓰지 않으므로, 내용을 me.md나 user.md로 옮긴 뒤 지웁니다',
+      'pt-BR': '{file} não é mais usado; passe o conteúdo para me.md ou user.md e apague o arquivo',
+      'es-419': '{file} ya no se usa; pasa su contenido a me.md o user.md y bórralo',
+      'es-ES': '{file} ya no se usa; pasa su contenido a me.md o user.md y bórralo'
     },
     fileName: {
       'ja-JP': '{file}: ファイル名は YYYY-MM-DD.md にします',

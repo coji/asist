@@ -412,7 +412,6 @@ async function curateBesideScreenEdit(heading: string) {
   mocks.readAll.mockImplementation((dir: string) => actual.readAll(dir))
   const repo = path.join(mocks.root, 'repo')
   const user = '---\nupdated: 2026-09-10\n---\n# ユーザー\n\n## 属性\n東京に住んでいる。\n\n## 好み\n辛いものは控えめが好き。\n'
-  fs.writeFileSync(path.join(repo, 'instruction.md'), '# いつも覚えておくこと\n\n## この人について\n東京に住んでいる。\n')
   fs.writeFileSync(path.join(repo, 'user.md'), user)
   git(repo, 'add', '.')
   git(repo, 'commit', '-qm', 'memory')
@@ -454,7 +453,6 @@ it('discards a curation that leaves a document of the prompt over its token limi
   mocks.readAll.mockImplementation((dir: string) => actual.readAll(dir))
   const repo = path.join(mocks.root, 'repo')
   const me = '---\nupdated: 2026-09-10\n---\n# 私について\n\n落ち着いて話す。\n'
-  fs.writeFileSync(path.join(repo, 'instruction.md'), '# いつも覚えておくこと\n\n## この人について\n東京に住んでいる。\n')
   fs.writeFileSync(path.join(repo, 'me.md'), me)
   git(repo, 'add', '.')
   git(repo, 'commit', '-qm', 'memory')

@@ -189,8 +189,8 @@ function assertInsideMemory(job: AgentJob): ReviewedMerge {
  * The memory as merging the job's commit would leave it: the tree the merge commits, as agentRunner.merge
  * then makes it from the memory's HEAD, written out to a temporary folder outside the memory. The memory
  * screen can commit while the Agent runs, and two changes that each keep the rules can break them together,
- * as when both add the same heading to user.md or their sections together pass the length of
- * instruction.md. Merged, such a job could be neither discarded nor completed, and no later curation would
+ * as when both add the same heading to user.md or their sections together pass the limit of user.md.
+ * Merged, such a job could be neither discarded nor completed, and no later curation would
  * start. Null when the two conflict, which agentRunner.merge then records as for any job.
  *
  * Nothing but objects goes into the memory repository, so a check that a crash cuts short leaves nothing

@@ -117,17 +117,15 @@ describe('memory service', () => {
     expect(service.promptBlock()).toContain('くるみアレルギーがある。')
   })
 
-  it('builds the memory block from instruction.md, me.md and user.md under their headings, returns null without them, and freezes the block for five minutes', () => {
+  it('builds the memory block from me.md and user.md under their headings, returns null without them, and freezes the block for five minutes', () => {
     service.ensureLoaded()
     expect(service.promptBlock(1_000_000)).toBeNull()
     fs.writeFileSync(memoryFile('user.md'), '---\nupdated: 2026-09-09\n---\n# ユーザー\n\n## 属性\nくるみアレルギーがある。\n')
-    fs.writeFileSync(memoryFile('instruction.md'), '# いつも覚えておくこと\n\n## この人について\n- 猫のムギと暮らす\n')
     fs.writeFileSync(memoryFile('me.md'), '---\nupdated: 2026-09-09\n---\n# 私について\n\n## 私は誰か\n落ち着いて話す。\n')
     expect(service.promptBlock(1_000_000 + 60_000)).toBeNull()
     const headers = service.PROMPT_DOCUMENT_HEADERS
     expect(service.promptBlock(1_000_000 + 6 * 60_000)).toBe(
       [
-        `${headers.instruction.ja}\n## この人について\n- 猫のムギと暮らす`,
         `${headers.me.ja}\n## 私は誰か\n落ち着いて話す。`,
         `${headers.user.ja}\n## 属性\nくるみアレルギーがある。`
       ].join('\n\n')

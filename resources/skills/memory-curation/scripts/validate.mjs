@@ -11,16 +11,17 @@ import { SECTION_MAX_CHARS, documentIssues, pageNameIssue } from '../../memory-f
 const dir = path.resolve(process.argv[2] ?? '.')
 const problems = []
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const TOP_LEVEL = ['user.md', 'me.md', 'instruction.md', 'AGENTS.md']
+const TOP_LEVEL = ['user.md', 'me.md', 'AGENTS.md']
+/** The files an earlier form of the memory kept, which the curation empties into user.md and me.md. */
+const OBSOLETE = ['profile.md', 'instruction.md']
 
 const MESSAGES = {
-  frontmatterNotAllowed: () => 'frontmatter は要りません。消してください',
   frontmatterMissing: () => 'frontmatter がありません',
   frontmatterUnclosed: () => 'frontmatter が閉じていません(--- が一つしかありません)',
   obsoleteKey: ({ key }) => `frontmatter の ${key} は使わないので消してください`,
   aliasesOnlyOnPages: () => 'aliases は pages/ のページにだけ書きます。消してください',
   updatedNotDate: () => 'updated は YYYY-MM-DD の日付にしてください',
-  titleMissing: (_, kind) => (kind === 'instruction' ? '「# いつも覚えておくこと」の見出しがありません' : '「# 名前」の見出しがありません'),
+  titleMissing: () => '「# 名前」の見出しがありません',
   noHeadings: (_, kind) =>
     kind === 'journal' ? '「## 見出し」が一つもありません(日記は話題ごとに ## で区切ってください)' : '「## 見出し」が一つもありません',
   duplicateHeading: ({ heading, first }) =>
@@ -55,9 +56,6 @@ function listMd(sub) {
 
 check('user.md', 'user')
 check('me.md', 'me')
-if (!check('instruction.md', 'instruction')) {
-  problems.push('instruction.md: ありません(毎回の会話に載せる要約なので、user.md、me.md、ページから書いてください)')
-}
 for (const file of listMd('pages')) {
   const nameIssue = pageNameIssue(path.basename(file, '.md'))
   if (nameIssue) problems.push(`${file}: ${NAME_MESSAGES[nameIssue]}`)
@@ -67,12 +65,12 @@ for (const file of listMd('journal')) {
   if (DATE.test(path.basename(file, '.md'))) check(file, 'journal')
   else problems.push(`${file}: ファイル名は YYYY-MM-DD.md にしてください`)
 }
-if (fs.existsSync(path.join(dir, 'profile.md'))) {
-  problems.push('profile.md: 使わないので、中身を instruction.md / user.md に移してから消してください')
+for (const file of OBSOLETE) {
+  if (fs.existsSync(path.join(dir, file))) problems.push(`${file}: 使わないので、中身を user.md と me.md に移してから消してください`)
 }
 if (fs.existsSync(path.join(dir, 'forget.jsonl'))) problems.push('forget.jsonl: 使わないので消してください')
 for (const stray of fs.readdirSync(dir)) {
-  if (/\.md$/.test(stray) && stray !== 'profile.md' && !TOP_LEVEL.includes(stray)) {
+  if (/\.md$/.test(stray) && !OBSOLETE.includes(stray) && !TOP_LEVEL.includes(stray)) {
     problems.push(`${stray}: 置く場所が違います(人や場所や物事は pages/、記録は journal/ に置いてください)`)
   }
 }
