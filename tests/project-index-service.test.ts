@@ -32,15 +32,9 @@ describe('project index service', () => {
 
   it('registers no relative path, even one naming a folder that exists under the current folder', async () => {
     const index = await import('../src/main/services/project-index')
-    expect(() => index.register('x', 'src')).toThrow('[asist:app.storage.projectPathNotAbsolute')
-    expect(() => index.register('x', './tests')).toThrow('[asist:app.storage.projectPathNotAbsolute')
+    expect(() => index.register('x', 'src')).toThrow('[asist:app.storage.folderNotFull')
+    expect(() => index.register('x', './tests')).toThrow('[asist:app.storage.folderNotFull')
     expect(index.list()).toEqual([])
-  })
-
-  it('takes only a path that names a drive or a share for a full Windows path', async () => {
-    const { isFullPath } = await import('../src/main/services/project-index')
-    for (const folder of ['C:\\proj', 'c:/proj/', '\\\\nas\\team\\proj']) expect([folder, isFullPath(folder, path.win32)]).toEqual([folder, true])
-    for (const folder of ['C:', 'C:proj', '\\proj', '/proj', 'proj']) expect([folder, isFullPath(folder, path.win32)]).toEqual([folder, false])
   })
 
   it('registers no directory that does not exist', async () => {

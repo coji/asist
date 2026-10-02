@@ -14,6 +14,7 @@ import { DEFAULT_LIVE_MODELS } from '@shared/voice-engine'
 import { defaultModelsFor } from '@shared/llm-catalog'
 import { storedContent } from '@shared/stored-format'
 import { writeJsonFileAtomicSync } from './atomic-json'
+import { isFullPath } from './full-path'
 import { platformCapabilities } from './platform'
 import { openStoredFileSync } from './stored-file'
 
@@ -103,7 +104,14 @@ export function getSettings(): AppSettings {
 }
 
 export function saveSettings(patch: SettingsPatch): AppSettings {
-  const next = parseAppSettings(mergeSettings(getSettings(), parseSettingsPatch(patch)))
+  const parsed = parseSettingsPatch(patch)
+  // A folder to read files under or to start jobs in is refused as it is entered unless it is written in full, and
+  // the empty one, which stands for the home folder, is left as it is. Folders an older file holds stay saved
+  // beside the other settings; allowedPath allows nothing under one.
+  for (const folder of [...(parsed.fileRoots ?? []), parsed.agentCwd ?? '']) {
+    if (folder !== '' && !isFullPath(folder)) throw new Error(errorText('app.storage.folderNotFull', { path: folder }))
+  }
+  const next = parseAppSettings(mergeSettings(getSettings(), parsed))
   writeJsonFileAtomicSync(settingsFile(), storedContent(SETTINGS_FORMAT, next))
   // The cache is updated only after the write succeeded, so a patch that failed to persist is not
   // treated as applied inside this process.

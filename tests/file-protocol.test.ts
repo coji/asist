@@ -42,15 +42,18 @@ describe('asist-file:// URLs and paths', () => {
     expect(filePathFromUrl('asist-file://attacker.example/etc/passwd', MACOS)).toBeNull()
   })
 
-  it('reads a server in a Windows URL as a share that is refused before the disk is asked when no allowed folder is on it', async () => {
+  it('reads a server in a Windows URL as a share that is refused before anything on it is asked when no allowed folder is on it', async () => {
     const { filePathFromUrl } = await load()
-    const disk: PathSystem = { path: path.win32, realpath: vi.fn((target: string) => target) }
+    const realpath = vi.fn((target: string) => target)
+    const disk: PathSystem = { path: path.win32, realpath }
+    const roots = ['C:\\Users\\me', '\\\\nas\\team\\reports']
     for (const url of ['asist-file://attacker.example/share/a.png', 'asist-file://nas/other/a.pdf']) {
       const requested = filePathFromUrl(url, { windows: true })
       expect(requested).not.toBeNull()
-      expect(allowedPath(requested!, ['C:\\Users\\me', '\\\\nas\\team\\reports'], disk)).toBeNull()
+      expect(allowedPath(requested!, roots, disk)).toBeNull()
     }
-    expect(disk.realpath).not.toHaveBeenCalled()
+    // The roots themselves may be resolved, to learn the share a mapped drive stands for.
+    expect(realpath.mock.calls.map(([asked]) => asked).filter((asked) => !roots.includes(asked))).toEqual([])
   })
 
   it('refuses a Windows URL that names a server but no share on it, which allowedPath would take for a root without a drive', async () => {
@@ -100,6 +103,17 @@ describe('asist-file:// URLs and paths', () => {
     }
     const page = fileUrl('\\\\nas\\team\\reports\\index.html', windows)
     expect(filePathFromUrl(new URL('img/Q1%2C%20Q2.png', page).href, windows)).toBe('\\\\nas\\team\\reports\\img\\Q1, Q2.png')
+  })
+
+  it('reads back a file on a share of the server named localhost, which a file:// URL takes for this machine', async () => {
+    const { fileUrl, filePathFromUrl } = await load()
+    const windows = { windows: true }
+    for (const file of ['\\\\localhost\\C$\\proj\\a.png', '\\\\LocalHost\\team\\C# notes\\大川俊介 100%.png']) {
+      expect([file, filePathFromUrl(fileUrl(file, windows), windows)]).toEqual([file, file])
+    }
+    const page = fileUrl('\\\\localhost\\C$\\proj\\index.html', windows)
+    expect(filePathFromUrl(new URL('img/a.png', page).href, windows)).toBe('\\\\localhost\\C$\\proj\\img\\a.png')
+    expect(filePathFromUrl('asist-file://localhost/Users/me/a.png', MACOS)).toBe('/Users/me/a.png')
   })
 
   it('reads the file a Windows page names in a relative link, and refuses a path without a drive or with an escaped separator', async () => {

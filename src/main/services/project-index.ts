@@ -10,6 +10,7 @@ import {
 } from '@shared/project-index'
 import { z } from 'zod'
 import { storedContent, type StoredFormat } from '@shared/stored-format'
+import { isFullPath } from './full-path'
 import { dataPath, writeJson } from './store'
 import { openStoredFileSync } from './stored-file'
 import { errorText } from '@shared/i18n/error-text'
@@ -75,20 +76,12 @@ export function noteUsed(folder: string, now = Date.now()): void {
 }
 
 /**
- * Whether folder names one place whatever the process's current folder and drive. On Windows,
- * path.isAbsolute also takes "\\proj" and "/proj", which name a folder on the current drive.
- */
-export function isFullPath(folder: string, paths: typeof path.posix = path): boolean {
-  return paths.isAbsolute(folder) && (paths.sep === '/' || paths.parse(folder).root.length > 1)
-}
-
-/**
  * Registers a folder the user asked to remember, as in "このフォルダ覚えて". Only the full path of an existing
  * directory is accepted: a relative one would be resolved against the app's own folder, which is / when the
  * app is opened from Finder.
  */
 export function register(name: string, folder: string, now = Date.now()): ProjectEntry {
-  if (!isFullPath(folder)) throw new Error(errorText('app.storage.projectPathNotAbsolute', { path: folder }))
+  if (!isFullPath(folder)) throw new Error(errorText('app.storage.folderNotFull', { path: folder }))
   const resolved = path.resolve(folder)
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     throw new Error(errorText('app.storage.projectDirMissing', { path: resolved }))

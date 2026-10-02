@@ -23,7 +23,16 @@ export const FILE_SCHEME = 'asist-file'
  */
 type UrlRules = { windows?: boolean }
 
+const windowsRules = (rules?: UrlRules): boolean => rules?.windows ?? path.sep === '\\'
+
 const DRIVE = /^[A-Za-z]:$/
+
+/**
+ * The server a file:// URL takes for this machine and leaves out, so that \\localhost\C$\a.png comes out of
+ * pathToFileURL as file:///C$/a.png, a path on no drive. On Windows it is also a server whose shares a drive can be
+ * mapped to, so an asist-file:// URL keeps it as its host, which a URL of its own scheme leaves as it is.
+ */
+const LOCALHOST = 'localhost'
 
 /**
  * The URL of an absolute path. Every character of a name that is not plain is escaped, so that a # or ? in a
@@ -32,7 +41,9 @@ const DRIVE = /^[A-Za-z]:$/
 export function fileUrl(filePath: string, rules?: UrlRules): string {
   const { host, pathname } = pathToFileURL(filePath, rules)
   const names = pathname.split('/').map((name, index) => (index === 1 && DRIVE.test(name) ? name : encodeURIComponent(decodeURIComponent(name))))
-  return `${FILE_SCHEME}://${host}${names.join('/')}`
+  // The server of a share that pathToFileURL left out, which is LOCALHOST, is taken from the path.
+  const server = host || (windowsRules(rules) ? (/^[\\/]{2}([^\\/]+)[\\/]/.exec(filePath)?.[1] ?? '') : '')
+  return `${FILE_SCHEME}://${server}${names.join('/')}`
 }
 
 /** Has to be called before app.whenReady. */
@@ -123,13 +134,17 @@ export function filePathFromUrl(url: string, rules?: UrlRules): string | null {
     return null
   }
   if (parsed.protocol !== `${FILE_SCHEME}:` || !parsed.pathname.startsWith('/')) return null
-  // A path on a server starts with the name of a share. \\server\ alone normalizes to a root without a drive,
-  // which allowedPath would match with any root written without one and then resolve on that server.
+  // A path on a server starts with the name of a share; \\server\ alone names no place on it.
   if (parsed.host !== '' && !/^\/[^/]+/.test(parsed.pathname)) return null
+  // A file:// URL takes a raw backslash for a separator, while in an asist-file:// URL it belongs to the
+  // name, so it is escaped before the path is carried over.
+  const pathname = parsed.pathname.replace(/\\/g, '%5C')
   try {
-    // A file:// URL takes a raw backslash for a separator, while in an asist-file:// URL it belongs to the
-    // name, so it is escaped before the path is carried over.
-    return fileURLToPath(`file://${parsed.host}${parsed.pathname.replace(/\\/g, '%5C')}`, rules)
+    if (windowsRules(rules) && parsed.host.toLowerCase() === LOCALHOST) {
+      // file:// would drop this host, so the path on the share is read as file:// reads one below a drive.
+      return `\\\\${parsed.host}${fileURLToPath(`file:///C:${pathname}`, rules).slice('C:'.length)}`
+    }
+    return fileURLToPath(`file://${parsed.host}${pathname}`, rules)
   } catch {
     return null
   }

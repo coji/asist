@@ -72,7 +72,7 @@ export const app = defineMessages({
       'es-419': '{file} está en la versión de formato {version}, que esta app no puede convertir al formato actual. El archivo se dejó como estaba.',
       'es-ES': '{file} está en la versión de formato {version}, que esta app no puede convertir al formato actual. El archivo se ha dejado como está.'
     },
-    projectPathNotAbsolute: {
+    folderNotFull: {
       'ja-JP': 'フォルダのフルパスではありません: {path}',
       'en-US': 'This is not the full path of a folder: {path}',
       'fr-FR': "Ce n'est pas le chemin complet d'un dossier : {path}",

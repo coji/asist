@@ -30,6 +30,7 @@ import {
   submodulesAtRisk,
   unsettled
 } from './job-worktree'
+import { isFullPath } from './full-path'
 import * as projectIndex from './project-index'
 import { installSkill } from './memory-curation-skill'
 import * as git from './git'
@@ -320,11 +321,17 @@ export function note(id: string, text: string): void {
 }
 
 /**
- * Whether cwd is inside a git repository, which decides whether the job can be isolated in a worktree. A
- * folder that is gone is refused by name, since git cannot even start in it.
+ * Refuses a folder to start a job in that is not written in full, which would be read against the app's own
+ * folder or the current drive, and one that is gone, by name, since git cannot even start in it.
  */
-export function isGitRepo(cwd: string): boolean {
+function assertJobFolder(cwd: string): void {
+  if (!isFullPath(cwd)) throw new Error(errorText('app.storage.folderNotFull', { path: cwd }))
   if (!fs.existsSync(cwd)) throw new Error(errorText('jobs.start.cwdMissing', { path: cwd }))
+}
+
+/** Whether cwd is inside a git repository, which decides whether the job can be isolated in a worktree. */
+export function isGitRepo(cwd: string): boolean {
+  assertJobFolder(cwd)
   return git.toplevel(cwd) !== null
 }
 
@@ -410,7 +417,7 @@ function createJob(prompt: string, options: StartOptions, isolate = false): Agen
   const engine = settings.agentEngine
   const title = options.title || prompt.slice(0, 40)
   const cwd = options.cwd || createWorkspace(title)
-  if (!fs.existsSync(cwd)) throw new Error(errorText('jobs.start.cwdMissing', { path: cwd }))
+  assertJobFolder(cwd)
   // Only a job isolated in a worktree asks git about its folder: a read-only job runs in a repository that
   // ASIST's git refuses to open as it runs in any folder.
   const repo = isolate ? git.toplevel(cwd) : null

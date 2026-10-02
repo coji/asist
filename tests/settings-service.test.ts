@@ -8,6 +8,8 @@ import { defaultPersona } from '@shared/persona'
 // The details of a zod failure vary by field, so the tests check which message the error carries.
 const SETTINGS_INVALID = '[asist:settings.errors.invalid'
 const SETTINGS_FILE_INVALID = '[asist:settings.errors.fileInvalid'
+// An allowed folder written in full on either OS; on Windows /tmp/shared alone names a folder on the current drive.
+const shared = path.resolve('/tmp/shared')
 
 const mocks = vi.hoisted(() => ({
   userData: '',
@@ -68,23 +70,23 @@ describe('settings persistence', () => {
 
   it('leaves every other setting as it is when one is saved', async () => {
     const settings = await import('../src/main/services/settings')
-    settings.saveSettings({ uiLocale: 'de-DE', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: ['/tmp/shared'] })
+    settings.saveSettings({ uiLocale: 'de-DE', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: [shared] })
 
     expect(settings.saveSettings({ hangoverMs: 700 })).toMatchObject({
-      uiLocale: 'de-DE', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: ['/tmp/shared'], hangoverMs: 700
+      uiLocale: 'de-DE', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: [shared], hangoverMs: 700
     })
   })
 
   it('leaves a setting as it is when a patch names it with the value undefined', async () => {
     const settings = await import('../src/main/services/settings')
-    settings.saveSettings({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: ['/tmp/shared'], bargeIn: true })
+    settings.saveSettings({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: [shared], bargeIn: true })
     settings.saveSettings({ mail: { notifyNewMail: false } })
 
     const saved = settings.saveSettings({
       uiLocale: undefined, conversationLocale: undefined, region: undefined, qwenTtsVoice: undefined, fileRoots: undefined,
       bargeIn: undefined, onboardingVersion: undefined, mail: { notifyNewMail: undefined }, hangoverMs: 700
     })
-    expect(saved).toMatchObject({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: ['/tmp/shared'], bargeIn: true, hangoverMs: 700 })
+    expect(saved).toMatchObject({ uiLocale: 'en-US', conversationLocale: 'en-US', region: 'US', qwenTtsVoice: 'ryan', fileRoots: [shared], bargeIn: true, hangoverMs: 700 })
     expect(saved.mail.notifyNewMail).toBe(false)
   })
 
@@ -141,6 +143,19 @@ describe('settings persistence', () => {
     vi.resetModules()
     const reloaded = await import('../src/main/services/settings')
     expect(() => reloaded.getSettings()).toThrow(SETTINGS_INVALID)
+  })
+
+  it('saves no folder to read files under or to start jobs in that is not written in full, and still saves beside one an older file holds', async () => {
+    const settings = await import('../src/main/services/settings')
+    const saved = settings.saveSettings({ fileRoots: [mocks.userData] })
+    expect(() => settings.saveSettings({ fileRoots: [mocks.userData, 'Documents'] })).toThrow('[asist:app.storage.folderNotFull')
+    expect(() => settings.saveSettings({ agentCwd: 'work' })).toThrow('[asist:app.storage.folderNotFull')
+    expect(settings.getSettings()).toEqual(saved)
+    const target = path.join(mocks.userData, 'settings.json')
+    fs.writeFileSync(target, JSON.stringify({ ...JSON.parse(fs.readFileSync(target, 'utf8')), fileRoots: ['Documents'] }))
+    vi.resetModules()
+    const reloaded = await import('../src/main/services/settings')
+    expect(reloaded.saveSettings({ persona: 'after' })).toMatchObject({ persona: 'after', fileRoots: ['Documents'] })
   })
 
   it('trims the model name and accepts 0, which turns partial recognition off', async () => {

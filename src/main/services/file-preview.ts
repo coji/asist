@@ -2,6 +2,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { carriesUrl, classifyFile, MAX_TEXT_BYTES, TEXT_KINDS, type FileEntry, type FileItem } from '@shared/files'
 import { errorText } from '@shared/i18n/error-text'
+import { isFullPath } from './full-path'
 import { errorMessage, t } from './i18n'
 
 /**
@@ -34,44 +35,67 @@ const NATIVE: PathSystem = { path, realpath: fs.realpathSync.native }
 export function allowedPath(target: string, allowedRoots: readonly string[], system: PathSystem = NATIVE): string | null {
   const paths = system.path
   const windows = paths === path.win32
-  if (!paths.isAbsolute(target)) return null
-  const roots = allowedRoots.filter((root) => paths.isAbsolute(root))
-  if (windows) {
-    // NTFS opens "report.md:name" as the stream "name" of report.md, data that no listing of the folder shows.
-    if (target.slice(paths.parse(target).root.length).includes(':')) return null
-    // Resolving a path on a server connects to it and hands it the user's Windows credentials, so a target
-    // written on a drive or a share that no root is written on is refused before the disk is asked. A link
-    // under a root that points to another server is still followed.
-    const volume = (p: string): string => paths.parse(paths.normalize(p)).root.toLowerCase()
-    if (!roots.some((root) => volume(root) === volume(target))) return null
+  if (!isFullPath(target, paths)) return null
+  // A root that is not written in full, such as one an older settings file holds, names no place to allow.
+  const roots = allowedRoots.filter((root) => isFullPath(root, paths))
+  // NTFS opens "report.md:name" as the stream "name" of report.md, data that no listing of the folder shows.
+  if (windows && target.slice(paths.parse(target).root.length).includes(':')) return null
+  const resolved = new Map<string, string | null>()
+  const resolve = (place: string): string | null => {
+    if (!resolved.has(place)) {
+      try {
+        resolved.set(place, realPath(place, system))
+      } catch {
+        // A place the OS refuses to resolve, such as the folder of a past job whose parent became unreadable,
+        // allows nothing, and must not make the files under the other roots unreadable.
+        resolved.set(place, null)
+      }
+    }
+    return resolved.get(place)!
   }
+  if (windows && !onRootVolume(target, roots, paths, resolve)) return null
   // Windows matches names regardless of letter case.
   const key = windows ? (p: string): string => p.toLowerCase() : (p: string): string => p
   // path.join leaves a single separator at the end, so a root such as "/" or "C:\" is a prefix of every path on it too.
   const under = (p: string, root: string | null): boolean =>
     root !== null && (key(p) === key(root) || key(p).startsWith(key(paths.join(root, paths.sep))))
-  const resolveRoot = (root: string): string | null => {
-    try {
-      return realPath(root, system)
-    } catch {
-      // A root the OS refuses to resolve, such as the folder of a past job whose parent became unreadable,
-      // allows nothing, and must not make the files under the other roots unreadable.
-      return null
-    }
-  }
-  let resolved: string | null
+  let real: string | null
   try {
-    resolved = realPath(target, system)
+    real = realPath(target, system)
   } catch (error) {
     // The refusal is the answer for a target written under a root, which the user may be shown; any other lies
     // outside the roots whatever the OS says about it. Compared as text, a target that names its root in another
     // letter case or Unicode form is answered as outside, which reads nothing either way.
     const written = paths.resolve(target)
-    if (roots.some((root) => under(written, paths.resolve(root)) || under(written, resolveRoot(root)))) throw error
+    if (roots.some((root) => under(written, paths.resolve(root)) || under(written, resolve(root)))) throw error
     return null
   }
-  const real = resolved
-  return real !== null && roots.some((root) => under(real, resolveRoot(root))) ? real : null
+  const checked = real
+  return checked !== null && roots.some((root) => under(checked, resolve(root))) ? checked : null
+}
+
+/**
+ * Whether a Windows target lies on a drive or a share that holds a root. Resolving a path on a server connects
+ * to it and hands it the user's Windows credentials, so a target that does not is refused before the disk is
+ * asked about it. A link under a root that points to another server is still followed.
+ *
+ * Both sides count on their volume as written and as the OS resolves it: a drive mapped with net use resolves to
+ * its share and one made with subst to the folder it stands for, and the path allowedPath returns, which the
+ * files card asks for again, is the resolved one. Of the target only its drive is resolved, which asks no more
+ * than what the user mapped or substituted it for. The comparisons that ask nothing come first, so a target on
+ * the volume of a root as written asks the disk nothing here.
+ */
+function onRootVolume(target: string, roots: readonly string[], paths: typeof path.posix, resolve: (place: string) => string | null): boolean {
+  const volume = (p: string): string => paths.parse(paths.normalize(p)).root.toLowerCase()
+  const targetVolumes = new Set([volume(target)])
+  const onTarget = (p: string | null): boolean => p !== null && targetVolumes.has(volume(p))
+  if (roots.some(onTarget)) return true
+  if (/^[A-Za-z]:/.test(target)) {
+    const drive = resolve(paths.parse(target).root)
+    if (drive !== null) targetVolumes.add(volume(drive))
+    if (roots.some(onTarget)) return true
+  }
+  return roots.some((root) => onTarget(resolve(root)))
 }
 
 /**

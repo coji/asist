@@ -1,15 +1,21 @@
 /**
  * Path handling for shared and renderer code, which cannot import node:path. A path reaches them as the
- * OS wrote it, and its form decides the rules: a path in a Windows form, starting with a drive letter or
- * "\" as in \\server\share, takes both separators as Windows does, and every other path follows the POSIX
- * rules, where "\" is part of a name. Each function gives what path.posix or path.win32 gives for its form.
+ * OS wrote it, and its form decides the rules: a path in a Windows form, starting with a drive letter, with
+ * "\" as in \\server\share, or with a share written with "/" as git on Windows writes //server/share, takes
+ * both separators as Windows does, and every other path follows the POSIX rules, where "\" is part of a name.
+ * Each function gives what path.posix or path.win32 gives for its form.
  */
 
 const DRIVE = /^[A-Za-z]:/
 const ABSOLUTE = /^(?:\/|[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/])/
+/**
+ * The root of a path on a share, \\server\share or //server/share. A separator after the share is not part of it,
+ * since Windows names the same place with and without one, unlike C: and C:\.
+ */
+const SHARE = /^[\\/]{2}[^\\/]+[\\/]+[^\\/]+/
 
-/** Whether p is written in a Windows form: a drive letter, or "\" as in \\server\share and \folder. */
-const isWindowsForm = (p: string): boolean => DRIVE.test(p) || p.startsWith('\\')
+/** Whether p is written in a Windows form: a drive letter, a share, or "\" as in \folder. */
+const isWindowsForm = (p: string): boolean => DRIVE.test(p) || p.startsWith('\\') || SHARE.test(p)
 
 type SeparatorTest = (char: string | undefined) => boolean
 
@@ -20,13 +26,13 @@ const separatorOf = (p: string): SeparatorTest => (isWindowsForm(p) ? windowsSep
 
 /**
  * How many characters of p name its root. POSIX has "/" alone; Windows has a drive such as "C:" or "C:\",
- * "\\server\share\" with the separator after the share, and "\" for the root of the current drive.
+ * a share such as \\server\share, and "\" for the root of the current drive.
  */
 function rootLength(p: string): number {
   if (!isWindowsForm(p)) return p.startsWith('/') ? 1 : 0
   if (DRIVE.test(p)) return windowsSeparator(p[2]) ? 3 : 2
-  const unc = /^\\\\[^\\/]+[\\/]+[^\\/]+[\\/]?/.exec(p)
-  return unc ? unc[0].length : 1
+  const share = SHARE.exec(p)
+  return share ? share[0].length : 1
 }
 
 /** Whether p names a place without depending on a current folder or a current drive. */

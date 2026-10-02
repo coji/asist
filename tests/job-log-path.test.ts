@@ -6,11 +6,12 @@ describe('shortPath', () => {
     expect(shortPath('/Users/me/repo/src/app.ts')).toBe('…/src/app.ts')
     expect(shortPath('C:\\Users\\me\\repo\\src\\app.ts')).toBe('…\\src\\app.ts')
     expect(shortPath('C:/Users/me/repo/src/app.ts')).toBe('…\\src\\app.ts')
+    expect(shortPath('//nas/team/repo/src/app.ts')).toBe('…\\src\\app.ts')
   })
 
   it('shortens a POSIX path by its "/" alone, keeping a "\\" inside a name', () => {
     expect(shortPath('/Users/me/repo/a\\b.txt')).toBe('…/repo/a\\b.txt')
-    expect(shortPath('//a/b/c/d')).toBe('…/c/d')
+    expect(shortPath('/a//b/c/d')).toBe('…/c/d')
     expect(shortPath('/a/b/c/')).toBe('…/b/c')
   })
 

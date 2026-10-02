@@ -38,31 +38,34 @@ describe('classifyFile', () => {
 })
 
 describe('allowedPath, the path check of show_files, asist-file:// and Reveal in Finder', () => {
-  const roots = ['/Users/x/asist-jobs', '/Users/x/repo']
+  // On Windows a path that starts with / names a place on the current drive, which allowedPath refuses, so the
+  // paths here start at the root of that drive there, with every name and .. kept as written.
+  const full = (p: string): string => path.resolve('/') + p.slice(1)
+  const roots = [full('/Users/x/asist-jobs'), full('/Users/x/repo')]
 
   it('allows only paths under an allowed root', () => {
-    expect(allowedPath('/Users/x/asist-jobs/20260718-job/report.md', roots)).not.toBeNull()
-    expect(allowedPath('/Users/x/repo/src/index.ts', roots)).not.toBeNull()
-    expect(allowedPath('/Users/x/repo', roots)).not.toBeNull()
+    expect(allowedPath(full('/Users/x/asist-jobs/20260718-job/report.md'), roots)).not.toBeNull()
+    expect(allowedPath(full('/Users/x/repo/src/index.ts'), roots)).not.toBeNull()
+    expect(allowedPath(full('/Users/x/repo'), roots)).not.toBeNull()
   })
 
   it('rejects paths outside the roots and sensitive paths', () => {
-    expect(allowedPath('/Users/x/.ssh/id_rsa', roots)).toBeNull()
-    expect(allowedPath('/etc/passwd', roots)).toBeNull()
+    expect(allowedPath(full('/Users/x/.ssh/id_rsa'), roots)).toBeNull()
+    expect(allowedPath(full('/etc/passwd'), roots)).toBeNull()
   })
 
   it('rejects traversal through `..`', () => {
-    expect(allowedPath('/Users/x/asist-jobs/../.ssh/id_rsa', roots)).toBeNull()
-    expect(allowedPath('/Users/x/repo/../../etc/passwd', roots)).toBeNull()
+    expect(allowedPath(full('/Users/x/asist-jobs/../.ssh/id_rsa'), roots)).toBeNull()
+    expect(allowedPath(full('/Users/x/repo/../../etc/passwd'), roots)).toBeNull()
   })
 
   it('rejects a directory whose name merely starts with an allowed root', () => {
-    expect(allowedPath('/Users/x/repo-evil/secret.txt', roots)).toBeNull()
+    expect(allowedPath(full('/Users/x/repo-evil/secret.txt'), roots)).toBeNull()
   })
 
   it('rejects a relative path and an empty root', () => {
     expect(allowedPath('report.md', roots)).toBeNull()
-    expect(allowedPath('/Users/x/repo/a.ts', [''])).toBeNull()
+    expect(allowedPath(full('/Users/x/repo/a.ts'), [''])).toBeNull()
   })
 
   it('refuses a symbolic link inside a root that points outside it', () => {
@@ -218,7 +221,51 @@ describe('allowedPath with the Windows rules', () => {
     expect(share.asked.some((asked) => asked.includes('attacker'))).toBe(false)
     expect(allowedPath('\\\\NAS\\team\\reports\\q3.pdf', ['\\\\nas\\team\\reports'], share)).not.toBeNull()
   })
+
+  it('allows again the path it returned for a file on a drive that stands for a share or a folder, as the files card asks for it next', () => {
+    const drives = mappedDisk({ 'Z:': '\\\\nas\\team', 'S:': 'C:\\work' }, '\\\\nas\\team\\reports\\q3.png', 'C:\\work\\charts\\a.png')
+    for (const [root, file] of [['Z:\\reports', 'Z:\\reports\\q3.png'], ['S:\\charts', 'S:\\charts\\a.png']]) {
+      const returned = allowedPath(file, [root], drives)
+      expect(returned).not.toBeNull()
+      expect([root, allowedPath(returned!, [root], drives)]).toEqual([root, returned])
+    }
+  })
+
+  it('never asks a server about a path because a root lies on a drive that stands for another share', () => {
+    const drives = mappedDisk({ 'Z:': '\\\\nas\\team' }, '\\\\nas\\team\\reports\\q3.png', '\\\\other\\share\\a.png')
+    expect(allowedPath('\\\\other\\share\\a.png', ['Z:\\reports'], drives)).toBeNull()
+    expect(drives.asked.some((asked) => asked.toLowerCase().includes('\\\\other\\'))).toBe(false)
+  })
+
+  it('allows a file asked for on a drive that stands for the share or the folder a root is written as', () => {
+    const drives = mappedDisk({ 'Z:': '\\\\nas\\team', 'S:': 'C:\\work' }, '\\\\nas\\team\\reports\\q3.png', 'C:\\work\\charts\\a.png')
+    expect(allowedPath('Z:\\reports\\q3.png', ['\\\\nas\\team\\reports'], drives)).toBe('\\\\nas\\team\\reports\\q3.png')
+    expect(allowedPath('S:\\charts\\a.png', ['C:\\work\\charts'], drives)).toBe('C:\\work\\charts\\a.png')
+  })
+
+  it('takes a path that names neither a drive nor a share for no root and no target, and asks the disk nothing for such a target', () => {
+    const share = windowsDisk('C:\\Users\\me\\notes.md', '\\\\nas\\team\\reports\\q3.pdf')
+    const roots = ['C:\\Users\\me', '\\\\nas\\team\\reports', '\\work', '/Users/me/proj']
+    for (const target of ['\\??\\UNC\\other\\share\\a.png', '\\\\?\\UNC\\nas\\team\\reports\\q3.pdf', '\\\\.\\C:\\Users\\me\\notes.md', '\\work\\a.png', '/Users/me/proj/a.png']) {
+      expect([target, allowedPath(target, roots, share)]).toEqual([target, null])
+    }
+    expect(share.asked).toEqual([])
+  })
 })
+
+/**
+ * A windowsDisk with drives that stand for another place, as a drive mapped with net use stands for a share and
+ * one made with subst for a folder: the OS resolves a path on such a drive to that place.
+ */
+function mappedDisk(drives: Record<string, string>, ...files: string[]): PathSystem & { asked: string[] } {
+  const disk = windowsDisk(...files)
+  const place = (target: string): string => {
+    const resolved = path.win32.resolve(target)
+    const drive = drives[resolved.slice(0, 2).toUpperCase()]
+    return drive === undefined ? resolved : path.win32.join(drive, resolved.slice(2))
+  }
+  return { ...disk, realpath: (target) => disk.realpath(place(target)) }
+}
 
 describe('readFileItem', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'asist-files-'))
