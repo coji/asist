@@ -197,7 +197,7 @@ export async function run(steps, options = {}) {
     }
   } finally {
     client.close()
-    chrome?.child.kill()
+    await chrome?.close()
     await demo?.close()
   }
   return { url: options.launch ? origin : `cdp:${options.port}`, said: saidCount, steps: results, failed }

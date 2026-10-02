@@ -210,9 +210,11 @@ const LAYOUT_ONLY = `(() => {
 })()`
 
 /**
- * The screens are split across this many Chromes that run at once. Measured on a 10-core Mac on
- * 2026-09-23 for the 28 screens in eleven languages together with the cards: 3 took about 20 s, and 4 to 6
- * took longer again, because the Chromes then compete for the processor.
+ * The screens are split across this many Chromes that run at once. For the 42 screens in every theme and
+ * language on a 10-core Mac (2026-10-02), 2 took 52 s, 3 about 38 s and 4 32 s. Three stay: each Chrome
+ * holds about 1.1 GB, so four would hold about as much as the four Chromes that stalled on CI, while three
+ * without the cards' Chrome are what opened a Chrome's eighth screen onwards there, about 4,000 screens on
+ * 2026-10-02 without a stall.
  */
 const WORKERS = 3
 
@@ -244,7 +246,12 @@ async function screensOf(all, screenList = screens, wait = 0) {
 }
 
 // One demo serves every Chrome: a demo of its own for each would compile the modules again for each.
-// The cards and the screens then run in their own Chromes at the same time.
+// The cards and the screens are measured one after the other, in Chromes of their own. Measured at once on
+// CI, a screen was still loading its modules when the 30 s wait for it ended 18 times on 2026-10-02 and once
+// on 10-01, each time at a Chrome's third to seventh screen and so while the cards' Chrome was running, and
+// the wait overran its 30 s by 3 to 41 s in 15 of the 18, so Chrome or this process had stopped as a whole.
+// The four Chromes and the demo held about 5.0 GB at once (physical footprint on a Mac, 2026-10-02), and
+// CI's macOS runner has 7 GB, so memory pressure there is the likely cause, though it was not observed.
 const demo = await startDemo()
 const BASELINE_PAIR = `${BASELINE_THEME}|${BASELINE}`
 const measuredPairs = pairs(themes, locales)
@@ -253,10 +260,8 @@ const unique = (list) => [...new Set(list)]
 const cardKey = (finding) => `${finding.where}|${finding.kind}|${finding.place}`
 const screenKey = (finding) => `${finding.where}|${finding.kind}|${finding.place}|${finding.text}`
 
-const [cardFirst, screenFirst] = await Promise.all([
-  only === '--screens' ? null : cards([BASELINE_PAIR, ...comparedCardPairs]),
-  only === '--cards' ? null : screensOf(measuredPairs)
-])
+const cardFirst = only === '--screens' ? null : await cards([BASELINE_PAIR, ...comparedCardPairs])
+const screenFirst = only === '--cards' ? null : await screensOf(measuredPairs)
 const candidates = []
 if (cardFirst) {
   const baseline = new Set(cardFirst.get(BASELINE_PAIR).map(cardKey))
@@ -273,10 +278,8 @@ if (screenFirst) {
 // once turned main red (a toast that had finished sliding out, 2026-09-24).
 const cardAgain = unique(candidates.filter((c) => c.section === 'cards').map((c) => c.pair))
 const screenAgain = candidates.filter((c) => c.section === 'screens')
-const [cardSecond, screenSecond] = await Promise.all([
-  cardAgain.length ? cards(cardAgain, 1000) : null,
-  screenAgain.length ? screensOf(unique(screenAgain.map((c) => c.pair)), unique(screenAgain.map((c) => c.where)), 1000) : null
-])
+const cardSecond = cardAgain.length ? await cards(cardAgain, 1000) : null
+const screenSecond = screenAgain.length ? await screensOf(unique(screenAgain.map((c) => c.pair)), unique(screenAgain.map((c) => c.where)), 1000) : null
 const stillThere = (c) =>
   c.section === 'cards'
     ? cardSecond.get(c.pair).some((finding) => cardKey(finding) === cardKey(c))

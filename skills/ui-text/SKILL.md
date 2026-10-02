@@ -63,7 +63,7 @@ npm run i18n -- check
 |---|---|
 | Missing or unused keys, placeholder names, plural categories, quoted labels, words written straight into markup | `npm test` (tests/i18n.test.ts); an exception with a reason goes into that test's list |
 | Every message has the eleven languages | `npm run i18n -- check` |
-| The text fits on every card and screen, in every language | `npm run demo:fit` with no arguments (about 35 s) |
+| The text fits on every card and screen, in every language | `npm run demo:fit` with no arguments (about a minute) |
 | Compare a message across languages | The demo's `/i18n` page (`npm run demo`), with `?q=` to filter and `?langs=` to pick languages |
 | See a screen in one language | The language picker at the top of the demo |
 
