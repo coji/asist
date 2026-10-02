@@ -9,18 +9,18 @@ import { download, extract, stampCurrent, withTemporaryDir, writeStamp } from '.
  * statically, so it is one file.
  */
 
-const VERSION = 'v0.3.0'
+const VERSION = 'v0.3.1'
 const MODULE = fileURLToPath(import.meta.url)
 
 const ASSETS = {
   'darwin-arm64': {
-    name: 'speech-worker-v0.3.0-macos-arm64-metal.zip',
-    sha256: '004a7f6ffc0f07ee273b75e622eb082df62ac3fb9df3c3dcd24f20a57c4f62e9',
+    name: 'speech-worker-v0.3.1-macos-arm64-metal.zip',
+    sha256: 'cefe688c932c5415f3e4b11f89aafcaf7f69f84b254f50b3bd91a3fa9e67ba25',
     worker: 'speech-worker'
   },
   'win32-x64': {
-    name: 'speech-worker-v0.3.0-windows-x64-vulkan.zip',
-    sha256: 'f8d868eeb12b08e8ddc8e06d3823da58d63d9f12afd1ac300a852b3a7b62ada7',
+    name: 'speech-worker-v0.3.1-windows-x64-vulkan.zip',
+    sha256: 'f416e10b1c011c772f1e9ec108658c0fb0b980b21c6b29221a0d7ee48fcb9868',
     worker: 'speech-worker.exe'
   }
 }

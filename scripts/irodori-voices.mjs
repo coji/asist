@@ -18,10 +18,10 @@ import { download, extract, run, withTemporaryDir } from './resources/shared.mjs
  * and the codec are read from the files the app has prepared, or from the folder ASIST_SPEECH_MODELS names.
  */
 
-const VERSION = 'v0.3.0'
+const VERSION = 'v0.3.1'
 const TOOLS = {
-  'darwin-arm64': { name: 'speech-cpp-tools-v0.3.0-macos-arm64-metal.zip', sha256: '067e01bb6fe10b0ead1c04982da9fdc0ffed27fae9f245d77d5e9e057030ba0d', program: 'irodori-tts' },
-  'win32-x64': { name: 'speech-cpp-tools-v0.3.0-windows-x64-vulkan.zip', sha256: '0ad6efebd29cec9daacbfda4b0d99e3bd1eac777737b558478cbfed77be7a544', program: 'irodori-tts.exe' }
+  'darwin-arm64': { name: 'speech-cpp-tools-v0.3.1-macos-arm64-metal.zip', sha256: 'ca88585b5960eadd89187bacd164549d19ac2f9abc5f499707a3377b785cd2d9', program: 'irodori-tts' },
+  'win32-x64': { name: 'speech-cpp-tools-v0.3.1-windows-x64-vulkan.zip', sha256: 'e9d0c60cb5b47d488d20161953c1f70a42700327d312b357690a372e5479291f', program: 'irodori-tts.exe' }
 }
 
 const root = path.resolve(import.meta.dirname, '..')
