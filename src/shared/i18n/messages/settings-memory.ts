@@ -135,17 +135,17 @@ export const settingsMemory = defineMessages({
       'es-ES': 'Organización de la memoria'
     },
     description: {
-      'ja-JP': '毎日 0 時に、Agent が前日までの会話を読んで日記を書き、ページと「いつも覚えておくこと」を書き直します。会話の裏で動き、画面には出ません。',
-      'en-US': 'Every day at midnight, the agent reads the conversations up to the day before, writes the diary and rewrites the pages and "Always keep in mind". It runs behind the conversation and never shows on screen.',
-      'fr-FR': "Chaque jour à minuit, l'agent lit les conversations jusqu'à la veille, écrit le journal et réécrit les pages et « À toujours garder en tête ». Il travaille en arrière-plan de la conversation et n'apparaît jamais à l'écran.",
-      'de-DE': 'Jeden Tag um Mitternacht liest der Agent die Gespräche bis zum Vortag, schreibt das Tagebuch und überarbeitet die Seiten und „Immer im Blick“. Er arbeitet im Hintergrund des Gesprächs und erscheint nie auf dem Bildschirm.',
-      'hi-IN': 'हर दिन आधी रात को Agent पिछले दिन तक की बातचीत पढ़ता है, डायरी लिखता है, और पेज व "हमेशा याद रखने वाली बातें" फिर से लिखता है। यह बातचीत के पीछे चलता है और स्क्रीन पर कभी नहीं दिखता।',
-      'id-ID': 'Setiap hari pukul 00.00, Agent membaca percakapan sampai hari sebelumnya, menulis jurnal, lalu menulis ulang halaman dan “Selalu diingat”. Ini berjalan di balik percakapan dan tidak pernah muncul di layar.',
-      'it-IT': "Ogni giorno a mezzanotte l'agente legge le conversazioni fino al giorno prima, scrive il diario e riscrive le pagine e «Da tenere sempre a mente». Lavora dietro la conversazione e non compare mai sullo schermo.",
-      'ko-KR': '매일 0시에 Agent가 전날까지의 대화를 읽고 일기를 쓰며, 페이지와 "늘 기억해 둘 것"을 다시 씁니다. 대화 뒤에서 움직이며 화면에는 나타나지 않습니다.',
-      'pt-BR': 'Todo dia à meia-noite, o agente lê as conversas até o dia anterior, escreve o diário e reescreve as páginas e “Manter sempre em mente”. Ele roda por trás da conversa e nunca aparece na tela.',
-      'es-419': 'Todos los días a medianoche, el agente lee las conversaciones hasta el día anterior, escribe el diario y reescribe las páginas y «Tener siempre presente». Trabaja detrás de la conversación y nunca aparece en pantalla.',
-      'es-ES': 'Todos los días a medianoche, el agente lee las conversaciones hasta el día anterior, escribe el diario y reescribe las páginas y “Tener siempre presente”. Trabaja detrás de la conversación y nunca aparece en pantalla.'
+      'ja-JP': '毎日 0 時に、Agent が前日までの会話を読んで日記を書き、ページと「私について」「ユーザー」を書き直します。会話の裏で動き、画面には出ません。',
+      'en-US': 'Every day at midnight, the agent reads the conversations up to the day before, writes the diary and rewrites the pages, "About me" and "The user". It runs behind the conversation and never shows on screen.',
+      'fr-FR': "Chaque jour à minuit, l'agent lit les conversations jusqu'à la veille, écrit le journal et réécrit les pages, « À mon sujet » et « L'utilisateur ». Il travaille en arrière-plan de la conversation et n'apparaît jamais à l'écran.",
+      'de-DE': 'Jeden Tag um Mitternacht liest der Agent die Gespräche bis zum Vortag, schreibt das Tagebuch und überarbeitet die Seiten, „Über mich“ und „Nutzer“. Er arbeitet im Hintergrund des Gesprächs und erscheint nie auf dem Bildschirm.',
+      'hi-IN': 'हर दिन आधी रात को Agent पिछले दिन तक की बातचीत पढ़ता है, डायरी लिखता है, और पेज, "मेरे बारे में" व "यूज़र" फिर से लिखता है। यह बातचीत के पीछे चलता है और स्क्रीन पर कभी नहीं दिखता।',
+      'id-ID': 'Setiap hari pukul 00.00, Agent membaca percakapan sampai hari sebelumnya, menulis jurnal, lalu menulis ulang halaman, “Tentang saya”, dan “Pengguna”. Ini berjalan di balik percakapan dan tidak pernah muncul di layar.',
+      'it-IT': "Ogni giorno a mezzanotte l'agente legge le conversazioni fino al giorno prima, scrive il diario e riscrive le pagine, «Su di me» e «L'utente». Lavora dietro la conversazione e non compare mai sullo schermo.",
+      'ko-KR': '매일 0시에 Agent가 전날까지의 대화를 읽고 일기를 쓰며, 페이지와 "나에 대하여", "사용자"를 다시 씁니다. 대화 뒤에서 움직이며 화면에는 나타나지 않습니다.',
+      'pt-BR': 'Todo dia à meia-noite, o agente lê as conversas até o dia anterior, escreve o diário e reescreve as páginas, “Sobre mim” e “O usuário”. Ele roda por trás da conversa e nunca aparece na tela.',
+      'es-419': 'Todos los días a medianoche, el agente lee las conversaciones hasta el día anterior, escribe el diario y reescribe las páginas, «Acerca de mí» y «El usuario». Trabaja detrás de la conversación y nunca aparece en pantalla.',
+      'es-ES': 'Todos los días a medianoche, el agente lee las conversaciones hasta el día anterior, escribe el diario y reescribe las páginas, “Sobre mí” y “El usuario”. Trabaja detrás de la conversación y nunca aparece en pantalla.'
     },
     start: {
       'ja-JP': '今すぐ整理する',

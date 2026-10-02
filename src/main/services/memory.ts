@@ -339,7 +339,7 @@ const block = new FrozenMemoryBlock(() => {
   return documents.length > 0 ? documents.join('\n\n') : null
 })
 
-/** Called at the start of a turn. It returns null when memory is unavailable or none of the three documents has a body. */
+/** Called at the start of a turn. It returns null when memory is unavailable or neither me.md nor user.md has a body. */
 export function promptBlock(now = Date.now()): string | null {
   if (unavailableReason()) return null
   return block.forTurn(now)

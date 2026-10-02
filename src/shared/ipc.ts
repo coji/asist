@@ -694,7 +694,7 @@ export interface MemoryDocument {
   /** The path relative to the memory directory. */
   file: string
   kind: MemoryDocumentKind
-  /** The page's name, the date, or one of "いつも覚えておくこと", "私について" and "ユーザー". */
+  /** The page's name, the date, or "私について" for me.md and "ユーザー" for user.md. */
   title: string
   aliases: string[]
   /** The `updated` field of the frontmatter. For a journal it is that entry's date. */

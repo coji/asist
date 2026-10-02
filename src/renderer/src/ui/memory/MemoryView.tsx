@@ -251,7 +251,7 @@ export function MemoryView({ open }: { open: boolean }): React.JSX.Element {
 
   const item = (candidate: MemoryDocument): React.JSX.Element => {
     const title = candidate.kind === 'journal' ? dayLabel(candidate.title, locale) : titleOf(candidate, t, locale)
-    // The three documents about ASIST itself and about the user are always the same ones, so the
+    // The two documents about ASIST itself and about the user are always the same ones, so the
     // list shows their names alone and leaves the room to the diary and the pages.
     const sub =
       candidate.kind === 'journal'

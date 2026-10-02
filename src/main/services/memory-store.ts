@@ -185,9 +185,8 @@ function listMarkdown(dir: string, sub: string): string[] {
 }
 
 /**
- * Turns the pages and the journal into units. instruction.md, me.md and user.md go whole into the system
- * prompt, so they are only validated and never indexed: a search hit on them would repeat what every turn
- * already holds. The files an earlier form of the memory used are reported, so that a curation removes
+ * Turns the pages and the journal into units. me.md and user.md go whole into the system prompt, so they
+ * are only validated and never indexed: a search hit on them would repeat what every turn already holds. The files an earlier form of the memory used are reported, so that a curation removes
  * them.
  */
 export function readAll(dir = memoryDir()): ReadResult {
